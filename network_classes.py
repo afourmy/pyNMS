@@ -10,19 +10,13 @@ class Network(object):
         self.graph = defaultdict(set)
         
     def add_nodes(self, *nodes):
-        if not all(isinstance(node, Node) for node in nodes):
-            raise ValueError
         for node in nodes:
             self.nodes.add(node)
             
     def add_trunks(self, *trunks):
-        if not all(isinstance(trunk, Trunk) for trunk in trunks):
-            raise ValueError
         for trunk in trunks:
             self.trunks.add(trunk)
-            print(trunk)
             ingress, egress = trunk.ingress, trunk.egress
-            print(ingress)
             self.nodes.update([ingress, egress])
             self.graph[ingress].add(egress)
             self.graph[egress].add(ingress)
