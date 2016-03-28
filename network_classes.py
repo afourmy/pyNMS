@@ -128,8 +128,10 @@ class Network(object):
         for flow in self.flows:
             constraints = flow.routing_policy.get_constraints()
             flow.path = self.constrained_hop_count(flow.ingress, flow.egress, *constraints)
-            print(flow.path)
-            # appeler hop count ou constrained hop count en fonction de la routing policy ?
+    
+    def show_flows_path(self):
+        for flow in self.flows:
+            print("Flow {} from {} to {}: {}\n".format(flow.name, flow.ingress, flow.egress, flow.path))
                 
 class RoutingPolicy(object):
     def __init__(self, name, path_constraints=[], excluded_nodes=[], excluded_trunks=[]):
@@ -242,6 +244,8 @@ if(__name__ == "__main__"):
     D = Node("D")
     CD = Trunk(C, D)
     RP1 = RoutingPolicy("RP1", [Node("J")], [Node("H")], [])
+    RP2 = RoutingPolicy("SP")
     flow1 = TrafficFlow("flow1", Node("A"), Node("E"), RP1, 1)
-    ntw4.add_flow(flow1)
+    flow2 = TrafficFlow("flow2", E, A, RP2, 2)
+    ntw4.add_flow(flow1, flow2)
     ntw4.route_flows()
