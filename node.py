@@ -1,13 +1,4 @@
 class Node(object):
-    
-    pool = {}
-    
-    def __new__(cls, *args, **kwargs):
-        key = tuple(args)
-        if key not in Node.pool:
-            Node.pool[key] = super(Node, cls).__new__(cls)
-        return Node.pool[key]
-    
     def __init__(self, name):
         self.name = name
         self.oval = None
@@ -17,9 +8,6 @@ class Node(object):
         # velocity of a node for graph drawing algorithm
         self.vx = 0
         self.vy = 0
-        
-    def __call__(self, name):
-        return self
         
     def __repr__(self):
         return self.name

@@ -4,10 +4,8 @@ class Trunk(object):
         self.destination = destination
         self.name = source.name + destination.name
         self.cost = cost
-        self.capacitySD = capacitySD
-        self.capacityDS = capacityDS
-        self.flowSD = 0
-        self.flowDS = 0
+        self.capacity = {"SD": 3, "DS": 3}
+        self.flow = {"SD": 0, "DS": 0}
         self.line = None
         
     def __repr__(self):

@@ -14,53 +14,51 @@ import math
 
 class Network(object):
     current_path = []
-    pool_trunk={}
-    pool_LSP={}
     
     def __init__(self, name):
         self.name = name
-        self.nodes = set()
-        self.trunks = set()
+        self.pool_node = {}
+        self.pool_trunk = {}
+        self.pool_LSP = {}
         self.flows = set()
-        self.LSPs = set()
         self.graph = defaultdict(set)
-        
-    def add_nodes(self, *nodes):
-        for node in nodes:
-            self.nodes.add(node)
-            if node not in self.graph.keys():
-                self.graph[node] = set()
             
-    def add_trunks(self, *trunks):
-        for trunk in trunks:
-            self.trunks.add(trunk)
-            source, destination = trunk.source, trunk.destination
-            self.nodes.update([source, destination])
-            self.graph[source].add(destination)
-            self.graph[destination].add(source)
+    def add_trunk(self, trunk):
+        source, destination = trunk.source, trunk.destination
+        self.pool_node[source.name] = source
+        self.pool_node[destination.name] = destination
+        self.graph[source].add(destination)
+        self.graph[destination].add(source)
             
     def trunk_factory(self, s, d):
+        # add both directions and create trunk in the UD direction if needed
         if (s, d) not in self.pool_trunk and (d, s) not in self.pool_trunk:
             self.pool_trunk[(s,d)] = link.Trunk(s, d)
-            self.pool_trunk[(d,s)] = self.pool_trunk[(s,d)]
-        return self.pool_trunk[(s,d)]
+            self.pool_trunk[(d,s)] = None
+        # return the trunk with the user-defined direction
+        return self.pool_trunk[(s,d)] or self.pool_trunk[(d,s)]
         
     def LSP_factory(self, *args):
         if args[0] not in self.pool_LSP:
             self.pool_LSP[args[0]] = LSP.LSP(*args)
         return self.pool_LSP[args[0]]
+        
+    def node_factory(self, name):
+        if name not in self.pool_node:
+            self.pool_node[name] = node.Node(name)
+        return self.pool_node[name]
             
     def add_flow(self, *flows):
         for flow in flows:
             self.flows.add(flow)
             
     def clear(self):
-        self.nodes.clear()
-        self.trunks.clear()
         self.graph.clear()
-        self.LSPs.clear()
+        self.pool_LSP.clear()
         self.pool_trunk.clear()
+        self.pool_node.clear()
         
+    #TODO refactor remove functions and add them to the GUI
     def remove_trunks(self, *trunks):
         for trunk in trunks:
             self.trunks.remove(trunk)
@@ -68,8 +66,8 @@ class Network(object):
         self.graph[source].discard(destination)
         self.graph[destination].discard(source)
             
-    def remove_nodes(self, *nodes):
-        self.nodes -= {node}
+    def remove_node(self, node):
+        self.pool_node.pop(node.name, None)
         adjacent_nodes = self.graph.pop(node, None)
         for neighbor in adjacent_nodes:
             self.graph[neighbor].discard(node)
@@ -80,9 +78,9 @@ class Network(object):
     def fast_graph_definition(self, string):
         """ Allow to create graph quickly with a single string """
         for source, destination in zip(string[::2], string[1::2]):
-            source, destination = node.Node(source), node.Node(destination)
+            source, destination = self.node_factory(source), self.node_factory(destination)
             trunk = self.trunk_factory(source, destination)
-            self.add_trunks(trunk)
+            self.add_trunk(trunk)
         
     def _bfs(self, source):
         visited = set()
@@ -160,33 +158,42 @@ class Network(object):
                 return "no path found"
         return sum(full_path, [source])
         
+    def reset_flow(self):
+        for link in self.trunks:
+            link.flow["SD"] = 0
+            link.flow["DS"] = 0
+        
     def _augment(self, val, current_node, target, visit):
         visit[current_node] = True
-        print(visit)
         if(current_node == target):
             return val
         for v in self.graph[current_node]:
             current_trunk = self.trunk_factory(current_node, v)
-            cap = current_trunk.capacitySD
-            current_flow = current_trunk.flowSD
-            if cap > current_flow and not visit[v]:
+            direction = current_node == current_trunk.source
+            sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
+            cap = current_trunk.capacity[sd]
+            current_flow = current_trunk.flow[sd]
+            print(current_node, current_trunk, cap, current_flow)
+            if cap > current_flow and (not visit[v] or v == target):
                 residual_capacity = min(val, cap - current_flow)
                 global_flow = self._augment(residual_capacity, v, target, visit)
-                if(global_flow):
-                    current_trunk.flowSD += global_flow
-                    current_trunk.flowDS -= global_flow
+                if(global_flow > 0):
+                    current_trunk.flow[sd] += global_flow
+                    current_trunk.flow[ds] -= global_flow
                     return global_flow
         return False
         
     def ford_fulkerson(self, source, destination):
-        n = len(self.nodes)
-        visit = {n:0 for n in self.nodes}
-        i = 0
-        while(self._augment(float("inf"), source, destination, visit) or i<5):
-            print("lol")
-            i += 1
-        res = {t:t.flowSD for t in self.trunks}
-        print(res)
+        n = len(pool_node)
+        self.reset_flow()
+        while(self._augment(float("inf"), source, destination, {n:0 for n in pool_node.items()})):
+            pass
+        # flow leaving from the source 
+        sum = 0
+        for n in self.graph[source]:
+            link = self.trunk_factory(source, n)
+            sum += link.flow[(source == link.source)*"SD" or "DS"]
+        return sum
         
     def route_flows(self):
         for flow in self.flows:
@@ -214,9 +221,9 @@ class Network(object):
             
     def move_basic(self, alpha, beta, k, eta, delta, raideur):            
         ekint = [0.0, 0.0]
-        for nodeA in self.nodes:
+        for nodeA in self.pool_node.values():
             Fx, Fy = 0, 0
-            for nodeB in self.nodes:
+            for nodeB in self.pool_node.values():
                 if(nodeA != nodeB):
                     Fij = [0]*4
                     if(self.is_connected(nodeA, nodeB)):
@@ -229,9 +236,9 @@ class Network(object):
             ekint[0] = ekint[0] + alpha * (nodeA.vx * nodeA.vx)
             ekint[1] = ekint[1] + alpha * (nodeA.vy * nodeA.vy)
     
-        for n in self.nodes:
-            n.x += n.vx * delta
-            n.y += n.vy * delta
+        for n in self.pool_node.values():
+            n.x += round(n.vx * delta)
+            n.y += round(n.vy * delta)
             
     def fa(self, d, k):
         return (d**2)/k
@@ -241,9 +248,9 @@ class Network(object):
         
     def fruchterman(self, k):
         t = 1
-        for nA in self.nodes:
+        for nA in self.pool_node.values():
             nA.vx, nA.vy = 0, 0
-            for nB in self.nodes:
+            for nB in self.pool_node.values():
                 if(nA != nB):
                     deltax = nA.x - nB.x
                     deltay = nA.y - nB.y
@@ -262,7 +269,7 @@ class Network(object):
                 l.destination.vx += (dist*deltax)/k
                 l.destination.vy += (dist*deltay)/k
             
-        for n in self.nodes:
+        for n in self.pool_node.values():
             d = self.distance(n.vx, n.vy)
             n.x += ((n.vx)/(math.sqrt(d)+0.1))
             n.y += ((n.vy)/(math.sqrt(d)+0.1))
@@ -273,30 +280,30 @@ class Network(object):
             
     def generate_hypercube(self, n):
         i = 0
-        graph_nodes = [node.Node(str(0))]
+        graph_nodes = [self.node_factory(str(0))]
         graph_links = []
         while(i < n+1):
             for k in range(len(graph_nodes)):
                 # creation des noeuds du deuxième hypercube de dimension n-1
-                graph_nodes.append(node.Node(str(k+2**i)))
-                self.add_nodes(node.Node(str(k+2**i)))
+                graph_nodes.append(self.node_factory(str(k+2**i)))
+                self.node_factory(str(k+2**i))
             for trunk in graph_links[:]:
                 # connexion des deux hypercube de dimension n-1
                 source, destination = trunk.source, trunk.destination
-                graph_links.append(self.trunk_factory(node.Node(str(int(source.name)+2**i)), node.Node(str(int(destination.name)+2**i))))
-                self.add_trunks(self.trunk_factory(node.Node(str(int(source.name)+2**i)), node.Node(str(int(destination.name)+2**i))))
+                graph_links.append(self.trunk_factory(self.node_factory(str(int(source.name)+2**i)), self.node_factory(str(int(destination.name)+2**i))))
+                self.add_trunk(self.trunk_factory(self.node_factory(str(int(source.name)+2**i)), self.node_factory(str(int(destination.name)+2**i))))
             for k in range(len(graph_nodes)//2):
                 # creation des liens du deuxième hypercube
                 graph_links.append(self.trunk_factory(graph_nodes[k], graph_nodes[k+2**i]))
-                self.add_trunks(self.trunk_factory(graph_nodes[k], graph_nodes[k+2**i]))
+                self.add_trunk(self.trunk_factory(graph_nodes[k], graph_nodes[k+2**i]))
             i += 1
             
     def generate_meshed_square(self, n):
         for i in range(n**2):
-            self.add_nodes(node.Node(str(i)))
+            self.node_factory(str(i))
         for i in range(n**2):
             if(i-1 > -1 and i%n):
-                self.add_trunks(self.trunk_factory(node.Node(str(i)), node.Node(str(i-1))))
+                self.add_trunk(self.trunk_factory(self.node_factory(str(i)), self.node_factory(str(i-1))))
             if(i+n < n**2):
-                self.add_trunks(self.trunk_factory(node.Node(str(i)), node.Node(str(i+n))))
+                self.add_trunk(self.trunk_factory(self.node_factory(str(i)), self.node_factory(str(i+n))))
     
