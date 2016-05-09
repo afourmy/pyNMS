@@ -15,10 +15,23 @@ import random
 
 class Network(object):
     
+    node_type_to_class = {
+    "router": node.Router,
+    "oxc": node.OXC,
+    "host": node.Host,
+    "antenna": node.Antenna
+    }
+    
+    link_type_to_class = {
+    "trunk": link.Trunk, 
+    "route": link.Route,
+    "traffic": link.Traffic
+    }
+    
     def __init__(self, name):
         self.name = name
         self.pool_network = {"trunk": {}, "node": {}, "route": {}, "traffic": {}, "AS": {}}
-        self.graph = defaultdict(lambda : defaultdict(set))
+        self.graph = defaultdict(lambda: defaultdict(set))
             
     def link_factory(self, link_type="trunk", name=None, s=None, d=None, *param):
         if not name:
@@ -26,18 +39,18 @@ class Network(object):
         class_type = {"trunk": link.Trunk, "route": link.Route, "traffic": link.Traffic}
         # creation link in the s-d direction if no link at all yet
         if not name in self.pool_network[link_type]:
-            new_link = class_type[link_type](name, s, d, *param)
+            new_link = Network.link_type_to_class[link_type](name, s, d, *param)
             self.pool_network[link_type][name] = new_link
             self.graph[s][link_type].add(new_link)
             self.graph[d][link_type].add(new_link)
         return self.pool_network[link_type][name]
         
     def node_factory(self, name=None, node_type="router", pos_x=100, pos_y=100):
-        class_type = {"router": node.Router, "oxc": node.OXC}
+        class_type = {"router": node.Router, "oxc": node.OXC, "host": node.Host, "antenna": node.Antenna}
         if not name:
             name = "node" + str(len(self.pool_network["node"]))
         if name not in self.pool_network["node"]:
-            self.pool_network["node"][name] = class_type[node_type](name, pos_x, pos_y)
+            self.pool_network["node"][name] = Network.node_type_to_class[node_type](name, pos_x, pos_y)
         return self.pool_network["node"][name]
         
     def AS_factory(self, name=None, type="RIP", links=set()):
@@ -182,7 +195,7 @@ class Network(object):
                 full_path_link += [path_link[:-1][::-1]]
             else:
                 return [], []
-        return sum(full_path_node, [source]), sum(full_path_link,[])
+        return sum(full_path_node, [source]), sum(full_path_link, [])
         
     def reset_flow(self):
         for link in self.pool_network["trunk"].values():

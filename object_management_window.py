@@ -56,9 +56,11 @@ class NodeManagement(tk.Toplevel):
     def save_node(self, master):
         if not self.current_node:
             self.select_node(master)
+        self.current_node.name = self.var_name.get()
         self.current_node.x = int(self.var_x.get())
         self.current_node.y = int(self.var_y.get())
-        # self.update() # useless ?
+        # refresh the node label if it was changed
+        master.current_scenario._refresh_object_label(self.current_node)
         # move the node on the canvas once it's coordinates were updated
         self.master.current_scenario.move_node(self.current_node)
         
@@ -137,11 +139,12 @@ class LinkManagement(tk.Toplevel):
         if(not self.current_link):
             link_name = self.var_name.get()
             self.current_link = master.current_scenario.link_factory(name=link_name)
+        self.current_link.name = self.var_name.get()
         self.current_link.capacity["SD"] = int(self.var_capacitySD.get())
         self.current_link.capacity["DS"] = int(self.var_capacityDS.get())
         self.current_link.cost = int(self.var_cost.get())
-        # refresh label for current link
-        master.current_scenario._refresh_link_label(self.current_link)
+        # refresh the node label if it was changed
+        master.current_scenario._refresh_object_label(self.current_link)
         
     def update(self):
         self.var_name.set(self.current_link.name)

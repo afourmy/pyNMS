@@ -161,12 +161,14 @@ class ASManagement(tk.Toplevel):
         self.selected_object = self.listbox_links.get(self.listbox_links.curselection())  
         
     def find_edge_nodes(self, scenario, AS):
+        self.listbox_edges.delete(0, tk.END)
         for edge in scenario.find_edge_nodes(AS):
             if repr(edge) not in self.listbox_edges:
                 self.listbox_edges.insert(tk.END, edge)
     
     # TODO les liens utilisés DOIVENT appartenir à l'AS
-    def create_route(self, scenario, AS):
+    # modify hopcount to have  a list of allowed links and allowed nodes
+    def create_routes(self, scenario, AS):
         for edgeA in AS.edges:
             for edgeB in AS.edges:
                 if(edgeA != edgeB and not scenario.is_connected(edgeA, edgeB, "route")):
@@ -174,3 +176,31 @@ class ASManagement(tk.Toplevel):
                     new_route.AS = AS
                     _, new_route.path = scenario.hop_count(edgeA, edgeB)
                     scenario.create_link(new_route)
+                    
+class AddToAS(tk.Toplevel):
+    def __init__(self, scenario, *obj):
+        super().__init__()
+        self.geometry("50x50")
+        self.title("Add node to AS")
+        
+        # List of existing AS
+        self.var_AS = tk.StringVar()
+        self.existing_AS = [AS for AS in scenario.pool_network["AS"]]
+        self.AS_list = tk.OptionMenu(self, self.var_AS, *self.existing_AS if self.existing_AS else [""])
+        self.AS_list.grid(row=0, column=0, sticky=tk.W)
+        
+        # Button to add in an AS
+        self.button_add_AS = tk.Button(self, text="Add to AS", command=lambda: self.add_to_AS(scenario, *obj))
+        self.button_add_AS.grid(row=0, column=1, sticky=tk.W)
+        
+    def add_to_AS(self, scenario, *objects):
+        selected_AS = scenario.AS_factory(name=self.var_AS.get())
+        for obj in objects:
+            if(obj.class_type == "node"):
+                selected_AS.nodes.add(obj)
+            else:
+                selected_AS.links.add(obj)
+                selected_AS.nodes.update((obj.source, obj.destination))
+        scenario.add_to_AS(selected_AS, *objects)
+        self.destroy()
+            

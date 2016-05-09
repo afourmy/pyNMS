@@ -6,17 +6,32 @@ class MainFrame(tk.Frame):
     def __init__(self, master):
         super().__init__(width=200,height=600, borderwidth=3, relief="solid", background="#A1DBCD")
         self.bg_color = "#E6E6FA"
+        self.type_to_button = {}
 
         # choix du mode: motion / node creation / link creation
         self.motion_mode = tk.Button(self, bg="#A1DBCD", text="Motion mode", width=200, height=200, relief=tk.FLAT, command=lambda: self.switch_to_motion(master))
         self.creation_mode = tk.Button(self, bg="#A1DBCD", text ="Creation mode", width=200, height=200, relief=tk.FLAT, command=lambda: self.switch_to_creation(master))
+        
         self.create_router = tk.Button(self, bg="#A1DBCD", height=45, width=45, relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "router"))
+        self.type_to_button["router"] = self.create_router
+        
         self.create_oxc = tk.Button(self, bg="#A1DBCD", height=45, width=45, relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "oxc"))
+        self.type_to_button["oxc"] = self.create_oxc
+        
         self.create_host = tk.Button(self, bg="#A1DBCD", height=45, width=45, relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "host"))
+        self.type_to_button["host"] = self.create_host
+        
         self.create_antenna = tk.Button(self, bg="#A1DBCD", height=45, width=45, relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "antenna"))
+        self.type_to_button["antenna"] = self.create_antenna
+        
         self.create_trunk = tk.Button(self, bg="#A1DBCD", text ="Create trunk", fg="blue", font=("Courier", 8, "bold"), compound="top", relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "trunk"))
+        self.type_to_button["trunk"] = self.create_trunk
+        
         self.create_route = tk.Button(self, bg="#A1DBCD", text ="Create route", fg="green", font=("Courier", 8, "bold"), compound="top", relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "route"))
+        self.type_to_button["route"] = self.create_route
+        
         self.create_traffic = tk.Button(self, bg="#A1DBCD", text ="Create traffic", fg="purple", font=("Courier", 8, "bold"), compound="top", relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "traffic"))
+        self.type_to_button["traffic"] = self.create_traffic
         
         # drawing du graphe
         self.draw_graph = tk.Button(self, text ="Draw graph", width=12, height=1, command=lambda: master.current_scenario.draw_all())
@@ -39,7 +54,7 @@ class MainFrame(tk.Frame):
         self.bouton_ring = tk.Button(self, text='Ring', bg=self.bg_color, width=12, height=1, command = lambda: self.generate_ring(master.current_scenario))
         
         # netdim mode: motion or creation
-        label_netdim = tk.Label(self, text="Tool mode", bg="#A1DBCD", font=("Helvetica", 16, "bold")).grid(row=0, columnspan=4, sticky="ew")
+        label_netdim = tk.Label(self, text="NetDim", bg="#A1DBCD", font=("Helvetica", 16, "bold")).grid(row=0, columnspan=4, sticky="ew")
         self.motion_mode.grid(row=1, column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
         self.creation_mode.grid(row=1, column=2, columnspan=2, rowspan=2, pady=5, padx=5, sticky=tk.W)
         sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=3, columnspan=4, sticky="ew")
@@ -88,37 +103,14 @@ class MainFrame(tk.Frame):
         master.current_scenario.switch_binding()
         
     def change_creation_mode(self, master, mode):
+        # change the mode to creation 
+        self.switch_to_creation(master)
         master.current_scenario._creation_mode = mode
-        if(mode == "router"):
-            self.create_router.config(relief=tk.SUNKEN)
-            self.create_oxc.config(relief=tk.FLAT)
-            self.create_trunk.config(relief=tk.FLAT)
-            self.create_route.config(relief=tk.FLAT)
-        elif(mode == "oxc"):
-            self.create_router.config(relief=tk.SUNKEN)
-            self.create_oxc.config(relief=tk.SUNKEN)
-            self.create_route.config(relief=tk.FLAT)
-            self.create_trunk.config(relief=tk.FLAT)
-        elif(mode == "trunk"):
-            self.create_router.config(relief=tk.FLAT)
-            self.create_oxc.config(relief=tk.FLAT)
-            self.create_route.config(relief=tk.FLAT)
-            self.create_trunk.config(relief=tk.SUNKEN)
-        elif(mode == "route"):
-            self.create_route.config(relief=tk.SUNKEN)
-            self.create_oxc.config(relief=tk.FLAT)
-            self.create_router.config(relief=tk.FLAT)
-            self.create_trunk.config(relief=tk.FLAT)
-        elif(mode == "host"):
-            self.create_route.config(relief=tk.SUNKEN)
-            self.create_oxc.config(relief=tk.FLAT)
-            self.create_router.config(relief=tk.FLAT)
-            self.create_trunk.config(relief=tk.FLAT)
-        elif(mode == "antenna"):
-            self.create_route.config(relief=tk.SUNKEN)
-            self.create_oxc.config(relief=tk.FLAT)
-            self.create_router.config(relief=tk.FLAT)
-            self.create_trunk.config(relief=tk.FLAT)
+        for obj_type in self.type_to_button:
+            if(mode == obj_type):
+                self.type_to_button[obj_type].config(relief=tk.SUNKEN)
+            else:
+                self.type_to_button[obj_type].config(relief=tk.FLAT)
         master.current_scenario.switch_binding()
         
     def generate_square_tiling(self, scenario):

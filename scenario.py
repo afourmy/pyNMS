@@ -5,8 +5,6 @@ import random
 import math
 
 class Scenario(network.Network, tk.Canvas):
-    node_type = ["router", "host", "oxc", "antenna"]
-    link_type = ["trunk", "route", "traffic"]
     
     def __init__(self, master, name):
         network.Network.__init__(self, name)
@@ -19,6 +17,7 @@ class Scenario(network.Network, tk.Canvas):
         self._job = None
         
         # default colors for highlighting areas
+        # TODO use this for the image dict
         self.default_colors = ["black", "red", "green", "blue", "cyan", "yellow", "magenta"]
         
         # default link width and node size
@@ -26,7 +25,8 @@ class Scenario(network.Network, tk.Canvas):
         self.test = []
         
         # default label display
-        self._current_object_label = {"trunk": "name", "route": "name", "traffic": "name", "node": "name"}
+        # TODO refactor
+        self._current_object_label = {"trunk": "name", "route": "name", "traffic": "name", "router": "name", "oxc": "name", "host": "name", "antenna": "name"}
         
         # creation mode, object type, and associated bindings
         self._start_position = [None, None]
@@ -65,12 +65,8 @@ class Scenario(network.Network, tk.Canvas):
         self.bind("<Button-4>", self.zoomerP)
         self.bind("<Button-5>", self.zoomerM)
         
-        # add binding for right-click menu on nodes
+        # add binding for right-click menu 
         self.tag_bind(("object"), "<ButtonPress-3>",lambda e: menus.RightClickMenu(e, self))
-        
-        # add binding for right-click menu on route
-        self.right_click_menu_route = menus.RightClickMenuRoute(self)
-        self.tag_bind("route", "<ButtonPress-3>",lambda e: self.right_click_menu_route.popup(e, self))
         
         # use the right-click to move the background
         self.bind("<ButtonPress-3>", self.scroll_start)
@@ -113,7 +109,7 @@ class Scenario(network.Network, tk.Canvas):
             self.unbind("<ButtonMotion-1>")
             #self.tag_unbind("node", "<Button-1>")
             
-            if(self._creation_mode in ["router", "oxc"]):
+            if(self._creation_mode in self.node_type_to_class):
                 # add bindings to create a node with left-click
                 self.bind("<ButtonPress-1>", self.create_node_on_binding)
             
@@ -244,7 +240,7 @@ class Scenario(network.Network, tk.Canvas):
         
     def create_node(self, node):
         s = node.size
-        curr_image = self.master.image_router if node.type == "router" else self.master.image_oxc
+        curr_image = self.master.dict_image["default"][node.type]
         node.image = self.create_image(node.x - (node.imagex)/2, node.y - (node.imagey)/2, image = curr_image, anchor = tk.NW, tags=(node.type, node.class_type, "object"))
         node.oval = self.create_oval(node.x-s, node.y-s, node.x+s, node.y+s, outline=node.color, fill=node.color, tags=node.class_type)
         # create/hide the image/the oval depending on the current mode
@@ -317,6 +313,15 @@ class Scenario(network.Network, tk.Canvas):
             self.after_cancel(self._job)
             self._job = None
             
+    def add_to_AS(self, AS, *objects):
+        for obj in objects:
+            if(obj.class_type == "node"):
+                if not obj in AS.management.listbox_nodes:
+                    AS.management.listbox_nodes.insert(tk.END, obj)
+            else:
+                if not obj in AS.management.listbox_links:
+                    AS.management.listbox_links.insert(tk.END, obj)
+            
     def remove_nodes_from_AS(self, AS, *nodes):
         for node in nodes:
             # remove the node from the AS management panel, in the nodes
@@ -342,25 +347,15 @@ class Scenario(network.Network, tk.Canvas):
                 self.delete(obj.oval, obj.image)
                 self.delete(self.object_to_label_id[obj])
                 self.remove_objects(*self.remove_node_from_network(obj))
+                if(obj.AS):
+                    self.remove_nodes_from_AS(obj)
             if(obj.class_type == "link"):
                 self.delete(obj.line)
                 self.delete(self.object_to_label_id[obj])
                 self.remove_link_from_network(obj)
-            self.remove_objects_from_AS(obj)
-    
-    # TODO: refactor with object.__dict__[label]
-    def create_node_label(self, node):
-        label_id = self.create_text(node.x + 5, node.y + 5, anchor="nw")
-        value = eval("node." + self._current_object_label["node"])
-        self.itemconfig(label_id, text=value, fill="blue", tags="label")
-        self.object_to_label_id[node] = label_id
-    
-    def _create_link_label(self, link):
-        middle_x = link.source.x + (link.destination.x - link.source.x)//2
-        middle_y = link.source.y + (link.destination.y - link.source.y)//2
-        label_id = self.create_text(middle_x, middle_y, anchor="nw", fill="red", tags="label")
-        self.object_to_label_id[link] = label_id
-        
+                if(obj.AS):
+                    self.remove_links_from_AS(obj)
+            
     # TODO when adding sth like a ring to the network, do not redraw everything
     def draw_objects(self, nodes, links, mode="random"):
         self._cancel()
@@ -381,8 +376,8 @@ class Scenario(network.Network, tk.Canvas):
     def highlight_objects(self, *objects):
         for obj in objects:
             if(obj.class_type == "node"):
-                self.itemconfig(obj.oval, fill="orange")
-                self.itemconfig(obj.image, image=self.master.image_highlighted_router)
+                self.itemconfig(obj.oval, fill="red")
+                self.itemconfig(obj.image, image=self.master.dict_image["red"][obj.type])
             elif(obj.class_type == "link"):
                 self.itemconfig(obj.line, fill="red", width=5)
                 
@@ -390,7 +385,7 @@ class Scenario(network.Network, tk.Canvas):
         for obj in objects:
             if(obj.class_type == "node"):
                 self.itemconfig(obj.oval, fill=obj.color)
-                self.itemconfig(obj.image, image=self.master.image_router)
+                self.itemconfig(obj.image, image=self.master.dict_image["default"][obj.type])
             elif(obj.class_type == "link"):
                 self.itemconfig(obj.line, fill=obj.color, width=self.LINK_WIDTH)  
                 
@@ -398,22 +393,39 @@ class Scenario(network.Network, tk.Canvas):
         for object_type in self.pool_network:
             self.unhighlight_objects(*self.pool_network[object_type].values())
                 
-            
+    def create_node_label(self, node):
+        label_id = self.create_text(node.x, node.y + 5, anchor="nw")
+        self.itemconfig(label_id, fill="blue", tags="label")
+        self.object_to_label_id[node] = label_id
+        # set the text of the label with refresh label
+        self._refresh_object_label(node)
+    
+    def _create_link_label(self, link):
+        middle_x = link.source.x + (link.destination.x - link.source.x)//2
+        middle_y = link.source.y + (link.destination.y - link.source.y)//2
+        label_id = self.create_text(middle_x, middle_y, anchor="nw", fill="red", tags="label")
+        self.object_to_label_id[link] = label_id
+        self._refresh_object_label(link)
+        
     # refresh the label for one object with the current object label
-    # TODO: refactor with object.__dict__[label]
-    def _refresh_object_label(self, current_object):
-        value = eval("current_object." + self._current_object_label[current_object.type])
+    def _refresh_object_label(self, current_object, label_type=None):
+        if not label_type:
+            label_type = self._current_object_label[current_object.type]
         label_id = self.object_to_label_id[current_object]
-        if(self._current_object_label[current_object.type] in ["capacity", "flow"]):
-            self.itemconfig(label_id, text="{}/{}".format(value["SD"], value["DS"]))
+        if(label_type in ["capacity", "flow"]):
+            # retrieve the value of the parameter depending on label type
+            value = current_object.__dict__[label_type]
+            self.itemconfig(label_id, text="SD:{} | DS:{}".format(value["SD"], value["DS"]))
+        elif(label_type == "position"):
+            self.itemconfig(label_id, text="({}, {})".format(current_object.x, current_object.y))
         else:
-            self.itemconfig(label_id, text=value)
+            self.itemconfig(label_id, text=current_object.__dict__[label_type])
             
-    # change label and refresh it for all links
+    # change label and refresh it for all objects
     def _refresh_object_labels(self, type, var_label):
         self._current_object_label[type] = var_label
         for obj in self.pool_network[type].values():
-            self._refresh_object_label(obj)
+            self._refresh_object_label(obj, var_label)
         
     def erase_graph(self):
         self.object_id_to_object.clear()

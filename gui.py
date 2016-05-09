@@ -54,18 +54,18 @@ class NetDim(tk.Tk):
         menu_options = tk.Menu(menubar, tearoff=0)        
         # menu to choose which label to display for links
         menu_trunk_label = tk.Menu(menubar, tearoff=0)
-        menu_trunk_label.add_command(label="Name", command=lambda: self._refresh_object_labels("trunk", "name"))
-        menu_trunk_label.add_command(label="Cost", command=lambda: self._refresh_object_labels("trunk", "cost"))
-        menu_trunk_label.add_command(label="Capacity", command=lambda: self._refresh_object_labels("trunk", "capacity"))
-        menu_trunk_label.add_command(label="Flow", command=lambda: self._refresh_object_labels("trunk", "flow"))
+        menu_trunk_label.add_command(label="Name", command=lambda: self.current_scenario._refresh_object_labels("trunk", "name"))
+        menu_trunk_label.add_command(label="Cost", command=lambda: self.current_scenario._refresh_object_labels("trunk", "cost"))
+        menu_trunk_label.add_command(label="Capacity", command=lambda: self.current_scenario._refresh_object_labels("trunk", "capacity"))
+        menu_trunk_label.add_command(label="Flow", command=lambda: self.current_scenario._refresh_object_labels("trunk", "flow"))
         menu_route_label = tk.Menu(menubar, tearoff=0)
-        menu_route_label.add_command(label="Name", command=lambda: self._refresh_object_labels("route", "name"))
-        menu_route_label.add_command(label="Cost", command=lambda: self._refresh_object_labels("route", "subnet"))
+        menu_route_label.add_command(label="Name", command=lambda: self.current_scenario._refresh_object_labels("route", "name"))
+        menu_route_label.add_command(label="Cost", command=lambda: self.current_scenario._refresh_object_labels("route", "subnet"))
         
         # menu to choose which label to display for nodes
         menu_node_label = tk.Menu(menubar, tearoff=0)
-        menu_node_label.add_command(label="Name", command=lambda: self._refresh_object_labels("name"))
-        menu_node_label.add_command(label="Position", command=lambda: self._refresh_object_labels("position"))
+        menu_node_label.add_command(label="Name", command=lambda: self.current_scenario._refresh_object_labels("node", "name"))
+        menu_node_label.add_command(label="Position", command=lambda: self.current_scenario._refresh_object_labels("node", "position"))
         # add the node and link label menus to the option menu
         menu_options.add_cascade(label="Trunk label", menu=menu_trunk_label)
         menu_options.add_cascade(label="Route label", menu=menu_route_label)
@@ -118,44 +118,23 @@ class NetDim(tk.Tk):
         self.image_creation = ImageTk.PhotoImage(self.image_pil_creation)
         self.main_frame.creation_mode.config(image = self.image_creation, width=75, height=75)
         
-        # image of a router
-        self.image_pil_router = ImageTk.Image.open(path_icon + "router.gif").resize((node.Router.default_imagex, node.Router.default_imagey))
-        self.image_router = ImageTk.PhotoImage(self.image_pil_router)
-        self.main_frame.create_router.config(image = self.image_router, width=50, height=50)
+        # dict of nodes image for node creation
+        self.dict_image = collections.defaultdict(dict)
         
-        # image of a highlighted router
-        self.image_pil_highlighted_router = ImageTk.Image.open(path_icon + "highlighted_router.gif").resize((node.Router.default_imagex, node.Router.default_imagey))
-        self.image_highlighted_router = ImageTk.PhotoImage(self.image_pil_highlighted_router)
-        
-        # image of an oxc
-        self.image_pil_oxc = ImageTk.Image.open(path_icon + "oxc.gif").resize((node.OXC.default_imagex, node.OXC.default_imagey))
-        self.image_oxc = ImageTk.PhotoImage(self.image_pil_oxc)
-        self.main_frame.create_oxc.config(image = self.image_oxc, width=50, height=50, anchor=tk.CENTER)
-        
-        # image of a host
-        self.image_pil_host = ImageTk.Image.open(path_icon + "host.gif").resize((node.Host.default_imagex, node.Host.default_imagey))
-        self.image_host = ImageTk.PhotoImage(self.image_pil_host)
-        self.main_frame.create_host.config(image = self.image_host, width=50, height=50, anchor=tk.CENTER)
-        
-        # image of an antenna
-        self.image_pil_antenna = ImageTk.Image.open(path_icon + "antenna.png").resize((node.Host.default_imagex, node.Host.default_imagey))
-        self.image_antenna = ImageTk.PhotoImage(self.image_pil_antenna)
-        self.main_frame.create_antenna.config(image = self.image_antenna, width=50, height=50, anchor=tk.CENTER)
-        
-        # image of a trunk
-        self.image_pil_trunk = ImageTk.Image.open(path_icon + "trunk.png").resize((85, 15))
-        self.image_trunk = ImageTk.PhotoImage(self.image_pil_trunk)
-        self.main_frame.create_trunk.config(image = self.image_trunk, width=100, height=25, anchor=tk.CENTER)
-        
-        # image of a route link
-        self.image_pil_route = ImageTk.Image.open(path_icon + "route.png").resize((85, 15))
-        self.image_route = ImageTk.PhotoImage(self.image_pil_route)
-        self.main_frame.create_route.config(image = self.image_route, width=100, height=25, anchor=tk.CENTER)
-        
-        # image of a traffic link
-        self.image_pil_traffic = ImageTk.Image.open(path_icon + "traffic.png").resize((85, 15))
-        self.image_traffic = ImageTk.PhotoImage(self.image_pil_traffic)
-        self.main_frame.create_traffic.config(image = self.image_traffic, width=100, height=25, anchor=tk.CENTER)
+        for color in ["default", "red"]:
+            for node_type in scenario.Scenario.node_type_to_class:
+                img_pil = ImageTk.Image.open(path_icon + color + "_" + node_type + ".gif").resize((scenario.Scenario.node_type_to_class[node_type].default_imagex, scenario.Scenario.node_type_to_class[node_type].default_imagey))
+                img = ImageTk.PhotoImage(img_pil)
+                # set the default image for the button of the frame
+                if(color == "default"):
+                    self.main_frame.type_to_button[node_type].config(image=img, width=50, height=50)
+                self.dict_image[color][node_type] = img
+                
+        for link_type in scenario.Scenario.link_type_to_class:
+            img_pil = ImageTk.Image.open(path_icon + link_type + ".png").resize((85, 15))
+            img = ImageTk.PhotoImage(img_pil)
+            self.dict_image["default"][link_type] = img
+            self.main_frame.type_to_button[link_type].config(image=img, width=100, height=25, anchor=tk.CENTER)
         
     def change_current_scenario(self, event):
         current_scenario_name = self.scenario_notebook.tab(self.scenario_notebook.select(), "text")
