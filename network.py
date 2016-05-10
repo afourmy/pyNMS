@@ -36,7 +36,6 @@ class Network(object):
     def link_factory(self, link_type="trunk", name=None, s=None, d=None, *param):
         if not name:
             name = link_type + str(len(self.pool_network[link_type]))
-        class_type = {"trunk": link.Trunk, "route": link.Route, "traffic": link.Traffic}
         # creation link in the s-d direction if no link at all yet
         if not name in self.pool_network[link_type]:
             new_link = Network.link_type_to_class[link_type](name, s, d, *param)
@@ -46,7 +45,6 @@ class Network(object):
         return self.pool_network[link_type][name]
         
     def node_factory(self, name=None, node_type="router", pos_x=100, pos_y=100):
-        class_type = {"router": node.Router, "oxc": node.OXC, "host": node.Host, "antenna": node.Antenna}
         if not name:
             name = "node" + str(len(self.pool_network["node"]))
         if name not in self.pool_network["node"]:
@@ -59,13 +57,6 @@ class Network(object):
         if name not in self.pool_network["AS"]:
             self.pool_network["AS"][name] = AS.AutonomousSystem(name, type, links)
         return self.pool_network["AS"][name]
-        
-    def find_edge_nodes(self, AS):
-        AS.edges.clear()
-        for node in AS.nodes:
-            if(any(link not in AS.links for link in self.graph[node]["trunk"])):
-                AS.edges.add(node)
-        return AS.edges
             
     def erase_network(self):
         self.graph.clear()
@@ -88,16 +79,14 @@ class Network(object):
         self.graph[link.destination][link.type].discard(link)
         self.pool_network[link.type].pop(link.name, None)
         
-    def remove_node_from_AS_topology(self, node, AS):
-        # remove the ref to the node in AS
-        AS.nodes.discard(node)
-        if(node in AS.edges):
-            AS.edges.discard(node)
-        
-    def remove_link_from_AS_topology(self, link):
-        # remove the ref to the link in the link's AS
-        if(link.AS):
-            self.pool_network["AS"][link.AS.name].links.discard(link)
+    # this function relates to AS but must be in network, because we need to 
+    # know what's not in the AS to find the edge nodes
+    def find_edge_nodes(self, AS):
+        AS.edges.clear()
+        for node in AS.nodes:
+            if(any(link not in AS.links for link in self.graph[node]["trunk"])):
+                AS.edges.add(node)
+                yield node
             
     def is_connected(self, nodeA, nodeB, link_type):
         return any(l.source == nodeA or l.destination == nodeA for l in self.graph[nodeB][link_type])

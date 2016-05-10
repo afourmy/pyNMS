@@ -312,34 +312,12 @@ class Scenario(network.Network, tk.Canvas):
         if self._job is not None:
             self.after_cancel(self._job)
             self._job = None
-            
-    def add_to_AS(self, AS, *objects):
-        for obj in objects:
-            if(obj.class_type == "node"):
-                if not obj in AS.management.listbox_nodes:
-                    AS.management.listbox_nodes.insert(tk.END, obj)
-            else:
-                if not obj in AS.management.listbox_links:
-                    AS.management.listbox_links.insert(tk.END, obj)
-            
-    def remove_nodes_from_AS(self, AS, *nodes):
+    
+    def add_to_edges(self, AS, *nodes):
         for node in nodes:
-            # remove the node from the AS management panel, in the nodes
-            # listbox as well as in the edge listbox
-            index_node = AS.management.listbox_nodes.get(0, tk.END).index(repr(node))
-            AS.management.listbox_nodes.delete(index_node)
-            if(node in AS.edges):
-                index_edge = AS.management.listbox_edges.get(0, tk.END).index(repr(node))
-                AS.management.listbox_edges.delete(index_edge)
-            self.remove_node_from_AS_topology(node, AS)
-        
-    def remove_links_from_AS(self, *links):
-        for link in links:
-            # remove the link from the AS management panel, in the links listbox
-            index_link = link.AS.management.listbox_links.get(0, tk.END).index(repr(link))
-            link.AS.management.listbox_links.delete(index_link)
-            # update the AS topology in the network
-            self.remove_link_from_AS_topology(link)
+            if node not in AS.edges:
+                AS.edges.add(node)
+                AS.management.listbox_edges.insert(tk.END, obj)
         
     def remove_objects(self, *objects):
         for obj in objects:

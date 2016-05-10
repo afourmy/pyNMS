@@ -20,21 +20,25 @@ class RightClickMenu(tk.Menu):
             self.add_command(label="Properties", command= lambda: self.show_node_properties(scenario))
             self.add_command(label="Delete node", command= lambda: self.remove_objects(scenario))
             self.add_command(label="Add node to AS", command= lambda: AS.AddToAS(scenario, self.selected_obj))
+            if(self.selected_obj.AS):
+                self.add_command(label="Manage AS", command= lambda: AS.ManageAS(scenario, self.selected_obj))
         # multiple nodes
         elif(not self.selection["link"]):
             self.add_command(label="Delete nodes", command= lambda: self.remove_objects(scenario))
+            self.add_command(label="Add nodes to AS", command= lambda: AS.AddToAS(scenario, *self.selection["node"]))
         # only one link
         elif(not self.selection["node"] and len(self.selection["link"]) == 1):
             self.add_command(label="Properties", command= lambda: self.show_link_properties(scenario))
             self.add_command(label="Delete link", command= lambda: self.remove_objects(scenario))
-            selected_link ,= self.selection["link"]
-            if(selected_link.AS):
+            if(self.selected_obj.AS):
                 self.add_command(label="Manage AS", command= lambda: selected_link.AS.management.deiconify())
+                self.add_command(label="Add link to AS", command= lambda: AS.AddToAS(scenario, self.selected_obj))
                 self.add_command(label="Remove link from AS", command= lambda: self.remove_links_from_AS(scenario))
         # more than one link
         elif(not self.selection["node"]):
             self.add_command(label="Delete links", command= lambda: scenario.remove_objects(scenario))
             self.add_command(label="Create AS", command= lambda: self.create_AS(scenario))
+            self.add_command(label="Add links to AS", command= lambda: AS.AddToAS(scenario, *self.selection["link"]))
         # links AND nodes
         else:
             self.add_command(label="Delete objects", command= lambda: scenario.remove_objects(scenario))
