@@ -233,7 +233,7 @@ class ASManagement(tk.Toplevel):
             if(node in AS.edges):
                 index_edge = self.listbox_edges.get(0, tk.END).index(repr(node))
                 self.listbox_edges.delete(index_edge)
-            AS.remove_node_from_AS(node, AS)
+            AS.remove_node_from_AS(node)
             
     def remove_selected_node_from_AS(self, scenario, AS):
         self.selected_node = self.listbox_nodes.get(self.listbox_nodes.curselection()) 
@@ -246,17 +246,15 @@ class ASManagement(tk.Toplevel):
             index_link = self.listbox_links.get(0, tk.END).index(repr(link))
             self.listbox_links.delete(index_link)
             # update the AS topology in the network
-            AS.remove_link_from_AS(link)
+            link.AS.remove_link_from_AS(link)
     
-    # TODO les liens utilisés DOIVENT appartenir à l'AS
-    # modify hopcount to have  a list of allowed links and allowed nodes
     def create_routes(self, scenario, AS):
         for edgeA in AS.edges:
             for edgeB in AS.edges:
                 if(edgeA != edgeB and not scenario.is_connected(edgeA, edgeB, "route")):
                     new_route = scenario.link_factory(link_type="route", name=str(edgeA)+"-"+str(edgeB), s=edgeA, d=edgeB)
                     new_route.AS = AS
-                    _, new_route.path = scenario.hop_count(edgeA, edgeB)
+                    _, new_route.path = scenario.hop_count(edgeA, edgeB, allowed_nodes=AS.nodes, allowed_trunks=AS.links)
                     scenario.create_link(new_route)
                     
 class AddToAS(tk.Toplevel):

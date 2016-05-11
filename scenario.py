@@ -325,30 +325,30 @@ class Scenario(network.Network, tk.Canvas):
                 self.delete(obj.oval, obj.image)
                 self.delete(self.object_to_label_id[obj])
                 self.remove_objects(*self.remove_node_from_network(obj))
-                if(obj.AS):
-                    self.remove_nodes_from_AS(obj)
+                for AS in obj.AS:
+                    AS.management.remove_nodes_from_AS(AS, obj)
             if(obj.class_type == "link"):
                 self.delete(obj.line)
                 self.delete(self.object_to_label_id[obj])
                 self.remove_link_from_network(obj)
                 if(obj.AS):
-                    self.remove_links_from_AS(obj)
+                    obj.AS.management.remove_links_from_AS(obj)
             
     # TODO when adding sth like a ring to the network, do not redraw everything
-    def draw_objects(self, nodes, links, mode="random"):
+    def draw_objects(self, nodes, links, random):
         self._cancel()
         for n in nodes:
-            if(mode == "random"):
+            if(random):
                 n.x, n.y = random.randint(100,700), random.randint(100,700)
             self.create_node(n)
 
         for l in links:
             self.create_link(l)
              
-    def draw_all(self):
+    def draw_all(self, random=True):
         self.delete("all")
         all_links = list(self.pool_network["trunk"].values())+list(self.pool_network["route"].values())+list(self.pool_network["traffic"].values())
-        self.draw_objects(self.pool_network["node"].values(),all_links)
+        self.draw_objects(self.pool_network["node"].values(),all_links, random)
         
     ## Highlight and Unhighlight links and nodes (depending on class_type)
     def highlight_objects(self, *objects):

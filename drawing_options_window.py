@@ -6,6 +6,10 @@ class DrawingOptions(tk.Toplevel):
         self.geometry("600x300")
         self.title("Graph drawing with force-directed algorithms")
         self.ender_variables = []
+        
+        # this allows to change the behavior of closing the window. 
+        # I don't want the window to be destroyed, simply hidden
+        self.protocol("WM_DELETE_WINDOW", self.withdraw)
     
         # Variables de masse
         # Alpha

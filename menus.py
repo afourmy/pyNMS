@@ -34,9 +34,9 @@ class RightClickMenu(tk.Menu):
                 self.add_command(label="Manage AS", command= lambda: selected_link.AS.management.deiconify())
                 self.add_command(label="Add link to AS", command= lambda: AS.AddToAS(scenario, self.selected_obj))
                 self.add_command(label="Remove link from AS", command= lambda: self.remove_links_from_AS(scenario))
-        # more than one link
+        # multiple links
         elif(not self.selection["node"]):
-            self.add_command(label="Delete links", command= lambda: scenario.remove_objects(scenario))
+            self.add_command(label="Delete links", command= lambda: self.remove_objects(scenario))
             self.add_command(label="Create AS", command= lambda: self.create_AS(scenario))
             self.add_command(label="Add links to AS", command= lambda: AS.AddToAS(scenario, *self.selection["link"]))
         # links AND nodes
@@ -56,17 +56,9 @@ class RightClickMenu(tk.Menu):
     def remove_objects(self, scenario):
         scenario.remove_objects(*(self.selection["link"] | self.selection["node"]))
         
-    @empty_selection_and_destroy_menu
-    def remove_links_from_AS(self, scenario):
-        scenario.remove_links_from_AS(*self.selection["link"])
-    
-    @empty_selection_and_destroy_menu
-    def remove_nodes_from_AS(self, scenario):
-        # TODO a window must pop-up with the list of domain the node belongs to
-        pass
-        
     def create_AS(self, scenario):
         AS.ASCreation(scenario)
+        self.destroy()
     
     @empty_selection_and_destroy_menu
     def show_node_properties(self, scenario):

@@ -1,10 +1,3 @@
-path_app = "C:\\Users\\afourmy\\Desktop\\Sauvegarde\\Python\\Network"
-
-# add the path to the module in sys.path
-import sys
-if path_app not in sys.path:
-    sys.path.append(path_app)
-
 from collections import defaultdict
 from heapq import heappop, heappush
 import link
@@ -128,30 +121,30 @@ class Network(object):
                 visited.update(new_connected_set)
         return connected_components
             
-    def hop_count(self, source, target, excluded_trunks=None, excluded_nodes=None, path_constraints=None):
-        """
-            Parameter self: we use self.graph view to compute the SP
-            Parameter excluded_trunks: list of excluded trunks
-            Parameter excluded_nodes: list of excluded nodes
-            Returns: the path from the source to the target as an ordered list of nodes
-            Complexity: O(|V| + |E|log|V|)
-        """
-        # initialize empty lists
+    def hop_count(self, source, target, excluded_trunks=None, excluded_nodes=None, path_constraints=None, allowed_trunks=None, allowed_nodes=None):
+        # Complexity: O(|V| + |E|log|V|)
+        
+        # initialize parameters
         if(excluded_nodes is None):
             excluded_nodes = []
         if(excluded_trunks is None):
             excluded_trunks = []
         if(path_constraints is None):
             path_constraints = []
+        if(allowed_trunks is None):
+            allowed_trunks = self.pool_network["trunk"].values()
+        if(allowed_nodes is None):
+            allowed_nodes = self.pool_network["node"].values()
+            print(allowed_nodes)
             
         full_path_node, full_path_link = [], []
         constraints = [source] + path_constraints + [target]
         for s, t in zip(constraints, constraints[1:]):
             # find the SP from s to t
-            prec_node = {i: None for i in self.graph.keys()}
-            prec_link = {i: None for i in self.graph.keys()}
-            visited = {i: False for i in self.graph.keys()}
-            dist = {i: float('inf') for i in self.graph.keys()}
+            prec_node = {i: None for i in allowed_nodes}
+            prec_link = {i: None for i in allowed_nodes}
+            visited = {i: False for i in allowed_nodes}
+            dist = {i: float('inf') for i in allowed_nodes}
             dist[s] = 0
             heap = [(0, s)]
             while heap:
@@ -162,10 +155,10 @@ class Network(object):
                         break
                     for connected_link in self.graph[node]["trunk"]:
                         neighbor = connected_link.destination if node == connected_link.source else connected_link.source
-                        # excluded nodes
-                        if neighbor in excluded_nodes: continue
-                        # excluded links
-                        if connected_link in excluded_trunks: continue
+                        # excluded and allowed nodes
+                        if neighbor in excluded_nodes or neighbor not in allowed_nodes: continue
+                        # excluded and allowed trunks
+                        if connected_link in excluded_trunks or connected_link not in allowed_trunks: continue
                         dist_neighbor = dist_node + 1
                         if dist_neighbor < dist[neighbor]:
                             dist[neighbor] = dist_neighbor

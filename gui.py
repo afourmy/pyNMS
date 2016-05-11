@@ -10,9 +10,6 @@ import tkinter as tk
 from tkinter import ttk
 import network
 import collections
-import node
-import link
-import math
 import object_management_window
 import path_finding_window
 import graph_creation_window
@@ -94,12 +91,13 @@ class NetDim(tk.Tk):
         
         # parameters for spring-based drawing: per project
         self.alpha = 1
-        self.beta = 100000
+        self.beta = 10000
         self.k = 0.5
         self.eta = 0.5
         self.delta = 0.35
-        self.raideur = 0
+        self.raideur = 8
         self.opd = 0
+        
         # drawing options window
         self.drawing_option_window = drawing_options_window.DrawingOptions(self)
         
@@ -136,6 +134,12 @@ class NetDim(tk.Tk):
             self.dict_image["default"][link_type] = img
             self.main_frame.type_to_button[link_type].config(image=img, width=100, height=25, anchor=tk.CENTER)
         
+        for network_topology in ("ring", "tree", "star", "full-mesh"):
+            img_pil = ImageTk.Image.open(path_icon + network_topology + ".png").resize((75, 75))
+            img = ImageTk.PhotoImage(img_pil)
+            self.dict_image["topology"][network_topology] = img
+            self.main_frame.type_to_button[network_topology].config(image=img, width=75, height=75, anchor=tk.CENTER)
+            
     def change_current_scenario(self, event):
         current_scenario_name = self.scenario_notebook.tab(self.scenario_notebook.select(), "text")
         self.current_scenario = self.dict_scenario[current_scenario_name]

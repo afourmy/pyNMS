@@ -39,22 +39,20 @@ class MainFrame(tk.Frame):
         self.FR_drawing = tk.Button(self, text ="F-R drawing", width=12, height=1, command=lambda: master.current_scenario.frucht())
         self.stop_drawing = tk.Button(self, text ="Stop drawing", width=12, height=1, command=lambda: master.current_scenario._cancel())
         
-        # Dimension du générateur de graphe
-        self.dimension = tk.Label(self, text="Dimension", bg="#A1DBCD")
-        self.var_dimension = tk.IntVar()
-        self.var_dimension.set(3)
-        self.entry_dimension = tk.Entry(self, textvariable=self.var_dimension, width=15)
+        self.create_tree = tk.Button(self, text='Tree', bg="#A1DBCD", width=50, height=50, relief=tk.FLAT, command = lambda: NetworkDimension(master.current_scenario, "tree"))
+        self.type_to_button["tree"] = self.create_tree
         
-        # Bouton pour générer les graphes
-        self.bouton_meshed_square = tk.Button(self, text='Square tiling', bg=self.bg_color, width=12, height=1, command = lambda: self.generate_square_tiling(master.current_scenario))
-        self.bouton_hypercube = tk.Button(self, text='Hypercube', bg=self.bg_color, width=12, height=1, command = lambda: self.generate_hypercube(master.current_scenario))
-        self.bouton_tree = tk.Button(self, text='Tree', bg=self.bg_color, width=12, height=1, command = lambda: self.generate_tree(master.current_scenario))
-        self.bouton_star = tk.Button(self, text='Star', bg=self.bg_color, width=12, height=1, command = lambda: self.generate_star(master.current_scenario))
-        self.bouton_full_mesh = tk.Button(self, text='Full mesh', bg=self.bg_color, width=12, height=1, command = lambda: self.generate_full_mesh(master.current_scenario))
-        self.bouton_ring = tk.Button(self, text='Ring', bg=self.bg_color, width=12, height=1, command = lambda: self.generate_ring(master.current_scenario))
+        self.create_star = tk.Button(self, text='Star', bg="#A1DBCD", width=50, height=50, relief=tk.FLAT, command = lambda: NetworkDimension(master.current_scenario, "star"))
+        self.type_to_button["star"] = self.create_star
+        
+        self.create_full_mesh = tk.Button(self, text='Full mesh', bg="#A1DBCD", width=50, height=50, relief=tk.FLAT, command = lambda: NetworkDimension(master.current_scenario, "full-mesh"))
+        self.type_to_button["full-mesh"] = self.create_full_mesh
+        
+        self.create_ring = tk.Button(self, text='Ring', bg="#A1DBCD", width=50, height=50, relief=tk.FLAT, command = lambda: NetworkDimension(master.current_scenario, "ring"))
+        self.type_to_button["ring"] = self.create_ring
         
         # netdim mode: motion or creation
-        label_netdim = tk.Label(self, text="NetDim", bg="#A1DBCD", font=("Helvetica", 16, "bold")).grid(row=0, columnspan=4, sticky="ew")
+        label_netdim = tk.Label(self, text="NetDim", bg="#A1DBCD", font=("Courier", 16, "bold")).grid(row=0, columnspan=4, sticky="ew")
         self.motion_mode.grid(row=1, column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
         self.creation_mode.grid(row=1, column=2, columnspan=2, rowspan=2, pady=5, padx=5, sticky=tk.W)
         sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=3, columnspan=4, sticky="ew")
@@ -80,14 +78,14 @@ class MainFrame(tk.Frame):
         
         # graph generation
         label_graph_generation = tk.Label(self, text="Graph generation", bg="#A1DBCD", font=("Helvetica", 8, "bold")).grid(row=12, columnspan=4, sticky="ew")
-        self.dimension.grid(row=13, column=0, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        self.entry_dimension.grid(row=13, column=2, columnspan=2, sticky=tk.W)
-        self.bouton_meshed_square.grid(row=14, column=0, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        self.bouton_hypercube.grid(row=14,column=2, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        self.bouton_tree.grid(row=15,column=0, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        self.bouton_star.grid(row=15,column=2, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        self.bouton_full_mesh.grid(row=16,column=0, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        self.bouton_ring.grid(row=16,column=2, columnspan=2, pady=5, padx=5, sticky=tk.W)
+        # self.dimension.grid(row=13, column=0, columnspan=2, pady=5, padx=5, sticky=tk.W)
+        # self.entry_dimension.grid(row=13, column=2, columnspan=2, sticky=tk.W)
+        # self.create_meshed_square.grid(row=14, column=0, columnspan=2, pady=5, padx=5, sticky=tk.W)
+        # self.create_hypercube.grid(row=14,column=2, columnspan=2, pady=5, padx=5, sticky=tk.W)
+        self.create_tree.grid(row=13,column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.create_star.grid(row=13,column=2, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.create_full_mesh.grid(row=15,column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.create_ring.grid(row=15,column=2, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
         sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=17, columnspan=4, sticky="ew")
         
     def switch_to_creation(self, master):
@@ -121,21 +119,42 @@ class MainFrame(tk.Frame):
         self.erase_graph(scenario)
         scenario.generate_hypercube(self.var_dimension.get())
         
-    def generate_star(self, scenario):
-        scenario.generate_star(self.var_dimension.get())
-        
-    def generate_tree(self, scenario):
-        self.erase_graph(scenario)
-        scenario.generate_tree(self.var_dimension.get())
-        
-    def generate_full_mesh(self, scenario):
-        self.erase_graph(scenario)
-        scenario.generate_full_mesh(self.var_dimension.get())
-        
-    def generate_ring(self, scenario):
-        self.erase_graph(scenario)
-        scenario.generate_ring(self.var_dimension.get())
-        
     def erase_graph(self, scenario):
         scenario.erase_graph()
         scenario.erase_network()
+        
+class NetworkDimension(tk.Toplevel):
+    def __init__(self, scenario, type):
+        super().__init__()
+        self.geometry("145x70")
+        self.title("Dimension")
+    
+        # Network dimension
+        if(type != "tree"):
+            self.dimension = tk.Label(self, text="Number of nodes")
+        else:
+            self.dimension = tk.Label(self, text="Depth of the tree")
+        self.var_dimension = tk.IntVar()
+        self.var_dimension.set(4)
+        self.entry_dimension = tk.Entry(self, textvariable=self.var_dimension, width=4)
+    
+        # confirmation button
+        self.button_confirmation = tk.Button(self, text="OK", command=lambda: self.create_graph(scenario, type), width=2, height=1)
+        
+        # position in the grid
+        self.dimension.grid(row=0, column=0, pady=5, padx=5, sticky=tk.W)
+        self.entry_dimension.grid(row=0, column=1, sticky=tk.W)
+        self.button_confirmation.grid(row=1,column=0, columnspan=2, pady=5, padx=5, sticky=(tk.N, tk.S, tk.E, tk.W))
+        
+    def create_graph(self, scenario, type):
+        if(type == "star"):
+            scenario.generate_star(self.var_dimension.get() - 1)
+        elif(type == "ring"):
+            scenario.generate_ring(self.var_dimension.get() - 1)
+        elif(type == "full-mesh"):
+            scenario.generate_full_mesh(self.var_dimension.get())
+        else:
+            scenario.generate_tree(self.var_dimension.get())
+        scenario.draw_all(random=False)
+        self.destroy()
+        
