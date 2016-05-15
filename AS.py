@@ -57,8 +57,7 @@ class AutonomousSystem(object):
             self.edges.discard(node) 
         
     def remove_link_from_AS(self, link):
-        if(link.AS):
-            self.links.discard(link)
+        self.links.discard(link)
         
 class Area(AutonomousSystem):
     
@@ -101,8 +100,17 @@ class ASCreation(tk.Toplevel):
         self.AS_type_list.grid(row=1,column=1, pady=5, padx=5, sticky=tk.W)
         self.button_create_AS.grid(row=3,column=0, columnspan=2, pady=5, padx=5)
 
+    # if the AS is created from a list of nodes, we consider that all trunks
+    # between two domain nodes are domain trunks
     def create_AS(self, scenario):
-        new_AS = scenario.AS_factory(name=self.var_name.get(), type=self.var_AS_type.get(), links=scenario._selected_objects["link"])
+        links_between_domain_nodes = set()
+        for node in scenario._selected_objects["node"]:
+            for connected_link in scenario.graph[node]["trunk"]:
+                neighbor = connected_link.destination if node == connected_link.source else connected_link.source
+                if(neighbor in scenario._selected_objects["node"]):
+                    links_between_domain_nodes.add(connected_link)
+        AS_links = links_between_domain_nodes or scenario._selected_objects["link"]
+        new_AS = scenario.AS_factory(name=self.var_name.get(), type=self.var_AS_type.get(), links=AS_links)
         new_AS.management = ASManagement(scenario, new_AS)
         scenario._selected_objects = {"node": set(), "link": set()}
         self.destroy()
@@ -112,6 +120,7 @@ class ASManagement(tk.Toplevel):
         super().__init__()
         self.geometry("400x300")
         self.title("Manage AS")
+        self.configure(background="#A1DBCD")
         
         # object selected by the user in a listbox
         self.selected_object = None
@@ -154,7 +163,7 @@ class ASManagement(tk.Toplevel):
         # operation on nodes
         self.button_remove_node_from_AS = tk.Button(self, text="Remove from AS", command=lambda: self.remove_selected_node_from_AS(scenario, AS))
         self.button_add_to_edges = tk.Button(self, text="Add to edges", command=lambda: self.add_to_edges(scenario, AS))
-        self.button_remove_from_edges = tk.Button(self, text="Remove from edges", command=lambda: self.remove_from_edges(scenario, AS))
+        self.button_remove_from_edges = tk.Button(self, text="Remove edge", command=lambda: self.remove_from_edges(scenario, AS))
         
         # button for manage AS panel to grab focus
         self.var_focus = tk.IntVar()

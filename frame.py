@@ -4,7 +4,7 @@ from tkinter import ttk
 class MainFrame(tk.Frame):
     
     def __init__(self, master):
-        super().__init__(width=200,height=600, borderwidth=3, relief="solid", background="#A1DBCD")
+        super().__init__(width=200,height=600, borderwidth=1, relief="solid", background="#A1DBCD")
         self.bg_color = "#E6E6FA"
         self.type_to_button = {}
 
@@ -34,10 +34,11 @@ class MainFrame(tk.Frame):
         self.type_to_button["traffic"] = self.create_traffic
         
         # drawing du graphe
-        self.draw_graph = tk.Button(self, text ="Draw graph", width=12, height=1, command=lambda: master.current_scenario.draw_all())
-        self.force_based_drawing = tk.Button(self, text ="Eades drawing", width=12, height=1, command=lambda: master.current_scenario.spring_based_drawing(master))
-        self.FR_drawing = tk.Button(self, text ="F-R drawing", width=12, height=1, command=lambda: master.current_scenario.frucht())
-        self.stop_drawing = tk.Button(self, text ="Stop drawing", width=12, height=1, command=lambda: master.current_scenario._cancel())
+        self.draw_graph = tk.Button(self, bg="#A1DBCD", text ="Start drawing", font=("Courier", 8, "bold"), compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.current_scenario.spring_based_drawing(master))
+        self.type_to_button["draw"] = self.draw_graph
+        
+        self.stop_drawing = tk.Button(self, bg="#A1DBCD", text ="Stop drawing", font=("Courier", 8, "bold"), compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.current_scenario._cancel())
+        self.type_to_button["stop"] = self.stop_drawing
         
         self.create_tree = tk.Button(self, text='Tree', bg="#A1DBCD", width=50, height=50, relief=tk.FLAT, command = lambda: NetworkDimension(master.current_scenario, "tree"))
         self.type_to_button["tree"] = self.create_tree
@@ -69,24 +70,18 @@ class MainFrame(tk.Frame):
         sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=8, columnspan=4, sticky="ew")
         
         # drawing options
-        label_drawing_options = tk.Label(self, text="Drawing options", bg="#A1DBCD", font=("Helvetica", 8, "bold")).grid(row=9, columnspan=4, sticky="ew")
-        self.draw_graph.grid(row=10, column=0, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        self.force_based_drawing.grid(row=10, column=2, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        self.FR_drawing.grid(row=11, column=0, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        self.stop_drawing.grid(row=11, column=2, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=12, columnspan=4, sticky="ew")
+        label_drawing_options = tk.Label(self, text="Force-directed layout", bg="#A1DBCD", font=("Helvetica", 8, "bold")).grid(row=9, columnspan=4, sticky="ew")
+        self.draw_graph.grid(row=10, column=0, columnspan=2, pady=5, padx=20, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.stop_drawing.grid(row=10, column=2, columnspan=2, pady=5, padx=20, sticky=(tk.N, tk.S, tk.E, tk.W))
+        sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=11, columnspan=4, sticky="ew")
         
         # graph generation
-        label_graph_generation = tk.Label(self, text="Graph generation", bg="#A1DBCD", font=("Helvetica", 8, "bold")).grid(row=12, columnspan=4, sticky="ew")
-        # self.dimension.grid(row=13, column=0, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        # self.entry_dimension.grid(row=13, column=2, columnspan=2, sticky=tk.W)
-        # self.create_meshed_square.grid(row=14, column=0, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        # self.create_hypercube.grid(row=14,column=2, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        self.create_tree.grid(row=13,column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
-        self.create_star.grid(row=13,column=2, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
-        self.create_full_mesh.grid(row=15,column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
-        self.create_ring.grid(row=15,column=2, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
-        sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=17, columnspan=4, sticky="ew")
+        label_graph_generation = tk.Label(self, text="Graph generation", bg="#A1DBCD", font=("Helvetica", 8, "bold")).grid(row=11, columnspan=4, sticky="ew")
+        self.create_tree.grid(row=12,column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.create_star.grid(row=12,column=2, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.create_full_mesh.grid(row=14,column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.create_ring.grid(row=14,column=2, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
+        sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=16, columnspan=4, sticky="ew")
         
     def switch_to_creation(self, master):
         self.creation_mode.config(relief=tk.SUNKEN)

@@ -25,13 +25,14 @@ class RightClickMenu(tk.Menu):
         # multiple nodes
         elif(not self.selection["link"]):
             self.add_command(label="Delete nodes", command= lambda: self.remove_objects(scenario))
+            self.add_command(label="Create AS", command= lambda: self.create_AS(scenario))
             self.add_command(label="Add nodes to AS", command= lambda: AS.AddToAS(scenario, *self.selection["node"]))
         # only one link
         elif(not self.selection["node"] and len(self.selection["link"]) == 1):
             self.add_command(label="Properties", command= lambda: self.show_link_properties(scenario))
             self.add_command(label="Delete link", command= lambda: self.remove_objects(scenario))
             if(self.selected_obj.AS):
-                self.add_command(label="Manage AS", command= lambda: selected_link.AS.management.deiconify())
+                self.add_command(label="Manage AS", command= lambda: selected_obj.AS.management.deiconify())
                 self.add_command(label="Add link to AS", command= lambda: AS.AddToAS(scenario, self.selected_obj))
                 self.add_command(label="Remove link from AS", command= lambda: self.remove_links_from_AS(scenario))
         # multiple links

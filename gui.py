@@ -30,10 +30,6 @@ class NetDim(tk.Tk):
         menubar = tk.Menu(self)
         main_menu = tk.Menu(menubar, tearoff=0)
         main_menu.add_command(label="Graph creation", command=lambda: self.graph_creation_window.deiconify())
-        main_menu.add_command(label="Flow creation", command=lambda: self.nothing())
-        main_menu.add_command(label="Link management", command=lambda: self.link_management_window.deiconify())
-        main_menu.add_command(label="Node management", command=lambda: self.node_management_window.deiconify())
-        main_menu.add_command(label="Route management", command=lambda: self.route_management_window.deiconify())
         main_menu.add_command(label="Add scenario", command=lambda: self.add_scenario())
         main_menu.add_command(label="Save project", command=lambda: self.save_project())
         main_menu.add_command(label="Load project", command=lambda: self.load_project())
@@ -76,11 +72,13 @@ class NetDim(tk.Tk):
         self.scenario_notebook = ttk.Notebook(self)
         self.scenario_notebook.bind("<ButtonRelease-1>", self.change_current_scenario)
         self.dict_scenario = {}
+        
         # create the first scenario
         self.current_scenario = scenario.Scenario(self, "scenario0")
         self.scenario_notebook.add(self.current_scenario, text=self.current_scenario.name, compound=tk.TOP)
         self.scenario_notebook.pack(fill=tk.BOTH, side=tk.RIGHT)
         self.dict_scenario["scenario0"] = self.current_scenario
+        
         # node, link management windows
         self.node_management_window = object_management_window.NodeManagement(self)
         self.link_management_window = object_management_window.LinkManagement(self)
@@ -134,11 +132,19 @@ class NetDim(tk.Tk):
             self.dict_image["default"][link_type] = img
             self.main_frame.type_to_button[link_type].config(image=img, width=100, height=25, anchor=tk.CENTER)
         
+        dict_size = {"ring": (76, 66), "tree": (71, 43), "star": (72, 70), "full-mesh": (81, 72)}
         for network_topology in ("ring", "tree", "star", "full-mesh"):
-            img_pil = ImageTk.Image.open(path_icon + network_topology + ".png").resize((75, 75))
+            x, y = dict_size[network_topology]
+            img_pil = ImageTk.Image.open(path_icon + network_topology + ".png").resize((x,y))
             img = ImageTk.PhotoImage(img_pil)
             self.dict_image["topology"][network_topology] = img
-            self.main_frame.type_to_button[network_topology].config(image=img, width=75, height=75, anchor=tk.CENTER)
+            self.main_frame.type_to_button[network_topology].config(image=img, width=x, height=y, anchor=tk.CENTER)
+            
+        for drawing_icons in ("draw", "stop"):
+            img_pil = ImageTk.Image.open(path_icon + drawing_icons + ".png").resize((50, 50))
+            img = ImageTk.PhotoImage(img_pil)
+            self.dict_image["drawing"][drawing_icons] = img
+            self.main_frame.type_to_button[drawing_icons].config(image=img, width=60, height=60, anchor=tk.CENTER)
             
     def change_current_scenario(self, event):
         current_scenario_name = self.scenario_notebook.tab(self.scenario_notebook.select(), "text")

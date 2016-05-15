@@ -119,38 +119,45 @@ class Scenario(network.Network, tk.Canvas):
                 self.tag_bind("node", "<B1-Motion>", self.line_creation)
                 self.tag_bind("node", "<ButtonRelease-1>", lambda event, type=type: self.link_creation(event, self._creation_mode))
                 
+    def adapt_coordinates(function):
+        def wrapper(self, event, *others):
+            event.x, event.y = self.canvasx(event.x), self.canvasy(event.y)
+            function(self, event, *others)
+        return wrapper
+                
     def closest_route_path(self, event):
         self.unhighlight_all()
         x, y = self.canvasx(event.x), self.canvasy(event.y)
         route = self.object_id_to_object[self.find_closest(x, y)[0]]
         self.highlight_objects(*route.path)
         
+    @adapt_coordinates
     def find_closest_node(self, event):
         # record the item and its location
         self._dict_start_position.clear()
-        x, y = self.canvasx(event.x), self.canvasy(event.y)
-        self.drag_item = self.find_closest(x, y)[0]
+        self.drag_item = self.find_closest(event.x, event.y)[0]
         # save the initial position to compute the delta for multiple nodes motion
         main_node_selected = self.object_id_to_object[self.drag_item]
         self._start_pos_main_node = main_node_selected.x, main_node_selected.y
         for selected_node in self._selected_objects["node"]:
             self._dict_start_position[selected_node] = [selected_node.x, selected_node.y]
 
+    @adapt_coordinates
     def node_motion(self, event):
-        x, y = self.canvasx(event.x), self.canvasy(event.y)
         for selected_node in self._selected_objects["node"]:
             # the main node initial position, the main node current position, and
             # the other node initial position form a rectangle, which fourth vertix
             # we must find.
             x0, y0 = self._start_pos_main_node
             x1, y1 = self._dict_start_position[selected_node]
-            selected_node.x, selected_node.y = x1 + (x - x0), y1 + (y - y0)
+            selected_node.x, selected_node.y = x1 + (event.x - x0), y1 + (event.y - y0)
             self.move_node(selected_node)
         # record the new position
         node = self.object_id_to_object[self.drag_item]
         # update coordinates of the node and move it
-        node.x, node.y = x, y
+        node.x, node.y = event.x, event.y
         self.move_node(node)
+                
                 
     def start_point_select_objects(self, event):
         x, y = self.canvasx(event.x), self.canvasy(event.y)
@@ -166,17 +173,17 @@ class Scenario(network.Network, tk.Canvas):
             self.temp_line_y_left = self.create_line(x, y, x, y)
             self.temp_line_y_right = self.create_line(x, y, x, y)
             self.temp_line_x_bottom = self.create_line(x, y, x, y)
-        
+
+    @adapt_coordinates
     def rectangle_drawing(self, event):
         # draw the line only if they were created in the first place
         if(self._start_position != [None, None]):
             # update the position of the temporary lines
-            x, y = self.canvasx(event.x), self.canvasy(event.y)
             x0, y0 = self._start_position
-            self.coords(self.temp_line_x_top, x0, y0, x, y0)
-            self.coords(self.temp_line_y_left, x0, y0, x0, y)
-            self.coords(self.temp_line_y_right, x, y0, x, y)
-            self.coords(self.temp_line_x_bottom, x0, y, x, y)
+            self.coords(self.temp_line_x_top, x0, y0, event.x, y0)
+            self.coords(self.temp_line_y_left, x0, y0, x0, event.y)
+            self.coords(self.temp_line_y_right, event.x, y0, event.x, event.y)
+            self.coords(self.temp_line_x_bottom, x0, event.y, event.x, event.y)
     
     # TODO faire list de type de lien, liste de type de noeud.
     def change_object_selection(self, event=None):
@@ -185,6 +192,7 @@ class Scenario(network.Network, tk.Canvas):
         else: 
             self.object_selection = "node"
 
+    @adapt_coordinates
     def end_point_select_nodes(self, event):
         if(self._start_position != [None, None]):
             # delete the temporary lines
@@ -193,9 +201,8 @@ class Scenario(network.Network, tk.Canvas):
             self.delete(self.temp_line_y_left)
             self.delete(self.temp_line_y_right)
             # select all nodes enclosed in the rectangle
-            end_x, end_y = self.canvasx(event.x), self.canvasy(event.y)
             start_x, start_y = self._start_position
-            for obj in self.find_enclosed(start_x, start_y, end_x, end_y):
+            for obj in self.find_enclosed(start_x, start_y, event.x, event.y):
                 if(obj in self.object_id_to_object):
                     enclosed_obj = self.object_id_to_object[obj]
                     if(enclosed_obj.class_type == self.object_selection):
@@ -203,28 +210,28 @@ class Scenario(network.Network, tk.Canvas):
             self.highlight_objects(*self._selected_objects["node"]|self._selected_objects["link"])
             self._start_position = [None, None]
         
+    @adapt_coordinates
     def start_link(self, event):
-        x, y = self.canvasx(event.x), self.canvasy(event.y)
-        self.drag_item = self.find_closest(x, y)[0]
+        self.drag_item = self.find_closest(event.x, event.y)[0]
         start_node = self.object_id_to_object[self.drag_item]
-        self.temp_line = self.create_line(start_node.x, start_node.y, x, y, arrow=tk.LAST, arrowshape=(6,8,3))
+        self.temp_line = self.create_line(start_node.x, start_node.y, event.x, event.y, arrow=tk.LAST, arrowshape=(6,8,3))
         
+    @adapt_coordinates
     def line_creation(self, event):
-        x, y = self.canvasx(event.x), self.canvasy(event.y)
         # node from which the link starts
         start_node = self.object_id_to_object[self.drag_item]
         # create a line to show the link
-        self.coords(self.temp_line, start_node.x, start_node.y, x, y)
+        self.coords(self.temp_line, start_node.x, start_node.y, event.x, event.y)
         
+    @adapt_coordinates
     def link_creation(self, event, type):
         # TODO understand why the tag filtering doesn't work for link_creation!!!!
-        x, y = self.canvasx(event.x), self.canvasy(event.y)
         # delete the temporary line
         self.delete(self.temp_line)
         # node from which the link starts
         start_node = self.object_id_to_object[self.drag_item]
         # node close to the point where the mouse button is released
-        self.drag_item = self.find_closest(x, y)[0]
+        self.drag_item = self.find_closest(event.x, event.y)[0]
         if(self.drag_item in self.object_id_to_object.keys()): # to avoid labels
             destination_node = self.object_id_to_object[self.drag_item]
             if(destination_node.class_type == "node"): # because tag filtering doesn't work !
@@ -232,17 +239,17 @@ class Scenario(network.Network, tk.Canvas):
                 if(start_node != destination_node):
                     new_link = self.link_factory(link_type=type, s=start_node, d=destination_node)
                     self.create_link(new_link)
-                    
+              
+    @adapt_coordinates
     def create_node_on_binding(self, event):
-        x, y = self.canvasx(event.x), self.canvasy(event.y)
-        new_node = self.node_factory(node_type = self._creation_mode, pos_x = x, pos_y = y)
+        new_node = self.node_factory(node_type = self._creation_mode, pos_x=event.x, pos_y=event.y)
         self.create_node(new_node)
         
     def create_node(self, node):
         s = node.size
         curr_image = self.master.dict_image["default"][node.type]
         node.image = self.create_image(node.x - (node.imagex)/2, node.y - (node.imagey)/2, image = curr_image, anchor = tk.NW, tags=(node.type, node.class_type, "object"))
-        node.oval = self.create_oval(node.x-s, node.y-s, node.x+s, node.y+s, outline=node.color, fill=node.color, tags=node.class_type)
+        node.oval = self.create_oval(node.x-s, node.y-s, node.x+s, node.y+s, outline=node.color, fill=node.color, tags=(node.type, node.class_type, "object"))
         # create/hide the image/the oval depending on the current mode
         if(self.display_image):
             self.itemconfig(node.oval, state=tk.HIDDEN)
@@ -258,10 +265,7 @@ class Scenario(network.Network, tk.Canvas):
         # in order to compute the angle of the arc
         source, destination = link.source, link.destination
         nb_links = self.number_of_links_between(source, destination) - 1
-        # if(not nb_links):
         link.line = self.create_line(link.source.x, link.source.y, link.destination.x, link.destination.y, tags=(link.type, link.class_type, "object"), fill=link.color, width=self.LINK_WIDTH, dash=link.dash)
-        # else:
-        #     link.line = self.create_line(link.source.x, link.source.y, link.source.x, link.source.y + (-1)**(nb_links)*10*((nb_links+1)//2), link.destination.x, link.destination.y + (-1)**(nb_links)*10*((nb_links+1)//2), link.destination.x, link.destination.y, tags=(link.type, link.class_type, "object"), fill=link.color, width=self.LINK_WIDTH, dash=link.dash)
         self.tag_lower(link.line)
         self.object_id_to_object[link.line] = link
         self._create_link_label(link)
@@ -279,33 +283,44 @@ class Scenario(network.Network, tk.Canvas):
 
     def scroll_move(self, event):
         self.scan_dragto(event.x, event.y, gain=1)
-        
-    # TODO refactor zooming to apply the change on nodes for linux and windows
-    # zoom for windows
-    def zoomer(self, event):
-        self._cancel()
-        if(event.delta > 0):
-            self.scale("all", event.x, event.y, 1.1, 1.1)
-        elif(event.delta < 0):
-            self.scale("all", event.y, event.y, 0.9, 0.9)
-        self.configure(scrollregion = self.bbox("all"))
-        # scaling moved all the oval, we need to update nodes with new coordinates 
+
+    ## Zoom / unzoom on the canvas
+    
+    def update_nodes_coordinates(self):
+        # scaling changes the coordinates of the oval, and we update 
+        # the corresponding node's coordinates accordingly
         for node in self.pool_network["node"].values():
             new_coords = self.coords(node.oval)
             node.x, node.y = (new_coords[0] + new_coords[2])/2, (new_coords[3] + new_coords[1])/2
             self.coords(node.image, node.x - (node.imagex)/2, node.y - (node.imagey)/2)
             node.size = abs(new_coords[0] - new_coords[2])/2 # the oval was also resized while scaling
         
-    # zoom for linux
+    @adapt_coordinates
+    def zoomer(self, event):
+        """ Zoom for window """
+        self._cancel()
+        if(event.delta > 0):
+            self.scale("all", event.x, event.y, 1.1, 1.1)
+        elif(event.delta < 0):
+            self.scale("all", event.x, event.y, 0.9, 0.9)
+        self.configure(scrollregion = self.bbox("all"))
+        self.update_nodes_coordinates()
+        
+    @adapt_coordinates
     def zoomerP(self,event):
+        """ Zoom for Linux """
         self._cancel()
         self.scale("all", event.x, event.y, 1.1, 1.1)
         self.configure(scrollregion = self.bbox("all"))
+        self.update_nodes_coordinates()
         
+    @adapt_coordinates
     def zoomerM(self,event):
+        """ Zoom for Linux """
         self._cancel()
         self.scale("all", event.x, event.y, 0.9, 0.9)
         self.configure(scrollregion = self.bbox("all"))
+        self.update_nodes_coordinates()
         
     # cancel the on-going job (e.g graph drawing)
     def _cancel(self):
@@ -335,10 +350,10 @@ class Scenario(network.Network, tk.Canvas):
                     obj.AS.management.remove_links_from_AS(obj)
             
     # TODO when adding sth like a ring to the network, do not redraw everything
-    def draw_objects(self, nodes, links, random):
+    def draw_objects(self, nodes, links, random_drawing):
         self._cancel()
         for n in nodes:
-            if(random):
+            if(random_drawing):
                 n.x, n.y = random.randint(100,700), random.randint(100,700)
             self.create_node(n)
 
@@ -347,7 +362,9 @@ class Scenario(network.Network, tk.Canvas):
              
     def draw_all(self, random=True):
         self.delete("all")
-        all_links = list(self.pool_network["trunk"].values())+list(self.pool_network["route"].values())+list(self.pool_network["traffic"].values())
+        all_links = list(self.pool_network["trunk"].values())\
+        + list(self.pool_network["route"].values())\
+        + list(self.pool_network["traffic"].values())
         self.draw_objects(self.pool_network["node"].values(),all_links, random)
         
     ## Highlight and Unhighlight links and nodes (depending on class_type)
@@ -432,10 +449,9 @@ class Scenario(network.Network, tk.Canvas):
                 middle_y = link.source.y + (link.destination.y - link.source.y)//2
                 self.coords(self.object_to_label_id[link], middle_x, middle_y)
             
-    # TODO: user option to stop if convergence reached or not
     def spring_based_drawing(self, master):
         # if the canvas is empty, drawing required first
-        if(not self.object_id_to_object):
+        if not self._job:
             self.draw_all()
         self.move_basic(master.alpha, master.beta, master.k, master.eta, master.delta, master.raideur)                
         for n in self.pool_network["node"].values():

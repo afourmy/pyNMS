@@ -25,13 +25,15 @@ class Network(object):
         self.name = name
         self.pool_network = {"trunk": {}, "node": {}, "route": {}, "traffic": {}, "AS": {}}
         self.graph = defaultdict(lambda: defaultdict(set))
+        self.cpt_link, self.cpt_node, self.cpt_AS = [0]*3
             
     def link_factory(self, link_type="trunk", name=None, s=None, d=None, *param):
         if not name:
-            name = link_type + str(len(self.pool_network[link_type]))
+            name = link_type + str(self.cpt_link)
         # creation link in the s-d direction if no link at all yet
         if not name in self.pool_network[link_type]:
             new_link = Network.link_type_to_class[link_type](name, s, d, *param)
+            self.cpt_link += 1
             self.pool_network[link_type][name] = new_link
             self.graph[s][link_type].add(new_link)
             self.graph[d][link_type].add(new_link)
@@ -39,16 +41,18 @@ class Network(object):
         
     def node_factory(self, name=None, node_type="router", pos_x=100, pos_y=100):
         if not name:
-            name = "node" + str(len(self.pool_network["node"]))
+            name = "node" + str(self.cpt_node)
         if name not in self.pool_network["node"]:
             self.pool_network["node"][name] = Network.node_type_to_class[node_type](name, pos_x, pos_y)
+            self.cpt_node += 1
         return self.pool_network["node"][name]
         
     def AS_factory(self, name=None, type="RIP", links=set()):
         if not name:
-            name = "AS" + str(len(self.pool_network["AS"]))
+            name = "AS" + str(self.cpt_AS)
         if name not in self.pool_network["AS"]:
             self.pool_network["AS"][name] = AS.AutonomousSystem(name, type, links)
+            self.cpt_AS += 1
         return self.pool_network["AS"][name]
             
     def erase_network(self):
@@ -178,6 +182,29 @@ class Network(object):
             else:
                 return [], []
         return sum(full_path_node, [source]), sum(full_path_link, [])
+        
+    def all_paths(self, source, target=None):
+        # Generate all cycle-free paths from source 
+        path = [source]
+        seen = {source}
+        def find_all_paths():
+            dead_end = True
+            node = path[-1]
+            if(node == target):
+                yield list(path)
+            else:
+                for connected_link in self.graph[node]["trunk"]:
+                    neighbor = connected_link.destination if node == connected_link.source else connected_link.source
+                    if neighbor not in seen:
+                        dead_end = False
+                        seen.add(neighbor)
+                        path.append(neighbor)
+                        yield from find_all_paths()
+                        path.pop()
+                        seen.remove(neighbor)
+            if not target and dead_end:
+                yield list(path)
+        yield from find_all_paths()
         
     def reset_flow(self):
         for link in self.pool_network["trunk"].values():

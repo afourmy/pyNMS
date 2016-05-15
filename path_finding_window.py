@@ -115,11 +115,17 @@ class PathFinding(tk.Toplevel):
             l_path_constraints = [master.current_scenario.node_factory(n) for n in path_constraints]
         return (name, source, destination, l_excluded_links, l_excluded_nodes, l_path_constraints)
     
+    # TODO K-shortest path with BFS
     def find_path(self, master):
-        name, *parameters = self.get_user_input(master)
-        path_node, self.path_link = master.current_scenario.hop_count(*parameters)
-        if(not path_node):
-            print("no path found")
+        # name, *parameters = self.get_user_input(master)
+        # path_node, self.path_link = master.current_scenario.hop_count(*parameters)
+        # if(not path_node):
+        #     print("no path found")
+        _, source, *e = self.get_user_input(master)
+        print(source)
+        for p in master.current_scenario.all_paths(source):
+            print(p)
+            
         
     def create_route(self, master):
         name, *parameters = self.get_user_input(network)
