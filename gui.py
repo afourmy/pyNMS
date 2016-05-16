@@ -1,38 +1,36 @@
-path_app = "C:\\Users\\afourmy\\Desktop\\Sauvegarde\\Python\\Network\\"
-path_icon = "C:\\Users\\afourmy\\Desktop\\Sauvegarde\\Python\\Network\\Icons\\"
-
-# add the path to the module in sys.path
 import sys
-if path_app not in sys.path:
-    sys.path.append(path_app)
-
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, filedialog
 import network
 import collections
 import object_management_window
 import path_finding_window
-import graph_creation_window
 import drawing_options_window
+import export_window
 import frame
 import scenario
 import pickle
+import csv
+import xlrd, xlwt
 from PIL import ImageTk
 
 class NetDim(tk.Tk):
-    def __init__(self, *args, **kwargs):
-        tk.Tk.__init__(self, *args, **kwargs)
+    def __init__(self, path_app):
+        tk.Tk.__init__(self)
+        path_icon = path_app + "Icons\\"
             
-        # ----- Programme principal : -----
-        self.title("Network simulator")
+        ## ----- Programme principal : -----
+        self.title("NetDim")
+        netdim_icon = tk.PhotoImage(file=path_icon+"netdim.png")
+        self.tk.call('wm', 'iconphoto', self._w, netdim_icon)
     
-        # ----- Menus : -----
+        ## ----- Menus : -----
         menubar = tk.Menu(self)
         main_menu = tk.Menu(menubar, tearoff=0)
-        main_menu.add_command(label="Graph creation", command=lambda: self.graph_creation_window.deiconify())
         main_menu.add_command(label="Add scenario", command=lambda: self.add_scenario())
         main_menu.add_command(label="Save project", command=lambda: self.save_project())
         main_menu.add_command(label="Load project", command=lambda: self.load_project())
+        main_menu.add_command(label="Import graph", command=lambda: self.import_graph())
         main_menu.add_separator()
         main_menu.add_command(label="Exit", command=self.destroy)
         menubar.add_cascade(label="Main",menu=main_menu)
@@ -84,8 +82,8 @@ class NetDim(tk.Tk):
         self.link_management_window = object_management_window.LinkManagement(self)
         # path finding window
         self.path_finding_window = path_finding_window.PathFinding(self)
-        # manual graph creation window
-        self.graph_creation_window = graph_creation_window.GraphCreation(self)
+        # import window
+        # self.import_window = import_window.ImportWindow(self)
         
         # parameters for spring-based drawing: per project
         self.alpha = 1
@@ -110,16 +108,24 @@ class NetDim(tk.Tk):
         self.main_frame.motion_mode.config(image = self.image_motion, width=75, height=75)
         
         # image for creation
-        self.image_pil_creation = ImageTk.Image.open(path_icon + "creation.gif").resize((75, 75))
+        self.image_pil_creation = ImageTk.Image.open(path_icon + "creation.png").resize((75, 75))
         self.image_creation = ImageTk.PhotoImage(self.image_pil_creation)
         self.main_frame.creation_mode.config(image = self.image_creation, width=75, height=75)
         
         # dict of nodes image for node creation
         self.dict_image = collections.defaultdict(dict)
         
+        self.dict_size_image = {
+        "router": (33, 25), 
+        "oxc": (35, 32), 
+        "host": (35, 32), 
+        "antenna": (35, 35)
+        }
+        
         for color in ["default", "red"]:
             for node_type in scenario.Scenario.node_type_to_class:
-                img_pil = ImageTk.Image.open(path_icon + color + "_" + node_type + ".gif").resize((scenario.Scenario.node_type_to_class[node_type].default_imagex, scenario.Scenario.node_type_to_class[node_type].default_imagey))
+                img_path = "".join((path_icon, color, "_", node_type, ".gif"))
+                img_pil = ImageTk.Image.open(img_path).resize(self.dict_size_image[node_type])
                 img = ImageTk.PhotoImage(img_pil)
                 # set the default image for the button of the frame
                 if(color == "default"):
@@ -127,7 +133,8 @@ class NetDim(tk.Tk):
                 self.dict_image[color][node_type] = img
                 
         for link_type in scenario.Scenario.link_type_to_class:
-            img_pil = ImageTk.Image.open(path_icon + link_type + ".png").resize((85, 15))
+            img_path = "".join((path_icon, link_type, ".png"))
+            img_pil = ImageTk.Image.open(img_path).resize((85, 15))
             img = ImageTk.PhotoImage(img_pil)
             self.dict_image["default"][link_type] = img
             self.main_frame.type_to_button[link_type].config(image=img, width=100, height=25, anchor=tk.CENTER)
@@ -168,8 +175,53 @@ class NetDim(tk.Tk):
             for link in self.current_scenario.pool_network[link_type].values():
                 self.current_scenario.graph[link.source][link_type].add(link)
                 self.current_scenario.graph[link.destination][link_type].add(link)
+                
+    def import_graph(self):
+        # hidden top-level instance: no decorations, 0 size, top left corner
+        # we lift for focus
+        fake_window = tk.Tk()
+        fake_window.withdraw()
+        fake_window.overrideredirect(True)
+        fake_window.geometry('0x0+0+0')
+        fake_window.deiconify()
+        fake_window.lift()
+        fake_window.focus_force()
         
-if __name__ == "__main__":
-    netdim = NetDim()
-    netdim.mainloop()
+        # retrieve the path and kill fake window
+        filepath = filedialog.askopenfilenames(parent=fake_window, initialdir = path_app,title = "Choisir un fichier xml",filetypes = (("all files","*.*"),("xml files","*.xml"),("xls files","*.xls")))
+        fake_window.destroy()
+        filepath ,= filepath
+        file_to_import = open(filepath, "rt")
+
+        if(filepath.endswith(".csv")):
+            try:
+                reader = csv.reader(file_to_import)
+                for row in reader:
+                    source_name, destination_name = row
+                    self.current_scenario.graph_from_names(source_name, destination_name)
+            finally:
+                file_to_import.close()
+                
+        elif(filepath.endswith(".txt")):
+            with open(filepath, "r") as file_to_import:
+                try:
+                    for row in file_to_import:
+                        source_name, destination_name = row.split()
+                        self.current_scenario.graph_from_names(source_name, destination_name)
+                finally:
+                    file_to_import.close()
+                    
+        elif(filepath.endswith(".xls")):
+            book = xlrd.open_workbook(filepath)
+            first_sheet = book.sheets()[0]
+            # not pythonic: index manipulation
+            for i in range(first_sheet.nrows):
+                source_name, destination_name = first_sheet.row_values(i)
+                self.current_scenario.graph_from_names(source_name, destination_name)
+
+        self.current_scenario.draw_all(False)
+        
+# if __name__ == "__main__":
+#     netdim = NetDim()
+#     netdim.mainloop()
         

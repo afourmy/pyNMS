@@ -21,6 +21,10 @@ class Network(object):
     "traffic": link.Traffic
     }
     
+    link_type = tuple(link_type_to_class.keys())
+    node_type = tuple(node_type_to_class.keys())
+    all_type = link_type + node_type
+    
     def __init__(self, name):
         self.name = name
         self.pool_network = {"trunk": {}, "node": {}, "route": {}, "traffic": {}, "AS": {}}
@@ -54,6 +58,11 @@ class Network(object):
             self.pool_network["AS"][name] = AS.AutonomousSystem(name, type, links)
             self.cpt_AS += 1
         return self.pool_network["AS"][name]
+        
+    def graph_from_names(self, source_name, destination_name):
+        """ Create nodes and links from text name. Useful when importing the graph """
+        source, destination = self.node_factory(source_name), self.node_factory(destination_name)
+        self.link_factory(s=source,d=destination)
             
     def erase_network(self):
         self.graph.clear()
@@ -65,7 +74,7 @@ class Network(object):
         # je récupère les noeuds adjacents pour supprimer les liens
         dict_of_connected_links = self.graph.pop(node, None)
         if(dict_of_connected_links): # en cas de multiple deletion, peut être None
-            for type_link in dict_of_connected_links.keys():
+            for type_link in dict_of_connected_links:
                 for connected_link in dict_of_connected_links[type_link]:
                     neighbor = connected_link.destination if node == connected_link.source else connected_link.source
                     self.graph[neighbor][type_link].discard(connected_link)
@@ -95,12 +104,6 @@ class Network(object):
                 if(link.source == nodeB or link.destination == nodeB):
                     sum += 1
         return sum
-            
-    def fast_graph_definition(self, string):
-        """ Allow to create graph quickly with a single string """
-        for source, destination in zip(string[::2], string[1::2]):
-            source, destination = self.node_factory(source), self.node_factory(destination)
-            trunk = self.link_factory(source, destination)
         
     def _bfs(self, source):
         visited = set()
@@ -139,7 +142,6 @@ class Network(object):
             allowed_trunks = self.pool_network["trunk"].values()
         if(allowed_nodes is None):
             allowed_nodes = self.pool_network["node"].values()
-            print(allowed_nodes)
             
         full_path_node, full_path_link = [], []
         constraints = [source] + path_constraints + [target]

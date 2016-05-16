@@ -35,46 +35,34 @@ class Router(Node):
     
     color = "magenta"
     type = "router"
-    default_imagex = 33
-    default_imagey = 25
+    imagex, imagey = 33, 25
     
     def __init__(self, name, x, y):
         super().__init__(name, x, y)
-        self.imagex = self.default_imagex
-        self.imagey = self.default_imagey
         
 class OXC(Node):
 
     color = "pink"
     type = "oxc"
-    default_imagex = 35
-    default_imagey = 32
+    imagex, imagey = 35, 32
     
     def __init__(self, name, x, y):
         super().__init__(name, x, y)
-        self.imagex = self.default_imagex
-        self.imagey = self.default_imagey
         
 class Host(Node):
 
     color = "blue"
     type = "host"
-    default_imagex = 35
-    default_imagey = 32
+    imagex, imagey = 35, 32
     
     def __init__(self, name, x, y):
         super().__init__(name, x, y)
-        self.imagex = self.default_imagex
-        self.imagey = self.default_imagey
         
 class Antenna(Node):
 
     color = "black"
     type = "antenna"
-    default_imagex = 35
-    default_imagey = 35
+    imagex, imagey = 35, 32
     
     def __init__(self, name, x, y):
         super().__init__(name, x, y)
-        self.imagex = self.default_imagex
-        self.imagey = self.default_imagey

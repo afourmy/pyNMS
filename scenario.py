@@ -25,8 +25,7 @@ class Scenario(network.Network, tk.Canvas):
         self.test = []
         
         # default label display
-        # TODO refactor
-        self._current_object_label = {"trunk": "name", "route": "name", "traffic": "name", "router": "name", "oxc": "name", "host": "name", "antenna": "name"}
+        self._current_object_label = {obj_type: "name" for obj_type in self.all_type}
         
         # creation mode, object type, and associated bindings
         self._start_position = [None, None]
@@ -232,7 +231,7 @@ class Scenario(network.Network, tk.Canvas):
         start_node = self.object_id_to_object[self.drag_item]
         # node close to the point where the mouse button is released
         self.drag_item = self.find_closest(event.x, event.y)[0]
-        if(self.drag_item in self.object_id_to_object.keys()): # to avoid labels
+        if(self.drag_item in self.object_id_to_object): # to avoid labels
             destination_node = self.object_id_to_object[self.drag_item]
             if(destination_node.class_type == "node"): # because tag filtering doesn't work !
                 # create the link and the associated line
@@ -295,6 +294,7 @@ class Scenario(network.Network, tk.Canvas):
             self.coords(node.image, node.x - (node.imagex)/2, node.y - (node.imagey)/2)
             node.size = abs(new_coords[0] - new_coords[2])/2 # the oval was also resized while scaling
         
+    # TODO update node label position after zooming
     @adapt_coordinates
     def zoomer(self, event):
         """ Zoom for window """
@@ -349,7 +349,6 @@ class Scenario(network.Network, tk.Canvas):
                 if(obj.AS):
                     obj.AS.management.remove_links_from_AS(obj)
             
-    # TODO when adding sth like a ring to the network, do not redraw everything
     def draw_objects(self, nodes, links, random_drawing):
         self._cancel()
         for n in nodes:
@@ -389,7 +388,7 @@ class Scenario(network.Network, tk.Canvas):
             self.unhighlight_objects(*self.pool_network[object_type].values())
                 
     def create_node_label(self, node):
-        label_id = self.create_text(node.x, node.y + 5, anchor="nw")
+        label_id = self.create_text(node.x - 15, node.y + 10, anchor="nw")
         self.itemconfig(label_id, fill="blue", tags="label")
         self.object_to_label_id[node] = label_id
         # set the text of the label with refresh label
@@ -434,10 +433,10 @@ class Scenario(network.Network, tk.Canvas):
         s = n.size
         self.coords(n.image, newx - (n.imagex)//2, newy - (n.imagey)//2)
         self.coords(n.oval, newx - s, newy - s, newx + s, newy + s)
-        self.coords(self.object_to_label_id[n], newx + 5, newy + 5)
+        self.coords(self.object_to_label_id[n], newx - 15, newy + 10)
     
         # update links coordinates
-        for type_link in self.graph[n].keys():
+        for type_link in self.graph[n]:
             for link in self.graph[n][type_link]:
                 coords = self.coords(link.line)
                 c = 2*(link.source != n)

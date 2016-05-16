@@ -117,14 +117,14 @@ class PathFinding(tk.Toplevel):
     
     # TODO K-shortest path with BFS
     def find_path(self, master):
-        # name, *parameters = self.get_user_input(master)
-        # path_node, self.path_link = master.current_scenario.hop_count(*parameters)
-        # if(not path_node):
-        #     print("no path found")
-        _, source, *e = self.get_user_input(master)
-        print(source)
-        for p in master.current_scenario.all_paths(source):
-            print(p)
+        name, *parameters = self.get_user_input(master)
+        path_node, self.path_link = master.current_scenario.hop_count(*parameters)
+        if(not path_node):
+            print("no path found")
+        # _, source, *e = self.get_user_input(master)
+        # print(source)
+        # for p in master.current_scenario.all_paths(source):
+        #     print(p)
             
         
     def create_route(self, master):
