@@ -65,7 +65,7 @@ class Scenario(network.Network, tk.Canvas):
         self.bind("<Button-5>", self.zoomerM)
         
         # add binding for right-click menu 
-        self.tag_bind(("object"), "<ButtonPress-3>",lambda e: menus.RightClickMenu(e, self))
+        self.tag_bind("object", "<ButtonPress-3>",lambda e: menus.RightClickMenu(e, self))
         
         # use the right-click to move the background
         self.bind("<ButtonPress-3>", self.scroll_start)
@@ -80,6 +80,7 @@ class Scenario(network.Network, tk.Canvas):
     def switch_binding(self):   
         # in case there were selected nodes, so that they don't remain highlighted
         self.unhighlight_all()
+        
         if(self._mode == "motion"):
             # unbind unecessary bindings
             self.unbind("<Button 1>")
@@ -93,6 +94,8 @@ class Scenario(network.Network, tk.Canvas):
             
             # add bindings to drag a node with left-click
             self.tag_bind("node", "<Button-1>", self.find_closest_node, add="+")
+            for tag in ("node", "link"):
+                self.tag_bind(tag, "<Button-1>", self.find_closest_object, add="+")
             self.tag_bind("node", "<B1-Motion>", self.node_motion)
             
             # add binding to select all nodes in a rectangle
@@ -106,7 +109,7 @@ class Scenario(network.Network, tk.Canvas):
             self.unbind("<ButtonPress-1>")
             self.unbind("<ButtonRelease-1>")
             self.unbind("<ButtonMotion-1>")
-            #self.tag_unbind("node", "<Button-1>")
+            self.tag_unbind("node", "<Button-1>")
             
             if(self._creation_mode in self.node_type_to_class):
                 # add bindings to create a node with left-click
@@ -140,13 +143,21 @@ class Scenario(network.Network, tk.Canvas):
         self._start_pos_main_node = main_node_selected.x, main_node_selected.y
         for selected_node in self._selected_objects["node"]:
             self._dict_start_position[selected_node] = [selected_node.x, selected_node.y]
+            
+    @adapt_coordinates
+    def find_closest_object(self, event):
+        self.closest_object_id = self.find_closest(event.x, event.y)[0]
+        object_selected = self.object_id_to_object[self.closest_object_id]
+        # update the object management window if it is opened
+        self.master.dict_obj_mgmt_window[object_selected.type].current_obj = object_selected
+        self.master.dict_obj_mgmt_window[object_selected.type].update()
 
     @adapt_coordinates
     def node_motion(self, event):
         for selected_node in self._selected_objects["node"]:
             # the main node initial position, the main node current position, and
-            # the other node initial position form a rectangle, which fourth vertix
-            # we must find.
+            # the other node initial position form a rectangle.
+            # we find the position of the fourth vertix.
             x0, y0 = self._start_pos_main_node
             x1, y1 = self._dict_start_position[selected_node]
             selected_node.x, selected_node.y = x1 + (event.x - x0), y1 + (event.y - y0)
@@ -162,7 +173,7 @@ class Scenario(network.Network, tk.Canvas):
         x, y = self.canvasx(event.x), self.canvasy(event.y)
         # create the temporary line, only if there is nothing below
         # this is to avoid drawing a rectangle when moving a node
-        if(not self.find_overlapping(x-1,y-1,x+1,y+1)):
+        if not self.find_overlapping(x-1, y-1, x+1, y+1):
             self.unhighlight_all()
             self._selected_objects = {"node": set(), "link": set()}
             self._start_position = x, y
@@ -184,12 +195,8 @@ class Scenario(network.Network, tk.Canvas):
             self.coords(self.temp_line_y_right, event.x, y0, event.x, event.y)
             self.coords(self.temp_line_x_bottom, x0, event.y, event.x, event.y)
     
-    # TODO faire list de type de lien, liste de type de noeud.
     def change_object_selection(self, event=None):
-        if(self.object_selection == "node"):
-            self.object_selection = "link" 
-        else: 
-            self.object_selection = "node"
+        self.object_selection = (self.object_selection == "link")*"node" or "link" 
 
     @adapt_coordinates
     def end_point_select_nodes(self, event):
@@ -224,7 +231,6 @@ class Scenario(network.Network, tk.Canvas):
         
     @adapt_coordinates
     def link_creation(self, event, type):
-        # TODO understand why the tag filtering doesn't work for link_creation!!!!
         # delete the temporary line
         self.delete(self.temp_line)
         # node from which the link starts
@@ -241,7 +247,7 @@ class Scenario(network.Network, tk.Canvas):
               
     @adapt_coordinates
     def create_node_on_binding(self, event):
-        new_node = self.node_factory(node_type = self._creation_mode, pos_x=event.x, pos_y=event.y)
+        new_node = self.node_factory(node_type=self._creation_mode, pos_x=event.x, pos_y=event.y)
         self.create_node(new_node)
         
     def create_node(self, node):
@@ -305,6 +311,7 @@ class Scenario(network.Network, tk.Canvas):
             self.scale("all", event.x, event.y, 0.9, 0.9)
         self.configure(scrollregion = self.bbox("all"))
         self.update_nodes_coordinates()
+        self._refresh_labels_position()
         
     @adapt_coordinates
     def zoomerP(self,event):
@@ -420,6 +427,11 @@ class Scenario(network.Network, tk.Canvas):
         self._current_object_label[type] = var_label
         for obj in self.pool_network[type].values():
             self._refresh_object_label(obj, var_label)
+            
+    # refresh label position for all nodes after zooming
+    def _refresh_labels_position(self):
+        for node in self.pool_network["node"].values():
+            self.coords(self.object_to_label_id[node], node.x - 15, node.y + 10)
         
     def erase_graph(self):
         self.object_id_to_object.clear()
@@ -429,7 +441,7 @@ class Scenario(network.Network, tk.Canvas):
         self.drag_item = None
         
     def move_node(self, n):
-        newx, newy = int(n.x), int(n.y)
+        newx, newy = float(n.x), float(n.y)
         s = n.size
         self.coords(n.image, newx - (n.imagex)//2, newy - (n.imagey)//2)
         self.coords(n.oval, newx - s, newy - s, newx + s, newy + s)

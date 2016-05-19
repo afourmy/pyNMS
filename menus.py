@@ -17,7 +17,7 @@ class RightClickMenu(tk.Menu):
         # initialize menu parameters depending on what is selected:
         # only one node
         if(not self.selection["link"] and len(self.selection["node"]) == 1):
-            self.add_command(label="Properties", command= lambda: self.show_node_properties(scenario))
+            self.add_command(label="Properties", command= lambda: self.show_object_properties(scenario))
             self.add_command(label="Delete node", command= lambda: self.remove_objects(scenario))
             self.add_command(label="Add node to AS", command= lambda: AS.AddToAS(scenario, self.selected_obj))
             if(self.selected_obj.AS):
@@ -29,7 +29,7 @@ class RightClickMenu(tk.Menu):
             self.add_command(label="Add nodes to AS", command= lambda: AS.AddToAS(scenario, *self.selection["node"]))
         # only one link
         elif(not self.selection["node"] and len(self.selection["link"]) == 1):
-            self.add_command(label="Properties", command= lambda: self.show_link_properties(scenario))
+            self.add_command(label="Properties", command= lambda: self.show_object_properties(scenario))
             self.add_command(label="Delete link", command= lambda: self.remove_objects(scenario))
             if(self.selected_obj.AS):
                 self.add_command(label="Manage AS", command= lambda: selected_obj.AS.management.deiconify())
@@ -62,16 +62,8 @@ class RightClickMenu(tk.Menu):
         self.destroy()
     
     @empty_selection_and_destroy_menu
-    def show_node_properties(self, scenario):
-        selected_node ,= scenario._selected_objects["node"]
-        scenario.master.node_management_window.current_node = selected_node
-        scenario.master.node_management_window.update()
-        scenario.master.node_management_window.deiconify()
-
-    @empty_selection_and_destroy_menu
-    def show_link_properties(self, scenario):
-        selected_link ,= scenario._selected_objects["link"]
-        scenario.master.link_management_window.current_link = selected_link
-        scenario.master.link_management_window.update()
-        scenario.master.link_management_window.deiconify()
-        
+    def show_object_properties(self, scenario):
+        selected_obj ,= scenario._selected_objects["node"] | scenario._selected_objects["link"]
+        scenario.master.dict_obj_mgmt_window[selected_obj.type].current_obj = selected_obj
+        scenario.master.dict_obj_mgmt_window[selected_obj.type].update()
+        scenario.master.dict_obj_mgmt_window[selected_obj.type].deiconify()

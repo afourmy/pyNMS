@@ -1,18 +1,21 @@
 import tkinter as tk
+from tkinter import ttk
 
 class AutonomousSystem(object):
     
     class_type = "AS"
     
-    def __init__(self, name, type, links=set()):
+    def __init__(self, name, type, links=set(), nodes=set()):
         self.name = name
         self.type = type
         self.links = links
         # set the AS of the link
         for link in self.links:
             link.AS = self
-        self.nodes = set()
+        self.nodes = nodes
         # at initialization, we populate the nodes set
+        for node in self.nodes:
+            node.AS.add(self)
         for link in self.links:
             self.nodes.update((link.source, link.destination))
             # and we update the nodes with its new domain
@@ -53,11 +56,12 @@ class AutonomousSystem(object):
         self.remove_node_from_edge(node)
             
     def remove_node_from_edge(self, node):
-        if(node in AS.edges):
+        for AS in node.AS:
             self.edges.discard(node) 
         
     def remove_link_from_AS(self, link):
-        self.links.discard(link)
+        if(link.AS):
+            self.links.discard(link)
         
 class Area(AutonomousSystem):
     
@@ -80,10 +84,10 @@ class ASCreation(tk.Toplevel):
         
         # List of AS type
         self.var_AS_type = tk.StringVar()
-        self.var_AS_type.set("RIP")
-        self.choice_AS_type = ["RIP", "IS-IS", "OSPF", "MPLS", "RSTP"]
-        self.AS_type_list = tk.OptionMenu(self, self.var_AS_type, *self.choice_AS_type)
-        
+        self.AS_type_list = ttk.Combobox(self, textvariable=self.var_AS_type, width=6)
+        self.AS_type_list["values"] = ("RIP", "IS-IS", "OSPF", "MPLS", "RSTP")
+        self.AS_type_list.current(0)
+
         # retrieve and save node data
         self.button_create_AS = tk.Button(self, text="Create AS", command=lambda: self.create_AS(scenario))
         
@@ -103,14 +107,14 @@ class ASCreation(tk.Toplevel):
     # if the AS is created from a list of nodes, we consider that all trunks
     # between two domain nodes are domain trunks
     def create_AS(self, scenario):
-        links_between_domain_nodes = set()
-        for node in scenario._selected_objects["node"]:
-            for connected_link in scenario.graph[node]["trunk"]:
-                neighbor = connected_link.destination if node == connected_link.source else connected_link.source
-                if(neighbor in scenario._selected_objects["node"]):
-                    links_between_domain_nodes.add(connected_link)
-        AS_links = links_between_domain_nodes or scenario._selected_objects["link"]
-        new_AS = scenario.AS_factory(name=self.var_name.get(), type=self.var_AS_type.get(), links=AS_links)
+        # links_between_domain_nodes = set()
+        # for node in scenario._selected_objects["node"]:
+        #     for connected_link in scenario.graph[node]["trunk"]:
+        #         neighbor = connected_link.destination if node == connected_link.source else connected_link.source
+        #         if(neighbor in scenario._selected_objects["node"]):
+        #             links_between_domain_nodes.add(connected_link)
+        # AS_links = links_between_domain_nodes or scenario._selected_objects["link"]
+        new_AS = scenario.AS_factory(name=self.var_name.get(), type=self.var_AS_type.get(), links=scenario._selected_objects["link"], nodes=scenario._selected_objects["node"])
         new_AS.management = ASManagement(scenario, new_AS)
         scenario._selected_objects = {"node": set(), "link": set()}
         self.destroy()
@@ -130,17 +134,17 @@ class ASManagement(tk.Toplevel):
         self.protocol("WM_DELETE_WINDOW", self.withdraw)
         
         # listbox of all AS objects
-        self.label_links = tk.Label(self, text = "Domain links")
+        self.label_links = tk.Label(self, bg="#A1DBCD", text = "Domain links")
         self.listbox_links = CustomListbox(self, width=15, height=7)
         for trunk in AS.links:
             self.listbox_links.insert(tk.END, trunk)
         
-        self.label_nodes = tk.Label(self, text = "Domain nodes")
+        self.label_nodes = tk.Label(self, bg="#A1DBCD", text = "Domain nodes")
         self.listbox_nodes = CustomListbox(self, width=15, height=7)
         for node in AS.nodes:
             self.listbox_nodes.insert(tk.END, node)
             
-        self.label_edges = tk.Label(self, text = "Domain edges")
+        self.label_edges = tk.Label(self, bg="#A1DBCD", text = "Domain edges")
         self.listbox_edges = CustomListbox(self, width=15, height=7)
         
         # create a vertical scrollbar to the right of the listbox for nodes and links
@@ -168,7 +172,7 @@ class ASManagement(tk.Toplevel):
         # button for manage AS panel to grab focus
         self.var_focus = tk.IntVar()
         self.var_focus.set(0)
-        self.checkbutton_focus = tk.Checkbutton(self, text="Focus", variable=self.var_focus, command=self.change_focus)
+        self.checkbutton_focus = tk.Checkbutton(self, bg="#A1DBCD", text="Focus", variable=self.var_focus, command=self.change_focus)
                 
         # place the widget in the grid
         self.label_links.grid(row=0, column=0)

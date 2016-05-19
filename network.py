@@ -1,7 +1,6 @@
 from collections import defaultdict
 from heapq import heappop, heappush
-import link
-import node
+import objects
 import AS
 import math
 import random
@@ -9,16 +8,16 @@ import random
 class Network(object):
     
     node_type_to_class = {
-    "router": node.Router,
-    "oxc": node.OXC,
-    "host": node.Host,
-    "antenna": node.Antenna
+    "router": objects.Router,
+    "oxc": objects.OXC,
+    "host": objects.Host,
+    "antenna": objects.Antenna
     }
     
     link_type_to_class = {
-    "trunk": link.Trunk, 
-    "route": link.Route,
-    "traffic": link.Traffic
+    "trunk": objects.Trunk, 
+    "route": objects.Route,
+    "traffic": objects.Traffic
     }
     
     link_type = tuple(link_type_to_class.keys())
@@ -51,11 +50,11 @@ class Network(object):
             self.cpt_node += 1
         return self.pool_network["node"][name]
         
-    def AS_factory(self, name=None, type="RIP", links=set()):
+    def AS_factory(self, name=None, type="RIP", links=set(), nodes=set()):
         if not name:
             name = "AS" + str(self.cpt_AS)
         if name not in self.pool_network["AS"]:
-            self.pool_network["AS"][name] = AS.AutonomousSystem(name, type, links)
+            self.pool_network["AS"][name] = AS.AutonomousSystem(name, type, links, nodes)
             self.cpt_AS += 1
         return self.pool_network["AS"][name]
         
@@ -159,17 +158,17 @@ class Network(object):
                     visited[node] = True
                     if node == t:
                         break
-                    for connected_link in self.graph[node]["trunk"]:
-                        neighbor = connected_link.destination if node == connected_link.source else connected_link.source
+                    for connected_trunk in self.graph[node]["trunk"]:
+                        neighbor = connected_trunk.destination if node == connected_trunk.source else connected_trunk.source
                         # excluded and allowed nodes
                         if neighbor in excluded_nodes or neighbor not in allowed_nodes: continue
                         # excluded and allowed trunks
-                        if connected_link in excluded_trunks or connected_link not in allowed_trunks: continue
-                        dist_neighbor = dist_node + 1
+                        if connected_trunk in excluded_trunks or connected_trunk not in allowed_trunks: continue
+                        dist_neighbor = dist_node + connected_trunk.cost
                         if dist_neighbor < dist[neighbor]:
                             dist[neighbor] = dist_neighbor
                             prec_node[neighbor] = node
-                            prec_link[neighbor] = connected_link
+                            prec_link[neighbor] = connected_trunk
                             heappush(heap, (dist_neighbor, neighbor))
             
             # traceback the path from target to source
@@ -186,7 +185,7 @@ class Network(object):
         return sum(full_path_node, [source]), sum(full_path_link, [])
         
     def all_paths(self, source, target=None):
-        # Generate all cycle-free paths from source 
+        # generates all cycle-free paths from source to optional target
         path = [source]
         seen = {source}
         def find_all_paths():
@@ -195,8 +194,8 @@ class Network(object):
             if(node == target):
                 yield list(path)
             else:
-                for connected_link in self.graph[node]["trunk"]:
-                    neighbor = connected_link.destination if node == connected_link.source else connected_link.source
+                for connected_trunk in self.graph[node]["trunk"]:
+                    neighbor = connected_trunk.destination if node == connected_trunk.source else connected_trunk.source
                     if neighbor not in seen:
                         dead_end = False
                         seen.add(neighbor)
