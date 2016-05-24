@@ -25,19 +25,19 @@ class NetDim(tk.Tk):
         self.tk.call('wm', 'iconphoto', self._w, netdim_icon)
         
         ## User-defined properties and labels per type of object
-        self.object_properties = {
-        "router": ("name", "x", "y"),
-        "oxc": ("name", "x", "y"),
-        "host": ("name", "x", "y"),
-        "antenna": ("name", "x", "y"),
-        "trunk": ("name", "source", "destination", "cost", "capacity", "flow"),
-        "route": ("name","source", "destination", "path_constraints", "excluded_nodes",
-        "excluded_trunks", "path", "subnets"),
-        "traffic": ("name", "source", "destination")
-        }
         
-        # I used an Ordered to have the same menu order when I unpack the items
-        # to creation the label submenus 
+        # I used ordered dicts to have the same menu order 
+        self.object_properties = collections.OrderedDict([
+        ("router", ("name", "x", "y")),
+        ("oxc", ("name", "x", "y")),
+        ("host", ("name", "x", "y")),
+        ("antenna", ("name", "x", "y")),
+        ("trunk", ("name", "source", "destination", "cost", "capacity", "flow")),
+        ("route", ("name","source", "destination", "path_constraints", "excluded_nodes",
+        "excluded_trunks", "path", "subnets")),
+        ("traffic", ("name", "source", "destination"))
+        ])
+        
         self.object_label = collections.OrderedDict([
         ("Node", ("Name", "Position")),
         ("Trunk", ("Name", "Cost", "Capacity", "Flow")),
@@ -49,8 +49,7 @@ class NetDim(tk.Tk):
         menubar = tk.Menu(self)
         main_menu = tk.Menu(menubar, tearoff=0)
         main_menu.add_command(label="Add scenario", command=lambda: self.add_scenario())
-        #TODO delete scenario
-        main_menu.add_command(label="Delete scenario", command=lambda: self.add_scenario())
+        main_menu.add_command(label="Delete scenario", command=lambda: self.delete_scenario())
         main_menu.add_separator()
         main_menu.add_command(label="Save project", command=lambda: self.save_project())
         main_menu.add_command(label="Load project", command=lambda: self.load_project())
@@ -68,27 +67,36 @@ class NetDim(tk.Tk):
         menubar.add_cascade(label="Network routing",menu=menu_routing)
 
         # label submenus
-        menu_options = tk.Menu(menubar, tearoff=0)      
+        menu_options = tk.Menu(menubar, tearoff=0)
         for obj_type, label_type in self.object_label.items():
             menu_type = tk.Menu(menubar, tearoff=0)
             for lbl in label_type:
-                menu_type.add_command(label=lbl, command=lambda obj_type=obj_type, lbl=lbl:  self.current_scenario._refresh_object_labels(obj_type.lower(), lbl.lower()))
+                menu_type.add_command(label=lbl, command=lambda obj_type=obj_type, lbl=lbl:  self.cs._refresh_object_labels(obj_type.lower(), lbl.lower()))
             menu_options.add_cascade(label=obj_type + " label", menu=menu_type)
             
-        menu_options.add_command(label="Change display", command=lambda: self.current_scenario.change_display())
+        menu_options.add_command(label="Change display", command=lambda: self.cs.change_display())
+        
+        menu_display = tk.Menu(menubar, tearoff=0)
+        for index, type in enumerate(self.object_properties):
+            new_label = " ".join(("Hide", type))
+            menu_display.add_command(label=new_label, command=lambda type=type, index=index: self.cs.show_hide(menu_display, type, index))
+        menu_options.add_cascade(label="Show/Hide", menu=menu_display)
+            
         menubar.add_cascade(label="Options",menu=menu_options)
+        
         self.config(menu=menubar)
 
         # scenario notebook
         self.scenario_notebook = ttk.Notebook(self)
-        self.scenario_notebook.bind("<ButtonRelease-1>", self.change_current_scenario)
+        self.scenario_notebook.bind("<ButtonRelease-1>", self.change_cs)
         self.dict_scenario = {}
         
-        # create the first scenario
-        self.current_scenario = scenario.Scenario(self, "scenario0")
-        self.scenario_notebook.add(self.current_scenario, text=self.current_scenario.name, compound=tk.TOP)
+        # cs for "current scenario" (the first one which we create)
+        self.cs = scenario.Scenario(self, "scenario 0")
+        self.cpt_scenario = 0
+        self.scenario_notebook.add(self.cs, text=self.cs.name, compound=tk.TOP)
         self.scenario_notebook.pack(fill=tk.BOTH, side=tk.RIGHT)
-        self.dict_scenario["scenario0"] = self.current_scenario
+        self.dict_scenario["scenario 0"] = self.cs
         
         # object management windows
         self.dict_obj_mgmt_window = {}
@@ -163,51 +171,57 @@ class NetDim(tk.Tk):
             self.dict_image["drawing"][drawing_icons] = img
             self.main_frame.type_to_button[drawing_icons].config(image=img, width=60, height=60, anchor=tk.CENTER)
             
-    def change_current_scenario(self, event):
-        current_scenario_name = self.scenario_notebook.tab(self.scenario_notebook.select(), "text")
-        self.current_scenario = self.dict_scenario[current_scenario_name]
+    def change_cs(self, event=None):
+        cs_name = self.scenario_notebook.tab(self.scenario_notebook.select(), "text")
+        self.cs = self.dict_scenario[cs_name]
         
     def add_scenario(self):
-        new_scenario_name = "scenario" + str(len(self.dict_scenario))
+        self.cpt_scenario += 1
+        new_scenario_name = " ".join(("scenario", str(self.cpt_scenario)))
         new_scenario = scenario.Scenario(self, new_scenario_name)
         self.scenario_notebook.add(new_scenario, text=new_scenario_name, compound=tk.TOP)
         self.dict_scenario[new_scenario_name] = new_scenario
         
+    def delete_scenario(self):
+        del self.dict_scenario[self.cs.name]
+        self.scenario_notebook.forget(self.cs)
+        self.change_cs()
+        
     def save_project(self):
         with open('netdim_node_data.pkl', 'wb') as output:
-            pickle.dump(self.current_scenario.pool_network, output, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.cs.pn, output, pickle.HIGHEST_PROTOCOL)
                 
     def load_project(self):
         with open('netdim_node_data.pkl', 'rb') as input:
-            self.current_scenario.pool_network = pickle.load(input)
+            self.cs.pn = pickle.load(input)
         # once the project is loaded, the network graph needs to be recreated
         for link_type in ["trunk", "traffic", "route"]:
-            for link in self.current_scenario.pool_network[link_type].values():
-                self.current_scenario.graph[link.source][link_type].add(link)
-                self.current_scenario.graph[link.destination][link_type].add(link)
+            for link in self.cs.pn[link_type].values():
+                self.cs.graph[link.source][link_type].add(link)
+                self.cs.graph[link.destination][link_type].add(link)
                 
     def import_graph(self):
         # retrieve the path and kill fake window
-        filepath ,= filedialog.askopenfilenames(initialdir=self.path_workspace, title="Import graph", filetypes=(("all files","*.*"), ("csv files","*.csv"), ("xls files","*.xls"), ("txt files","*.txt")))
-        file_to_import = open(filepath, "rt")
+        filepath = filedialog.askopenfilenames(initialdir=self.path_workspace, title="Import graph", filetypes=(("all files","*.*"), ("csv files","*.csv"), ("xls files","*.xls"), ("txt files","*.txt")))
+        
+        if not filepath: return
+        else: filepath ,= filepath
 
         if(filepath.endswith(".csv")):
             try:
+                file_to_import = open(filepath, "rt")
                 reader = csv.reader(file_to_import)
-                for row in reader:
+                for row in filter(None,reader):
                     source_name, destination_name = row
-                    self.current_scenario.graph_from_names(source_name, destination_name)
+                    self.cs.graph_from_names(source_name, destination_name)
             finally:
                 file_to_import.close()
                 
         elif(filepath.endswith(".txt")):
             with open(filepath, "r") as file_to_import:
-                try:
-                    for row in file_to_import:
-                        source_name, destination_name = row.split()
-                        self.current_scenario.graph_from_names(source_name, destination_name)
-                finally:
-                    file_to_import.close()
+                for row in file_to_import:
+                    source_name, destination_name = row.split()
+                    self.cs.graph_from_names(source_name, destination_name)
                     
         elif(filepath.endswith(".xls")):
             book = xlrd.open_workbook(filepath)
@@ -215,18 +229,18 @@ class NetDim(tk.Tk):
             # not pythonic: index manipulation
             for i in range(first_sheet.nrows):
                 source_name, destination_name = first_sheet.row_values(i)
-                self.current_scenario.graph_from_names(source_name, destination_name)
+                self.cs.graph_from_names(source_name, destination_name)
 
-        self.current_scenario.draw_all(False)
+        self.cs.draw_all(False)
         
     def export_graph(self):
         selected_file = filedialog.asksaveasfile(initialdir=self.path_workspace, title="Export graph", mode='w', defaultextension=".xls")
-        # if selected_file is None: 
-        #     return
+        
+        if not selected_file: return            
         filename, file_format = os.path.splitext(selected_file.name)
 
-        if(file_format in [".txt", ".csv"]):
-            graph_per_line = ("{},{}".format(t.source, t.destination) for t in self.current_scenario.pool_network["trunk"].values())
+        if(file_format in (".txt", ".csv")):
+            graph_per_line = ("{},{}".format(t.source, t.destination) for t in self.cs.pn["trunk"].values())
             if(file_format == ".txt"):
                 selected_file.write("\n".join(graph_per_line))
             else:
@@ -237,7 +251,7 @@ class NetDim(tk.Tk):
         if(file_format == ".xls"):
             excel_workbook = xlwt.Workbook()
             first_sheet = excel_workbook.add_sheet("graph")
-            for i, t in enumerate(self.current_scenario.pool_network["trunk"].values()):
+            for i, t in enumerate(self.cs.pn["trunk"].values()):
                 first_sheet.write(i, 0, str(t.source))
                 first_sheet.write(i, 1, str(t.destination))
             excel_workbook.save(selected_file.name)

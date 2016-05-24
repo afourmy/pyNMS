@@ -26,37 +26,38 @@ class Network(object):
     
     def __init__(self, name):
         self.name = name
-        self.pool_network = {"trunk": {}, "node": {}, "route": {}, "traffic": {}, "AS": {}}
+        # pn for "pool network"
+        self.pn = {"trunk": {}, "node": {}, "route": {}, "traffic": {}, "AS": {}}
         self.graph = defaultdict(lambda: defaultdict(set))
-        self.cpt_link, self.cpt_node, self.cpt_AS = [0]*3
+        self.cpt_link, self.cpt_node, self.cpt_AS = (0,)*3
             
     def link_factory(self, link_type="trunk", name=None, s=None, d=None, *param):
         if not name:
             name = link_type + str(self.cpt_link)
         # creation link in the s-d direction if no link at all yet
-        if not name in self.pool_network[link_type]:
+        if not name in self.pn[link_type]:
             new_link = Network.link_type_to_class[link_type](name, s, d, *param)
             self.cpt_link += 1
-            self.pool_network[link_type][name] = new_link
+            self.pn[link_type][name] = new_link
             self.graph[s][link_type].add(new_link)
             self.graph[d][link_type].add(new_link)
-        return self.pool_network[link_type][name]
+        return self.pn[link_type][name]
         
     def node_factory(self, name=None, node_type="router", pos_x=100, pos_y=100):
         if not name:
             name = "node" + str(self.cpt_node)
-        if name not in self.pool_network["node"]:
-            self.pool_network["node"][name] = Network.node_type_to_class[node_type](name, pos_x, pos_y)
+        if name not in self.pn["node"]:
+            self.pn["node"][name] = Network.node_type_to_class[node_type](name, pos_x, pos_y)
             self.cpt_node += 1
-        return self.pool_network["node"][name]
+        return self.pn["node"][name]
         
-    def AS_factory(self, name=None, type="RIP", links=set(), nodes=set()):
+    def AS_factory(self, name=None, type="RIP", trunks=set(), nodes=set()):
         if not name:
             name = "AS" + str(self.cpt_AS)
-        if name not in self.pool_network["AS"]:
-            self.pool_network["AS"][name] = AS.AutonomousSystem(name, type, links, nodes)
+        if name not in self.pn["AS"]:
+            self.pn["AS"][name] = AS.AutonomousSystem(name, type, trunks, nodes)
             self.cpt_AS += 1
-        return self.pool_network["AS"][name]
+        return self.pn["AS"][name]
         
     def graph_from_names(self, source_name, destination_name):
         """ Create nodes and links from text name. Useful when importing the graph """
@@ -65,31 +66,32 @@ class Network(object):
             
     def erase_network(self):
         self.graph.clear()
-        for dict_of_objects in self.pool_network:
-            self.pool_network[dict_of_objects].clear()
+        for dict_of_objects in self.pn:
+            self.pn[dict_of_objects].clear()
             
     def remove_node_from_network(self, node):
-        self.pool_network["node"].pop(node.name, None)
-        # je récupère les noeuds adjacents pour supprimer les liens
-        dict_of_connected_links = self.graph.pop(node, None)
-        if(dict_of_connected_links): # en cas de multiple deletion, peut être None
-            for type_link in dict_of_connected_links:
-                for connected_link in dict_of_connected_links[type_link]:
-                    neighbor = connected_link.destination if node == connected_link.source else connected_link.source
-                    self.graph[neighbor][type_link].discard(connected_link)
-                    yield self.pool_network[type_link].pop(connected_link.name, None)
+        self.pn["node"].pop(node.name, None)
+        # retrieve adj links to delete them 
+        dict_of_adj_links = self.graph.pop(node, None)
+        if(dict_of_adj_links): # can be None if multiple deletion at once
+        # TODO refactor with items()
+            for type_link in dict_of_adj_links:
+                for adj_link in dict_of_adj_links[type_link]:
+                    neighbor = adj_link.destination if node == adj_link.source else adj_link.source
+                    self.graph[neighbor][type_link].discard(adj_link)
+                    yield self.pn[type_link].pop(adj_link.name, None)
             
     def remove_link_from_network(self, link):
         self.graph[link.source][link.type].discard(link)
         self.graph[link.destination][link.type].discard(link)
-        self.pool_network[link.type].pop(link.name, None)
+        self.pn[link.type].pop(link.name, None)
         
     # this function relates to AS but must be in network, because we need to 
     # know what's not in the AS to find the edge nodes
     def find_edge_nodes(self, AS):
         AS.edges.clear()
         for node in AS.nodes:
-            if(any(link not in AS.links for link in self.graph[node]["trunk"])):
+            if(any(trunk not in AS.trunks for trunk in self.graph[node]["trunk"])):
                 AS.edges.add(node)
                 yield node
             
@@ -138,9 +140,9 @@ class Network(object):
         if(path_constraints is None):
             path_constraints = []
         if(allowed_trunks is None):
-            allowed_trunks = self.pool_network["trunk"].values()
+            allowed_trunks = self.pn["trunk"].values()
         if(allowed_nodes is None):
-            allowed_nodes = self.pool_network["node"].values()
+            allowed_nodes = self.pn["node"].values()
             
         full_path_node, full_path_link = [], []
         constraints = [source] + path_constraints + [target]
@@ -158,17 +160,17 @@ class Network(object):
                     visited[node] = True
                     if node == t:
                         break
-                    for connected_trunk in self.graph[node]["trunk"]:
-                        neighbor = connected_trunk.destination if node == connected_trunk.source else connected_trunk.source
+                    for adj_trunk in self.graph[node]["trunk"]:
+                        neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
                         # excluded and allowed nodes
                         if neighbor in excluded_nodes or neighbor not in allowed_nodes: continue
                         # excluded and allowed trunks
-                        if connected_trunk in excluded_trunks or connected_trunk not in allowed_trunks: continue
-                        dist_neighbor = dist_node + connected_trunk.cost
+                        if adj_trunk in excluded_trunks or adj_trunk not in allowed_trunks: continue
+                        dist_neighbor = dist_node + adj_trunk.cost
                         if dist_neighbor < dist[neighbor]:
                             dist[neighbor] = dist_neighbor
                             prec_node[neighbor] = node
-                            prec_link[neighbor] = connected_trunk
+                            prec_link[neighbor] = adj_trunk
                             heappush(heap, (dist_neighbor, neighbor))
             
             # traceback the path from target to source
@@ -194,8 +196,8 @@ class Network(object):
             if(node == target):
                 yield list(path)
             else:
-                for connected_trunk in self.graph[node]["trunk"]:
-                    neighbor = connected_trunk.destination if node == connected_trunk.source else connected_trunk.source
+                for adj_trunk in self.graph[node]["trunk"]:
+                    neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
                     if neighbor not in seen:
                         dead_end = False
                         seen.add(neighbor)
@@ -208,7 +210,7 @@ class Network(object):
         yield from find_all_paths()
         
     def reset_flow(self):
-        for link in self.pool_network["trunk"].values():
+        for link in self.pn["trunk"].values():
             link.flow["SD"] = 0
             link.flow["DS"] = 0
         
@@ -232,9 +234,9 @@ class Network(object):
         return False
         
     def ford_fulkerson(self, source, destination):
-        n = len(self.pool_network["node"])
+        n = len(self.pn["node"])
         self.reset_flow()
-        while(self._augment_ff(float("inf"), source, destination, {n:0 for n in self.pool_network["node"].values()})):
+        while(self._augment_ff(float("inf"), source, destination, {n:0 for n in self.pn["node"].values()})):
             pass
         # flow leaving from the source 
         sum = 0
@@ -260,9 +262,9 @@ class Network(object):
         return (const * dx, const * dy)
             
     def move_basic(self, alpha, beta, k, eta, delta, raideur):            
-        for nodeA in self.pool_network["node"].values():
+        for nodeA in self.pn["node"].values():
             Fx, Fy = 0, 0
-            for nodeB in self.pool_network["node"].values():
+            for nodeB in self.pn["node"].values():
                 if(nodeA != nodeB):
                     dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
                     dist = self.distance(dx, dy)
@@ -275,7 +277,7 @@ class Network(object):
             nodeA.vx = (nodeA.vx + alpha * Fx * delta) * eta
             nodeA.vy = (nodeA.vy + alpha * Fy * delta) * eta
     
-        for n in self.pool_network["node"].values():
+        for n in self.pn["node"].values():
             n.x += round(n.vx * delta)
             n.y += round(n.vy * delta)
             
@@ -287,9 +289,9 @@ class Network(object):
         
     def fruchterman(self, k):
         t = 1
-        for nA in self.pool_network["node"].values():
+        for nA in self.pn["node"].values():
             nA.vx, nA.vy = 0, 0
-            for nB in self.pool_network["node"].values():
+            for nB in self.pn["node"].values():
                 if(nA != nB):
                     deltax = nA.x - nB.x
                     deltay = nA.y - nB.y
@@ -298,7 +300,7 @@ class Network(object):
                         nA.vx += (deltay*(k**2))/dist**3
                         nA.vy += (deltay*(k**2))/dist**3                        
                     
-        for l in filter(None,self.pool_network["trunk"].values()):
+        for l in filter(None,self.pn["trunk"].values()):
             deltax = l.source.x - l.destination.x
             deltay = l.source.y - l.destination.y
             dist = self.distance(deltax, deltay)
@@ -308,7 +310,7 @@ class Network(object):
                 l.destination.vx += (dist*deltax)/k
                 l.destination.vy += (dist*deltay)/k
             
-        for n in self.pool_network["node"].values():
+        for n in self.pn["node"].values():
             d = self.distance(n.vx, n.vy)
             n.x += ((n.vx)/(math.sqrt(d)+0.1))
             n.y += ((n.vy)/(math.sqrt(d)+0.1))
@@ -347,18 +349,18 @@ class Network(object):
             self.link_factory(s=self.node_factory(str(i)), d=self.node_factory(str(2*i+2)))
             
     def generate_star(self, n):
-        nb_node = len(self.pool_network["node"])
+        nb_node = len(self.pn["node"])
         for i in range(n):
             self.link_factory(s=self.node_factory(str(nb_node)), d=self.node_factory(str(nb_node+1+i)))
             
     def generate_full_mesh(self, n):
-        nb_node = len(self.pool_network["node"])
+        nb_node = len(self.pn["node"])
         for i in range(n):
             for j in range(i):
                 self.link_factory(s=self.node_factory(str(nb_node+j)), d=self.node_factory(str(nb_node+i)))
                 
     def generate_ring(self, n):
-        nb_node = len(self.pool_network["node"])
+        nb_node = len(self.pn["node"])
         for i in range(n):
             self.link_factory(s=self.node_factory(str(nb_node+i)), d=self.node_factory(str(nb_node+1+i)))
         self.link_factory(s=self.node_factory(str(nb_node)), d=self.node_factory(str(nb_node+n)))

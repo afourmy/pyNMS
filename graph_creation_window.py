@@ -9,7 +9,7 @@ class AdvancedGraphOptionsWindow(tk.Toplevel):
         # selection des paths par l'utilisateur
         self.button_create_hypercube = tk.Button(self, text='Create hypercube', command = lambda: self.add_nodes(master), width=12, height=1)
         self.button_create_square_tiling = tk.Button(self, text='Create square tiling', command = lambda: self.add_links(master), width=12, height=1)
-        self.button_connected_components = tk.Button(self, text='Find connected components', command = lambda: self.master.current_scenario.connected_components(master), width=12, height=1)
+        self.button_connected_components = tk.Button(self, text='Find connected components', command = lambda: self.master.cs.connected_components(master), width=12, height=1)
         self.button_highlight_connected_components = tk.Button(self, text='Highlight connected components', command = lambda: self.highlight_connected_components(), width=12, height=1)
         
         # affichage des buttons / label dans la grille
@@ -22,9 +22,9 @@ class AdvancedGraphOptionsWindow(tk.Toplevel):
         
     def highlight_connected_components(self, master):
         self.unhighlight()
-        connected_components = master.current_scenario.connected_components()
+        connected_components = master.cs.connected_components()
         for idx, connex_set in enumerate(connected_components):
             for n in connex_set:
-                for adjacent_node in master.current_scenario.graph[n]:
-                    link = master.current_scenario.link_factory(n, adjacent_node, "trunk")
+                for adjacent_node in master.cs.graph[n]:
+                    link = master.cs.link_factory(n, adjacent_node, "trunk")
                     master.canvas.itemconfig(link.line, fill=self.default_colors[idx], width=self.LINK_WIDTH)

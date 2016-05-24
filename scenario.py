@@ -10,7 +10,6 @@ class Scenario(network.Network, tk.Canvas):
         network.Network.__init__(self, name)
         tk.Canvas.__init__(self, width=1100, height=600, background="bisque")
         self.object_id_to_object = {}
-        self.object_to_label_id = {}
         self.master = master
         
         # job running or not (e.g drawing)
@@ -46,9 +45,11 @@ class Scenario(network.Network, tk.Canvas):
         
         # the default display is: with image
         self.display_image = True
+        # display state per type of objects
+        self.display_per_type = {type: True for type in self.all_type}
         
-        # list of currently selected object
-        self._selected_objects = {"node": set(), "link": set()}
+        # list of currently selected object ("so")
+        self.so = {"node": set(), "link": set()}
         
         # initialization of all bindings for nodes creation
         self.switch_binding()
@@ -141,7 +142,7 @@ class Scenario(network.Network, tk.Canvas):
         # save the initial position to compute the delta for multiple nodes motion
         main_node_selected = self.object_id_to_object[self.drag_item]
         self._start_pos_main_node = main_node_selected.x, main_node_selected.y
-        for selected_node in self._selected_objects["node"]:
+        for selected_node in self.so["node"]:
             self._dict_start_position[selected_node] = [selected_node.x, selected_node.y]
             
     @adapt_coordinates
@@ -154,7 +155,7 @@ class Scenario(network.Network, tk.Canvas):
 
     @adapt_coordinates
     def node_motion(self, event):
-        for selected_node in self._selected_objects["node"]:
+        for selected_node in self.so["node"]:
             # the main node initial position, the main node current position, and
             # the other node initial position form a rectangle.
             # we find the position of the fourth vertix.
@@ -175,7 +176,7 @@ class Scenario(network.Network, tk.Canvas):
         # this is to avoid drawing a rectangle when moving a node
         if not self.find_overlapping(x-1, y-1, x+1, y+1):
             self.unhighlight_all()
-            self._selected_objects = {"node": set(), "link": set()}
+            self.so = {"node": set(), "link": set()}
             self._start_position = x, y
             # create the temporary line
             x, y = self._start_position
@@ -212,8 +213,8 @@ class Scenario(network.Network, tk.Canvas):
                 if(obj in self.object_id_to_object):
                     enclosed_obj = self.object_id_to_object[obj]
                     if(enclosed_obj.class_type == self.object_selection):
-                        self._selected_objects[self.object_selection].add(enclosed_obj)
-            self.highlight_objects(*self._selected_objects["node"]|self._selected_objects["link"])
+                        self.so[self.object_selection].add(enclosed_obj)
+            self.highlight_objects(*self.so["node"]|self.so["link"])
             self._start_position = [None, None]
         
     @adapt_coordinates
@@ -279,7 +280,7 @@ class Scenario(network.Network, tk.Canvas):
     def change_display(self):
         # flip the display from icon to oval and vice-versa, depend on display_image boolean
         self.display_image = not self.display_image
-        for node in self.pool_network["node"].values():
+        for node in self.pn["node"].values():
             self.itemconfig(node.oval, state=tk.HIDDEN if self.display_image else tk.NORMAL)
             self.itemconfig(node.image, state=tk.NORMAL if self.display_image else tk.HIDDEN)
 
@@ -294,13 +295,12 @@ class Scenario(network.Network, tk.Canvas):
     def update_nodes_coordinates(self):
         # scaling changes the coordinates of the oval, and we update 
         # the corresponding node's coordinates accordingly
-        for node in self.pool_network["node"].values():
+        for node in self.pn["node"].values():
             new_coords = self.coords(node.oval)
             node.x, node.y = (new_coords[0] + new_coords[2])/2, (new_coords[3] + new_coords[1])/2
             self.coords(node.image, node.x - (node.imagex)/2, node.y - (node.imagey)/2)
             node.size = abs(new_coords[0] - new_coords[2])/2 # the oval was also resized while scaling
         
-    # TODO update node label position after zooming
     @adapt_coordinates
     def zoomer(self, event):
         """ Zoom for window """
@@ -344,17 +344,15 @@ class Scenario(network.Network, tk.Canvas):
     def remove_objects(self, *objects):
         for obj in objects:
             if(obj.class_type == "node"):
-                self.delete(obj.oval, obj.image)
-                self.delete(self.object_to_label_id[obj])
+                self.delete(obj.oval, obj.image, obj.lid)
                 self.remove_objects(*self.remove_node_from_network(obj))
                 for AS in obj.AS:
                     AS.management.remove_nodes_from_AS(AS, obj)
             if(obj.class_type == "link"):
-                self.delete(obj.line)
-                self.delete(self.object_to_label_id[obj])
+                self.delete(obj.line, obj.lid)
                 self.remove_link_from_network(obj)
                 if(obj.AS):
-                    obj.AS.management.remove_links_from_AS(obj)
+                    obj.AS.management.remove_trunks_from_AS(obj)
             
     def draw_objects(self, nodes, links, random_drawing):
         self._cancel()
@@ -368,10 +366,10 @@ class Scenario(network.Network, tk.Canvas):
              
     def draw_all(self, random=True):
         self.delete("all")
-        all_links = list(self.pool_network["trunk"].values())\
-        + list(self.pool_network["route"].values())\
-        + list(self.pool_network["traffic"].values())
-        self.draw_objects(self.pool_network["node"].values(),all_links, random)
+        all_links = list(self.pn["trunk"].values())\
+        + list(self.pn["route"].values())\
+        + list(self.pn["traffic"].values())
+        self.draw_objects(self.pn["node"].values(),all_links, random)
         
     ## Highlight and Unhighlight links and nodes (depending on class_type)
     def highlight_objects(self, *objects):
@@ -391,28 +389,30 @@ class Scenario(network.Network, tk.Canvas):
                 self.itemconfig(obj.line, fill=obj.color, width=self.LINK_WIDTH)  
                 
     def unhighlight_all(self):
-        for object_type in self.pool_network:
-            self.unhighlight_objects(*self.pool_network[object_type].values())
+        for object_type in self.pn:
+            self.unhighlight_objects(*self.pn[object_type].values())
                 
     def create_node_label(self, node):
-        label_id = self.create_text(node.x - 15, node.y + 10, anchor="nw")
-        self.itemconfig(label_id, fill="blue", tags="label")
-        self.object_to_label_id[node] = label_id
+        node.lid = self.create_text(node.x - 15, node.y + 10, anchor="nw")
+        self.itemconfig(node.lid, fill="blue", tags="label")
         # set the text of the label with refresh label
         self._refresh_object_label(node)
     
     def _create_link_label(self, link):
-        middle_x = link.source.x + (link.destination.x - link.source.x)//2
-        middle_y = link.source.y + (link.destination.y - link.source.y)//2
-        label_id = self.create_text(middle_x, middle_y, anchor="nw", fill="red", tags="label")
-        self.object_to_label_id[link] = label_id
+        try:
+            coeff = (link.destination.y - link.source.y) / (link.destination.x - link.source.x)
+        except ZeroDivisionError:
+            coeff = 0
+        middle_x = link.source.x + (link.destination.x - link.source.x)//2 + 4*(1+(coeff>0))
+        middle_y = link.source.y + (link.destination.y - link.source.y)//2 - 12*(coeff>0)
+        link.lid = self.create_text(middle_x, middle_y, anchor="nw", fill="red", tags="label")
         self._refresh_object_label(link)
         
     # refresh the label for one object with the current object label
     def _refresh_object_label(self, current_object, label_type=None):
         if not label_type:
             label_type = self._current_object_label[current_object.type]
-        label_id = self.object_to_label_id[current_object]
+        label_id = current_object.lid
         if(label_type in ["capacity", "flow"]):
             # retrieve the value of the parameter depending on label type
             value = current_object.__dict__[label_type]
@@ -425,18 +425,41 @@ class Scenario(network.Network, tk.Canvas):
     # change label and refresh it for all objects
     def _refresh_object_labels(self, type, var_label):
         self._current_object_label[type] = var_label
-        for obj in self.pool_network[type].values():
+        for obj in self.pn[type].values():
             self._refresh_object_label(obj, var_label)
             
-    # refresh label position for all nodes after zooming
+    # refresh label position for all objects after zooming
     def _refresh_labels_position(self):
-        for node in self.pool_network["node"].values():
-            self.coords(self.object_to_label_id[node], node.x - 15, node.y + 10)
+        for node in self.pn["node"].values():
+            self.coords(node.lid, node.x - 15, node.y + 10)
+        for type in self.link_type:
+            for link in self.pn[type].values():
+                try:
+                    coeff = (link.destination.y - link.source.y) / (link.destination.x - link.source.x)
+                except ZeroDivisionError:
+                    coeff = 0
+                middle_x = link.source.x + (link.destination.x - link.source.x)//2 + 4*(1+(coeff>0))
+                middle_y = link.source.y + (link.destination.y - link.source.y)//2 - 12*(coeff>0)
+                self.coords(link.lid, middle_x, middle_y)
+            
+    # show/hide display menu per type of objects
+    def show_hide(self, menu, type, index):
+        self.display_per_type[type] = not self.display_per_type[type]
+        new_label = self.display_per_type[type]*"Hide" or "Show"
+        menu.entryconfigure(index, label=" ".join((new_label, type)))
+        new_state = tk.NORMAL if self.display_per_type[type] else tk.HIDDEN
+        if(type in self.node_type_to_class):
+            for node in filter(lambda o: o.type == type, self.pn["node"].values()):
+                self.itemconfig(node.image if self.display_image else node.oval, state=new_state)
+                self.itemconfig(node.lid, state=new_state)
+        else:
+            for link in self.pn[type].values():
+                self.itemconfig(link.line, state=new_state)
+                self.itemconfig(link.lid, state=new_state)
         
     def erase_graph(self):
         self.object_id_to_object.clear()
-        self.object_to_label_id.clear()
-        self._selected_objects = {"node": set(), "link": set()}
+        self.so = {"node": set(), "link": set()}
         self.temp_line = None
         self.drag_item = None
         
@@ -445,7 +468,7 @@ class Scenario(network.Network, tk.Canvas):
         s = n.size
         self.coords(n.image, newx - (n.imagex)//2, newy - (n.imagey)//2)
         self.coords(n.oval, newx - s, newy - s, newx + s, newy + s)
-        self.coords(self.object_to_label_id[n], newx - 15, newy + 10)
+        self.coords(n.lid, newx - 15, newy + 10)
     
         # update links coordinates
         for type_link in self.graph[n]:
@@ -455,28 +478,33 @@ class Scenario(network.Network, tk.Canvas):
                 coords[c], coords[c+1] = int(n.x), int(n.y)
                 self.coords(link.line, *coords)
                 
+                #TODO coeff and MIDDLE f(link) should be a specific function its used 3 times
                 # update link label coordinates
-                middle_x = link.source.x + (link.destination.x - link.source.x)//2
-                middle_y = link.source.y + (link.destination.y - link.source.y)//2
-                self.coords(self.object_to_label_id[link], middle_x, middle_y)
+                try:
+                    coeff = (link.destination.y - link.source.y) / (link.destination.x - link.source.x)
+                except ZeroDivisionError:
+                    coeff = 0
+                middle_x = link.source.x + (link.destination.x - link.source.x)//2 + 4*(1+(coeff>0))
+                middle_y = link.source.y + (link.destination.y - link.source.y)//2 - 12*(coeff>0)
+                self.coords(link.lid, middle_x, middle_y)
             
     def spring_based_drawing(self, master):
         # if the canvas is empty, drawing required first
         if not self._job:
             self.draw_all()
         self.move_basic(master.alpha, master.beta, master.k, master.eta, master.delta, master.raideur)                
-        for n in self.pool_network["node"].values():
+        for n in self.pn["node"].values():
             self.move_node(n)
         self._job = self.after(10, lambda: self.spring_based_drawing(master))
         
     def frucht(self):
         # update the optimal pairwise distance
-        self.opd = math.sqrt(500*500/len(self.pool_network["node"].values())) if self.pool_network["node"].values() else 0
+        self.opd = math.sqrt(500*500/len(self.pn["node"].values())) if self.pn["node"].values() else 0
         self.fruchterman(self.opd)     
-        for n in self.pool_network["node"].values():
+        for n in self.pn["node"].values():
             self.move_node(n)
         # stop job if convergence reached
-        if(all(-10**(-2) < n.vx * n.vy < 10**(-2) for n in self.pool_network["node"].values())):
+        if(all(-10**(-2) < n.vx * n.vy < 10**(-2) for n in self.pn["node"].values())):
             return self._cancel()
         self._job = self.after(1, lambda: self.frucht())
             

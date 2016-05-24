@@ -34,27 +34,27 @@ class MainFrame(tk.Frame):
         self.type_to_button["traffic"] = self.create_traffic
         
         # drawing du graphe
-        self.draw_graph = tk.Button(self, bg="#A1DBCD", text ="Start drawing", font=("Courier", 8, "bold"), compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.current_scenario.spring_based_drawing(master))
+        self.draw_graph = tk.Button(self, bg="#A1DBCD", text ="Start drawing", font=("Courier", 8, "bold"), compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.cs.spring_based_drawing(master))
         self.type_to_button["draw"] = self.draw_graph
         
-        self.stop_drawing = tk.Button(self, bg="#A1DBCD", text ="Stop drawing", font=("Courier", 8, "bold"), compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.current_scenario._cancel())
+        self.stop_drawing = tk.Button(self, bg="#A1DBCD", text ="Stop drawing", font=("Courier", 8, "bold"), compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.cs._cancel())
         self.type_to_button["stop"] = self.stop_drawing
         
-        self.create_tree = tk.Button(self, text='Tree', bg="#A1DBCD", width=50, height=50, relief=tk.FLAT, command = lambda: NetworkDimension(master.current_scenario, "tree"))
+        self.create_tree = tk.Button(self, text='Tree', bg="#A1DBCD", width=50, height=50, relief=tk.FLAT, command = lambda: NetworkDimension(master.cs, "tree"))
         self.type_to_button["tree"] = self.create_tree
         
-        self.create_star = tk.Button(self, text='Star', bg="#A1DBCD", width=50, height=50, relief=tk.FLAT, command = lambda: NetworkDimension(master.current_scenario, "star"))
+        self.create_star = tk.Button(self, text='Star', bg="#A1DBCD", width=50, height=50, relief=tk.FLAT, command = lambda: NetworkDimension(master.cs, "star"))
         self.type_to_button["star"] = self.create_star
         
-        self.create_full_mesh = tk.Button(self, text='Full mesh', bg="#A1DBCD", width=50, height=50, relief=tk.FLAT, command = lambda: NetworkDimension(master.current_scenario, "full-mesh"))
+        self.create_full_mesh = tk.Button(self, text='Full mesh', bg="#A1DBCD", width=50, height=50, relief=tk.FLAT, command = lambda: NetworkDimension(master.cs, "full-mesh"))
         self.type_to_button["full-mesh"] = self.create_full_mesh
         
-        self.create_ring = tk.Button(self, text='Ring', bg="#A1DBCD", width=50, height=50, relief=tk.FLAT, command = lambda: NetworkDimension(master.current_scenario, "ring"))
+        self.create_ring = tk.Button(self, text='Ring', bg="#A1DBCD", width=50, height=50, relief=tk.FLAT, command = lambda: NetworkDimension(master.cs, "ring"))
         self.type_to_button["ring"] = self.create_ring
         
         # netdim mode: motion or creation
         label_netdim = tk.Label(self, text="NetDim", bg="#A1DBCD", font=("Courier", 16, "bold")).grid(row=0, columnspan=4, sticky="ew")
-        self.motion_mode.grid(row=1, column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.motion_mode.grid(row=1, column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky="nsew")
         self.creation_mode.grid(row=1, column=2, columnspan=2, rowspan=2, pady=5, padx=5, sticky=tk.W)
         sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=3, columnspan=4, sticky="ew")
         
@@ -71,40 +71,40 @@ class MainFrame(tk.Frame):
         
         # drawing options
         label_drawing_options = tk.Label(self, text="Force-directed layout", bg="#A1DBCD", font=("Helvetica", 8, "bold")).grid(row=9, columnspan=4, sticky="ew")
-        self.draw_graph.grid(row=10, column=0, columnspan=2, pady=5, padx=20, sticky=(tk.N, tk.S, tk.E, tk.W))
-        self.stop_drawing.grid(row=10, column=2, columnspan=2, pady=5, padx=20, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.draw_graph.grid(row=10, column=0, columnspan=2, pady=5, padx=20, sticky="nsew")
+        self.stop_drawing.grid(row=10, column=2, columnspan=2, pady=5, padx=20, sticky="nsew")
         sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=11, columnspan=4, sticky="ew")
         
         # graph generation
         label_graph_generation = tk.Label(self, text="Graph generation", bg="#A1DBCD", font=("Helvetica", 8, "bold")).grid(row=11, columnspan=4, sticky="ew")
-        self.create_tree.grid(row=12,column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
-        self.create_star.grid(row=12,column=2, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
-        self.create_full_mesh.grid(row=14,column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
-        self.create_ring.grid(row=14,column=2, columnspan=2, rowspan=2, padx=20, pady=20, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.create_tree.grid(row=12,column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky="nsew")
+        self.create_star.grid(row=12,column=2, columnspan=2, rowspan=2, padx=20, pady=20, sticky="nsew")
+        self.create_full_mesh.grid(row=14,column=0, columnspan=2, rowspan=2, padx=20, pady=20, sticky="nsew")
+        self.create_ring.grid(row=14,column=2, columnspan=2, rowspan=2, padx=20, pady=20, sticky="nsew")
         sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=16, columnspan=4, sticky="ew")
         
     def switch_to_creation(self, master):
         self.creation_mode.config(relief=tk.SUNKEN)
         self.motion_mode.config(relief=tk.RAISED)
-        master.current_scenario._mode = "creation"
-        master.current_scenario.switch_binding()
+        master.cs._mode = "creation"
+        master.cs.switch_binding()
         
     def switch_to_motion(self, master):
         self.creation_mode.config(relief=tk.RAISED)
         self.motion_mode.config(relief=tk.SUNKEN)
-        master.current_scenario._mode = "motion"
-        master.current_scenario.switch_binding()
+        master.cs._mode = "motion"
+        master.cs.switch_binding()
         
     def change_creation_mode(self, master, mode):
         # change the mode to creation 
         self.switch_to_creation(master)
-        master.current_scenario._creation_mode = mode
+        master.cs._creation_mode = mode
         for obj_type in self.type_to_button:
             if(mode == obj_type):
                 self.type_to_button[obj_type].config(relief=tk.SUNKEN)
             else:
                 self.type_to_button[obj_type].config(relief=tk.FLAT)
-        master.current_scenario.switch_binding()
+        master.cs.switch_binding()
         
     def generate_square_tiling(self, scenario):
         self.erase_graph(scenario)
@@ -123,23 +123,25 @@ class NetworkDimension(tk.Toplevel):
         super().__init__()
         self.geometry("145x70")
         self.title("Dimension")
+        self.configure(background="#A1DBCD")
     
         # Network dimension
         if(type != "tree"):
-            self.dimension = tk.Label(self, text="Number of nodes")
+            self.dimension = tk.Label(self, bg="#A1DBCD", text="Number of nodes")
         else:
-            self.dimension = tk.Label(self, text="Depth of the tree")
+            self.dimension = tk.Label(self, bg="#A1DBCD", text="Depth of the tree")
         self.var_dimension = tk.IntVar()
         self.var_dimension.set(4)
         self.entry_dimension = tk.Entry(self, textvariable=self.var_dimension, width=4)
     
         # confirmation button
-        self.button_confirmation = tk.Button(self, text="OK", command=lambda: self.create_graph(scenario, type), width=2, height=1)
+        self.button_confirmation = ttk.Button(self, text="OK", command=lambda: self.create_graph(scenario, type))
+        ttk.Style().configure("TButton", background="#A1DBCD")
         
         # position in the grid
         self.dimension.grid(row=0, column=0, pady=5, padx=5, sticky=tk.W)
         self.entry_dimension.grid(row=0, column=1, sticky=tk.W)
-        self.button_confirmation.grid(row=1,column=0, columnspan=2, pady=5, padx=5, sticky=(tk.N, tk.S, tk.E, tk.W))
+        self.button_confirmation.grid(row=1, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
         
     def create_graph(self, scenario, type):
         if(type == "star"):

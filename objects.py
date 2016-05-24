@@ -1,16 +1,15 @@
 ## Nodes
-
 class Node(object):
     
     class_type = "node"
-    network_type = "node"
+    network_type = class_type
     
     def __init__(self, name, x, y):
         self.name = name
         self.oval = None
         self.image = None
         # id of the corresponding label
-        self.lid
+        self.lid = None
         self.size = 8
         # position of a node
         self.x = x
@@ -73,7 +72,6 @@ class Antenna(Node):
         super().__init__(name, x, y)
         
 ## Links
-
 class Link(object):
     
     class_type = "link"
@@ -84,7 +82,7 @@ class Link(object):
         self.destination = destination
         self.line = None
         # id of the corresponding label
-        self.lid
+        self.lid = None
         # AS to which the link belongs
         self.AS = None
         
