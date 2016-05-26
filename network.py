@@ -43,11 +43,11 @@ class Network(object):
             self.graph[d][link_type].add(new_link)
         return self.pn[link_type][name]
         
-    def node_factory(self, name=None, node_type="router", pos_x=100, pos_y=100):
+    def node_factory(self, name=None, node_type="router", pos_x=100, pos_y=100, *param):
         if not name:
             name = "node" + str(self.cpt_node)
         if name not in self.pn["node"]:
-            self.pn["node"][name] = Network.node_type_to_class[node_type](name, pos_x, pos_y)
+            self.pn["node"][name] = Network.node_type_to_class[node_type](name, pos_x, pos_y, *param)
             self.cpt_node += 1
         return self.pn["node"][name]
         
@@ -74,9 +74,8 @@ class Network(object):
         # retrieve adj links to delete them 
         dict_of_adj_links = self.graph.pop(node, None)
         if(dict_of_adj_links): # can be None if multiple deletion at once
-        # TODO refactor with items()
-            for type_link in dict_of_adj_links:
-                for adj_link in dict_of_adj_links[type_link]:
+            for type_link, adj_links in dict_of_adj_links.items():
+                for adj_link in adj_links:
                     neighbor = adj_link.destination if node == adj_link.source else adj_link.source
                     self.graph[neighbor][type_link].discard(adj_link)
                     yield self.pn[type_link].pop(adj_link.name, None)
@@ -251,6 +250,19 @@ class Network(object):
             
     def distance(self, p, q): 
         return math.sqrt(p*p + q*q)
+        
+    def haversine_distance(self, lon_nA, lat_nA, lon_nB, lat_nB):
+        """ Earth distance between two nodes """
+        
+        # decimal degrees to radians conversion
+        lon_nA, lat_nA, lon_nB, lat_nB = map(math.radians, (lon_nA, lat_nA, lon_nB, lat_nB))
+    
+        d_lon = lon_nB - lon_nA 
+        d_lat = lat_nB - lat_nA 
+        a = math.sin(d_lat/2)**2 + math.cos(lat_nA)*math.cos(lat_nB)*math.sin(d_lon/2)**2
+        c = 2*math.asin(math.sqrt(a)) 
+        r = 6371 # Radius of earth in kilometers. Use 3956 for miles
+        return c*r
             
     def force_de_coulomb(self, dx, dy, dist, beta):
         c = dist and beta/dist**3

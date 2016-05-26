@@ -413,7 +413,9 @@ class Scenario(network.Network, tk.Canvas):
         if not label_type:
             label_type = self._current_object_label[current_object.type]
         label_id = current_object.lid
-        if(label_type in ["capacity", "flow"]):
+        if label_type == "none":
+            self.itemconfig(label_id, text="")
+        elif(label_type in ["capacity", "flow"]):
             # retrieve the value of the parameter depending on label type
             value = current_object.__dict__[label_type]
             self.itemconfig(label_id, text="SD:{} | DS:{}".format(value["SD"], value["DS"]))

@@ -4,8 +4,10 @@ class Node(object):
     class_type = "node"
     network_type = class_type
     
-    def __init__(self, name, x, y):
+    def __init__(self, name, x, y, longitude=0, latitude=0):
         self.name = name
+        self.longitude = longitude
+        self.latitude = latitude
         self.oval = None
         self.image = None
         # id of the corresponding label
@@ -80,6 +82,7 @@ class Link(object):
         self.name = name
         self.source = source
         self.destination = destination
+        self.distance = 0
         self.line = None
         # id of the corresponding label
         self.lid = None

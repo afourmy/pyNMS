@@ -11,6 +11,7 @@ import scenario
 import pickle
 import csv
 import xlrd, xlwt
+import xml.etree.ElementTree as etree
 from PIL import ImageTk
 
 class NetDim(tk.Tk):
@@ -28,21 +29,21 @@ class NetDim(tk.Tk):
         
         # I used ordered dicts to have the same menu order 
         self.object_properties = collections.OrderedDict([
-        ("router", ("name", "x", "y")),
-        ("oxc", ("name", "x", "y")),
-        ("host", ("name", "x", "y")),
-        ("antenna", ("name", "x", "y")),
-        ("trunk", ("name", "source", "destination", "cost", "capacity", "flow")),
-        ("route", ("name","source", "destination", "path_constraints", "excluded_nodes",
-        "excluded_trunks", "path", "subnets")),
-        ("traffic", ("name", "source", "destination"))
+        ("router", ("name", "x", "y", "longitude", "latitude")),
+        ("oxc", ("name", "x", "y", "longitude", "latitude")),
+        ("host", ("name", "x", "y", "longitude", "latitude")),
+        ("antenna", ("name", "x", "y", "longitude", "latitude")),
+        ("trunk", ("name", "source", "destination", "distance", "cost", "capacity", "flow")),
+        ("route", ("name","source", "destination", "distance", 
+        "path_constraints", "excluded_nodes", "excluded_trunks", "path", "subnets")),
+        ("traffic", ("name", "source", "destination", "distance"))
         ])
         
         self.object_label = collections.OrderedDict([
-        ("Node", ("Name", "Position")),
-        ("Trunk", ("Name", "Cost", "Capacity", "Flow")),
-        ("Route", ("Name", "Type", "Path", "Subnet")),
-        ("Traffic", ("Name",))
+        ("Node", ("None", "Name", "Position", "Coordinates")),
+        ("Trunk", ("None", "Name", "Distance", "Cost", "Capacity", "Flow")),
+        ("Route", ("None", "Name", "Distance", "Type", "Path", "Subnet")),
+        ("Traffic", ("None", "Name", "Distance"))
         ])
         
         ## ----- Menus : -----
@@ -80,7 +81,7 @@ class NetDim(tk.Tk):
         for index, type in enumerate(self.object_properties):
             new_label = " ".join(("Hide", type))
             menu_display.add_command(label=new_label, command=lambda type=type, index=index: self.cs.show_hide(menu_display, type, index))
-        menu_options.add_cascade(label="Show/Hide", menu=menu_display)
+        menu_options.add_cascade(label="Show/hide object", menu=menu_display)
             
         menubar.add_cascade(label="Options",menu=menu_options)
         
@@ -230,8 +231,52 @@ class NetDim(tk.Tk):
             for i in range(first_sheet.nrows):
                 source_name, destination_name = first_sheet.row_values(i)
                 self.cs.graph_from_names(source_name, destination_name)
+                
+        # for the topology zoo network graphs
+        elif(filepath.endswith(".graphml")):
+            tree = etree.parse(filepath)
+            # dict associating an id ("dxx") to a property ("label", etc)
+            dict_prop_values = {}
+            # dict associating a node id to node properties
+            dict_id_to_prop = collections.defaultdict(dict)
+            # label will be the name of the node
+            properties = ["label", "Longitude", "Latitude"]
+            
+            label_id = None
+            for element in tree.iter():
+                for child in element:
+                    if "key" in child.tag:
+                        if(child.attrib["attr.name"] in properties and child.attrib["for"] == "node"):
+                            dict_prop_values[child.attrib["id"]] = child.attrib["attr.name"]
+                    if "node" in child.tag:
+                        node_id = child.attrib["id"]
+                        for prop in child:
+                            if prop.attrib["key"] in dict_prop_values:
+                                dict_id_to_prop[node_id][dict_prop_values[prop.attrib["key"]]] = prop.text
+                    if "edge" in child.tag:
+                        s_id, d_id = child.attrib["source"], child.attrib["target"]
+                        src_name = dict_id_to_prop[s_id]["label"]
+                        src = self.cs.node_factory(name=src_name)
+                        dest_name = dict_id_to_prop[d_id]["label"]
+                        dest = self.cs.node_factory(name=dest_name)
+                        
+                        # set the latitude and longitude of the newly created nodes
+                        for coord in ("latitude", "longitude"):
+                            src.__dict__[coord] = dict_id_to_prop[s_id][coord.capitalize()]
+                            dest.__dict__[coord] = dict_id_to_prop[d_id][coord.capitalize()]
+                        
+                        # distance between src and dest
+                        param = map(float, (src.longitude, src.latitude, dest.longitude, dest.latitude))
+                        distance = round(self.cs.haversine_distance(*param))
 
+                        # in some graphml files, there are nodes with loopback link
+                        if src_name != dest_name:
+                            new_link = self.cs.link_factory(s=src, d=dest)
+                            new_link.distance = distance
+        
         self.cs.draw_all(False)
+        self.cs._refresh_object_labels("trunk", "distance")
+        
         
     def export_graph(self):
         selected_file = filedialog.asksaveasfile(initialdir=self.path_workspace, title="Export graph", mode='w', defaultextension=".xls")
@@ -256,3 +301,4 @@ class NetDim(tk.Tk):
                 first_sheet.write(i, 1, str(t.destination))
             excel_workbook.save(selected_file.name)
         selected_file.close()
+        

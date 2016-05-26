@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from custom_widget import ObjectListbox
 
 class AutonomousSystem(object):
     class_type = "AS"
@@ -41,6 +42,7 @@ class AutonomousSystem(object):
     def add_to_AS(self, obj):
         if(obj.class_type == "node"):
             self.nodes.add(obj)
+            obj.AS.add(self)
         else:
             self.trunks.add(obj)
             obj.AS = self
@@ -52,18 +54,16 @@ class AutonomousSystem(object):
     def remove_from_edges(self, node):
         self.edges.discard(node)
                 
-    def remove_node_from_AS(self, node):
-        self.nodes.discard(node)
-        self.remove_node_from_edge(node)
-            
-    def remove_node_from_edge(self, node):
-        for AS in node.AS:
-            self.edges.discard(node) 
-        
-    def remove_trunk_from_AS(self, trunk):
-        if(trunk.AS):
-            self.trunks.discard(trunk)
-            trunk.AS = None
+    def remove_obj_from_AS(self, obj):
+        if(obj.network_type == "node"):
+            self.nodes.discard(obj)
+            obj.AS.remove(self)
+            self.remove_node_from_edge(obj)
+            self.remove_from_edges
+        elif(obj.network_type == "trunk"):
+            if(obj.AS):
+                self.trunks.discard(obj)
+                obj.AS = None
         
 class Area(AutonomousSystem):
     
@@ -73,17 +73,15 @@ class Area(AutonomousSystem):
         self.name = name
         self.type = type
         
-class CustomListbox(tk.Listbox):
-    def __contains__(self, str):
-        return str in self.get(0, "end")
-
 class ASManagement(tk.Toplevel):
     def __init__(self, scenario, AS):
         super().__init__()
+        self.scenario = scenario
+        self.AS = AS
         self.geometry("345x220")
         self.title("Manage AS")
         self.configure(background="#A1DBCD")
-        self.obj_type = ("trunks", "nodes", "edges") 
+        self.obj_type = ("trunk", "node", "edge") 
         
         # this allows to change the behavior of closing the window. 
         # I don't want the window to be destroyed, simply hidden
@@ -98,32 +96,32 @@ class ASManagement(tk.Toplevel):
         # listbox of all AS objects
         self.dict_listbox = {}
         for index, type in enumerate(self.obj_type):
-            tk.Label(self, bg="#A1DBCD", text = "Domain " + type).grid(row=1, column=2*index)
-            listbox = CustomListbox(self, activestyle="none", width=15, height=7)
+            tk.Label(self, bg="#A1DBCD", text=" ".join(("Domain",type,"s"))).grid(row=1, column=2*index)
+            listbox = ObjectListbox(self, activestyle="none", width=15, height=7)
             self.dict_listbox[type] = listbox
             yscroll = tk.Scrollbar(self, command=self.dict_listbox[type].yview, orient=tk.VERTICAL)
             listbox.configure(yscrollcommand=yscroll.set)
-            listbox.bind("<<ListboxSelect>>", lambda e, type=type: self.highlight_object(e, scenario, type))
+            listbox.bind("<<ListboxSelect>>", lambda e, type=type: self.highlight_object(e, type))
             listbox.grid(row=2, column=2*index)
             yscroll.grid(row=2, column=1+2*index, sticky="ns")
             
         for trunk in AS.trunks:
-            self.dict_listbox["trunks"].insert(tk.END, trunk)
+            self.dict_listbox["trunk"].insert(trunk)
         
         for node in AS.nodes:
-            self.dict_listbox["nodes"].insert(tk.END, node)
+            self.dict_listbox["node"].insert(node)
         
         # find edge nodes of the AS
-        self.button_find_edge_nodes = ttk.Button(self, text="Find edges", command=lambda: self.find_edge_nodes(scenario, AS))
-        self.button_create_route = ttk.Button(self, text="Create route", command=lambda: self.create_routes(scenario, AS))
+        self.button_find_edge_nodes = ttk.Button(self, text="Find edges", command=lambda: self.find_edge_nodes())
+        self.button_create_route = ttk.Button(self, text="Create route", command=lambda: self.create_routes())
         
         # find domain trunks: the trunks between nodes of the AS
-        self.button_find_trunks = ttk.Button(self, text="Find trunks", command=lambda: self.find_trunks(scenario, AS))
+        self.button_find_trunks = ttk.Button(self, text="Find trunks", command=lambda: self.find_trunks())
         
         # operation on nodes
-        self.button_remove_node_from_AS = ttk.Button(self, text="Remove node", command=lambda: self.remove_selected_node_from_AS(scenario, AS))
-        self.button_add_to_edges = ttk.Button(self, text="Add to edges", command=lambda: self.add_to_edges(scenario, AS))
-        self.button_remove_from_edges = ttk.Button(self, text="Remove edge", command=lambda: self.remove_from_edges(scenario, AS))
+        self.button_remove_node_from_AS = ttk.Button(self, text="Remove node", command=lambda: self.remove_selected_node_from_AS())
+        self.button_add_to_edges = ttk.Button(self, text="Add to edges", command=lambda: self.add_to_edges())
+        self.button_remove_from_edges = ttk.Button(self, text="Remove edge", command=lambda: self.remove_from_edges())
         ttk.Style().configure("TButton", background="#A1DBCD")
         
         # buttons under the trunks column
@@ -140,151 +138,128 @@ class ASManagement(tk.Toplevel):
         self.button_remove_from_edges.grid(row=4, column=4)
         
         # find the edges at initialization
-        self.find_edge_nodes(scenario, AS)
+        self.find_edge_nodes()
         
     # function to change the focus
     def change_focus(self):
         self.wm_attributes('-topmost', self.var_focus.get())
         
     # function to highlight the selected object on the canvas
-    def highlight_object(self, event, scenario, type):
-        a = self.dict_listbox[type].curselection()
-        selected_object = self.dict_listbox[type].get(a)
-        if(type == "trunks"):
-            selected_object = scenario.link_factory(name=selected_object)
+    def highlight_object(self, event, type):
+        selected_object = self.dict_listbox[type].selected()
+        if(type == "trunk"):
+            selected_object = self.scenario.link_factory(name=selected_object)
         else:
-            selected_object = scenario.node_factory(name=selected_object)
-        scenario.unhighlight_all()
-        scenario.highlight_objects(selected_object)
+            selected_object = self.scenario.node_factory(name=selected_object)
+        self.scenario.unhighlight_all()
+        self.scenario.highlight_objects(selected_object)
         
-    def add_to_edges(self, scenario, AS):
-        self.selected_node = self.dict_listbox["nodes"].get(self.dict_listbox["nodes"].curselection())
-        if(self.selected_node not in AS.management.dict_listbox["edges"]):
-            AS.management.dict_listbox["edges"].insert(tk.END, self.selected_node) 
-        self.selected_node = scenario.node_factory(name=self.selected_node)
-        AS.add_to_edges(self.selected_node)
+    def add_to_edges(self):
+        selected_node = self.dict_listbox["node"].get(self.dict_listbox["node"].curselection())
+        self.dict_listbox["edge"].insert(selected_node) 
+        selected_node = self.scenario.node_factory(name=selected_node)
+        self.AS.add_to_edges(selected_node)
             
-    def remove_from_edges(self, scenario, AS):
-        self.selected_edge = self.dict_listbox["edges"].get(self.dict_listbox["edges"].curselection())
-        index_edge = self.dict_listbox["edges"].get(0, tk.END).index(self.selected_edge)
-        self.dict_listbox["edges"].delete(index_edge)
-        self.selected_edge = scenario.node_factory(name=self.selected_edge) 
-        AS.remove_from_edges(self.selected_edge)
+    def remove_from_edges(self):
+        selected = self.scenario.node_factory(name=self.dict_listbox["edge"].pop_selected()) 
+        self.AS.remove_from_edges(selected)
         
-    def add_to_AS(self, AS, *objects):
+    def add_to_AS(self, *objects):
         for obj in objects:
-            if(obj.class_type == "node"):
-                if obj not in AS.nodes:
-                    AS.management.dict_listbox["nodes"].insert(tk.END, obj)
-            else:
-                if obj not in AS.trunks:
-                    AS.management.dict_listbox["trunks"].insert(tk.END, obj)
-            AS.add_to_AS(obj)
-        
-    def find_edge_nodes(self, scenario, AS):
-        self.dict_listbox["edges"].delete(0, tk.END)
-        for edge in scenario.find_edge_nodes(AS):
-            self.dict_listbox["edges"].insert(tk.END, edge)
+            self.dict_listbox[obj.network_type].insert(obj)
+            self.AS.add_to_AS(obj)
             
-    def find_trunks(self, scenario, AS):
-        trunks_between_domain_nodes = set()
-        for node in AS.nodes:
-            for adj_trunk in scenario.graph[node]["trunk"]:
-                neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
-                if(neighbor in AS.nodes):
-                    trunks_between_domain_nodes.add(adj_trunk)
-        self.add_to_AS(AS, *trunks_between_domain_nodes)
-            
-    def remove_nodes_from_AS(self, AS, *nodes):
-        for node in nodes:
-            # remove the node from the AS management panel, in the nodes
-            # listbox as well as in the edge listbox
-            index_node = self.dict_listbox["nodes"].get(0, tk.END).index(repr(node))
-            self.dict_listbox["nodes"].delete(index_node)
-            if(node in AS.edges):
-                index_edge = self.dict_listbox["edges"].get(0, tk.END).index(repr(node))
-                self.dict_listbox["edges"].delete(index_edge)
-            AS.remove_node_from_AS(node)
-            
-    def remove_selected_node_from_AS(self, scenario, AS):
-        self.selected_node = self.dict_listbox["nodes"].get(self.dict_listbox["nodes"].curselection()) 
-        self.selected_node = scenario.node_factory(name=self.selected_node)
-        self.remove_nodes_from_AS(AS, self.selected_node)
-        
-    def remove_trunks_from_AS(self, *trunks):
-        print(self.dict_listbox["trunks"])
-        for trunk in trunks:
-            print(trunk.name)
-            if(trunk.name in self.dict_listbox["trunks"]):
-                # remove the trunk from the AS management panel, in the trunks listbox
-                index_trunk = self.dict_listbox["trunks"].get(0, tk.END).index(repr(trunk))
-                self.dict_listbox["trunks"].delete(index_trunk)
+    def remove_obj_from_AS(self, *objects):
+        for obj in objects:
+            if(obj.network_type == "node"):
+                # remove the node from nodes/edges listbox
+                self.dict_listbox["node"].pop(obj)
+                self.dict_listbox["edge"].pop(obj)
                 # update the AS topology in the network
-                trunk.AS.remove_trunk_from_AS(trunk)
-    
-    def create_routes(self, scenario, AS):
-        for edgeA in AS.edges:
-            for edgeB in AS.edges:
-                if(edgeA != edgeB and not scenario.is_connected(edgeA, edgeB, "route")):
-                    new_route = scenario.link_factory(link_type="route", name=str(edgeA)+"-"+str(edgeB), s=edgeA, d=edgeB)
-                    _, new_route.path = scenario.hop_count(edgeA, edgeB, allowed_nodes=AS.nodes, allowed_trunks=AS.trunks)
-                    scenario.create_link(new_route)
+            elif(obj.network_type == "trunk"):
+                self.dict_listbox["trunk"].pop(obj)
+            self.AS.remove_obj_from_AS(obj)
+        
+    def find_edge_nodes(self):
+        self.dict_listbox["edge"].delete(0, tk.END)
+        for edge in self.scenario.find_edge_nodes(self.AS):
+            self.dict_listbox["edge"].insert(edge)
+            
+    def find_trunks(self):
+        trunks_between_domain_nodes = set()
+        for node in self.AS.nodes:
+            for adj_trunk in self.scenario.graph[node]["trunk"]:
+                neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
+                if(neighbor in self.AS.nodes):
+                    trunks_between_domain_nodes.add(adj_trunk)
+        self.add_to_AS(*trunks_between_domain_nodes)
+        
+    def create_routes(self):
+        for eA in self.AS.edges:
+            for eB in self.AS.edges:
+                if(eA != eB and not self.scenario.is_connected(eA, eB, "route")):
+                    route_name = "-".join(str(eA), str(eB))
+                    new_route = self.scenario.link_factory(link_type="route", name=route_name, s=eA, d=eB)
+                    _, new_route.path = self.scenario.hop_count(eA, eB, allowed_nodes=self.AS.nodes, allowed_trunks=self.AS.trunks)
+                    self.scenario.create_link(new_route)
                     
-class AddToAS(tk.Toplevel):
-    def __init__(self, scenario, *obj):
+class ChangeAS(tk.Toplevel):
+    def __init__(self, scenario, mode, obj, AS=set()):
         super().__init__()
         self.geometry("30x65")
-        self.title("Add to AS")
+        titles = {"add": "Add to AS", "remove": "Remove from AS", "manage": "Manage AS"}
+        self.title(titles[mode])
         self.configure(background="#A1DBCD")
         # always at least one row and one column with a weight > 0
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
         
+        if(mode == "add"):
+            text = "Add to AS"
+            command = lambda: self.add_to_AS(scenario, *obj)
+            values = set(scenario.pn["AS"].values())
+        elif(mode == "manage"):
+            text = "Manage AS"
+            values = AS or ""
+            command = lambda: self.manage_AS(scenario)
+        elif(mode == "remove"):
+            text = "Remove from AS"
+            values = AS or ""
+            command = lambda: self.remove_from_AS(scenario, *obj)
+        
         # List of existing AS
-        self.var_AS = tk.StringVar()
-        self.AS_list = ttk.Combobox(self, textvariable=self.var_AS, width=9)
-        self.AS_list["values"] = [AS for AS in scenario.pn["AS"]]
+        self.AS_list = ttk.Combobox(self, width=9)
+        self.AS_list["values"] = values
         self.AS_list.current(0)
         self.AS_list.grid(row=0, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
         
         # Button to add in an AS
-        self.button_add_AS = ttk.Button(self, text="Add", command=lambda: self.add_to_AS(scenario, *obj))
+        self.button_add_AS = ttk.Button(self, text=text, command=command)
         ttk.Style().configure("TButton", background="#A1DBCD")
         self.button_add_AS.grid(row=1, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
         
+    # merge these three functions into one with the mode 
+    # they share the check + destroy
     def add_to_AS(self, scenario, *objects):
-        selected_AS = scenario.AS_factory(name=self.var_AS.get())
-        selected_AS.management.add_to_AS(selected_AS, *objects)
-        self.destroy()
+        if(self.AS_list.get() != "Choose AS"):
+            selected_AS = scenario.AS_factory(name=self.AS_list.get())
+            selected_AS.management.add_to_AS(*objects)
+            self.destroy()
+            
+    def remove_from_AS(self, scenario, *objects):
+        if(self.AS_list.get() != "Choose AS"):
+            selected_AS = scenario.AS_factory(name=self.AS_list.get())
+            selected_AS.management.remove_obj_from_AS(*objects)
+            self.destroy()
         
-# ManageAS is the window from which the user selects which AS to manage. This 
-# applies only to node, since a trunk has only one domain.
-class ManageAS(tk.Toplevel):
-    def __init__(self, scenario, node):
-        super().__init__()
-        self.geometry("50x50")
-        self.title("Manage AS")
-        self.configure(background="#A1DBCD")
-        
-        # List of existing AS
-        self.var_AS = tk.StringVar()
-        self.AS_list = ttk.Combobox(self, textvariable=self.var_AS, width=6)
-        self.AS_list["values"] = [str(AS) for AS in node.AS]
-        self.AS_list.current(0)
-        self.AS_list.grid(row=0, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
-
-        # Button to open the management panel of the AS
-        self.button_add_AS = ttk.Button(self, text="Add to AS", command=lambda: self.manage_AS(scenario, node))
-        ttk.Style().configure("TButton", background="#A1DBCD")
-        self.button_add_AS.grid(row=1, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
-        
-    def manage_AS(self, scenario, obj):
-        selected_AS = scenario.AS_factory(name=self.var_AS.get())
-        selected_AS.management.deiconify()
-        self.destroy()
+    def manage_AS(self, scenario):
+        if(self.AS_list.get() != "Choose AS"):
+            selected_AS = scenario.AS_factory(name=self.AS_list.get())
+            selected_AS.management.deiconify()
+            self.destroy()
         
 class ASCreation(tk.Toplevel):
-    def __init__(self, scenario):
+    def __init__(self, scenario, so):
         super().__init__()
         self.geometry("120x100")
         self.title("Create AS")
@@ -297,7 +272,7 @@ class ASCreation(tk.Toplevel):
         self.AS_type_list.current(0)
 
         # retrieve and save node data
-        self.button_create_AS = ttk.Button(self, text="Create AS", command=lambda: self.create_AS(scenario))
+        self.button_create_AS = ttk.Button(self, text="Create AS", command=lambda: self.create_AS(scenario, so))
         ttk.Style().configure("TButton", background="#A1DBCD")
         
         # Label for the name/type of the AS
@@ -314,9 +289,8 @@ class ASCreation(tk.Toplevel):
         self.AS_type_list.grid(row=1,column=1, pady=5, padx=5, sticky=tk.W)
         self.button_create_AS.grid(row=3,column=0, columnspan=2, pady=5, padx=5)
 
-    def create_AS(self, scenario):
-        new_AS = scenario.AS_factory(name=self.var_name.get(), type=self.var_AS_type.get(), trunks=scenario.so["link"], nodes=scenario.so["node"])
+    def create_AS(self, scenario, so):
+        new_AS = scenario.AS_factory(name=self.var_name.get(), type=self.var_AS_type.get(), trunks=so["link"], nodes=so["node"])
         new_AS.management = ASManagement(scenario, new_AS)
-        scenario.so = {"node": set(), "link": set()}
         self.destroy()
             

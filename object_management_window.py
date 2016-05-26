@@ -2,12 +2,14 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
 
+# http://stackoverflow.com/questions/7546050/switch-between-two-frames-in-tkinter
+# TODO: only one window containing all 5 frames
 class ObjectManagementWindow(tk.Toplevel):
     def __init__(self, master, type):
         super().__init__()
         n = len(master.object_properties[type])
-        size_per_type = {"router": "180x170", "oxc": "180x180", "host":"180x180", "antenna":"180x180",
-        "trunk": "190x260", "route": "220x320", "traffic": "250x300"}
+        size_per_type = {"router": "180x200", "oxc": "180x200", "host":"180x200", "antenna":"180x200",
+        "trunk": "190x260", "route": "220x350", "traffic": "250x300"}
         
         self.geometry(size_per_type[type])
         self.title("Manage {} properties".format(type))
