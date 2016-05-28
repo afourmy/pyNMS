@@ -14,8 +14,6 @@ class RightClickMenu(tk.Menu):
         # highlight all to add the selected object to the highlight
         scenario.highlight_objects(*self.all_so)
         
-        # initialize menu parameters depending on what is selected:
-        
         # at least one object: deletion or create AS
         self.add_command(label="Delete", command=lambda: self.remove_objects(scenario))
         self.add_command(label="Create AS", command=lambda: self.create_AS(scenario))  

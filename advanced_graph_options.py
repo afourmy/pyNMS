@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import ttk
+from miscellaneous import CustomTopLevel
 
-class AdvancedGraphOptionsWindow(tk.Toplevel):
+class AdvancedGraphOptionsWindow(CustomTopLevel):
     def __init__(self, master):
         super().__init__()
         self.geometry("600x300")
@@ -20,19 +21,19 @@ class AdvancedGraphOptionsWindow(tk.Toplevel):
         self.button_create_square_tiling = ttk.Button(self, text='Create square tiling', command = lambda: self.add_links(master))
         self.button_highlight_connected_components = ttk.Button(self, text='Highlight connected components', command = lambda: self.highlight_connected_components(master))
         self.button_maximum_flow = ttk.Button(self, text='Maximum flow', command = lambda: self.maximum_flow(master))
+        self.button_kruskal = ttk.Button(self, text='Minimum spanning tree', command = lambda: self.kruskal(master))
         
         # affichage des buttons / label dans la grille
-        self.button_create_hypercube.grid(row=0,column=0, pady=5, padx=5, sticky=tk.W)
-        self.button_create_square_tiling.grid(row=0,column=1, pady=5, padx=5, sticky=tk.W)
-        self.button_highlight_connected_components.grid(row=1,column=1, pady=5, padx=5, sticky=tk.W)
-        self.button_maximum_flow.grid(row=1,column=1, pady=5, padx=5, sticky=tk.W)
+        self.button_create_hypercube.grid(row=1,column=0, pady=5, padx=5, sticky=tk.W)
+        self.button_create_square_tiling.grid(row=1,column=1, pady=5, padx=5, sticky=tk.W)
+        self.button_highlight_connected_components.grid(row=2,column=1, pady=5, padx=5, sticky=tk.W)
+        self.button_maximum_flow.grid(row=2,column=1, pady=5, padx=5, sticky=tk.W)
+        self.button_kruskal.grid(row=5,column=1, pady=5, padx=5, sticky=tk.W)
         
         self.label_source.grid(row=3,column=0, pady=5, padx=5, sticky=tk.W)
         self.label_destination.grid(row=4,column=0, pady=5, padx=5, sticky=tk.W)
         self.entry_source.grid(row=3,column=1, pady=5, padx=5, sticky=tk.W)
         self.entry_destination.grid(row=4,column=1, pady=5, padx=5, sticky=tk.W)
-        
-        self.withdraw()
         
     def highlight_connected_components(self, master):
         master.cs.unhighlight_all()
@@ -44,9 +45,21 @@ class AdvancedGraphOptionsWindow(tk.Toplevel):
     def maximum_flow(self, master):
         source = master.cs.node_factory(name=self.entry_source.get())
         destination = master.cs.node_factory(name=self.entry_destination.get())
-        flow = master.cs.edmonds_karp(source, destination)
+        flow = master.cs.ford_fulkerson(source, destination)
         print(flow)
         
+    def kruskal(self, master):
+        links_mst = master.cs.kruskal(master.cs.pn["node"].values())
+        master.cs.highlight_objects(*links_mst)
+        
+    # def generate_square_tiling(self, scenario):
+    #     self.erase_graph(scenario)
+    #     scenario.generate_meshed_square(self.var_dimension.get())
+    #     
+    # def generate_hypercube(self, scenario):
+    #     self.erase_graph(scenario)
+    #     scenario.generate_hypercube(self.var_dimension.get())
+    #     
         
     # TODO K-shortest path with BFS
         # _, source, *e = self.get_user_input(master)

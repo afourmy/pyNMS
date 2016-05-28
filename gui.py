@@ -23,7 +23,7 @@ class NetDim(tk.Tk):
             
         ## ----- Programme principal : -----
         self.title("NetDim")
-        netdim_icon = tk.PhotoImage(file=self.path_icon+"netdim.png")
+        netdim_icon = tk.PhotoImage(file=self.path_icon+"netdim.gif")
         self.tk.call('wm', 'iconphoto', self._w, netdim_icon)
         
         ## User-defined properties and labels per type of object
@@ -34,7 +34,9 @@ class NetDim(tk.Tk):
         ("oxc", ("name", "x", "y", "longitude", "latitude")),
         ("host", ("name", "x", "y", "longitude", "latitude")),
         ("antenna", ("name", "x", "y", "longitude", "latitude")),
-        ("trunk", ("name", "source", "destination", "distance", "cost", "capacity", "flow")),
+        ("regenerator", ("name", "x", "y", "longitude", "latitude")),
+        ("splitter", ("name", "x", "y", "longitude", "latitude")),
+        ("trunk", ("name", "source", "destination", "distance", "costSD", "costDS", "capacitySD", "capacityDS", "flowSD", "flowDS")),
         ("route", ("name","source", "destination", "distance", 
         "path_constraints", "excluded_nodes", "excluded_trunks", "path", "subnets")),
         ("traffic", ("name", "source", "destination", "distance"))
@@ -49,7 +51,7 @@ class NetDim(tk.Tk):
         
         self.object_import_export = collections.OrderedDict([
         ("node", ("name", "x", "y", "longitude", "latitude")),
-        ("trunk", ("name", "source", "destination", "distance", "cost", "capacity")),
+        ("trunk", ("name", "source", "destination", "distance", "costSD", "costDS", "capacitySD", "capacityDS")),
         ("route", ("name", "source", "destination", "distance", 
         "path_constraints", "excluded_nodes", "excluded_trunks", "path", "subnets")),
         ("traffic", ("name", "source", "destination", "distance"))
@@ -133,6 +135,11 @@ class NetDim(tk.Tk):
         self.main_frame.pack_propagate(False)
         
         # image for motion
+        self.image_pil_netdim = ImageTk.Image.open(self.path_icon + "netdim1.gif").resize((75,75))
+        self.image_netdim = ImageTk.PhotoImage(self.image_pil_netdim)
+        self.main_frame.netdim.config(image = self.image_netdim, width=75, height=75)
+        
+        # image for motion
         self.image_pil_motion = ImageTk.Image.open(self.path_icon + "motion.png").resize((75, 75))
         self.image_motion = ImageTk.PhotoImage(self.image_pil_motion)
         self.main_frame.motion_mode.config(image = self.image_motion, width=75, height=75)
@@ -149,7 +156,9 @@ class NetDim(tk.Tk):
         "router": (33, 25), 
         "oxc": (35, 32), 
         "host": (35, 32), 
-        "antenna": (35, 35)
+        "antenna": (35, 35),
+        "regenerator": (64, 50),
+        "splitter": (64, 50)
         }
         
         for color in ["default", "red"]:
@@ -169,7 +178,7 @@ class NetDim(tk.Tk):
             self.dict_image["default"][link_type] = img
             self.main_frame.type_to_button[link_type].config(image=img, width=100, height=25, anchor=tk.CENTER)
         
-        dict_size = {"ring": (76, 66), "tree": (71, 43), "star": (72, 70), "full-mesh": (81, 72)}
+        dict_size = {"ring": (38, 33), "tree": (35, 21), "star": (36, 35), "full-mesh": (40, 36)}
         for network_topology in ("ring", "tree", "star", "full-mesh"):
             x, y = dict_size[network_topology]
             img_pil = ImageTk.Image.open(self.path_icon + network_topology + ".png").resize((x,y))
@@ -212,12 +221,14 @@ class NetDim(tk.Tk):
                 self.cs.graph[link.source][link_type].add(link)
                 self.cs.graph[link.destination][link_type].add(link)
                 
-    def import_graph(self):
-        # retrieve the path and kill fake window
-        filepath = filedialog.askopenfilenames(initialdir=self.path_workspace, title="Import graph", filetypes=(("all files","*.*"), ("csv files","*.csv"), ("xls files","*.xls"), ("txt files","*.txt")))
-        
-        if not filepath: return
-        else: filepath ,= filepath
+    def import_graph(self, filepath=None):
+        # filepath is set for unittest
+        if not filepath:
+            filepath = filedialog.askopenfilenames(initialdir=self.path_workspace, title="Import graph", filetypes=(("all files","*.*"), ("csv files","*.csv"), ("xls files","*.xls"), ("txt files","*.txt")))
+            
+            # no error when closing the window
+            if not filepath: return
+            else: filepath ,= filepath
 
         if(filepath.endswith(".csv")):
             try:
@@ -241,9 +252,7 @@ class NetDim(tk.Tk):
                 xls_sheet = book.sheets()[id]
                 for row_index in range(1, xls_sheet.nrows):
                     if(obj_type == "node"):
-                        # TODO multiple argument error when adding *param as an argument
                         n, *param = xls_sheet.row_values(row_index)
-                        print(n, param)
                         self.cs.node_factory(*param, node_type="router", name=n)
                     else:
                         n, s, d, *param = xls_sheet.row_values(row_index)

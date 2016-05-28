@@ -197,7 +197,7 @@ class ASManagement(tk.Toplevel):
         for eA in self.AS.edges:
             for eB in self.AS.edges:
                 if(eA != eB and not self.scenario.is_connected(eA, eB, "route")):
-                    route_name = "-".join(str(eA), str(eB))
+                    route_name = "-".join((str(eA), str(eB)))
                     new_route = self.scenario.link_factory(link_type="route", name=route_name, s=eA, d=eB)
                     _, new_route.path = self.scenario.dijkstra(eA, eB, allowed_nodes=self.AS.nodes, allowed_trunks=self.AS.trunks)
                     self.scenario.create_link(new_route)

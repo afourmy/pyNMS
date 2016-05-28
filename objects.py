@@ -13,9 +13,9 @@ class Node(object):
         # id of the corresponding label
         self.lid = None
         self.size = 8
-        # position of a node
-        self.x = int(x)
-        self.y = int(y)
+        # position of a node (conversion decimal string to int in case of export)
+        self.x = int(float(x))
+        self.y = int(float(y))
         # velocity of a node for graph drawing algorithm
         self.vx = 0
         self.vy = 0
@@ -73,6 +73,24 @@ class Antenna(Node):
     def __init__(self, name, x=100, y=100, longitude=0, latitude=0):
         super().__init__(name, x, y, longitude, latitude)
         
+class Regenerator(Node):
+
+    color = "black"
+    type = "antenna"
+    imagex, imagey = 35, 32
+    
+    def __init__(self, name, x=100, y=100, longitude=0, latitude=0):
+        super().__init__(name, x, y, longitude, latitude)
+        
+class Splitter(Node):
+
+    color = "black"
+    type = "antenna"
+    imagex, imagey = 35, 32
+    
+    def __init__(self, name, x=100, y=100, longitude=0, latitude=0):
+        super().__init__(name, x, y, longitude, latitude)
+        
 ## Links
 class Link(object):
     
@@ -107,11 +125,11 @@ class Trunk(Link):
     color = "blue"
     dash = ()
 
-    def __init__(self, name, source, destination, distance=0, cost=1, capacity={"SD": 3, "DS": 3}):
+    def __init__(self, name, source, destination, distance=0, costSD=1, costDS=1, capacitySD=3, capacityDS=3):
         super().__init__(name, source, destination, distance)
-        self.cost = int(cost)
-        self.capacity = capacity if type(capacity) == dict else eval(capacity)
-        self.flow = {"SD": 0, "DS": 0}
+        self.costSD, self.costDS = int(costSD), int(costDS)
+        self.capacitySD, self.capacityDS = int(capacitySD), int(capacityDS)
+        self.flowSD, self.flowDS = 0, 0
         
 class Ethernet(Trunk):
     def __init__(self, name, source, destination, cost=1, capacitySD=3, capacityDS=3, interface="GE"):

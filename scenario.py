@@ -248,7 +248,7 @@ class Scenario(network.Network, tk.Canvas):
               
     @adapt_coordinates
     def create_node_on_binding(self, event):
-        new_node = self.node_factory(node_type=self._creation_mode, pos_x=event.x, pos_y=event.y)
+        new_node = self.node_factory(event.x, event.y, node_type=self._creation_mode)
         self.create_node(new_node)
         
     def create_node(self, node):
@@ -417,8 +417,9 @@ class Scenario(network.Network, tk.Canvas):
             self.itemconfig(label_id, text="")
         elif(label_type in ["capacity", "flow"]):
             # retrieve the value of the parameter depending on label type
-            value = current_object.__dict__[label_type]
-            self.itemconfig(label_id, text="SD:{} | DS:{}".format(value["SD"], value["DS"]))
+            valueSD = current_object.__dict__[label_type + "SD"]
+            valueDS = current_object.__dict__[label_type + "DS"]
+            self.itemconfig(label_id, text="SD:{} | DS:{}".format(valueSD, valueDS))
         elif(label_type == "position"):
             self.itemconfig(label_id, text="({}, {})".format(current_object.x, current_object.y))
         else:
@@ -494,7 +495,7 @@ class Scenario(network.Network, tk.Canvas):
         # if the canvas is empty, drawing required first
         if not self._job:
             self.draw_all()
-        self.move_basic(master.alpha, master.beta, master.k, master.eta, master.delta, master.raideur)                
+        self.spring_layout(master.alpha, master.beta, master.k, master.eta, master.delta, master.raideur)                
         for n in self.pn["node"].values():
             self.move_node(n)
         self._job = self.after(10, lambda: self.spring_based_drawing(master))

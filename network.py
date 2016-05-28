@@ -1,10 +1,12 @@
-from collections import defaultdict
+from collections import defaultdict, deque
 from heapq import heappop, heappush
-from collections import deque
+import miscellaneous
 import objects
 import AS
 import math
 import random
+import numpy
+from cvxopt import matrix, glpk
 
 class Network(object):
     
@@ -12,7 +14,9 @@ class Network(object):
     "router": objects.Router,
     "oxc": objects.OXC,
     "host": objects.Host,
-    "antenna": objects.Antenna
+    "antenna": objects.Antenna,
+    "regenerator": objects.Regenerator,
+    "splitter": objects.Splitter
     }
     
     link_type_to_class = {
@@ -48,7 +52,6 @@ class Network(object):
         if not name:
             name = "node" + str(self.cpt_node)
         if name not in self.pn["node"]:
-            print(name, param)
             self.pn["node"][name] = Network.node_type_to_class[node_type](name, *param)
             self.cpt_node += 1
         return self.pn["node"][name]
@@ -61,6 +64,7 @@ class Network(object):
             self.cpt_AS += 1
         return self.pn["AS"][name]
         
+    # TODO delete this when I import/export everythign: no longer needed
     def graph_from_names(self, source_name, destination_name, name=None):
         """ Create nodes and links from text name. Useful when importing the graph """
         source, destination = self.node_factory(source_name), self.node_factory(destination_name)
@@ -165,11 +169,12 @@ class Network(object):
                         break
                     for adj_trunk in self.graph[node]["trunk"]:
                         neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
+                        sd = (node == adj_trunk.source)*"SD" or "DS"
                         # excluded and allowed nodes
                         if neighbor in excluded_nodes or neighbor not in allowed_nodes: continue
                         # excluded and allowed trunks
                         if adj_trunk in excluded_trunks or adj_trunk not in allowed_trunks: continue
-                        dist_neighbor = dist_node + adj_trunk.cost
+                        dist_neighbor = dist_node + adj_trunk.__dict__["cost" + sd]
                         if dist_neighbor < dist[neighbor]:
                             dist[neighbor] = dist_neighbor
                             prec_node[neighbor] = node
@@ -214,11 +219,12 @@ class Network(object):
             for node in allowed_nodes:
                 for adj_trunk in self.graph[node]["trunk"]:
                     neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
+                    sd = (node == adj_trunk.source)*"SD" or "DS", direction*"DS" or "SD"
                     # excluded and allowed nodes
                     if neighbor in excluded_nodes or neighbor not in allowed_nodes: continue
                     # excluded and allowed trunks
                     if adj_trunk in excluded_trunks or adj_trunk not in allowed_trunks: continue
-                    dist_neighbor = dist[node] + adj_trunk.cost
+                    dist_neighbor = dist[node] + adj_trunk.__dict__["cost" + sd]
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
                         prec_node[neighbor] = node
@@ -263,8 +269,7 @@ class Network(object):
         
     def reset_flow(self):
         for link in self.pn["trunk"].values():
-            link.flow["SD"] = 0
-            link.flow["DS"] = 0
+            link.flowSD, link.flowDS = 0, 0
         
     def augment_ff(self, val, curr_node, target, visit):
         visit[curr_node] = True
@@ -274,23 +279,23 @@ class Network(object):
             neighbor = adj_link.destination if curr_node == adj_link.source else adj_link.source
             direction = curr_node == adj_link.source
             sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
-            cap = adj_link.capacity[sd]
-            current_flow = adj_link.flow[sd]
+            cap = adj_link.__dict__["capacity" + sd]
+            current_flow = adj_link.__dict__["flow" + sd]
             if cap > current_flow and not visit[neighbor]:
                 residual_capacity = min(val, cap - current_flow)
                 global_flow = self.augment_ff(residual_capacity, neighbor, target, visit)
                 if(global_flow > 0):
-                    adj_link.flow[sd] += global_flow
-                    adj_link.flow[ds] -= global_flow
+                    adj_link.__dict__["flow" + sd] += global_flow
+                    adj_link.__dict__["flow" + ds] -= global_flow
                     return global_flow
         return False
         
     def ford_fulkerson(self, source, destination):
         self.reset_flow()
-        while(self._augment_ff(float("inf"), source, destination, {n:0 for n in self.graph})):
+        while(self.augment_ff(float("inf"), source, destination, {n:0 for n in self.graph})):
             pass
         # flow leaving from the source 
-        return sum(adj.flow[(source == adj.source)*"SD" or "DS"] for adj in self.graph[source]["trunk"])
+        return sum(adj.__dict__["flow" + (source == adj.source)*"SD" or "DS"] for adj in self.graph[source]["trunk"])
         
     def augment_ek(self, source, destination):
         res_cap = {n:0 for n in self.graph}
@@ -305,7 +310,7 @@ class Network(object):
                 neighbor = adj_link.destination if curr_node == adj_link.source else adj_link.source
                 direction = curr_node == adj_link.source
                 sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
-                residual = adj_link.capacity[sd] - adj_link.flow[sd]
+                residual = adj_link.__dict__["capacity" + sd] - adj_link.__dict__["flow" + sd]
                 if residual and augmenting_path[neighbor] is None:
                     augmenting_path[neighbor] = curr_node
                     res_cap[neighbor] = min(res_cap[curr_node], residual)
@@ -330,15 +335,112 @@ class Network(object):
                 # define sd and ds depending on how the link is defined
                 direction = curr_node == trunk.source
                 sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
-                trunk.flow[ds] += global_flow
-                trunk.flow[sd] -= global_flow
+                trunk.__dict__["flow" + ds] += global_flow
+                trunk.__dict__["flow" + sd] -= global_flow
                 curr_node = prec_node 
-        return sum(adj.flow[(source == adj.source)*"SD" or "DS"] for adj in self.graph[source]["trunk"])
+        return sum(adj.__dict__["flow" + ((source == adj.source)*"SD" or "DS")] for adj in self.graph[source]["trunk"])
         
-    def minimum_spanning_tree(self, allowed_nodes, allowed_links):
-        pass
+    ## Minimum Spanning Tree algorithms: Kruskal
+        
+    def kruskal(self, allowed_nodes):
+        uf = miscellaneous.UnionFind(allowed_nodes)
+        edges = []
+        for node in self.graph:
+            for adj_trunk in self.graph[node]["trunk"]:
+                neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
+                edges.append((adj_trunk.costSD, adj_trunk, node, neighbor))
+        minimum_spanning_tree = []
+        for w, t, u, v in sorted(edges, key=lambda x: x[0]):
+            if uf.union(u, v):
+                yield t
+                
+    ## Linear programming to solve the maximum flow problem
+    
+    def LP_MF_formulation(self, s, t):
+        """
+        Solves the mixed integer LP
+            minimize    c'*x       
+            subject to  G*x + s = h
+                        A*x = b    
+                        s >= 0
+                        xi integer, forall i in I
+                        
+        using MOSEK 7.0.
+        solsta, x = ilp(c, G, h, A=None, b=None, I=None).
+        """
+        n = 2*len(self.pn["trunk"])
+        v = len(self.graph)
+        c = []
+        for node in self.graph:
+            for trunk in self.graph[node]["trunk"]:
+                c.append(node == s and trunk.source == s)
+        A = []
+        for node_r in self.graph:
+            row = []
+            if(node_r not in (s, t)):
+                for node in self.graph:
+                    for trunk in self.graph[node]["trunk"]:
+                        row.append(1 if trunk.destination == node_r else -1 if trunk.source == node_r else 0)
+                A.append(row)
+        b = [0]*(v-2)
+        G = []
+        cpt = 0
+        for node in self.graph:
+            for trunk in self.graph[node]["trunk"]:
+                row = [0]*n 
+                row[cpt] = 1
+                cpt += 1
+                G.append(row)
+        cpt = 0
+        for node in self.graph:
+            for trunk in self.graph[node]["trunk"]:
+                row = [0]*n
+                row[cpt] = -1
+                cpt += 1
+                G.append(row)
+        h = []
+        for node in self.graph:
+            for trunk in self.graph[node]["trunk"]:
+                neighbor = trunk.destination if node == trunk.source else trunk.source
+                sd = (node == trunk.source)*"SD" or "DS"
+                h.append(trunk.__dict__["capacity" + sd])
+        h += [0]*n
+        
+        A = list(list(map(float, row)) for row in A)
+        G = list(list(map(float, row)) for row in G)
+        b = list(map(float, b))
+        c = list(map(float, c))
+        h = list(map(float, h))
+        
+        print(len(A[0]))
+        print(len(A))
+        print(len(G[0]))
+        print(len(G))
+        print(len(b))
+        print(len(c))
+        print(len(h))
+        
+        A = matrix(A)
+        A = A.T
+        G = matrix(G)
+        G = G.T
+        b = matrix(b)
+        c = matrix(c)
+        h = matrix(h)
+        
+        #print(A, b, c)
+        solsta, x = glpk.ilp(-c, G, h, A, b)
+        tot = 0
+        for node in self.graph:
+            for trunk in self.graph[node]["trunk"]:
+                print(node, trunk)
+        print(tot // 2)
+        print(x)
+  
+
+                    
             
-    ## distance functions
+    ## Distance functions
     
     def distance(self, p, q): 
         return math.sqrt(p*p + q*q)
@@ -357,7 +459,7 @@ class Network(object):
         r = 6371 # Radius of earth in kilometers. Use 3956 for miles
         return c*r
             
-    ## force functions
+    ## Force functions
     
     def force_de_coulomb(self, dx, dy, dist, beta):
         c = dist and beta/dist**3
@@ -376,7 +478,7 @@ class Network(object):
         
     ## force-directed layout algorithms: Eades ("spring") and Fruchterman-Reingold algorithms
             
-    def move_basic(self, alpha, beta, k, eta, delta, raideur):            
+    def spring_layout(self, alpha, beta, k, eta, delta, raideur):            
         for nodeA in self.pn["node"].values():
             Fx, Fy = 0, 0
             for nodeB in self.pn["node"].values():
@@ -431,50 +533,55 @@ class Network(object):
     ## graph generation functions: hypercube, square tiling, tree, star, full mesh, ring 
             
     def generate_hypercube(self, n):
+        # we create a n-dim hypercube by connecting two (n-1)-dim hypercubes
         i = 0
         graph_nodes = [self.node_factory(str(0))]
         graph_links = []
         while(i < n+1):
             for k in range(len(graph_nodes)):
-                # creation des noeuds du deuxième hypercube de dimension n-1
+                # creation of the nodes of the second hypercube
                 graph_nodes.append(self.node_factory(str(k+2**i)))
             for trunk in graph_links[:]:
-                # connexion des deux hypercube de dimension n-1
+                # connection of the two hypercubes
                 source, destination = trunk.source, trunk.destination
-                graph_links.append(self.link_factory(s=self.node_factory(str(int(source.name)+2**i)), d=self.node_factory(str(int(destination.name)+2**i))))
+                n1, n2 = str(int(source.name)+2**i), str(int(destination.name)+2**i)
+                graph_links.append(self.link_factory(s=self.node_factory(n1), d=self.node_factory(n2)))
             for k in range(len(graph_nodes)//2):
-                # creation des liens du deuxième hypercube
+                # creation of the links of the second hypercube
                 graph_links.append(self.link_factory(s=graph_nodes[k], d=graph_nodes[k+2**i]))
             i += 1
             
     def generate_meshed_square(self, n):
         for i in range(n**2):
+            n1, n2, n3 = str(i), str(i-1), str(i+n)
             if(i-1 > -1 and i%n):
-                self.link_factory(s=self.node_factory(str(i)), d=self.node_factory(str(i-1)))
+                self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n2))
             if(i+n < n**2):
-                self.link_factory(s=self.node_factory(str(i)), d=self.node_factory(str(i+n)))
+                self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n3))
                 
     def generate_tree(self, n):
         for i in range(2**n-1):
-            self.link_factory(s=self.node_factory(str(i)), d=self.node_factory(str(2*i+1)))
-            self.link_factory(s=self.node_factory(str(i)), d=self.node_factory(str(2*i+2)))
+            n1, n2, n3 = str(i), str(2*i+1), str(2*i+2)
+            self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n2))
+            self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n3))
             
     def generate_star(self, n):
         nb_node = len(self.pn["node"])
         for i in range(n):
-            self.link_factory(s=self.node_factory(name=str(nb_node)), d=self.node_factory(name=str(nb_node+1+i)))
+            n1, n2 = str(nb_node), str(nb_node+1+i)
+            self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n2))
             
     def generate_full_mesh(self, n):
         nb_node = len(self.pn["node"])
         for i in range(n):
             for j in range(i):
-                self.link_factory(s=self.node_factory(str(nb_node+j)), d=self.node_factory(str(nb_node+i)))
+                n1, n2 = str(nb_node+j), str(nb_node+i)
+                self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n2))
                 
     def generate_ring(self, n):
         nb_node = len(self.pn["node"])
         for i in range(n):
-            self.link_factory(s=self.node_factory(str(nb_node+i)), d=self.node_factory(str(nb_node+1+i)))
-        self.link_factory(s=self.node_factory(str(nb_node)), d=self.node_factory(str(nb_node+n)))
+            n1, n2 = str(nb_node+i), str(nb_node+(1+i)%n)
+            self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n2))
             
-
-    
+            

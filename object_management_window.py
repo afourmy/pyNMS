@@ -1,41 +1,32 @@
 import tkinter as tk
-from tkinter import ttk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
+from miscellaneous import CustomTopLevel
 
 # http://stackoverflow.com/questions/7546050/switch-between-two-frames-in-tkinter
 # TODO: only one window containing all 5 frames
-class ObjectManagementWindow(tk.Toplevel):
+class ObjectManagementWindow(CustomTopLevel):
     def __init__(self, master, type):
         super().__init__()
         n = len(master.object_properties[type])
         size_per_type = {"router": "180x200", "oxc": "180x200", "host":"180x200", "antenna":"180x200",
-        "trunk": "190x260", "route": "220x350", "traffic": "250x300"}
+        "regenerator": "180x200", "splitter": "180x200", "trunk": "190x320", "route": "220x350", "traffic": "250x300"}
         
         self.geometry(size_per_type[type])
         self.title("Manage {} properties".format(type))
-        self.configure(background="#A1DBCD")
-        # hide the window when closed
-        self.protocol("WM_DELETE_WINDOW", self.withdraw)
-        
+
         # current node which properties are displayed
         self.current_obj = None
         # current path of the object: computing a path is not saving it
         self.current_path = None
-        
-        # button for focus
-        self.var_focus = tk.IntVar()
-        self.checkbutton_focus = tk.Checkbutton(self, text="Focus", bg="#A1DBCD", variable=self.var_focus, command=self.wm_attributes("-topmost", self.var_focus.get()))
-        self.checkbutton_focus.grid(row=0, column=0, pady=5, padx=5, sticky=tk.W)
-        
+
         # create the property window
         self.dict_var = {}
         for index, property in enumerate(master.object_properties[type]):
             str_var = tk.StringVar()
             self.dict_var[property] = str_var
             tk.Label(self, text=property.title(), bg="#A1DBCD").grid(row=index+1, pady=5, padx=5, column=0, sticky=tk.W)
-            tk.Entry(self, textvariable=str_var, width=15, state="readonly" if property in ("source", "destination", "path") else tk.NORMAL).grid(row=index+1, pady=5, padx=5, column=1, sticky=tk.W)
-        
-        
+            tk.Entry(self, textvariable=str_var, width=15, state="readonly" if property in ("source", "destination", "path", "flowSD", "flowDS") else tk.NORMAL).grid(row=index+1, pady=5, padx=5, column=1, sticky=tk.W)
+    
         # route finding possibilities for a route 
         if(type == "route"):
             self.button_compute_path = ttk.Button(self, text="Compute path", command=lambda: self.find_path(master))
@@ -43,13 +34,11 @@ class ObjectManagementWindow(tk.Toplevel):
         
         self.button_save_obj = ttk.Button(self, text="Save", command=lambda: self.save_obj(master))
         self.button_save_obj.grid(row=0,column=1, columnspan=2, pady=5, padx=5)
-        ttk.Style().configure("TButton", background="#A1DBCD")
-        self.withdraw()
     
     def get_user_input(self, master):
         name = self.dict_var["name"].get()
-        source = master.cs.node_factory(self.dict_var["source"].get())
-        destination = master.cs.node_factory(self.dict_var["destination"].get())
+        source = master.cs.node_factory(name=self.dict_var["source"].get())
+        destination = master.cs.node_factory(name=self.dict_var["destination"].get())
         excluded_trunks = filter(None, self.dict_var["excluded_trunks"].get().strip().split(","))
         excluded_nodes = filter(None, self.dict_var["excluded_nodes"].get().strip().split(","))
         path_constraints = filter(None, self.dict_var["path_constraints"].get().strip().split(","))
@@ -105,7 +94,7 @@ class ObjectManagementWindow(tk.Toplevel):
                     master.cs.graph[self.current_obj] = adj_links
             if(property == "path"):
                 self.current_obj.__dict__[property] = self.current_path
-            elif(property in ("capacity", "cost", "flow")):
+            elif(property in ("capacitySD", "capacityDS", "cost", "flowSD", "flowDS")):
                 self.current_obj.__dict__[property] = eval(str_var.get())
             # refresh the label if it was changed
             master.cs._refresh_object_label(self.current_obj)
