@@ -24,7 +24,7 @@ class ObjectManagementWindow(tk.Toplevel):
         
         # button for focus
         self.var_focus = tk.IntVar()
-        self.checkbutton_focus = tk.Checkbutton(self, text="Focus", bg="#A1DBCD", variable=self.var_focus, command=self.change_focus)
+        self.checkbutton_focus = tk.Checkbutton(self, text="Focus", bg="#A1DBCD", variable=self.var_focus, command=self.wm_attributes("-topmost", self.var_focus.get()))
         self.checkbutton_focus.grid(row=0, column=0, pady=5, padx=5, sticky=tk.W)
         
         # create the property window
@@ -62,8 +62,18 @@ class ObjectManagementWindow(tk.Toplevel):
         return (name, source, destination, l_excluded_trunks, l_excluded_nodes, l_path_constraints)
         
     def find_path(self, master):
-        name, *parameters = self.get_user_input(master)
-        route_path_nodes, route_path_links = master.cs.hop_count(*parameters)
+        # name, *parameters = self.get_user_input(master)
+        # route_path_nodes, route_path_links = master.cs.dijkstra(*parameters)
+        
+        name, source, target, *e = self.get_user_input(master)
+        route_path_nodes, route_path_links = master.cs.bellman_ford(source, target)
+        print(route_path_nodes, route_path_links)
+        
+        # _, source, *e = self.get_user_input(master)
+        # print(source)
+        # for p in master.cs.all_paths(source):
+        #     print(p)
+        
         if(route_path_links):
             master.cs.unhighlight_all()
             self.current_path = route_path_links
@@ -75,17 +85,6 @@ class ObjectManagementWindow(tk.Toplevel):
             self.var_focus.set(1)
             self.change_focus()
             messagebox.showinfo("Warning", "No path found")
-            
-    # TODO K-shortest path with BFS
-        # _, source, *e = self.get_user_input(master)
-        # print(source)
-        # for p in master.cs.all_paths(source):
-        #     print(p)
-        
-    # TODO flow window
-    # def flow(self, master):
-    #     total_flow = master.cs.ford_fulkerson(master.cs.node_factory(self.entry_source_node.get()), master.cs.node_factory(self.entry_destination_node.get()))
-    #     self.var_total_flow.set(str(total_flow))
         
     def change_focus(self):
         self.wm_attributes("-topmost", self.var_focus.get())

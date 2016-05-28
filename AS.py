@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-from custom_widget import ObjectListbox
+from miscellaneous import ObjectListbox
 
 class AutonomousSystem(object):
     class_type = "AS"
@@ -58,8 +58,7 @@ class AutonomousSystem(object):
         if(obj.network_type == "node"):
             self.nodes.discard(obj)
             obj.AS.remove(self)
-            self.remove_node_from_edge(obj)
-            self.remove_from_edges
+            self.remove_from_edges(obj)
         elif(obj.network_type == "trunk"):
             if(obj.AS):
                 self.trunks.discard(obj)
@@ -200,7 +199,7 @@ class ASManagement(tk.Toplevel):
                 if(eA != eB and not self.scenario.is_connected(eA, eB, "route")):
                     route_name = "-".join(str(eA), str(eB))
                     new_route = self.scenario.link_factory(link_type="route", name=route_name, s=eA, d=eB)
-                    _, new_route.path = self.scenario.hop_count(eA, eB, allowed_nodes=self.AS.nodes, allowed_trunks=self.AS.trunks)
+                    _, new_route.path = self.scenario.dijkstra(eA, eB, allowed_nodes=self.AS.nodes, allowed_trunks=self.AS.trunks)
                     self.scenario.create_link(new_route)
                     
 class ChangeAS(tk.Toplevel):
@@ -215,16 +214,16 @@ class ChangeAS(tk.Toplevel):
         self.grid_rowconfigure(0, weight=1)
         
         if(mode == "add"):
-            text = "Add to AS"
+            text = "Choose AS"
             command = lambda: self.add_to_AS(scenario, *obj)
-            values = set(scenario.pn["AS"].values())
+            values = tuple(map(str, scenario.pn["AS"].values()))
         elif(mode == "manage"):
             text = "Manage AS"
-            values = AS or ""
+            values = tuple(map(str, AS))
             command = lambda: self.manage_AS(scenario)
         elif(mode == "remove"):
             text = "Remove from AS"
-            values = AS or ""
+            values = tuple(map(str, AS))
             command = lambda: self.remove_from_AS(scenario, *obj)
         
         # List of existing AS

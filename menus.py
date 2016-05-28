@@ -17,7 +17,7 @@ class RightClickMenu(tk.Menu):
         # initialize menu parameters depending on what is selected:
         
         # at least one object: deletion or create AS
-        self.add_command(label="Delete", command=lambda: scenario.remove_objects(scenario))
+        self.add_command(label="Delete", command=lambda: self.remove_objects(scenario))
         self.add_command(label="Create AS", command=lambda: self.create_AS(scenario))  
         
         # exactly one object: property window 

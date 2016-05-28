@@ -5,6 +5,7 @@ from tkinter import ttk, filedialog
 import network
 import collections
 import object_management_window
+import advanced_graph_options
 import drawing_options_window
 import frame
 import scenario
@@ -46,6 +47,14 @@ class NetDim(tk.Tk):
         ("Traffic", ("None", "Name", "Distance"))
         ])
         
+        self.object_import_export = collections.OrderedDict([
+        ("node", ("name", "x", "y", "longitude", "latitude")),
+        ("trunk", ("name", "source", "destination", "distance", "cost", "capacity")),
+        ("route", ("name", "source", "destination", "distance", 
+        "path_constraints", "excluded_nodes", "excluded_trunks", "path", "subnets")),
+        ("traffic", ("name", "source", "destination", "distance"))
+        ])
+        
         ## ----- Menus : -----
         menubar = tk.Menu(self)
         main_menu = tk.Menu(menubar, tearoff=0)
@@ -64,7 +73,7 @@ class NetDim(tk.Tk):
         menu_drawing.add_command(label="Default drawing parameters", command=lambda: self.drawing_option_window.deiconify())
         menubar.add_cascade(label="Network drawing",menu=menu_drawing)
         menu_routing = tk.Menu(menubar, tearoff=0)
-        menu_routing.add_command(label="Find flow")
+        menu_routing.add_command(label="Advanced graph options", command=lambda: self.advanced_graph_options.deiconify())
         menubar.add_cascade(label="Network routing",menu=menu_routing)
 
         # label submenus
@@ -115,6 +124,8 @@ class NetDim(tk.Tk):
         
         # drawing options window
         self.drawing_option_window = drawing_options_window.DrawingOptions(self)
+        # advanced graph options
+        self.advanced_graph_options = advanced_graph_options.AdvancedGraphOptionsWindow(self)
         
         # create a frame
         self.main_frame = frame.MainFrame(self)
@@ -226,11 +237,18 @@ class NetDim(tk.Tk):
                     
         elif(filepath.endswith(".xls")):
             book = xlrd.open_workbook(filepath)
-            first_sheet = book.sheets()[0]
-            # not pythonic: index manipulation
-            for i in range(first_sheet.nrows):
-                source_name, destination_name = first_sheet.row_values(i)
-                self.cs.graph_from_names(source_name, destination_name)
+            for id, obj_type in enumerate(self.object_import_export):
+                xls_sheet = book.sheets()[id]
+                for row_index in range(1, xls_sheet.nrows):
+                    if(obj_type == "node"):
+                        # TODO multiple argument error when adding *param as an argument
+                        n, *param = xls_sheet.row_values(row_index)
+                        print(n, param)
+                        self.cs.node_factory(*param, node_type="router", name=n)
+                    else:
+                        n, s, d, *param = xls_sheet.row_values(row_index)
+                        src, dest = self.cs.node_factory(name=s), self.cs.node_factory(name=d)
+                        self.cs.link_factory(*param, link_type=obj_type, name=n, s=src, d=dest)
                 
         # for the topology zoo network graphs
         elif(filepath.endswith(".graphml")):
@@ -295,10 +313,12 @@ class NetDim(tk.Tk):
             
         if(file_format == ".xls"):
             excel_workbook = xlwt.Workbook()
-            first_sheet = excel_workbook.add_sheet("graph")
-            for i, t in enumerate(self.cs.pn["trunk"].values()):
-                first_sheet.write(i, 0, str(t.source))
-                first_sheet.write(i, 1, str(t.destination))
+            for obj_type in self.object_import_export:
+                xls_sheet = excel_workbook.add_sheet(obj_type)
+                for id, property in enumerate(self.object_import_export[obj_type]):
+                    xls_sheet.write(0, id, property)
+                    for i, t in enumerate(self.cs.pn[obj_type].values(), 1):
+                        xls_sheet.write(i, id, str(t.__dict__[property]))
             excel_workbook.save(selected_file.name)
         selected_file.close()
         

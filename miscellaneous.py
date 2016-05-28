@@ -1,3 +1,5 @@
+# TODO union-find structure
+
 import tkinter as tk
 
 def overrides(interface_class):
@@ -28,3 +30,5 @@ class ObjectListbox(tk.Listbox):
     def insert(self, obj):
         if str(obj) not in self:
             super(ObjectListbox, self).insert(tk.END, obj)
+            
+# special tk.Tk with focus in 0.0

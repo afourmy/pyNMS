@@ -1,5 +1,6 @@
 from collections import defaultdict
 from heapq import heappop, heappush
+from collections import deque
 import objects
 import AS
 import math
@@ -31,7 +32,7 @@ class Network(object):
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link, self.cpt_node, self.cpt_AS = (0,)*3
             
-    def link_factory(self, link_type="trunk", name=None, s=None, d=None, *param):
+    def link_factory(self, *param, link_type="trunk", name=None, s=None, d=None):
         if not name:
             name = link_type + str(self.cpt_link)
         # creation link in the s-d direction if no link at all yet
@@ -43,11 +44,12 @@ class Network(object):
             self.graph[d][link_type].add(new_link)
         return self.pn[link_type][name]
         
-    def node_factory(self, name=None, node_type="router", pos_x=100, pos_y=100, *param):
+    def node_factory(self, *param, node_type="router", name=None):
         if not name:
             name = "node" + str(self.cpt_node)
         if name not in self.pn["node"]:
-            self.pn["node"][name] = Network.node_type_to_class[node_type](name, pos_x, pos_y, *param)
+            print(name, param)
+            self.pn["node"][name] = Network.node_type_to_class[node_type](name, *param)
             self.cpt_node += 1
         return self.pn["node"][name]
         
@@ -59,10 +61,11 @@ class Network(object):
             self.cpt_AS += 1
         return self.pn["AS"][name]
         
-    def graph_from_names(self, source_name, destination_name):
+    def graph_from_names(self, source_name, destination_name, name=None):
         """ Create nodes and links from text name. Useful when importing the graph """
         source, destination = self.node_factory(source_name), self.node_factory(destination_name)
-        self.link_factory(s=source,d=destination)
+        link = self.link_factory(s=source,d=destination, name=name)
+        return link
             
     def erase_network(self):
         self.graph.clear()
@@ -99,13 +102,13 @@ class Network(object):
         
     def number_of_links_between(self, nodeA, nodeB):
         sum = 0
-        for link_type in ["trunk", "route", "traffic"]:
-            for link in self.graph[nodeA][link_type]:
+        for type in self.link_type:
+            for link in self.graph[nodeA][type]:
                 if(link.source == nodeB or link.destination == nodeB):
                     sum += 1
         return sum
         
-    def _bfs(self, source):
+    def bfs(self, source):
         visited = set()
         layer = {source}
         while layer:
@@ -114,21 +117,22 @@ class Network(object):
             for node in temp:
                 if node not in visited:
                     visited.add(node)
-                    layer.update(self.graph[node])
-                    yield node
-
+                    for adj_link in self.graph[node]["trunk"]:
+                        neighbor = adj_link.destination if node == adj_link.source else adj_link.source
+                        layer.add(neighbor)
+                        yield neighbor
                     
     def connected_components(self):
         visited = set()
-        connected_components = []
         for node in self.graph:
             if node not in visited:
-                new_connected_set = set(self._bfs(node))
-                connected_components.append(new_connected_set)
-                visited.update(new_connected_set)
-        return connected_components
+                new_comp = set(self.bfs(node))
+                visited.update(new_comp)
+                yield new_comp
+                
+        ## Shortest path(s) algorithm: Dijkstra, Bellman-Ford, all-paths (BFS)
             
-    def hop_count(self, source, target, excluded_trunks=None, excluded_nodes=None, path_constraints=None, allowed_trunks=None, allowed_nodes=None):
+    def dijkstra(self, source, target, excluded_trunks=None, excluded_nodes=None, path_constraints=None, allowed_trunks=None, allowed_nodes=None):
         # Complexity: O(|V| + |E|log|V|)
         
         # initialize parameters
@@ -150,7 +154,7 @@ class Network(object):
             prec_node = {i: None for i in allowed_nodes}
             prec_link = {i: None for i in allowed_nodes}
             visited = {i: False for i in allowed_nodes}
-            dist = {i: float('inf') for i in allowed_nodes}
+            dist = {i: float("inf") for i in allowed_nodes}
             dist[s] = 0
             heap = [(0, s)]
             while heap:
@@ -172,7 +176,7 @@ class Network(object):
                             prec_link[neighbor] = adj_trunk
                             heappush(heap, (dist_neighbor, neighbor))
             
-            # traceback the path from target to source
+            # traceback the path from t to s, for each (s,t) from source to target
             if(visited[t]):
                 curr, path_node, path_link = t, [t], [prec_link[t]]
                 while(curr != s):
@@ -183,7 +187,54 @@ class Network(object):
                 full_path_link += [path_link[:-1][::-1]]
             else:
                 return [], []
+                
         return sum(full_path_node, [source]), sum(full_path_link, [])
+        
+    def bellman_ford(self, source, target, excluded_trunks=None, excluded_nodes=None, allowed_trunks=None, allowed_nodes=None):
+        # Complexity: O(|V| + |E|log|V|)
+        
+        # initialize parameters
+        if(excluded_nodes is None):
+            excluded_nodes = []
+        if(excluded_trunks is None):
+            excluded_trunks = []
+        if(allowed_trunks is None):
+            allowed_trunks = self.pn["trunk"].values()
+        if(allowed_nodes is None):
+            allowed_nodes = self.pn["node"].values()
+
+        n = len(allowed_nodes)
+        prec_node = {i: None for i in allowed_nodes}
+        prec_link = {i: None for i in allowed_nodes}
+        dist = {i: float("inf") for i in allowed_nodes}
+        dist[source] = 0
+        
+        for i in range(n+2):
+            negative_cycle = False
+            for node in allowed_nodes:
+                for adj_trunk in self.graph[node]["trunk"]:
+                    neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
+                    # excluded and allowed nodes
+                    if neighbor in excluded_nodes or neighbor not in allowed_nodes: continue
+                    # excluded and allowed trunks
+                    if adj_trunk in excluded_trunks or adj_trunk not in allowed_trunks: continue
+                    dist_neighbor = dist[node] + adj_trunk.cost
+                    if dist_neighbor < dist[neighbor]:
+                        dist[neighbor] = dist_neighbor
+                        prec_node[neighbor] = node
+                        prec_link[neighbor] = adj_trunk
+                        negative_cycle = True
+                        
+        # traceback the path from target to source
+        if(dist[target] != float("inf")):
+            curr, path_node, path_link = target, [target], [prec_link[target]]
+            while(curr != source):
+                curr = prec_node[curr]
+                path_link.append(prec_link[curr])
+                path_node.append(curr)
+            return path_node[::-1], path_link[:-1][::-1]
+        else:
+            return [], []
         
     def all_paths(self, source, target=None):
         # generates all cycle-free paths from source to optional target
@@ -208,49 +259,91 @@ class Network(object):
                 yield list(path)
         yield from find_all_paths()
         
+    ## Flow algorithms: Ford-Fulkerson, Edmonds-Karp
+        
     def reset_flow(self):
         for link in self.pn["trunk"].values():
             link.flow["SD"] = 0
             link.flow["DS"] = 0
         
-    def _augment_ff(self, val, current_node, target, visit):
-        visit[current_node] = True
-        if(current_node == target):
+    def augment_ff(self, val, curr_node, target, visit):
+        visit[curr_node] = True
+        if(curr_node == target):
             return val
-        for attached_link in self.graph[current_node]["trunk"]:
-            neighbor = attached_link.destination if current_node == attached_link.source else attached_link.source
-            direction = current_node == attached_link.source
+        for adj_link in self.graph[curr_node]["trunk"]:
+            neighbor = adj_link.destination if curr_node == adj_link.source else adj_link.source
+            direction = curr_node == adj_link.source
             sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
-            cap = attached_link.capacity[sd]
-            current_flow = attached_link.flow[sd]
+            cap = adj_link.capacity[sd]
+            current_flow = adj_link.flow[sd]
             if cap > current_flow and not visit[neighbor]:
                 residual_capacity = min(val, cap - current_flow)
-                global_flow = self._augment_ff(residual_capacity, neighbor, target, visit)
+                global_flow = self.augment_ff(residual_capacity, neighbor, target, visit)
                 if(global_flow > 0):
-                    attached_link.flow[sd] += global_flow
-                    attached_link.flow[ds] -= global_flow
+                    adj_link.flow[sd] += global_flow
+                    adj_link.flow[ds] -= global_flow
                     return global_flow
         return False
         
     def ford_fulkerson(self, source, destination):
-        n = len(self.pn["node"])
         self.reset_flow()
-        while(self._augment_ff(float("inf"), source, destination, {n:0 for n in self.pn["node"].values()})):
+        while(self._augment_ff(float("inf"), source, destination, {n:0 for n in self.graph})):
             pass
         # flow leaving from the source 
-        sum = 0
-        for attached_link in self.graph[source]["trunk"]:
-            sum += attached_link.flow[(source == attached_link.source)*"SD" or "DS"]
-        return sum
+        return sum(adj.flow[(source == adj.source)*"SD" or "DS"] for adj in self.graph[source]["trunk"])
         
-    def route_flows(self):
-        for flow in self.flows:
-            constraints = flow.routing_policy.get_constraints()
-            flow.path = self.constrained_hop_count(flow.ingress, flow.egress, *constraints)
+    def augment_ek(self, source, destination):
+        res_cap = {n:0 for n in self.graph}
+        augmenting_path = {n: None for n in self.graph}
+        Q = deque()
+        Q.append(source)
+        augmenting_path[source] = source
+        res_cap[source] = float("inf")
+        while Q:
+            curr_node = Q.popleft()
+            for adj_link in self.graph[curr_node]["trunk"]:
+                neighbor = adj_link.destination if curr_node == adj_link.source else adj_link.source
+                direction = curr_node == adj_link.source
+                sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
+                residual = adj_link.capacity[sd] - adj_link.flow[sd]
+                if residual and augmenting_path[neighbor] is None:
+                    augmenting_path[neighbor] = curr_node
+                    res_cap[neighbor] = min(res_cap[curr_node], residual)
+                    if neighbor == destination:
+                        break
+                    else:
+                        Q.append(neighbor)
+        return augmenting_path, res_cap[destination]
+        
+    def edmonds_karp(self, source, destination):
+        self.reset_flow()
+        while(True):
+            augmenting_path, global_flow = self.augment_ek(source, destination)
+            if not global_flow:
+                break
+            curr_node = destination
+            while curr_node != source:
+                # find the trunk between the two nodes
+                prec_node = augmenting_path[curr_node]
+                find_trunk = lambda t: prec_node in (t.source, t.destination)
+                trunk ,= filter(find_trunk, self.graph[curr_node]["trunk"])
+                # define sd and ds depending on how the link is defined
+                direction = curr_node == trunk.source
+                sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
+                trunk.flow[ds] += global_flow
+                trunk.flow[sd] -= global_flow
+                curr_node = prec_node 
+        return sum(adj.flow[(source == adj.source)*"SD" or "DS"] for adj in self.graph[source]["trunk"])
+        
+    def minimum_spanning_tree(self, allowed_nodes, allowed_links):
+        pass
             
+    ## distance functions
+    
     def distance(self, p, q): 
         return math.sqrt(p*p + q*q)
         
+    # TODO take 2 node as argument and set the distance of trunk between them
     def haversine_distance(self, lon_nA, lat_nA, lon_nB, lat_nB):
         """ Earth distance between two nodes """
         
@@ -264,6 +357,8 @@ class Network(object):
         r = 6371 # Radius of earth in kilometers. Use 3956 for miles
         return c*r
             
+    ## force functions
+    
     def force_de_coulomb(self, dx, dy, dist, beta):
         c = dist and beta/dist**3
         return (-c*dx, -c*dy)
@@ -272,6 +367,14 @@ class Network(object):
         dl = dist - dij
         const = k * dl / dist
         return (const * dx, const * dy)
+        
+    def fa(self, d, k):
+        return (d**2)/k
+    
+    def fr(self, d, k):
+        return -(k**2)/d
+        
+    ## force-directed layout algorithms: Eades ("spring") and Fruchterman-Reingold algorithms
             
     def move_basic(self, alpha, beta, k, eta, delta, raideur):            
         for nodeA in self.pn["node"].values():
@@ -292,12 +395,6 @@ class Network(object):
         for n in self.pn["node"].values():
             n.x += round(n.vx * delta)
             n.y += round(n.vy * delta)
-            
-    def fa(self, d, k):
-        return (d**2)/k
-    
-    def fr(self, d, k):
-        return -(k**2)/d
         
     def fruchterman(self, k):
         t = 1
@@ -330,6 +427,8 @@ class Network(object):
             # n.y = min(700, max(0, n.y))
             
         t *= 0.99
+        
+    ## graph generation functions: hypercube, square tiling, tree, star, full mesh, ring 
             
     def generate_hypercube(self, n):
         i = 0
@@ -363,7 +462,7 @@ class Network(object):
     def generate_star(self, n):
         nb_node = len(self.pn["node"])
         for i in range(n):
-            self.link_factory(s=self.node_factory(str(nb_node)), d=self.node_factory(str(nb_node+1+i)))
+            self.link_factory(s=self.node_factory(name=str(nb_node)), d=self.node_factory(name=str(nb_node+1+i)))
             
     def generate_full_mesh(self, n):
         nb_node = len(self.pn["node"])
