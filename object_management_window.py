@@ -24,8 +24,11 @@ class ObjectManagementWindow(CustomTopLevel):
         for index, property in enumerate(master.object_properties[type]):
             str_var = tk.StringVar()
             self.dict_var[property] = str_var
-            tk.Label(self, text=property.title(), bg="#A1DBCD").grid(row=index+1, pady=5, padx=5, column=0, sticky=tk.W)
-            tk.Entry(self, textvariable=str_var, width=15, state="readonly" if property in ("source", "destination", "path", "flowSD", "flowDS") else tk.NORMAL).grid(row=index+1, pady=5, padx=5, column=1, sticky=tk.W)
+            label = tk.Label(self, text=property.title(), bg="#A1DBCD")
+            label.grid(row=index+1, pady=5, padx=5, column=0, sticky=tk.W)
+            s = "readonly" if property in ("source","destination","path","flowSD","flowDS") else tk.NORMAL
+            entry = tk.Entry(self, textvariable=str_var, width=15, state=s)
+            entry.grid(row=index+1, pady=5, padx=5, column=1, sticky=tk.W)
     
         # route finding possibilities for a route 
         if(type == "route"):
@@ -45,18 +48,17 @@ class ObjectManagementWindow(CustomTopLevel):
         if(excluded_trunks):
             l_excluded_trunks = [master.cs.link_factory(name=t) for t in excluded_trunks]
         if(excluded_nodes):
-            l_excluded_nodes = [master.cs.node_factory(n) for n in excluded_nodes]
+            l_excluded_nodes = [master.cs.node_factory(name=n) for n in excluded_nodes]
         if(path_constraints):
-            l_path_constraints = [master.cs.node_factory(n) for n in path_constraints]
+            l_path_constraints = [master.cs.node_factory(name=n) for n in path_constraints]
         return (name, source, destination, l_excluded_trunks, l_excluded_nodes, l_path_constraints)
         
     def find_path(self, master):
-        # name, *parameters = self.get_user_input(master)
-        # route_path_nodes, route_path_links = master.cs.dijkstra(*parameters)
+        name, *parameters = self.get_user_input(master)
+        route_path_nodes, route_path_links = master.cs.dijkstra(*parameters)
         
-        name, source, target, *e = self.get_user_input(master)
-        route_path_nodes, route_path_links = master.cs.bellman_ford(source, target)
-        print(route_path_nodes, route_path_links)
+        # name, source, target, *e = self.get_user_input(master)
+        # route_path_nodes, route_path_links = master.cs.bellman_ford(source, target)
         
         # _, source, *e = self.get_user_input(master)
         # print(source)
@@ -74,9 +76,6 @@ class ObjectManagementWindow(CustomTopLevel):
             self.var_focus.set(1)
             self.change_focus()
             messagebox.showinfo("Warning", "No path found")
-        
-    def change_focus(self):
-        self.wm_attributes("-topmost", self.var_focus.get())
         
     def save_obj(self, master):
         for property, str_var in self.dict_var.items():

@@ -1,0 +1,14 @@
+node
+node,1,100,100,0,0
+node,2,100,100,0,0
+node,0,100,100,0,0
+node,3,100,100,0,0
+trunk
+trunk,trunk1,0,2,0,1,1,3,3
+trunk,trunk3,0,3,0,1,1,3,3
+trunk,trunk5,2,3,0,1,1,3,3
+trunk,trunk2,1,2,0,1,1,3,3
+trunk,trunk4,1,3,0,1,1,3,3
+trunk,trunk0,0,1,0,1,1,3,3
+route
+traffic

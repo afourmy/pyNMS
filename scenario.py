@@ -7,6 +7,8 @@ import math
 class Scenario(network.Network, tk.Canvas):
     
     def __init__(self, master, name):
+        #TODO refactor this
+        # http://stackoverflow.com/questions/3277367/how-does-pythons-super-work-with-multiple-inheritance
         network.Network.__init__(self, name)
         tk.Canvas.__init__(self, width=1100, height=600, background="bisque")
         self.object_id_to_object = {}
@@ -21,7 +23,6 @@ class Scenario(network.Network, tk.Canvas):
         
         # default link width and node size
         self.LINK_WIDTH = 5
-        self.test = []
         
         # default label display
         self._current_object_label = {obj_type: "name" for obj_type in self.all_type}

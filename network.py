@@ -6,7 +6,7 @@ import AS
 import math
 import random
 import numpy
-from cvxopt import matrix, glpk
+from cvxopt import matrix, glpk, solvers
 
 class Network(object):
     
@@ -33,6 +33,8 @@ class Network(object):
         self.name = name
         # pn for "pool network"
         self.pn = {"trunk": {}, "node": {}, "route": {}, "traffic": {}, "AS": {}}
+        # TODO il faudrait que graph contienne également les neighbor...
+        # graph[node]["trunk"] = (neighbor, trunk)
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link, self.cpt_node, self.cpt_AS = (0,)*3
             
@@ -64,11 +66,10 @@ class Network(object):
             self.cpt_AS += 1
         return self.pn["AS"][name]
         
-    # TODO delete this when I import/export everythign: no longer needed
     def graph_from_names(self, source_name, destination_name, name=None):
         """ Create nodes and links from text name. Useful when importing the graph """
-        source, destination = self.node_factory(source_name), self.node_factory(destination_name)
-        link = self.link_factory(s=source,d=destination, name=name)
+        source, destination = self.node_factory(name=source_name), self.node_factory(name=destination_name)
+        link = self.link_factory(name=name, s=source, d=destination)
         return link
             
     def erase_network(self):
@@ -219,7 +220,7 @@ class Network(object):
             for node in allowed_nodes:
                 for adj_trunk in self.graph[node]["trunk"]:
                     neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
-                    sd = (node == adj_trunk.source)*"SD" or "DS", direction*"DS" or "SD"
+                    sd = (node == adj_trunk.source)*"SD" or "DS"
                     # excluded and allowed nodes
                     if neighbor in excluded_nodes or neighbor not in allowed_nodes: continue
                     # excluded and allowed trunks
@@ -345,100 +346,72 @@ class Network(object):
     def kruskal(self, allowed_nodes):
         uf = miscellaneous.UnionFind(allowed_nodes)
         edges = []
-        for node in self.graph:
+        for node in allowed_nodes:
             for adj_trunk in self.graph[node]["trunk"]:
                 neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
-                edges.append((adj_trunk.costSD, adj_trunk, node, neighbor))
+                if neighbor in allowed_nodes:
+                    edges.append((adj_trunk.costSD, adj_trunk, node, neighbor))
         minimum_spanning_tree = []
         for w, t, u, v in sorted(edges, key=lambda x: x[0]):
             if uf.union(u, v):
                 yield t
                 
     ## Linear programming to solve the maximum flow problem
-    
+                
     def LP_MF_formulation(self, s, t):
         """
-        Solves the mixed integer LP
-            minimize    c'*x       
-            subject to  G*x + s = h
-                        A*x = b    
-                        s >= 0
-                        xi integer, forall i in I
-                        
-        using MOSEK 7.0.
-        solsta, x = ilp(c, G, h, A=None, b=None, I=None).
+        Solves the MILP: minimize c'*x
+                subject to G*x + s = h
+                            A*x = b
+                            s >= 0
+                            xi integer, forall i in I
         """
-        n = 2*len(self.pn["trunk"])
-        v = len(self.graph)
-        c = []
-        for node in self.graph:
-            for trunk in self.graph[node]["trunk"]:
-                c.append(node == s and trunk.source == s)
-        A = []
-        for node_r in self.graph:
-            row = []
-            if(node_r not in (s, t)):
-                for node in self.graph:
-                    for trunk in self.graph[node]["trunk"]:
-                        row.append(1 if trunk.destination == node_r else -1 if trunk.source == node_r else 0)
-                A.append(row)
-        b = [0]*(v-2)
-        G = []
-        cpt = 0
-        for node in self.graph:
-            for trunk in self.graph[node]["trunk"]:
-                row = [0]*n 
-                row[cpt] = 1
-                cpt += 1
-                G.append(row)
-        cpt = 0
-        for node in self.graph:
-            for trunk in self.graph[node]["trunk"]:
-                row = [0]*n
-                row[cpt] = -1
-                cpt += 1
-                G.append(row)
-        h = []
+        
+        new_graph = {node: {} for node in self.graph}
         for node in self.graph:
             for trunk in self.graph[node]["trunk"]:
                 neighbor = trunk.destination if node == trunk.source else trunk.source
                 sd = (node == trunk.source)*"SD" or "DS"
-                h.append(trunk.__dict__["capacity" + sd])
-        h += [0]*n
-        
-        A = list(list(map(float, row)) for row in A)
-        G = list(list(map(float, row)) for row in G)
-        b = list(map(float, b))
-        c = list(map(float, c))
-        h = list(map(float, h))
-        
-        print(len(A[0]))
-        print(len(A))
-        print(len(G[0]))
-        print(len(G))
-        print(len(b))
-        print(len(c))
-        print(len(h))
-        
-        A = matrix(A)
-        A = A.T
-        G = matrix(G)
-        G = G.T
-        b = matrix(b)
-        c = matrix(c)
-        h = matrix(h)
-        
-        #print(A, b, c)
-        solsta, x = glpk.ilp(-c, G, h, A, b)
-        tot = 0
-        for node in self.graph:
-            for trunk in self.graph[node]["trunk"]:
-                print(node, trunk)
-        print(tot // 2)
-        print(x)
-  
+                new_graph[node][neighbor] = trunk.__dict__["capacity" + sd]
 
-                    
+        n = 2*len(self.pn["trunk"])
+        v = len(new_graph)
+        c, h = [], []
+        for node in new_graph:
+            for neighbor, capacity in new_graph[node].items():
+                c.append(float(node == s))
+                h.append(float(capacity))
+                
+        # flow conservation: Ax = b
+        A = []
+        for node_r in new_graph:
+            row = []
+            if node_r not in (s, t):
+                for node in new_graph:
+                    for neighbor in new_graph[node]:
+                        row.append(1. if neighbor == node_r else -1. if node == node_r else 0.)
+                A.append(row)
+                
+        b, h = [0.]*(v-2), h+[0.]*n
+        x = numpy.eye(n, n)
+        H = numpy.concatenate((x, -1*x), axis=0).tolist()        
+        A, H, b, c, h = map(matrix, (A, H, b, c, h))
+        A, H = A.T, H.T
+        solsta, x = glpk.ilp(-c, H, h, A, b)
+
+        # update the resulting flow for each node
+        cpt = 0
+        for node in new_graph:
+            for neighbor in new_graph[node]:
+                new_graph[node][neighbor] = x[cpt]
+                cpt += 1
+        # update the network trunks with the new flow value
+        for trunk in self.pn["trunk"].values():
+            src, dest = trunk.source, trunk.destination
+            trunk.flowSD = new_graph[src][dest]
+            trunk.flowDS = new_graph[dest][src]
+
+        return sum(adj.__dict__["flow" + ((s == adj.source)*"SD" or "DS")] for adj in self.graph[s]["trunk"])
             
     ## Distance functions
     

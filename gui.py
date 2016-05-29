@@ -83,7 +83,8 @@ class NetDim(tk.Tk):
         for obj_type, label_type in self.object_label.items():
             menu_type = tk.Menu(menubar, tearoff=0)
             for lbl in label_type:
-                menu_type.add_command(label=lbl, command=lambda obj_type=obj_type, lbl=lbl:  self.cs._refresh_object_labels(obj_type.lower(), lbl.lower()))
+                cmd = lambda o=obj_type, l=lbl:  self.cs._refresh_object_labels(o.lower(), l.lower())
+                menu_type.add_command(label=lbl, command=cmd)
             menu_options.add_cascade(label=obj_type + " label", menu=menu_type)
             
         menu_options.add_command(label="Change display", command=lambda: self.cs.change_display())
@@ -91,7 +92,8 @@ class NetDim(tk.Tk):
         menu_display = tk.Menu(menubar, tearoff=0)
         for index, type in enumerate(self.object_properties):
             new_label = " ".join(("Hide", type))
-            menu_display.add_command(label=new_label, command=lambda type=type, index=index: self.cs.show_hide(menu_display, type, index))
+            cmd = lambda t=type, i=index: self.cs.show_hide(menu_display, t, i)
+            menu_display.add_command(label=new_label, command=cmd)
         menu_options.add_cascade(label="Show/hide object", menu=menu_display)
             
         menubar.add_cascade(label="Options",menu=menu_options)
@@ -135,7 +137,7 @@ class NetDim(tk.Tk):
         self.main_frame.pack_propagate(False)
         
         # image for motion
-        self.image_pil_netdim = ImageTk.Image.open(self.path_icon + "netdim1.gif").resize((75,75))
+        self.image_pil_netdim = ImageTk.Image.open(self.path_icon + "netdim1.gif").resize((75, 75))
         self.image_netdim = ImageTk.PhotoImage(self.image_pil_netdim)
         self.main_frame.netdim.config(image = self.image_netdim, width=75, height=75)
         
@@ -234,15 +236,25 @@ class NetDim(tk.Tk):
             try:
                 file_to_import = open(filepath, "rt")
                 reader = csv.reader(file_to_import)
-                for row in filter(None,reader):
-                    source_name, destination_name = row
-                    self.cs.graph_from_names(source_name, destination_name)
+                for row in filter(None, reader):
+                    obj_type, *other = row
+                    if(other):
+                        if(obj_type == "node"):
+                            print(other)
+                            n, *param = other
+                            self.cs.node_factory(*param, node_type="router", name=n)
+                        else:
+                            n, s, d, *param = other
+                            src, dest = self.cs.node_factory(name=s), self.cs.node_factory(name=d)
+                            self.cs.link_factory(*param, link_type=obj_type, name=n, s=src, d=dest)
+                        #self.cs.graph_from_names(source_name, destination_name)
             finally:
                 file_to_import.close()
                 
         elif(filepath.endswith(".txt")):
             with open(filepath, "r") as file_to_import:
                 for row in file_to_import:
+                    properties = row.split(",")
                     source_name, destination_name = row.split()
                     self.cs.graph_from_names(source_name, destination_name)
                     
@@ -269,7 +281,6 @@ class NetDim(tk.Tk):
             # label will be the name of the node
             properties = ["label", "Longitude", "Latitude"]
             
-            label_id = None
             for element in tree.iter():
                 for child in element:
                     if "key" in child.tag:
@@ -312,7 +323,12 @@ class NetDim(tk.Tk):
         filename, file_format = os.path.splitext(selected_file.name)
 
         if(file_format in (".txt", ".csv")):
-            graph_per_line = ("{},{}".format(t.source, t.destination) for t in self.cs.pn["trunk"].values())
+            graph_per_line = []
+            for obj_type, properties in self.object_import_export.items():
+                graph_per_line.append(obj_type)
+                for obj in self.cs.pn[obj_type].values():
+                    param = ",".join(str(obj.__dict__[property]) for property in properties)
+                    graph_per_line.append(",".join((obj_type, param)))
             if(file_format == ".txt"):
                 selected_file.write("\n".join(graph_per_line))
             else:
@@ -322,9 +338,9 @@ class NetDim(tk.Tk):
             
         if(file_format == ".xls"):
             excel_workbook = xlwt.Workbook()
-            for obj_type in self.object_import_export:
+            for obj_type, properties in self.object_import_export.items():
                 xls_sheet = excel_workbook.add_sheet(obj_type)
-                for id, property in enumerate(self.object_import_export[obj_type]):
+                for id, property in enumerate(properties):
                     xls_sheet.write(0, id, property)
                     for i, t in enumerate(self.cs.pn[obj_type].values(), 1):
                         xls_sheet.write(i, id, str(t.__dict__[property]))

@@ -13,7 +13,7 @@ def start_and_import(filename):
     def inner_decorator(function):
         def wrapper(self):
             self.netdim = gui.NetDim(path_app)
-            path_test = self.netdim.path_workspace + "Tests\\"
+            path_test = path_app + "Tests\\"
             self.netdim.import_graph(path_test + filename)
             function(self)
         return wrapper
@@ -36,6 +36,10 @@ class TestFlow(unittest.TestCase):
     def test_edmonds_karp(self):
         ek_flow = self.netdim.cs.edmonds_karp(self.source, self.target)
         self.assertEqual(ek_flow, 19)   
+    
+    def test_LP_flow(self):
+        LP_flow = self.netdim.cs.LP_MF_formulation(self.source, self.target)
+        self.assertEqual(LP_flow, 19)   
         
 class TestMST(unittest.TestCase):
  
@@ -52,4 +56,5 @@ class TestMST(unittest.TestCase):
         self.assertEqual(mst_costs, {1, 2, 4})
         
 if __name__ == '__main__':
+    unittest.main(warnings='ignore')  
     unittest.main()
