@@ -23,11 +23,11 @@ class RightClickMenu(tk.Menu):
             self.add_command(label="Properties", command=lambda: self.show_object_properties(scenario))
       
         # at least one AS in the network: add to AS
-        if(scenario.pn["AS"]):
+        if(scenario.ntw.pn["AS"]):
             self.add_command(label="Add to AS", command=lambda: self.change_AS(scenario, "add"))
         
         # we compute the set of common AS among all selected objects
-        self.common_AS = set(scenario.pn["AS"].values())
+        self.common_AS = set(scenario.ntw.pn["AS"].values())
         for link in scenario.so["link"]:
             self.common_AS &= {link.AS}
         for node in scenario.so["node"]:

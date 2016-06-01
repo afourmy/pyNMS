@@ -40,29 +40,29 @@ class ObjectManagementWindow(CustomTopLevel):
     
     def get_user_input(self, master):
         name = self.dict_var["name"].get()
-        source = master.cs.node_factory(name=self.dict_var["source"].get())
-        destination = master.cs.node_factory(name=self.dict_var["destination"].get())
+        source = master.cs.ntw.node_factory(name=self.dict_var["source"].get())
+        destination = master.cs.ntw.node_factory(name=self.dict_var["destination"].get())
         excluded_trunks = filter(None, self.dict_var["excluded_trunks"].get().strip().split(","))
         excluded_nodes = filter(None, self.dict_var["excluded_nodes"].get().strip().split(","))
         path_constraints = filter(None, self.dict_var["path_constraints"].get().strip().split(","))
         if(excluded_trunks):
-            l_excluded_trunks = [master.cs.link_factory(name=t) for t in excluded_trunks]
+            l_excluded_trunks = {master.cs.ntw.link_factory(name=t) for t in excluded_trunks}
         if(excluded_nodes):
-            l_excluded_nodes = [master.cs.node_factory(name=n) for n in excluded_nodes]
+            l_excluded_nodes = {master.cs.ntw.node_factory(name=n) for n in excluded_nodes}
         if(path_constraints):
-            l_path_constraints = [master.cs.node_factory(name=n) for n in path_constraints]
+            l_path_constraints = [master.cs.ntw.node_factory(name=n) for n in path_constraints]
         return (name, source, destination, l_excluded_trunks, l_excluded_nodes, l_path_constraints)
         
     def find_path(self, master):
         name, *parameters = self.get_user_input(master)
-        route_path_nodes, route_path_links = master.cs.dijkstra(*parameters)
+        route_path_nodes, route_path_links = master.cs.ntw.dijkstra(*parameters)
         
         # name, source, target, *e = self.get_user_input(master)
-        # route_path_nodes, route_path_links = master.cs.bellman_ford(source, target)
+        # route_path_nodes, route_path_links = master.cs.ntw.bellman_ford(source, target)
         
         # _, source, *e = self.get_user_input(master)
         # print(source)
-        # for p in master.cs.all_paths(source):
+        # for p in master.cs.ntw.all_paths(source):
         #     print(p)
         
         if(route_path_links):
@@ -82,18 +82,19 @@ class ObjectManagementWindow(CustomTopLevel):
             # update dict when the object is renamed
             # if it is a node, we need to remove and readd the entry in the graph dict
             # for all objects, we need to update pn
-            if(property == "name" and self.current_obj.__dict__[property] != str_var.get()):
-                if(self.current_obj.network_type == "node"):
-                    adj_links = master.cs.graph.pop(self.current_obj, None)
-                old_name = self.current_obj.__dict__[property]
-                del master.cs.pn[self.current_obj.network_type][old_name]
-                self.current_obj.__dict__[property] = str_var.get()
-                master.cs.pn[self.current_obj.network_type][str_var.get()] = self.current_obj
-                if(self.current_obj.network_type == "node"):
-                    master.cs.graph[self.current_obj] = adj_links
-            if(property == "path"):
+            if(property == "name"):
+                if(self.current_obj.__dict__[property] != str_var.get()):
+                    if(self.current_obj.network_type == "node"):
+                        adj_links = master.cs.ntw.graph.pop(self.current_obj, None)
+                    old_name = self.current_obj.__dict__[property]
+                    del master.cs.ntw.pn[self.current_obj.network_type][old_name]
+                    self.current_obj.__dict__[property] = str_var.get()
+                    master.cs.ntw.pn[self.current_obj.network_type][str_var.get()] = self.current_obj
+                    if(self.current_obj.network_type == "node"):
+                        master.cs.ntw.graph[self.current_obj] = adj_links
+            elif(property == "path"):
                 self.current_obj.__dict__[property] = self.current_path
-            elif(property in ("capacitySD", "capacityDS", "cost", "flowSD", "flowDS")):
+            else:
                 self.current_obj.__dict__[property] = eval(str_var.get())
             # refresh the label if it was changed
             master.cs._refresh_object_label(self.current_obj)

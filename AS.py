@@ -147,20 +147,20 @@ class ASManagement(tk.Toplevel):
     def highlight_object(self, event, type):
         selected_object = self.dict_listbox[type].selected()
         if(type == "trunk"):
-            selected_object = self.scenario.link_factory(name=selected_object)
+            selected_object = self.scenario.ntw.link_factory(name=selected_object)
         else:
-            selected_object = self.scenario.node_factory(name=selected_object)
+            selected_object = self.scenario.ntw.node_factory(name=selected_object)
         self.scenario.unhighlight_all()
         self.scenario.highlight_objects(selected_object)
         
     def add_to_edges(self):
         selected_node = self.dict_listbox["node"].get(self.dict_listbox["node"].curselection())
         self.dict_listbox["edge"].insert(selected_node) 
-        selected_node = self.scenario.node_factory(name=selected_node)
+        selected_node = self.scenario.ntw.node_factory(name=selected_node)
         self.AS.add_to_edges(selected_node)
             
     def remove_from_edges(self):
-        selected = self.scenario.node_factory(name=self.dict_listbox["edge"].pop_selected()) 
+        selected = self.scenario.ntw.node_factory(name=self.dict_listbox["edge"].pop_selected()) 
         self.AS.remove_from_edges(selected)
         
     def add_to_AS(self, *objects):
@@ -181,14 +181,13 @@ class ASManagement(tk.Toplevel):
         
     def find_edge_nodes(self):
         self.dict_listbox["edge"].delete(0, tk.END)
-        for edge in self.scenario.find_edge_nodes(self.AS):
+        for edge in self.scenario.ntw.find_edge_nodes(self.AS):
             self.dict_listbox["edge"].insert(edge)
             
     def find_trunks(self):
         trunks_between_domain_nodes = set()
         for node in self.AS.nodes:
-            for adj_trunk in self.scenario.graph[node]["trunk"]:
-                neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
+            for neighbor, adj_trunk in self.scenario.ntw.graph[node]["trunk"]:
                 if(neighbor in self.AS.nodes):
                     trunks_between_domain_nodes.add(adj_trunk)
         self.add_to_AS(*trunks_between_domain_nodes)
@@ -196,10 +195,10 @@ class ASManagement(tk.Toplevel):
     def create_routes(self):
         for eA in self.AS.edges:
             for eB in self.AS.edges:
-                if(eA != eB and not self.scenario.is_connected(eA, eB, "route")):
+                if(eA != eB and not self.scenario.ntw.is_connected(eA, eB, "route")):
                     route_name = "-".join((str(eA), str(eB)))
-                    new_route = self.scenario.link_factory(link_type="route", name=route_name, s=eA, d=eB)
-                    _, new_route.path = self.scenario.dijkstra(eA, eB, allowed_nodes=self.AS.nodes, allowed_trunks=self.AS.trunks)
+                    new_route = self.scenario.ntw.link_factory(link_type="route", name=route_name, s=eA, d=eB)
+                    _, new_route.path = self.scenario.ntw.dijkstra(eA, eB, allowed_nodes=self.AS.nodes, allowed_trunks=self.AS.trunks)
                     self.scenario.create_link(new_route)
                     
 class ChangeAS(tk.Toplevel):
@@ -216,7 +215,7 @@ class ChangeAS(tk.Toplevel):
         if(mode == "add"):
             text = "Choose AS"
             command = lambda: self.add_to_AS(scenario, *obj)
-            values = tuple(map(str, scenario.pn["AS"].values()))
+            values = tuple(map(str, scenario.ntw.pn["AS"].values()))
         elif(mode == "manage"):
             text = "Manage AS"
             values = tuple(map(str, AS))
@@ -241,19 +240,19 @@ class ChangeAS(tk.Toplevel):
     # they share the check + destroy
     def add_to_AS(self, scenario, *objects):
         if(self.AS_list.get() != "Choose AS"):
-            selected_AS = scenario.AS_factory(name=self.AS_list.get())
+            selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
             selected_AS.management.add_to_AS(*objects)
             self.destroy()
             
     def remove_from_AS(self, scenario, *objects):
         if(self.AS_list.get() != "Choose AS"):
-            selected_AS = scenario.AS_factory(name=self.AS_list.get())
+            selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
             selected_AS.management.remove_obj_from_AS(*objects)
             self.destroy()
         
     def manage_AS(self, scenario):
         if(self.AS_list.get() != "Choose AS"):
-            selected_AS = scenario.AS_factory(name=self.AS_list.get())
+            selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
             selected_AS.management.deiconify()
             self.destroy()
         
@@ -289,7 +288,7 @@ class ASCreation(tk.Toplevel):
         self.button_create_AS.grid(row=3,column=0, columnspan=2, pady=5, padx=5)
 
     def create_AS(self, scenario, so):
-        new_AS = scenario.AS_factory(name=self.var_name.get(), type=self.var_AS_type.get(), trunks=so["link"], nodes=so["node"])
+        new_AS = scenario.ntw.AS_factory(name=self.var_name.get(), type=self.var_AS_type.get(), trunks=so["link"], nodes=so["node"])
         new_AS.management = ASManagement(scenario, new_AS)
         self.destroy()
             

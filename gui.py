@@ -164,7 +164,7 @@ class NetDim(tk.Tk):
         }
         
         for color in ["default", "red"]:
-            for node_type in scenario.Scenario.node_type_to_class:
+            for node_type in self.cs.ntw.node_type_to_class:
                 img_path = "".join((self.path_icon, color, "_", node_type, ".gif"))
                 img_pil = ImageTk.Image.open(img_path).resize(self.dict_size_image[node_type])
                 img = ImageTk.PhotoImage(img_pil)
@@ -173,7 +173,7 @@ class NetDim(tk.Tk):
                     self.main_frame.type_to_button[node_type].config(image=img, width=50, height=50)
                 self.dict_image[color][node_type] = img
                 
-        for link_type in scenario.Scenario.link_type_to_class:
+        for link_type in self.cs.ntw.link_type_to_class:
             img_path = "".join((self.path_icon, link_type, ".png"))
             img_pil = ImageTk.Image.open(img_path).resize((85, 15))
             img = ImageTk.PhotoImage(img_pil)
@@ -212,16 +212,16 @@ class NetDim(tk.Tk):
         
     def save_project(self):
         with open('netdim_node_data.pkl', 'wb') as output:
-            pickle.dump(self.cs.pn, output, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.cs.ntw.pn, output, pickle.HIGHEST_PROTOCOL)
                 
     def load_project(self):
         with open('netdim_node_data.pkl', 'rb') as input:
-            self.cs.pn = pickle.load(input)
+            self.cs.ntw.pn = pickle.load(input)
         # once the project is loaded, the network graph needs to be recreated
         for link_type in ["trunk", "traffic", "route"]:
-            for link in self.cs.pn[link_type].values():
-                self.cs.graph[link.source][link_type].add(link)
-                self.cs.graph[link.destination][link_type].add(link)
+            for link in self.cs.ntw.pn[link_type].values():
+                self.cs.ntw.graph[link.source][link_type].add(link)
+                self.cs.ntw.graph[link.destination][link_type].add(link)
                 
     def import_graph(self, filepath=None):
         # filepath is set for unittest
@@ -229,8 +229,10 @@ class NetDim(tk.Tk):
             filepath = filedialog.askopenfilenames(initialdir=self.path_workspace, title="Import graph", filetypes=(("all files","*.*"), ("csv files","*.csv"), ("xls files","*.xls"), ("txt files","*.txt")))
             
             # no error when closing the window
-            if not filepath: return
-            else: filepath ,= filepath
+            if not filepath: 
+                return
+            else: 
+                filepath ,= filepath
 
         if(filepath.endswith(".csv")):
             try:
@@ -240,23 +242,28 @@ class NetDim(tk.Tk):
                     obj_type, *other = row
                     if(other):
                         if(obj_type == "node"):
-                            print(other)
                             n, *param = other
-                            self.cs.node_factory(*param, node_type="router", name=n)
+                            self.cs.ntw.node_factory(*param, node_type="router", name=n)
                         else:
                             n, s, d, *param = other
-                            src, dest = self.cs.node_factory(name=s), self.cs.node_factory(name=d)
-                            self.cs.link_factory(*param, link_type=obj_type, name=n, s=src, d=dest)
-                        #self.cs.graph_from_names(source_name, destination_name)
+                            src, dest = self.cs.ntw.node_factory(name=s), self.cs.ntw.node_factory(name=d)
+                            self.cs.ntw.link_factory(*param, link_type=obj_type, name=n, s=src, d=dest)
+                            
             finally:
                 file_to_import.close()
                 
         elif(filepath.endswith(".txt")):
             with open(filepath, "r") as file_to_import:
                 for row in file_to_import:
-                    properties = row.split(",")
-                    source_name, destination_name = row.split()
-                    self.cs.graph_from_names(source_name, destination_name)
+                    obj_type, *other = row.split(",")
+                    if(other):
+                        if(obj_type == "node"):
+                            n, *param = other
+                            self.cs.ntw.node_factory(*param, node_type="router", name=n)
+                        else:
+                            n, s, d, *param = other
+                            src, dest = self.cs.ntw.node_factory(name=s), self.cs.ntw.node_factory(name=d)
+                            self.cs.ntw.link_factory(*param, link_type=obj_type, name=n, s=src, d=dest)
                     
         elif(filepath.endswith(".xls")):
             book = xlrd.open_workbook(filepath)
@@ -265,11 +272,11 @@ class NetDim(tk.Tk):
                 for row_index in range(1, xls_sheet.nrows):
                     if(obj_type == "node"):
                         n, *param = xls_sheet.row_values(row_index)
-                        self.cs.node_factory(*param, node_type="router", name=n)
+                        self.cs.ntw.node_factory(*param, node_type="router", name=n)
                     else:
                         n, s, d, *param = xls_sheet.row_values(row_index)
-                        src, dest = self.cs.node_factory(name=s), self.cs.node_factory(name=d)
-                        self.cs.link_factory(*param, link_type=obj_type, name=n, s=src, d=dest)
+                        src, dest = self.cs.ntw.node_factory(name=s), self.cs.ntw.node_factory(name=d)
+                        self.cs.ntw.link_factory(*param, link_type=obj_type, name=n, s=src, d=dest)
                 
         # for the topology zoo network graphs
         elif(filepath.endswith(".graphml")):
@@ -294,9 +301,9 @@ class NetDim(tk.Tk):
                     if "edge" in child.tag:
                         s_id, d_id = child.attrib["source"], child.attrib["target"]
                         src_name = dict_id_to_prop[s_id]["label"]
-                        src = self.cs.node_factory(name=src_name)
+                        src = self.cs.ntw.node_factory(name=src_name)
                         dest_name = dict_id_to_prop[d_id]["label"]
-                        dest = self.cs.node_factory(name=dest_name)
+                        dest = self.cs.ntw.node_factory(name=dest_name)
                         
                         # set the latitude and longitude of the newly created nodes
                         for coord in ("latitude", "longitude"):
@@ -305,28 +312,35 @@ class NetDim(tk.Tk):
                         
                         # distance between src and dest
                         param = map(float, (src.longitude, src.latitude, dest.longitude, dest.latitude))
-                        distance = round(self.cs.haversine_distance(*param))
+                        distance = round(self.cs.ntw.haversine_distance(*param))
 
                         # in some graphml files, there are nodes with loopback link
                         if src_name != dest_name:
-                            new_link = self.cs.link_factory(s=src, d=dest)
+                            new_link = self.cs.ntw.link_factory(s=src, d=dest)
                             new_link.distance = distance
         
         self.cs.draw_all(False)
         self.cs._refresh_object_labels("trunk", "distance")
         
         
-    def export_graph(self):
-        selected_file = filedialog.asksaveasfile(initialdir=self.path_workspace, title="Export graph", mode='w', defaultextension=".xls")
-        
-        if not selected_file: return            
-        filename, file_format = os.path.splitext(selected_file.name)
+    def export_graph(self, filepath=None):
+        # filepath is set for unittest
+        if not filepath:
+            selected_file = filedialog.asksaveasfile(initialdir=self.path_workspace, title="Export graph", mode='w', defaultextension=".xls")
+            
+            if not selected_file: 
+                return 
+            else:
+                filename, file_format = os.path.splitext(selected_file.name)
+        else:
+            filename, file_format = os.path.splitext(filepath)
+            selected_file = open(filepath, "w")
 
         if(file_format in (".txt", ".csv")):
             graph_per_line = []
             for obj_type, properties in self.object_import_export.items():
                 graph_per_line.append(obj_type)
-                for obj in self.cs.pn[obj_type].values():
+                for obj in self.cs.ntw.pn[obj_type].values():
                     param = ",".join(str(obj.__dict__[property]) for property in properties)
                     graph_per_line.append(",".join((obj_type, param)))
             if(file_format == ".txt"):
@@ -342,8 +356,9 @@ class NetDim(tk.Tk):
                 xls_sheet = excel_workbook.add_sheet(obj_type)
                 for id, property in enumerate(properties):
                     xls_sheet.write(0, id, property)
-                    for i, t in enumerate(self.cs.pn[obj_type].values(), 1):
+                    for i, t in enumerate(self.cs.ntw.pn[obj_type].values(), 1):
                         xls_sheet.write(i, id, str(t.__dict__[property]))
             excel_workbook.save(selected_file.name)
+            
         selected_file.close()
         

@@ -1,12 +1,12 @@
-from collections import defaultdict, deque
-from heapq import heappop, heappush
 import miscellaneous
 import objects
 import AS
 import math
 import random
 import numpy
-from cvxopt import matrix, glpk, solvers
+from cvxopt import matrix, glpk
+from collections import defaultdict, deque
+from heapq import heappop, heappush
 
 class Network(object):
     
@@ -29,12 +29,9 @@ class Network(object):
     node_type = tuple(node_type_to_class.keys())
     all_type = link_type + node_type
     
-    def __init__(self, name):
-        self.name = name
+    def __init__(self):
         # pn for "pool network"
         self.pn = {"trunk": {}, "node": {}, "route": {}, "traffic": {}, "AS": {}}
-        # TODO il faudrait que graph contienne également les neighbor...
-        # graph[node]["trunk"] = (neighbor, trunk)
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link, self.cpt_node, self.cpt_AS = (0,)*3
             
@@ -46,8 +43,8 @@ class Network(object):
             new_link = Network.link_type_to_class[link_type](name, s, d, *param)
             self.cpt_link += 1
             self.pn[link_type][name] = new_link
-            self.graph[s][link_type].add(new_link)
-            self.graph[d][link_type].add(new_link)
+            self.graph[s][link_type].add((d, new_link))
+            self.graph[d][link_type].add((s, new_link))
         return self.pn[link_type][name]
         
     def node_factory(self, *param, node_type="router", name=None):
@@ -65,53 +62,45 @@ class Network(object):
             self.pn["AS"][name] = AS.AutonomousSystem(name, type, trunks, nodes)
             self.cpt_AS += 1
         return self.pn["AS"][name]
-        
-    def graph_from_names(self, source_name, destination_name, name=None):
-        """ Create nodes and links from text name. Useful when importing the graph """
-        source, destination = self.node_factory(name=source_name), self.node_factory(name=destination_name)
-        link = self.link_factory(name=name, s=source, d=destination)
-        return link
             
     def erase_network(self):
         self.graph.clear()
         for dict_of_objects in self.pn:
             self.pn[dict_of_objects].clear()
             
-    def remove_node_from_network(self, node):
+    def remove_node(self, node):
         self.pn["node"].pop(node.name, None)
         # retrieve adj links to delete them 
         dict_of_adj_links = self.graph.pop(node, None)
         if(dict_of_adj_links): # can be None if multiple deletion at once
-            for type_link, adj_links in dict_of_adj_links.items():
-                for adj_link in adj_links:
-                    neighbor = adj_link.destination if node == adj_link.source else adj_link.source
-                    self.graph[neighbor][type_link].discard(adj_link)
+            for type_link, adj_obj in dict_of_adj_links.items():
+                for neighbor, adj_link in adj_obj:
+                    self.graph[neighbor][type_link].discard((neighbor, adj_link))
                     yield self.pn[type_link].pop(adj_link.name, None)
             
-    def remove_link_from_network(self, link):
-        self.graph[link.source][link.type].discard(link)
-        self.graph[link.destination][link.type].discard(link)
+    def remove_link(self, link):
+        self.graph[link.source][link.type].discard((link.destination, link))
+        self.graph[link.destination][link.type].discard((link.source, link))
         self.pn[link.type].pop(link.name, None)
         
-    # this function relates to AS but must be in network, because we need to 
-    # know what's not in the AS to find the edge nodes
     def find_edge_nodes(self, AS):
         AS.edges.clear()
         for node in AS.nodes:
-            if(any(trunk not in AS.trunks for trunk in self.graph[node]["trunk"])):
+            if(any(n not in AS.nodes for n, _ in self.graph[node]["trunk"])):
                 AS.edges.add(node)
                 yield node
             
     def is_connected(self, nodeA, nodeB, link_type):
-        return any(l.source == nodeA or l.destination == nodeA for l in self.graph[nodeB][link_type])
+        return any(n == nodeA for n, _ in self.graph[nodeB][link_type])
         
     def number_of_links_between(self, nodeA, nodeB):
-        sum = 0
-        for type in self.link_type:
-            for link in self.graph[nodeA][type]:
-                if(link.source == nodeB or link.destination == nodeB):
-                    sum += 1
-        return sum
+        return sum(n == nodeB for type in self.link_type for n, _ in self.graph[nodeA][type])
+        
+    def links_between(self, nodeA, nodeB, type="all"):
+        if type == "all":
+            return [t for type in self.link_type for n, t in self.graph[nodeA][type] if n == nodeB]
+        else:
+            return [t for n, t in self.graph[nodeA][type] if n == nodeB]
         
     def bfs(self, source):
         visited = set()
@@ -122,8 +111,7 @@ class Network(object):
             for node in temp:
                 if node not in visited:
                     visited.add(node)
-                    for adj_link in self.graph[node]["trunk"]:
-                        neighbor = adj_link.destination if node == adj_link.source else adj_link.source
+                    for neighbor, _ in self.graph[node]["trunk"]:
                         layer.add(neighbor)
                         yield neighbor
                     
@@ -137,20 +125,21 @@ class Network(object):
                 
         ## Shortest path(s) algorithm: Dijkstra, Bellman-Ford, all-paths (BFS)
             
-    def dijkstra(self, source, target, excluded_trunks=None, excluded_nodes=None, path_constraints=None, allowed_trunks=None, allowed_nodes=None):
+    def dijkstra(self, source, target, excluded_trunks=None, excluded_nodes=None, 
+    path_constraints=None, allowed_trunks=None, allowed_nodes=None):
         # Complexity: O(|V| + |E|log|V|)
         
         # initialize parameters
         if(excluded_nodes is None):
-            excluded_nodes = []
+            excluded_nodes = set()
         if(excluded_trunks is None):
-            excluded_trunks = []
+            excluded_trunks = set()
         if(path_constraints is None):
             path_constraints = []
         if(allowed_trunks is None):
-            allowed_trunks = self.pn["trunk"].values()
+            allowed_trunks = set(self.pn["trunk"].values())
         if(allowed_nodes is None):
-            allowed_nodes = self.pn["node"].values()
+            allowed_nodes = set(self.pn["node"].values())
             
         full_path_node, full_path_link = [], []
         constraints = [source] + path_constraints + [target]
@@ -168,13 +157,12 @@ class Network(object):
                     visited[node] = True
                     if node == t:
                         break
-                    for adj_trunk in self.graph[node]["trunk"]:
-                        neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
+                    for neighbor, adj_trunk in self.graph[node]["trunk"]:
                         sd = (node == adj_trunk.source)*"SD" or "DS"
                         # excluded and allowed nodes
-                        if neighbor in excluded_nodes or neighbor not in allowed_nodes: continue
+                        if not neighbor in allowed_nodes-excluded_nodes: continue
                         # excluded and allowed trunks
-                        if adj_trunk in excluded_trunks or adj_trunk not in allowed_trunks: continue
+                        if not adj_trunk in allowed_trunks-excluded_trunks: continue
                         dist_neighbor = dist_node + adj_trunk.__dict__["cost" + sd]
                         if dist_neighbor < dist[neighbor]:
                             dist[neighbor] = dist_neighbor
@@ -196,18 +184,19 @@ class Network(object):
                 
         return sum(full_path_node, [source]), sum(full_path_link, [])
         
-    def bellman_ford(self, source, target, excluded_trunks=None, excluded_nodes=None, allowed_trunks=None, allowed_nodes=None):
+    def bellman_ford(self, source, target, excluded_trunks=None, 
+    excluded_nodes=None, allowed_trunks=None, allowed_nodes=None):
         # Complexity: O(|V| + |E|log|V|)
         
         # initialize parameters
         if(excluded_nodes is None):
-            excluded_nodes = []
+            excluded_nodes = set()
         if(excluded_trunks is None):
-            excluded_trunks = []
+            excluded_trunks = set()
         if(allowed_trunks is None):
-            allowed_trunks = self.pn["trunk"].values()
+            allowed_trunks = set(self.pn["trunk"].values())
         if(allowed_nodes is None):
-            allowed_nodes = self.pn["node"].values()
+            allowed_nodes = set(self.pn["node"].values())
 
         n = len(allowed_nodes)
         prec_node = {i: None for i in allowed_nodes}
@@ -218,13 +207,12 @@ class Network(object):
         for i in range(n+2):
             negative_cycle = False
             for node in allowed_nodes:
-                for adj_trunk in self.graph[node]["trunk"]:
-                    neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
+                for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     sd = (node == adj_trunk.source)*"SD" or "DS"
                     # excluded and allowed nodes
-                    if neighbor in excluded_nodes or neighbor not in allowed_nodes: continue
+                    if not neighbor in allowed_nodes-excluded_nodes: continue
                     # excluded and allowed trunks
-                    if adj_trunk in excluded_trunks or adj_trunk not in allowed_trunks: continue
+                    if not adj_trunk in allowed_trunks-excluded_trunks: continue
                     dist_neighbor = dist[node] + adj_trunk.__dict__["cost" + sd]
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
@@ -239,7 +227,7 @@ class Network(object):
                 curr = prec_node[curr]
                 path_link.append(prec_link[curr])
                 path_node.append(curr)
-            return path_node[::-1], path_link[:-1][::-1]
+            return reversed(path_node), reversed(path_link[:-1])
         else:
             return [], []
         
@@ -253,8 +241,7 @@ class Network(object):
             if(node == target):
                 yield list(path)
             else:
-                for adj_trunk in self.graph[node]["trunk"]:
-                    neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
+                for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     if neighbor not in seen:
                         dead_end = False
                         seen.add(neighbor)
@@ -276,8 +263,7 @@ class Network(object):
         visit[curr_node] = True
         if(curr_node == target):
             return val
-        for adj_link in self.graph[curr_node]["trunk"]:
-            neighbor = adj_link.destination if curr_node == adj_link.source else adj_link.source
+        for neighbor, adj_link in self.graph[curr_node]["trunk"]:
             direction = curr_node == adj_link.source
             sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
             cap = adj_link.__dict__["capacity" + sd]
@@ -291,12 +277,12 @@ class Network(object):
                     return global_flow
         return False
         
-    def ford_fulkerson(self, source, destination):
+    def ford_fulkerson(self, s, d):
         self.reset_flow()
-        while(self.augment_ff(float("inf"), source, destination, {n:0 for n in self.graph})):
+        while(self.augment_ff(float("inf"), s, d, {n:0 for n in self.graph})):
             pass
         # flow leaving from the source 
-        return sum(adj.__dict__["flow" + (source == adj.source)*"SD" or "DS"] for adj in self.graph[source]["trunk"])
+        return sum(adj.__dict__["flow" + (s == adj.source)*"SD" or "DS"] for _, adj in self.graph[s]["trunk"])
         
     def augment_ek(self, source, destination):
         res_cap = {n:0 for n in self.graph}
@@ -307,8 +293,7 @@ class Network(object):
         res_cap[source] = float("inf")
         while Q:
             curr_node = Q.popleft()
-            for adj_link in self.graph[curr_node]["trunk"]:
-                neighbor = adj_link.destination if curr_node == adj_link.source else adj_link.source
+            for neighbor, adj_link in self.graph[curr_node]["trunk"]:
                 direction = curr_node == adj_link.source
                 sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
                 residual = adj_link.__dict__["capacity" + sd] - adj_link.__dict__["flow" + sd]
@@ -331,15 +316,15 @@ class Network(object):
             while curr_node != source:
                 # find the trunk between the two nodes
                 prec_node = augmenting_path[curr_node]
-                find_trunk = lambda t: prec_node in (t.source, t.destination)
-                trunk ,= filter(find_trunk, self.graph[curr_node]["trunk"])
+                find_trunk = lambda p: p[0] == prec_node
+                (_, trunk) ,= filter(find_trunk, self.graph[curr_node]["trunk"])
                 # define sd and ds depending on how the link is defined
                 direction = curr_node == trunk.source
                 sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
                 trunk.__dict__["flow" + ds] += global_flow
                 trunk.__dict__["flow" + sd] -= global_flow
                 curr_node = prec_node 
-        return sum(adj.__dict__["flow" + ((source == adj.source)*"SD" or "DS")] for adj in self.graph[source]["trunk"])
+        return sum(adj.__dict__["flow" + ((source == adj.source)*"SD" or "DS")] for _, adj in self.graph[source]["trunk"])
         
     ## Minimum Spanning Tree algorithms: Kruskal
         
@@ -347,8 +332,7 @@ class Network(object):
         uf = miscellaneous.UnionFind(allowed_nodes)
         edges = []
         for node in allowed_nodes:
-            for adj_trunk in self.graph[node]["trunk"]:
-                neighbor = adj_trunk.destination if node == adj_trunk.source else adj_trunk.source
+            for neighbor, adj_trunk in self.graph[node]["trunk"]:
                 if neighbor in allowed_nodes:
                     edges.append((adj_trunk.costSD, adj_trunk, node, neighbor))
         minimum_spanning_tree = []
@@ -357,7 +341,7 @@ class Network(object):
                 yield t
                 
     ## Linear programming to solve the maximum flow problem
-                
+               
     def LP_MF_formulation(self, s, t):
         """
         Solves the MILP: minimize c'*x
@@ -369,8 +353,7 @@ class Network(object):
         
         new_graph = {node: {} for node in self.graph}
         for node in self.graph:
-            for trunk in self.graph[node]["trunk"]:
-                neighbor = trunk.destination if node == trunk.source else trunk.source
+            for neighbor, trunk in self.graph[node]["trunk"]:
                 sd = (node == trunk.source)*"SD" or "DS"
                 new_graph[node][neighbor] = trunk.__dict__["capacity" + sd]
 
@@ -392,12 +375,10 @@ class Network(object):
                         row.append(1. if neighbor == node_r else -1. if node == node_r else 0.)
                 A.append(row)
                 
-        b, h = [0.]*(v-2), h+[0.]*n
-        x = numpy.eye(n, n)
+        b, h, x = [0.]*(v-2), h+[0.]*n, numpy.eye(n, n)
         H = numpy.concatenate((x, -1*x), axis=0).tolist()        
         A, H, b, c, h = map(matrix, (A, H, b, c, h))
-        A, H = A.T, H.T
-        solsta, x = glpk.ilp(-c, H, h, A, b)
+        solsta, x = glpk.ilp(-c, H.T, h, A.T, b)
 
         # update the resulting flow for each node
         cpt = 0
@@ -411,7 +392,7 @@ class Network(object):
             trunk.flowSD = new_graph[src][dest]
             trunk.flowDS = new_graph[dest][src]
 
-        return sum(adj.__dict__["flow" + ((s == adj.source)*"SD" or "DS")] for adj in self.graph[s]["trunk"])
+        return sum(adj.__dict__["flow" + ((s == adj.source)*"SD" or "DS")] for _, adj in self.graph[s]["trunk"])
             
     ## Distance functions
     

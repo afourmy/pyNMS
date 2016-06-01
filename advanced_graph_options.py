@@ -39,25 +39,25 @@ class AdvancedGraphOptionsWindow(CustomTopLevel):
         
     def highlight_connected_components(self, master):
         master.cs.unhighlight_all()
-        for idx, connex_comp in enumerate(master.cs.connected_components()):
+        for idx, connex_comp in enumerate(master.cs.ntw.connected_components()):
             for node in connex_comp:
-                for adjacent_link in master.cs.graph[node]["trunk"]:
+                for adjacent_link in master.cs.ntw.graph[node]["trunk"]:
                     master.cs.itemconfig(adjacent_link.line, fill=master.cs.default_colors[idx])
                     
     def LP(self, master):
-        source = master.cs.node_factory(name=self.entry_source.get())
-        destination = master.cs.node_factory(name=self.entry_destination.get())
-        flow = master.cs.LP_MF_formulation(source, destination)
+        source = master.cs.ntw.node_factory(name=self.entry_source.get())
+        destination = master.cs.ntw.node_factory(name=self.entry_destination.get())
+        flow = master.cs.ntw.LP_MF_formulation(source, destination)
         print(flow)
         
     def fulkerson(self, master):
-        source = master.cs.node_factory(name=self.entry_source.get())
-        destination = master.cs.node_factory(name=self.entry_destination.get())
-        flow = master.cs.edmonds_karp(source, destination)
+        source = master.cs.ntw.node_factory(name=self.entry_source.get())
+        destination = master.cs.ntw.node_factory(name=self.entry_destination.get())
+        flow = master.cs.ntw.edmonds_karp(source, destination)
         print(flow)
         
     def kruskal(self, master):
-        links_mst = master.cs.kruskal(master.cs.pn["node"].values())
+        links_mst = master.cs.ntw.kruskal(master.cs.ntw.pn["node"].values())
         master.cs.highlight_objects(*links_mst)
         
     # def generate_square_tiling(self, scenario):
@@ -72,12 +72,12 @@ class AdvancedGraphOptionsWindow(CustomTopLevel):
     # TODO K-shortest path with BFS
         # _, source, *e = self.get_user_input(master)
         # print(source)
-        # for p in master.cs.all_paths(source):
+        # for p in master.cs.ntw.all_paths(source):
         #     print(p)
         
     # TODO flow window
     # def flow(self, master):
-    #     total_flow = master.cs.ford_fulkerson(master.cs.node_factory(self.entry_source_node.get()), master.cs.node_factory(self.entry_destination_node.get()))
+    #     total_flow = master.cs.ntw.ford_fulkerson(master.cs.ntw.node_factory(self.entry_source_node.get()), master.cs.ntw.node_factory(self.entry_destination_node.get()))
     #     self.var_total_flow.set(str(total_flow))
         
         

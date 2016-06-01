@@ -8,10 +8,13 @@ class Node(object):
         self.name = name
         self.longitude = int(longitude)
         self.latitude = int(latitude)
-        self.oval = None
-        self.image = None
-        # id of the corresponding label
+        # self id and id of the corresponding label on the canvas
+        self.oval = {layer: None for layer in range(3)}
+        # image of the node at all three layers: physical, logical and traffic
+        self.image = {layer: None for layer in range(3)}
+        self.layer_line = None
         self.lid = None
+        self.lpos = None
         self.size = 8
         # position of a node (conversion decimal string to int in case of export)
         self.x = int(float(x))
@@ -101,8 +104,8 @@ class Link(object):
         self.source = source
         self.destination = destination
         self.distance = int(distance)
+        # self id and id of the corresponding label on the canvas
         self.line = None
-        # id of the corresponding label
         self.lid = None
         # AS to which the link belongs
         self.AS = None
@@ -123,6 +126,7 @@ class Trunk(Link):
     type = "trunk"
     network_type = type
     color = "blue"
+    layer = 0
     dash = ()
 
     def __init__(self, name, source, destination, distance=0, costSD=1, costDS=1, capacitySD=3, capacityDS=3):
@@ -147,6 +151,7 @@ class Route(Link):
     network_type = type
     dash = (3,5)
     color = "green"
+    layer = 1
     
     def __init__(self, name, source, destination, excluded_trunks=[], excluded_nodes=[], path_constraints=[], subnets=set(), path=[], AS=None):
         super().__init__(name, source, destination)
@@ -161,6 +166,7 @@ class Traffic(Link):
     network_type = type
     dash = (7,1,1,1)
     color = "purple"
+    layer = 2
     
     def __init__(self, name, source, destination, subnet=0, traffic=0):
         super().__init__(name, source, destination)

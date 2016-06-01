@@ -46,7 +46,7 @@ class MainFrame(tk.Frame):
         self.draw_graph = tk.Button(self, bg="#A1DBCD", text ="Draw", font=self.font, compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.cs.spring_based_drawing(master))
         self.type_to_button["draw"] = self.draw_graph
         
-        self.stop_drawing = tk.Button(self, bg="#A1DBCD", text ="Stop", font=self.font, compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.cs._cancel())
+        self.stop_drawing = tk.Button(self, bg="#A1DBCD", text ="Stop", font=self.font, compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.cs.planal_move())
         self.type_to_button["stop"] = self.stop_drawing
         
         self.create_tree = tk.Button(self, text='Tree', bg="#A1DBCD", relief=tk.FLAT, command = lambda: NetworkDimension(master.cs, "tree"))
@@ -122,7 +122,7 @@ class MainFrame(tk.Frame):
         
     def erase_graph(self, scenario):
         scenario.erase_graph()
-        scenario.erase_network()
+        scenario.ntw.erase_network()
         
 class NetworkDimension(tk.Toplevel):
     def __init__(self, scenario, type):
@@ -151,13 +151,13 @@ class NetworkDimension(tk.Toplevel):
         
     def create_graph(self, scenario, type):
         if(type == "star"):
-            scenario.generate_star(self.var_dimension.get() - 1)
+            scenario.ntw.generate_star(self.var_dimension.get() - 1)
         elif(type == "ring"):
-            scenario.generate_ring(self.var_dimension.get() - 1)
+            scenario.ntw.generate_ring(self.var_dimension.get() - 1)
         elif(type == "full-mesh"):
-            scenario.generate_full_mesh(self.var_dimension.get())
+            scenario.ntw.generate_full_mesh(self.var_dimension.get())
         else:
-            scenario.generate_tree(self.var_dimension.get())
+            scenario.ntw.generate_tree(self.var_dimension.get())
         scenario.draw_all(random=False)
         self.destroy()
         
