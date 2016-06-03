@@ -65,7 +65,7 @@ in the AS.
 - [ ] When switching to simple oval display, keep track of the size of the object so that it is always the same.
 
 ## Routing
-- [x] Traffic link routing. All nodes that belongs to an AS should be excluded.
+- [ ] Traffic link routing. All nodes that belongs to an AS should be excluded.
 - [ ] BGP routing
 - [ ] subnet and filtering system on routes/traffic link
 - [ ] G8032 ring with RPL protection
@@ -129,3 +129,6 @@ in the AS.
 - [x] Import and export the graph with excel
 - [x] Import GML format and provide all files from the topology zoo
 - [x] Allow to import the property of nodes, so that they can be efficiently modified in excel for a big graph
+- [ ] Consider all scenario when saving/opening a saved project
+- [ ] Save all scenario
+- [ ] Import Export all scenario

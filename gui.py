@@ -13,6 +13,7 @@ import pickle
 import csv
 import xlrd, xlwt
 import xml.etree.ElementTree as etree
+import ast
 from PIL import ImageTk
 
 class NetDim(tk.Tk):
@@ -164,7 +165,7 @@ class NetDim(tk.Tk):
         }
         
         for color in ["default", "red"]:
-            for node_type in self.cs.ntw.node_type_to_class:
+            for node_type in self.cs.ntw.node_type:
                 img_path = "".join((self.path_icon, color, "_", node_type, ".gif"))
                 img_pil = ImageTk.Image.open(img_path).resize(self.dict_size_image[node_type])
                 img = ImageTk.PhotoImage(img_pil)
@@ -173,7 +174,7 @@ class NetDim(tk.Tk):
                     self.main_frame.type_to_button[node_type].config(image=img, width=50, height=50)
                 self.dict_image[color][node_type] = img
                 
-        for link_type in self.cs.ntw.link_type_to_class:
+        for link_type in self.cs.ntw.link_type:
             img_path = "".join((self.path_icon, link_type, ".png"))
             img_pil = ImageTk.Image.open(img_path).resize((85, 15))
             img = ImageTk.PhotoImage(img_pil)
@@ -188,11 +189,13 @@ class NetDim(tk.Tk):
             self.dict_image["topology"][network_topology] = img
             self.main_frame.type_to_button[network_topology].config(image=img, width=x, height=y, anchor=tk.CENTER)
             
-        for drawing_icons in ("draw", "stop"):
-            img_pil = ImageTk.Image.open(self.path_icon + drawing_icons + ".png").resize((50, 50))
+        dict_size = {"draw": (50, 50), "stop": (50, 50), "multi-layer": (160, 120)}
+        for drawing_icons in ("draw", "stop", "multi-layer"):
+            x, y = dict_size[drawing_icons]
+            img_pil = ImageTk.Image.open(self.path_icon + drawing_icons + ".png").resize((x,y))
             img = ImageTk.PhotoImage(img_pil)
             self.dict_image["drawing"][drawing_icons] = img
-            self.main_frame.type_to_button[drawing_icons].config(image=img, width=60, height=60, anchor=tk.CENTER)
+            self.main_frame.type_to_button[drawing_icons].config(image=img, width=x+10, height=y+10, anchor=tk.CENTER)
             
     def change_cs(self, event=None):
         cs_name = self.scenario_notebook.tab(self.scenario_notebook.select(), "text")
@@ -222,6 +225,23 @@ class NetDim(tk.Tk):
             for link in self.cs.ntw.pn[link_type].values():
                 self.cs.ntw.graph[link.source][link_type].add(link)
                 self.cs.ntw.graph[link.destination][link_type].add(link)
+                
+    def str_to_object(self, obj_param, type):
+        properties = []
+        for id, property in enumerate(self.object_import_export[type]):
+            value = obj_param[id]
+            if property in ("source", "destination"):
+                properties.append(self.cs.ntw.node_factory(name=value))
+            elif property in ("x", "y", "distance", "longitude", "latitude"):
+                properties.append(float(value))
+            elif property in ("path_constraints", "excluded_trunks", "path"):
+                properties.append([self.cs.ntw.link_factory(name=n, link_type=type) for n in ast.literal_eval(value)])
+            elif property == "excluded_nodes":
+                properties.append([self.cs.ntw.node_factory(name=n) for n in ast.literal_eval(value)])
+            else:
+                properties.append(str(value))
+        print(properties)
+        return properties
                 
     def import_graph(self, filepath=None):
         # filepath is set for unittest
@@ -271,12 +291,11 @@ class NetDim(tk.Tk):
                 xls_sheet = book.sheets()[id]
                 for row_index in range(1, xls_sheet.nrows):
                     if(obj_type == "node"):
-                        n, *param = xls_sheet.row_values(row_index)
+                        n, *param = self.str_to_object(xls_sheet.row_values(row_index), "node")
                         self.cs.ntw.node_factory(*param, node_type="router", name=n)
                     else:
-                        n, s, d, *param = xls_sheet.row_values(row_index)
-                        src, dest = self.cs.ntw.node_factory(name=s), self.cs.ntw.node_factory(name=d)
-                        self.cs.ntw.link_factory(*param, link_type=obj_type, name=n, s=src, d=dest)
+                        n, s, d, *param = self.str_to_object(xls_sheet.row_values(row_index), obj_type)
+                        self.cs.ntw.link_factory(*param, link_type=obj_type, name=n, s=s, d=d)
                 
         # for the topology zoo network graphs
         elif(filepath.endswith(".graphml")):

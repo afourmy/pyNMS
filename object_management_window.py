@@ -95,7 +95,8 @@ class ObjectManagementWindow(CustomTopLevel):
             elif(property == "path"):
                 self.current_obj.__dict__[property] = self.current_path
             else:
-                self.current_obj.__dict__[property] = eval(str_var.get())
+                if(property not in ("source", "destination")):
+                    self.current_obj.__dict__[property] = eval(str_var.get())
             # refresh the label if it was changed
             master.cs._refresh_object_label(self.current_obj)
             # move the node on the canvas in case it's coordinates were updated
@@ -105,7 +106,7 @@ class ObjectManagementWindow(CustomTopLevel):
     def update(self):
         for property, str_var in self.dict_var.items():
             if(type(self.current_obj.__dict__[property]) == list):
-                str_var.set(",".join(map(str,self.current_obj.__dict__[property])))
+                str_var.set(",".join(map(str, self.current_obj.__dict__[property])))
             else:
                 str_var.set(self.current_obj.__dict__[property])
             # if there is a path, we set current_path in case the object is saved

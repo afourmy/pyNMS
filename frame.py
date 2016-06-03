@@ -46,8 +46,11 @@ class MainFrame(tk.Frame):
         self.draw_graph = tk.Button(self, bg="#A1DBCD", text ="Draw", font=self.font, compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.cs.spring_based_drawing(master))
         self.type_to_button["draw"] = self.draw_graph
         
-        self.stop_drawing = tk.Button(self, bg="#A1DBCD", text ="Stop", font=self.font, compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.cs.planal_move())
+        self.stop_drawing = tk.Button(self, bg="#A1DBCD", text ="Stop", font=self.font, compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.cs._cancel())
         self.type_to_button["stop"] = self.stop_drawing
+        
+        self.ml_drawing = tk.Button(self, bg="#A1DBCD", font=self.font, compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.cs.planal_move())
+        self.type_to_button["multi-layer"] = self.ml_drawing
         
         self.create_tree = tk.Button(self, text='Tree', bg="#A1DBCD", relief=tk.FLAT, command = lambda: NetworkDimension(master.cs, "tree"))
         self.type_to_button["tree"] = self.create_tree
@@ -96,6 +99,9 @@ class MainFrame(tk.Frame):
         self.create_full_mesh.grid(row=14,column=2, sticky="w")
         self.create_ring.grid(row=14,column=3, sticky="w")
         sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=15, columnspan=4, sticky="ew")
+        
+        # multi-layer
+        self.ml_drawing.grid(row=16, columnspan=4, sticky="ew")
         
     def switch_to_creation(self, master):
         self.creation_mode.config(relief=tk.SUNKEN)
