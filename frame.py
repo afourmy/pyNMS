@@ -9,109 +9,76 @@ class MainFrame(tk.Frame):
         self.font = ("Helvetica", 8, "bold")
         self.type_to_button = {}
         
-        self.netdim = tk.Button(self, bg="#A1DBCD", width=200, height=200, relief=tk.FLAT)
-
-        # choix du mode: motion / node creation / link creation
-        self.motion_mode = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=lambda: self.switch_to_motion(master))
-        self.creation_mode = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=lambda: self.switch_to_creation(master))
+        self.type_to_action = {
+        "netdim": lambda: master.cs.ntw.calculate_all(),
+        "motion": lambda: self.switch_to_motion(master),
+        "creation": lambda: self.switch_to_creation(master),
+        "draw": lambda: master.cs.spring_based_drawing(master),
+        "stop": lambda: master.cs._cancel(),
+        "multi-layer": lambda: master.cs.planal_move(),
+        }
         
-        self.create_router = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "router"))
-        self.type_to_button["router"] = self.create_router
+        for topo in ("tree", "star", "full-mesh", "ring"):
+            self.type_to_action[topo] = lambda t=topo: NetworkDimension(master.cs, t)
+            
+        for obj_type in master.object_properties:
+            self.type_to_action[obj_type] = lambda o=obj_type: self.change_creation_mode(master, o)
         
-        self.create_oxc = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "oxc"))
-        self.type_to_button["oxc"] = self.create_oxc
-        
-        self.create_host = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "host"))
-        self.type_to_button["host"] = self.create_host
-        
-        self.create_antenna = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "antenna"))
-        self.type_to_button["antenna"] = self.create_antenna
-        
-        self.create_regenerator = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "regenerator"))
-        self.type_to_button["regenerator"] = self.create_regenerator
-        
-        self.create_splitter = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "splitter"))
-        self.type_to_button["splitter"] = self.create_splitter
-        
-        self.create_trunk = tk.Button(self, bg="#A1DBCD", text ="Trunk", fg="blue", font=self.font, compound="top", relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "trunk"))
-        self.type_to_button["trunk"] = self.create_trunk
-        
-        self.create_route = tk.Button(self, bg="#A1DBCD", text ="Route", fg="green", font=self.font, compound="top", relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "route"))
-        self.type_to_button["route"] = self.create_route
-        
-        self.create_traffic = tk.Button(self, bg="#A1DBCD", text ="Traffic", fg="purple", font=self.font, compound="top", relief=tk.FLAT, command=lambda: self.change_creation_mode(master, "traffic"))
-        self.type_to_button["traffic"] = self.create_traffic
-        
-        # drawing du graphe
-        self.draw_graph = tk.Button(self, bg="#A1DBCD", text ="Draw", font=self.font, compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.cs.spring_based_drawing(master))
-        self.type_to_button["draw"] = self.draw_graph
-        
-        self.stop_drawing = tk.Button(self, bg="#A1DBCD", text ="Stop", font=self.font, compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.cs._cancel())
-        self.type_to_button["stop"] = self.stop_drawing
-        
-        self.ml_drawing = tk.Button(self, bg="#A1DBCD", font=self.font, compound="top", relief=tk.FLAT, width=12, height=1, command=lambda: master.cs.planal_move())
-        self.type_to_button["multi-layer"] = self.ml_drawing
-        
-        self.create_tree = tk.Button(self, text='Tree', bg="#A1DBCD", relief=tk.FLAT, command = lambda: NetworkDimension(master.cs, "tree"))
-        self.type_to_button["tree"] = self.create_tree
-        
-        self.create_star = tk.Button(self, text='Star', bg="#A1DBCD", relief=tk.FLAT, command = lambda: NetworkDimension(master.cs, "star"))
-        self.type_to_button["star"] = self.create_star
-        
-        self.create_full_mesh = tk.Button(self, text='Full mesh', bg="#A1DBCD", relief=tk.FLAT, command = lambda: NetworkDimension(master.cs, "full-mesh"))
-        self.type_to_button["full-mesh"] = self.create_full_mesh
-        
-        self.create_ring = tk.Button(self, text='Ring', bg="#A1DBCD", relief=tk.FLAT, command = lambda: NetworkDimension(master.cs, "ring"))
-        self.type_to_button["ring"] = self.create_ring
+        for button_type, cmd in self.type_to_action.items():
+            button = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=cmd)
+            if button_type in ("trunk", "route", "traffic", "draw", "stop"):
+                button.configure(text=button_type.capitalize(), compound="top", font=self.font)
+            self.type_to_button[button_type] = button
         
         # netdim mode: motion or creation
-        self.netdim.grid(row=0, column=1, columnspan=2, rowspan=2, sticky="ew")
-        self.motion_mode.grid(row=2, column=0, columnspan=2, rowspan=2, padx=20, pady=5, sticky="nsew")
-        self.creation_mode.grid(row=2, column=2, columnspan=2, rowspan=2, pady=5, padx=5, sticky=tk.W)
+        self.type_to_button["netdim"].grid(row=0, column=1, columnspan=2, rowspan=2, sticky="ew")
+        self.type_to_button["motion"].grid(row=2, column=0, columnspan=2, rowspan=2, padx=20, pady=5, sticky="nsew")
+        self.type_to_button["creation"].grid(row=2, column=2, columnspan=2, rowspan=2, pady=5, padx=5, sticky=tk.W)
         sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=4, columnspan=4, sticky="ew")
         
         # creation mode: type of node or link
         label_creation_mode = tk.Label(self, text="Object creation", bg="#A1DBCD", font=self.font)
         label_creation_mode.grid(row=5, columnspan=4, sticky="ew")
-        self.create_router.grid(row=6, column=0, padx=2, sticky=tk.N)
-        self.create_oxc.grid(row=6, column=1, padx=2, sticky=tk.W)
-        self.create_host.grid(row=6, column=2, padx=2, sticky=tk.W)
-        self.create_antenna.grid(row=6, column=3, padx=2, sticky=tk.W)
-        self.create_regenerator.grid(row=7, column=0, padx=2, sticky=tk.W)
-        self.create_splitter.grid(row=7, column=1, padx=2, sticky=tk.W)
-        self.create_trunk.grid(row=7, column=2, columnspan=2, padx=2, sticky=tk.W)
-        self.create_route.grid(row=8, column=2, columnspan=2, pady=5, padx=5, sticky=tk.W)
-        self.create_traffic.grid(row=8, column=0, columnspan=2, pady=5, padx=5, sticky=tk.W)
+        self.type_to_button["router"].grid(row=6, column=0, padx=2, sticky=tk.N)
+        self.type_to_button["oxc"].grid(row=6, column=1, padx=2, sticky=tk.W)
+        self.type_to_button["host"].grid(row=6, column=2, padx=2, sticky=tk.W)
+        self.type_to_button["antenna"].grid(row=6, column=3, padx=2, sticky=tk.W)
+        self.type_to_button["regenerator"].grid(row=7, column=0, padx=2, sticky=tk.W)
+        self.type_to_button["splitter"].grid(row=7, column=1, padx=2, sticky=tk.W)
+        self.type_to_button["trunk"].grid(row=7, column=2, columnspan=2, padx=2, sticky=tk.W)
+        self.type_to_button["route"].grid(row=8, column=2, columnspan=2, pady=5, padx=5, sticky=tk.W)
+        self.type_to_button["traffic"].grid(row=8, column=0, columnspan=2, pady=5, padx=5, sticky=tk.W)
         sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=9, columnspan=4, sticky="ew")
         
         # drawing options
         label_drawing_options = tk.Label(self, text="Force-directed layout", bg="#A1DBCD", font=self.font)
         label_drawing_options.grid(row=10, columnspan=4, sticky="ew")
-        self.draw_graph.grid(row=11, column=0, columnspan=2, pady=5, padx=20, sticky="nsew")
-        self.stop_drawing.grid(row=11, column=2, columnspan=2, pady=5, padx=20, sticky="nsew")
+        self.type_to_button["draw"].grid(row=11, column=0, columnspan=2, pady=5, padx=20, sticky="nsew")
+        self.type_to_button["stop"].grid(row=11, column=2, columnspan=2, pady=5, padx=20, sticky="nsew")
         sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=12, columnspan=4, sticky="ew")
         
         # graph generation
         label_graph_generation = tk.Label(self, text="Graph generation", bg="#A1DBCD", font=self.font)
         label_graph_generation.grid(row=13, columnspan=4, sticky="ew")
-        self.create_tree.grid(row=14,column=0, sticky="w")
-        self.create_star.grid(row=14,column=1, sticky="w")
-        self.create_full_mesh.grid(row=14,column=2, sticky="w")
-        self.create_ring.grid(row=14,column=3, sticky="w")
+        self.type_to_button["tree"].grid(row=14,column=0, sticky="w")
+        self.type_to_button["star"].grid(row=14,column=1, sticky="w")
+        self.type_to_button["full-mesh"].grid(row=14,column=2, sticky="w")
+        self.type_to_button["ring"].grid(row=14,column=3, sticky="w")
         sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=15, columnspan=4, sticky="ew")
         
         # multi-layer
-        self.ml_drawing.grid(row=16, columnspan=4, sticky="ew")
+        self.type_to_button["multi-layer"].grid(row=16, columnspan=4, sticky="ew")
         
+    # TODO refactor switch to into one function
     def switch_to_creation(self, master):
-        self.creation_mode.config(relief=tk.SUNKEN)
-        self.motion_mode.config(relief=tk.RAISED)
+        self.type_to_button["creation"].config(relief=tk.SUNKEN)
+        self.type_to_button["motion"].config(relief=tk.RAISED)
         master.cs._mode = "creation"
         master.cs.switch_binding()
         
     def switch_to_motion(self, master):
-        self.creation_mode.config(relief=tk.RAISED)
-        self.motion_mode.config(relief=tk.SUNKEN)
+        self.type_to_button["creation"].config(relief=tk.RAISED)
+        self.type_to_button["motion"].config(relief=tk.SUNKEN)
         master.cs._mode = "motion"
         master.cs.switch_binding()
         

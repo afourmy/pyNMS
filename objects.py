@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 ## Nodes
 class Node(object):
     
@@ -22,8 +24,9 @@ class Node(object):
         # velocity of a node for graph drawing algorithm
         self.vx = 0
         self.vy = 0
-        # list of AS to which the node belongs
-        self.AS = set()
+        # list of AS to which the node belongs. AS is actually a dictionnary
+        # associating an AS to a set of area the node belongs to
+        self.AS = defaultdict(set)
         
     def __repr__(self):
         return self.name
@@ -107,8 +110,6 @@ class Link(object):
         # self id and id of the corresponding label on the canvas
         self.line = None
         self.lid = None
-        # AS to which the link belongs
-        self.AS = None
         
     def __repr__(self):
         return self.name
@@ -134,6 +135,9 @@ class Trunk(Link):
         self.costSD, self.costDS = int(costSD), int(costDS)
         self.capacitySD, self.capacityDS = int(capacitySD), int(capacityDS)
         self.flowSD, self.flowDS = 0, 0
+        # list of AS to which the trunks belongs. AS is actually a dictionnary
+        # associating an AS to a set of area the trunks belongs to
+        self.AS = defaultdict(set)
         
 class Ethernet(Trunk):
     def __init__(self, name, source, destination, cost=1, capacitySD=3, capacityDS=3, interface="GE"):
@@ -153,13 +157,14 @@ class Route(Link):
     color = "green"
     layer = 1
     
-    def __init__(self, name, source, destination, excluded_trunks=[], excluded_nodes=[], path_constraints=[], subnets=set(), path=[], AS=None):
-        super().__init__(name, source, destination)
+    def __init__(self, name, source, destination, distance=0, path_constraints=[], excluded_trunks=set(), excluded_nodes=set(), path=[], subnets=set(), AS=None):
+        super().__init__(name, source, destination, distance)
         self.path_constraints = path_constraints
         self.excluded_nodes = excluded_nodes
         self.excluded_trunks = excluded_trunks
         self.path = path
         self.subnets = subnets
+        self.AS = AS
         
 class Traffic(Link):
     type = "traffic"

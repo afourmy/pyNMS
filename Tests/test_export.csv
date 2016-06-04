@@ -1,8 +1,8 @@
 node
-node,s,24,100,0,0
 node,d,42,100,0,0
+node,s,24,100,0,0
 trunk
 trunk,t,s,d,666,1,1,3,3
 route
-route,route1,s,d,0,[],[],[],[],set()
+route,route1,s,d,0,[],set(),set(),[],set()
 traffic

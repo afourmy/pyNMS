@@ -25,12 +25,12 @@ class TestExportImport(unittest.TestCase):
     def setUpClass(cls):
         super(TestExportImport, cls).setUpClass()
         cls.netdim = gui.NetDim(path_app)
-        src = cls.netdim.cs.ntw.node_factory(name="s")
-        dest = cls.netdim.cs.ntw.node_factory(name="d")
+        src = cls.netdim.cs.ntw.nf(name="s")
+        dest = cls.netdim.cs.ntw.nf(name="d")
         dest.x, src.x = 42, 24
-        trunk = cls.netdim.cs.ntw.link_factory(name="t", s=src, d=dest)
+        trunk = cls.netdim.cs.ntw.lf(name="t", s=src, d=dest)
         trunk.distance = 666
-        route = cls.netdim.cs.ntw.link_factory(link_type="route", s=src, d=dest)
+        route = cls.netdim.cs.ntw.lf(link_type="route", s=src, d=dest)
         # export in all 3 format: excel, text and csv
         for extension in ("xls", "txt", "csv"):
             cls.netdim.export_graph(path_app + "Tests\\test_export." + extension)

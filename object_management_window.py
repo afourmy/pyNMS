@@ -8,8 +8,8 @@ class ObjectManagementWindow(CustomTopLevel):
     def __init__(self, master, type):
         super().__init__()
         n = len(master.object_properties[type])
-        size_per_type = {"router": "180x200", "oxc": "180x200", "host":"180x200", "antenna":"180x200",
-        "regenerator": "180x200", "splitter": "180x200", "trunk": "190x320", "route": "220x350", "traffic": "250x300"}
+        size_per_type = {"router": "180x220", "oxc": "180x220", "host":"180x220", "antenna":"180x220",
+        "regenerator": "180x220", "splitter": "180x220", "trunk": "190x360", "route": "220x370", "traffic": "250x300"}
         
         self.geometry(size_per_type[type])
         self.title("Manage {} properties".format(type))
@@ -26,7 +26,7 @@ class ObjectManagementWindow(CustomTopLevel):
             self.dict_var[property] = str_var
             label = tk.Label(self, text=property.title(), bg="#A1DBCD")
             label.grid(row=index+1, pady=5, padx=5, column=0, sticky=tk.W)
-            s = "readonly" if property in ("source","destination","path","flowSD","flowDS") else tk.NORMAL
+            s = "readonly" if property in ("source","destination","path","flowSD","flowDS", "AS") else tk.NORMAL
             entry = tk.Entry(self, textvariable=str_var, width=15, state=s)
             entry.grid(row=index+1, pady=5, padx=5, column=1, sticky=tk.W)
     
@@ -40,17 +40,17 @@ class ObjectManagementWindow(CustomTopLevel):
     
     def get_user_input(self, master):
         name = self.dict_var["name"].get()
-        source = master.cs.ntw.node_factory(name=self.dict_var["source"].get())
-        destination = master.cs.ntw.node_factory(name=self.dict_var["destination"].get())
+        source = master.cs.ntw.nf(name=self.dict_var["source"].get())
+        destination = master.cs.ntw.nf(name=self.dict_var["destination"].get())
         excluded_trunks = filter(None, self.dict_var["excluded_trunks"].get().strip().split(","))
         excluded_nodes = filter(None, self.dict_var["excluded_nodes"].get().strip().split(","))
         path_constraints = filter(None, self.dict_var["path_constraints"].get().strip().split(","))
         if(excluded_trunks):
-            l_excluded_trunks = {master.cs.ntw.link_factory(name=t) for t in excluded_trunks}
+            l_excluded_trunks = {master.cs.ntw.lf(name=t) for t in excluded_trunks}
         if(excluded_nodes):
-            l_excluded_nodes = {master.cs.ntw.node_factory(name=n) for n in excluded_nodes}
+            l_excluded_nodes = {master.cs.ntw.nf(name=n) for n in excluded_nodes}
         if(path_constraints):
-            l_path_constraints = [master.cs.ntw.node_factory(name=n) for n in path_constraints]
+            l_path_constraints = [master.cs.ntw.nf(name=n) for n in path_constraints]
         return (name, source, destination, l_excluded_trunks, l_excluded_nodes, l_path_constraints)
         
     def find_path(self, master):
@@ -95,7 +95,7 @@ class ObjectManagementWindow(CustomTopLevel):
             elif(property == "path"):
                 self.current_obj.__dict__[property] = self.current_path
             else:
-                if(property not in ("source", "destination")):
+                if(property not in ("source", "destination", "AS")):
                     self.current_obj.__dict__[property] = eval(str_var.get())
             # refresh the label if it was changed
             master.cs._refresh_object_label(self.current_obj)

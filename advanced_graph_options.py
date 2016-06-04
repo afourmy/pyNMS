@@ -45,14 +45,14 @@ class AdvancedGraphOptionsWindow(CustomTopLevel):
                     master.cs.itemconfig(adjacent_link.line, fill=master.cs.default_colors[idx])
                     
     def LP(self, master):
-        source = master.cs.ntw.node_factory(name=self.entry_source.get())
-        destination = master.cs.ntw.node_factory(name=self.entry_destination.get())
+        source = master.cs.ntw.nf(name=self.entry_source.get())
+        destination = master.cs.ntw.nf(name=self.entry_destination.get())
         flow = master.cs.ntw.LP_MF_formulation(source, destination)
         print(flow)
         
     def fulkerson(self, master):
-        source = master.cs.ntw.node_factory(name=self.entry_source.get())
-        destination = master.cs.ntw.node_factory(name=self.entry_destination.get())
+        source = master.cs.ntw.nf(name=self.entry_source.get())
+        destination = master.cs.ntw.nf(name=self.entry_destination.get())
         flow = master.cs.ntw.edmonds_karp(source, destination)
         print(flow)
         
@@ -77,7 +77,7 @@ class AdvancedGraphOptionsWindow(CustomTopLevel):
         
     # TODO flow window
     # def flow(self, master):
-    #     total_flow = master.cs.ntw.ford_fulkerson(master.cs.ntw.node_factory(self.entry_source_node.get()), master.cs.ntw.node_factory(self.entry_destination_node.get()))
+    #     total_flow = master.cs.ntw.ford_fulkerson(master.cs.ntw.nf(self.entry_source_node.get()), master.cs.ntw.nf(self.entry_destination_node.get()))
     #     self.var_total_flow.set(str(total_flow))
         
         

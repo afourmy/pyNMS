@@ -17,6 +17,7 @@ import ast
 from PIL import ImageTk
 
 class NetDim(tk.Tk):
+    
     def __init__(self, path_app):
         tk.Tk.__init__(self)
         self.path_icon = path_app + "Icons\\"
@@ -24,22 +25,22 @@ class NetDim(tk.Tk):
             
         ## ----- Programme principal : -----
         self.title("NetDim")
-        netdim_icon = tk.PhotoImage(file=self.path_icon+"netdim.gif")
+        netdim_icon = tk.PhotoImage(file=self.path_icon+"netdim_icon.gif")
         self.tk.call('wm', 'iconphoto', self._w, netdim_icon)
         
         ## User-defined properties and labels per type of object
         
         # I used ordered dicts to have the same menu order 
         self.object_properties = collections.OrderedDict([
-        ("router", ("name", "x", "y", "longitude", "latitude")),
-        ("oxc", ("name", "x", "y", "longitude", "latitude")),
-        ("host", ("name", "x", "y", "longitude", "latitude")),
-        ("antenna", ("name", "x", "y", "longitude", "latitude")),
-        ("regenerator", ("name", "x", "y", "longitude", "latitude")),
-        ("splitter", ("name", "x", "y", "longitude", "latitude")),
-        ("trunk", ("name", "source", "destination", "distance", "costSD", "costDS", "capacitySD", "capacityDS", "flowSD", "flowDS")),
-        ("route", ("name","source", "destination", "distance", 
-        "path_constraints", "excluded_nodes", "excluded_trunks", "path", "subnets")),
+        ("router", ("name", "x", "y", "longitude", "latitude", "AS")),
+        ("oxc", ("name", "x", "y", "longitude", "latitude", "AS")),
+        ("host", ("name", "x", "y", "longitude", "latitude", "AS")),
+        ("antenna", ("name", "x", "y", "longitude", "latitude", "AS")),
+        ("regenerator", ("name", "x", "y", "longitude", "latitude", "AS")),
+        ("splitter", ("name", "x", "y", "longitude", "latitude", "AS")),
+        ("trunk", ("name", "source", "destination", "distance", "costSD", "costDS", "capacitySD", "capacityDS", "flowSD", "flowDS", "AS")),
+        ("route", ("name","source", "destination", "distance", "path_constraints", 
+        "excluded_nodes", "excluded_trunks", "path", "subnets", "AS")),
         ("traffic", ("name", "source", "destination", "distance"))
         ])
         
@@ -50,7 +51,8 @@ class NetDim(tk.Tk):
         ("Traffic", ("None", "Name", "Distance"))
         ])
         
-        self.object_import_export = collections.OrderedDict([
+        # object import export (properties)
+        self.object_ie = collections.OrderedDict([
         ("node", ("name", "x", "y", "longitude", "latitude")),
         ("trunk", ("name", "source", "destination", "distance", "costSD", "costDS", "capacitySD", "capacityDS")),
         ("route", ("name", "source", "destination", "distance", 
@@ -58,14 +60,31 @@ class NetDim(tk.Tk):
         ("traffic", ("name", "source", "destination", "distance"))
         ])
         
+        # methods for string to object conversions
+        # ast.literal_eval doesn't work for set (known python bug)
+        convert_node = lambda n: self.cs.ntw.nf(name=n)
+        convert_link = lambda l, t: self.cs.ntw.lf(name=l)
+        convert_AS = lambda AS: self.cs.ntw.AS_factory(name=AS)
+        convert_nodes_set = lambda ln: set(map(convert_node, eval(ln)))
+        convert_nodes_list = lambda ln: list(map(convert_node, ast.literal_eval(ln)))
+        convert_links_set = lambda ll: set(map(convert_link, eval(ll)))
+        convert_links_list = lambda ll: list(map(convert_link, ast.literal_eval(ll)))
+        
+        # dict property to conversion methods: used at import
+        self.prop_to_type = {
+        "name": str, "x": float, "y": float, "longitude": float, "latitude": float,
+        "distance": float, "source": convert_node, "destination": convert_node, 
+        "path_constraints": convert_nodes_list, "excluded_nodes": convert_nodes_set,
+        "excluded_trunks": convert_links_set, "path": convert_links_list, 
+        "costSD": float, "costDS": float, "capacitySD": int, "capacityDS": int,
+        "subnets": str, "AS": convert_AS
+        }
+        
         ## ----- Menus : -----
         menubar = tk.Menu(self)
         main_menu = tk.Menu(menubar, tearoff=0)
         main_menu.add_command(label="Add scenario", command=lambda: self.add_scenario())
         main_menu.add_command(label="Delete scenario", command=lambda: self.delete_scenario())
-        main_menu.add_separator()
-        main_menu.add_command(label="Save project", command=lambda: self.save_project())
-        main_menu.add_command(label="Load project", command=lambda: self.load_project())
         main_menu.add_separator()
         main_menu.add_command(label="Import graph", command=lambda: self.import_graph())
         main_menu.add_command(label="Export graph", command=lambda: self.export_graph())
@@ -79,7 +98,7 @@ class NetDim(tk.Tk):
         menu_routing.add_command(label="Advanced graph options", command=lambda: self.advanced_graph_options.deiconify())
         menubar.add_cascade(label="Network routing",menu=menu_routing)
 
-        # label submenus
+        # choose which label to display per type of object
         menu_options = tk.Menu(menubar, tearoff=0)
         for obj_type, label_type in self.object_label.items():
             menu_type = tk.Menu(menubar, tearoff=0)
@@ -90,6 +109,7 @@ class NetDim(tk.Tk):
             
         menu_options.add_command(label="Change display", command=lambda: self.cs.change_display())
         
+        # show / hide option per type of objects
         menu_display = tk.Menu(menubar, tearoff=0)
         for index, type in enumerate(self.object_properties):
             new_label = " ".join(("Hide", type))
@@ -137,65 +157,39 @@ class NetDim(tk.Tk):
         self.main_frame.pack(fill=tk.BOTH, side=tk.RIGHT)
         self.main_frame.pack_propagate(False)
         
-        # image for motion
-        self.image_pil_netdim = ImageTk.Image.open(self.path_icon + "netdim1.gif").resize((75, 75))
-        self.image_netdim = ImageTk.PhotoImage(self.image_pil_netdim)
-        self.main_frame.netdim.config(image = self.image_netdim, width=75, height=75)
-        
-        # image for motion
-        self.image_pil_motion = ImageTk.Image.open(self.path_icon + "motion.png").resize((75, 75))
-        self.image_motion = ImageTk.PhotoImage(self.image_pil_motion)
-        self.main_frame.motion_mode.config(image = self.image_motion, width=75, height=75)
-        
-        # image for creation
-        self.image_pil_creation = ImageTk.Image.open(self.path_icon + "creation.png").resize((75, 75))
-        self.image_creation = ImageTk.PhotoImage(self.image_pil_creation)
-        self.main_frame.creation_mode.config(image = self.image_creation, width=75, height=75)
-        
         # dict of nodes image for node creation
         self.dict_image = collections.defaultdict(dict)
         
+        self.node_size_image = {"router": (33, 25), "oxc": (35, 32), "host": (35, 32), 
+        "antenna": (35, 35), "regenerator": (64, 50), "splitter": (64, 50)}
+        
         self.dict_size_image = {
-        "router": (33, 25), 
-        "oxc": (35, 32), 
-        "host": (35, 32), 
-        "antenna": (35, 35),
-        "regenerator": (64, 50),
-        "splitter": (64, 50)
+        "general": {general: (75, 75) for general in ("netdim", "motion", "creation")},
+        "l_type": {l_type: (85, 15) for l_type in self.cs.ntw.link_type},
+        "ntw_topo": {"ring": (38, 33), "tree": (35, 21), 
+        "star": (36, 35), "full-mesh": (40, 36)},
+        "drawing": {"draw": (50, 50), "stop": (50, 50), "multi-layer": (160, 120)}
         }
         
         for color in ["default", "red"]:
             for node_type in self.cs.ntw.node_type:
                 img_path = "".join((self.path_icon, color, "_", node_type, ".gif"))
-                img_pil = ImageTk.Image.open(img_path).resize(self.dict_size_image[node_type])
+                img_pil = ImageTk.Image.open(img_path).resize(self.node_size_image[node_type])
                 img = ImageTk.PhotoImage(img_pil)
                 # set the default image for the button of the frame
                 if(color == "default"):
                     self.main_frame.type_to_button[node_type].config(image=img, width=50, height=50)
                 self.dict_image[color][node_type] = img
-                
-        for link_type in self.cs.ntw.link_type:
-            img_path = "".join((self.path_icon, link_type, ".png"))
-            img_pil = ImageTk.Image.open(img_path).resize((85, 15))
-            img = ImageTk.PhotoImage(img_pil)
-            self.dict_image["default"][link_type] = img
-            self.main_frame.type_to_button[link_type].config(image=img, width=100, height=25, anchor=tk.CENTER)
         
-        dict_size = {"ring": (38, 33), "tree": (35, 21), "star": (36, 35), "full-mesh": (40, 36)}
-        for network_topology in ("ring", "tree", "star", "full-mesh"):
-            x, y = dict_size[network_topology]
-            img_pil = ImageTk.Image.open(self.path_icon + network_topology + ".png").resize((x,y))
-            img = ImageTk.PhotoImage(img_pil)
-            self.dict_image["topology"][network_topology] = img
-            self.main_frame.type_to_button[network_topology].config(image=img, width=x, height=y, anchor=tk.CENTER)
-            
-        dict_size = {"draw": (50, 50), "stop": (50, 50), "multi-layer": (160, 120)}
-        for drawing_icons in ("draw", "stop", "multi-layer"):
-            x, y = dict_size[drawing_icons]
-            img_pil = ImageTk.Image.open(self.path_icon + drawing_icons + ".png").resize((x,y))
-            img = ImageTk.PhotoImage(img_pil)
-            self.dict_image["drawing"][drawing_icons] = img
-            self.main_frame.type_to_button[drawing_icons].config(image=img, width=x+10, height=y+10, anchor=tk.CENTER)
+        for category_type, dict_size in self.dict_size_image.items():
+            for image_type, image_size in dict_size.items():
+                x, y = image_size
+                img_path = "".join((self.path_icon, image_type, ".png"))
+                img_pil = ImageTk.Image.open(img_path).resize(image_size)
+                img = ImageTk.PhotoImage(img_pil)
+                self.dict_image[category_type][image_type] = img
+                self.main_frame.type_to_button[image_type].config(image=img, width=x, height=y+10)
+                
             
     def change_cs(self, event=None):
         cs_name = self.scenario_notebook.tab(self.scenario_notebook.select(), "text")
@@ -212,36 +206,9 @@ class NetDim(tk.Tk):
         del self.dict_scenario[self.cs.name]
         self.scenario_notebook.forget(self.cs)
         self.change_cs()
-        
-    def save_project(self):
-        with open('netdim_node_data.pkl', 'wb') as output:
-            pickle.dump(self.cs.ntw.pn, output, pickle.HIGHEST_PROTOCOL)
-                
-    def load_project(self):
-        with open('netdim_node_data.pkl', 'rb') as input:
-            self.cs.ntw.pn = pickle.load(input)
-        # once the project is loaded, the network graph needs to be recreated
-        for link_type in ["trunk", "traffic", "route"]:
-            for link in self.cs.ntw.pn[link_type].values():
-                self.cs.ntw.graph[link.source][link_type].add(link)
-                self.cs.ntw.graph[link.destination][link_type].add(link)
                 
     def str_to_object(self, obj_param, type):
-        properties = []
-        for id, property in enumerate(self.object_import_export[type]):
-            value = obj_param[id]
-            if property in ("source", "destination"):
-                properties.append(self.cs.ntw.node_factory(name=value))
-            elif property in ("x", "y", "distance", "longitude", "latitude"):
-                properties.append(float(value))
-            elif property in ("path_constraints", "excluded_trunks", "path"):
-                properties.append([self.cs.ntw.link_factory(name=n, link_type=type) for n in ast.literal_eval(value)])
-            elif property == "excluded_nodes":
-                properties.append([self.cs.ntw.node_factory(name=n) for n in ast.literal_eval(value)])
-            else:
-                properties.append(str(value))
-        print(properties)
-        return properties
+        return [self.prop_to_type[p](obj_param[id]) for id, p in enumerate(self.object_ie[type])]
                 
     def import_graph(self, filepath=None):
         # filepath is set for unittest
@@ -262,12 +229,11 @@ class NetDim(tk.Tk):
                     obj_type, *other = row
                     if(other):
                         if(obj_type == "node"):
-                            n, *param = other
-                            self.cs.ntw.node_factory(*param, node_type="router", name=n)
+                            n, *param = self.str_to_object(other, "node")
+                            self.cs.ntw.nf(*param, node_type="router", name=n)
                         else:
-                            n, s, d, *param = other
-                            src, dest = self.cs.ntw.node_factory(name=s), self.cs.ntw.node_factory(name=d)
-                            self.cs.ntw.link_factory(*param, link_type=obj_type, name=n, s=src, d=dest)
+                            n, s, d, *param = self.str_to_object(other, obj_type)
+                            self.cs.ntw.lf(*param, link_type=obj_type, name=n, s=s, d=d)
                             
             finally:
                 file_to_import.close()
@@ -278,24 +244,23 @@ class NetDim(tk.Tk):
                     obj_type, *other = row.split(",")
                     if(other):
                         if(obj_type == "node"):
-                            n, *param = other
-                            self.cs.ntw.node_factory(*param, node_type="router", name=n)
+                            n, *param = self.str_to_object(other, "node")
+                            self.cs.ntw.nf(*param, node_type="router", name=n)
                         else:
-                            n, s, d, *param = other
-                            src, dest = self.cs.ntw.node_factory(name=s), self.cs.ntw.node_factory(name=d)
-                            self.cs.ntw.link_factory(*param, link_type=obj_type, name=n, s=src, d=dest)
+                            n, s, d, *param = self.str_to_object(other, obj_type)
+                            self.cs.ntw.lf(*param, link_type=obj_type, name=n, s=s, d=d)
                     
         elif(filepath.endswith(".xls")):
             book = xlrd.open_workbook(filepath)
-            for id, obj_type in enumerate(self.object_import_export):
+            for id, obj_type in enumerate(self.object_ie):
                 xls_sheet = book.sheets()[id]
                 for row_index in range(1, xls_sheet.nrows):
                     if(obj_type == "node"):
                         n, *param = self.str_to_object(xls_sheet.row_values(row_index), "node")
-                        self.cs.ntw.node_factory(*param, node_type="router", name=n)
-                    else:
+                        self.cs.ntw.nf(*param, node_type="router", name=n)
+                    elif(obj_type == "link"):
                         n, s, d, *param = self.str_to_object(xls_sheet.row_values(row_index), obj_type)
-                        self.cs.ntw.link_factory(*param, link_type=obj_type, name=n, s=s, d=d)
+                        self.cs.ntw.lf(*param, link_type=obj_type, name=n, s=s, d=d)
                 
         # for the topology zoo network graphs
         elif(filepath.endswith(".graphml")):
@@ -320,9 +285,9 @@ class NetDim(tk.Tk):
                     if "edge" in child.tag:
                         s_id, d_id = child.attrib["source"], child.attrib["target"]
                         src_name = dict_id_to_prop[s_id]["label"]
-                        src = self.cs.ntw.node_factory(name=src_name)
+                        src = self.cs.ntw.nf(name=src_name)
                         dest_name = dict_id_to_prop[d_id]["label"]
-                        dest = self.cs.ntw.node_factory(name=dest_name)
+                        dest = self.cs.ntw.nf(name=dest_name)
                         
                         # set the latitude and longitude of the newly created nodes
                         for coord in ("latitude", "longitude"):
@@ -335,7 +300,7 @@ class NetDim(tk.Tk):
 
                         # in some graphml files, there are nodes with loopback link
                         if src_name != dest_name:
-                            new_link = self.cs.ntw.link_factory(s=src, d=dest)
+                            new_link = self.cs.ntw.lf(s=src, d=dest)
                             new_link.distance = distance
         
         self.cs.draw_all(False)
@@ -357,7 +322,7 @@ class NetDim(tk.Tk):
 
         if(file_format in (".txt", ".csv")):
             graph_per_line = []
-            for obj_type, properties in self.object_import_export.items():
+            for obj_type, properties in self.object_ie.items():
                 graph_per_line.append(obj_type)
                 for obj in self.cs.ntw.pn[obj_type].values():
                     param = ",".join(str(obj.__dict__[property]) for property in properties)
@@ -371,13 +336,32 @@ class NetDim(tk.Tk):
             
         if(file_format == ".xls"):
             excel_workbook = xlwt.Workbook()
-            for obj_type, properties in self.object_import_export.items():
+            for obj_type, properties in self.object_ie.items():
                 xls_sheet = excel_workbook.add_sheet(obj_type)
                 for id, property in enumerate(properties):
                     xls_sheet.write(0, id, property)
                     for i, t in enumerate(self.cs.ntw.pn[obj_type].values(), 1):
                         xls_sheet.write(i, id, str(t.__dict__[property]))
+            AS_sheet = excel_workbook.add_sheet("AS")
+            for i, AS in enumerate(self.cs.ntw.pn["AS"].values(), 1):
+                AS_sheet.write(i, 0, str(AS.name))
+                AS_sheet.write(i, 1, str(AS.type))
+                AS_sheet.write(i, 2, str(list(map(str, AS.pAS["node"]))))
+                AS_sheet.write(i, 3, str(list(map(str, AS.pAS["trunk"]))))
+                AS_sheet.write(i, 4, str(list(map(str, AS.pAS["edge"]))))
+                AS_sheet.write(i, 5, str(list(AS.areas.keys())))
+                
+            area_sheet = excel_workbook.add_sheet("area")
+            cpt = 1
+            for AS in self.cs.ntw.pn["AS"].values():
+                for area in AS.areas.values():
+                    area_sheet.write(cpt, 0, str(area.name))
+                    area_sheet.write(cpt, 1, str(area.AS))
+                    area_sheet.write(cpt, 2, str(list(map(str, area.pa["node"]))))
+                    area_sheet.write(cpt, 3, str(list(map(str, area.pa["trunk"]))))
+                    cpt += 1
             excel_workbook.save(selected_file.name)
+            
             
         selected_file.close()
         

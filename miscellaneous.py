@@ -22,8 +22,11 @@ class ObjectListbox(tk.Listbox):
             return obj
         
     def pop_selected(self):
-        selection = self.get(self.curselection())
-        self.pop(selection)
+        selection = self.selected()
+        return self.pop(selection)
+        
+    def clear(self):
+        self.delete(0, tk.END)
         
     @overrides(tk.Listbox)
     def insert(self, obj):

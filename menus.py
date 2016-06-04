@@ -28,15 +28,20 @@ class RightClickMenu(tk.Menu):
         
         # we compute the set of common AS among all selected objects
         self.common_AS = set(scenario.ntw.pn["AS"].values())
-        for link in scenario.so["link"]:
-            self.common_AS &= {link.AS}
+        # TODO refactor with allso
+        for link in filter(lambda l: l.network_type == "trunk", scenario.so["link"]):
+            self.common_AS &= link.AS.keys()
         for node in scenario.so["node"]:
-            self.common_AS &= node.AS
+            self.common_AS &= node.AS.keys()
             
         # if at least one common AS: remove from AS or manage AS
         if(self.common_AS):
             self.add_command(label="Remove from AS", command=lambda: self.change_AS(scenario, "remove"))
+            self.add_command(label="Remove from area", command=lambda: self.change_AS(scenario, "remove area"))
             self.add_command(label="Manage AS", command=lambda: self.change_AS(scenario, "manage"))
+
+
+            
             
         # make the menu appear    
         self.tk_popup(event.x_root, event.y_root)

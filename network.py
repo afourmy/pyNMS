@@ -34,8 +34,9 @@ class Network(object):
         self.pn = {"trunk": {}, "node": {}, "route": {}, "traffic": {}, "AS": {}}
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link, self.cpt_node, self.cpt_AS = (0,)*3
-            
-    def link_factory(self, *param, link_type="trunk", name=None, s=None, d=None):
+          
+    # "lf" is the link factory. Creates or retrieves any type of link
+    def lf(self, *param, link_type="trunk", name=None, s=None, d=None):
         if not name:
             name = link_type + str(self.cpt_link)
         # creation link in the s-d direction if no link at all yet
@@ -47,7 +48,8 @@ class Network(object):
             self.graph[d][link_type].add((s, new_link))
         return self.pn[link_type][name]
         
-    def node_factory(self, *param, node_type="router", name=None):
+    # "nf" is the node factory. Creates or retrieves any type of nodes
+    def nf(self, *param, node_type="router", name=None):
         if not name:
             name = "node" + str(self.cpt_node)
         if name not in self.pn["node"]:
@@ -62,21 +64,27 @@ class Network(object):
             self.pn["AS"][name] = AS.AutonomousSystem(name, type, trunks, nodes)
             self.cpt_AS += 1
         return self.pn["AS"][name]
+        
+    # "of" is the object factory: returns an object, link or node, from its name
+    def of(self, name, _type):
+        if _type == "node":
+            return self.nf(name=name)
+        else:
+            return self.lf(name=name)
             
     def erase_network(self):
         self.graph.clear()
-        for dict_of_objects in self.pn:
-            self.pn[dict_of_objects].clear()
+        for dict_of_objects in self.pn.values():
+            dict_of_objects.clear()
             
     def remove_node(self, node):
-        self.pn["node"].pop(node.name, None)
+        self.pn["node"].pop(node.name)
         # retrieve adj links to delete them 
-        dict_of_adj_links = self.graph.pop(node, None)
-        if(dict_of_adj_links): # can be None if multiple deletion at once
-            for type_link, adj_obj in dict_of_adj_links.items():
-                for neighbor, adj_link in adj_obj:
-                    self.graph[neighbor][type_link].discard((neighbor, adj_link))
-                    yield self.pn[type_link].pop(adj_link.name, None)
+        dict_of_adj_links = self.graph.pop(node, {})
+        for type_link, adj_obj in dict_of_adj_links.items():
+            for neighbor, adj_link in adj_obj:
+                self.graph[neighbor][type_link].discard((neighbor, adj_link))
+                yield self.pn[type_link].pop(adj_link.name, None)
             
     def remove_link(self, link):
         self.graph[link.source][link.type].discard((link.destination, link))
@@ -84,10 +92,10 @@ class Network(object):
         self.pn[link.type].pop(link.name, None)
         
     def find_edge_nodes(self, AS):
-        AS.edges.clear()
-        for node in AS.nodes:
-            if(any(n not in AS.nodes for n, _ in self.graph[node]["trunk"])):
-                AS.edges.add(node)
+        AS.pAS["edge"].clear()
+        for node in AS.pAS["node"]:
+            if(any(n not in AS.pAS["node"] for n, _ in self.graph[node]["trunk"])):
+                AS.pAS["edge"].add(node)
                 yield node
             
     def is_connected(self, nodeA, nodeB, link_type):
@@ -101,6 +109,16 @@ class Network(object):
             return [t for type in self.link_type for n, t in self.graph[nodeA][type] if n == nodeB]
         else:
             return [t for n, t in self.graph[nodeA][type] if n == nodeB]
+            
+    def calculate_all(self):
+        # TODO: pour ceux qui appartiennent à un AS, appeler la fonction de l'AS
+        # qui prendra en compte seuelement les liens/noeuds de l'AS
+        # et la fonction de routage spécifique de l'AS
+        for route in self.pn["route"].values():
+            param = (route.source, route.destination, route.excluded_trunks,
+                        route.excluded_nodes, route.path_constraints)
+            _, trunk_path = self.dijkstra(*param)
+            route.path = trunk_path
         
     def bfs(self, source):
         visited = set()
@@ -127,8 +145,7 @@ class Network(object):
             
     def dijkstra(self, source, target, excluded_trunks=None, excluded_nodes=None, 
     path_constraints=None, allowed_trunks=None, allowed_nodes=None):
-        # Complexity: O(|V| + |E|log|V|)
-        
+                
         # initialize parameters
         if(excluded_nodes is None):
             excluded_nodes = set()
@@ -183,6 +200,88 @@ class Network(object):
                 return [], []
                 
         return sum(full_path_node, [source]), sum(full_path_link, [])
+        
+    def ISIS_dijkstra(self, source, target, ISIS_AS):
+        
+        print("test")
+                
+        source_area, target_area = None, None
+        backbone = ISIS_AS.areas["Backbone"]
+        
+        # if source has more than one area, it is a L1/L2 node
+        # which means it is in the backbone
+        if len(source.AS[ISIS_AS]) > 1:
+            source_area = backbone
+        # else, it has only one area, which we retrieve
+        else:
+            source_area ,= source.AS[ISIS_AS]
+            
+        # same for target
+        if len(target.AS[ISIS_AS]) > 1:
+            target_area = backbone
+        else:
+            target_area ,= target.AS[ISIS_AS]
+            
+        print(source_area, target_area, backbone)
+        
+        # step indicates what we have to do:
+        # step 1 means we are in the source area, heading for the backbone
+        # step 2 means we are in the backbone, heading for the target area
+        # step 3 means we are in the target area
+        step = 3 if source_area == target_area else 1
+        
+        print(step)
+        
+        prec_node = {i: None for i in ISIS_AS.pAS["node"]}
+        prec_link = {i: None for i in ISIS_AS.pAS["node"]}
+        visited = {i: False for i in ISIS_AS.pAS["node"]}
+        dist = {i: float("inf") for i in ISIS_AS.pAS["node"]}
+        dist[source] = 0
+        heap = [(0, source)]
+        while heap:
+            dist_node, node = heappop(heap)  
+            if not visited[node]:
+                print(node, step)
+                visited[node] = True
+                if node == target:
+                    break
+                if step == 1 and backbone in node.AS[ISIS_AS]:
+                    step = 2
+                    heap.clear()
+                if step == 2 and target_area in node.AS[ISIS_AS]:
+                    step = 3
+                    heap.clear()
+                print(step)
+                for neighbor, adj_trunk in self.graph[node]["trunk"]:
+                    print(neighbor, adj_trunk)
+                    sd = (node == adj_trunk.source)*"SD" or "DS"
+                    # we ignore what's not in the AS
+                    if not neighbor in ISIS_AS.pAS["node"]: continue
+                    if not adj_trunk in ISIS_AS.pAS["trunk"]: continue
+                    # if step 1, we use only L1 or L1/L2 nodes (L1 source area)
+                    if step == 1 and neighbor not in source_area.pa["node"]: continue
+                    # if step2, we use only backbone nodes (L1/L2)
+                    elif step == 2 and neighbor not in backbone.pa["node"]: continue
+                    # if step3, we use only L1 or L1/L2 nodes (L1 target area)
+                    elif step == 3 and neighbor not in target_area.pa["node"]: continue
+                    print("passed")
+                    dist_neighbor = dist_node + adj_trunk.__dict__["cost" + sd]
+                    if dist_neighbor < dist[neighbor]:
+                        dist[neighbor] = dist_neighbor
+                        prec_node[neighbor] = node
+                        prec_link[neighbor] = adj_trunk
+                        heappush(heap, (dist_neighbor, neighbor))
+        
+        # traceback the path from target to source
+        if(visited[target]):
+            curr, path_node, path_link = target, [target], [prec_link[target]]
+            while(curr != source):
+                curr = prec_node[curr]
+                path_link.append(prec_link[curr])
+                path_node.append(curr)
+            return path_node[::-1], path_link[:-1][::-1]
+        else:
+            return [], []
         
     def bellman_ford(self, source, target, excluded_trunks=None, 
     excluded_nodes=None, allowed_trunks=None, allowed_nodes=None):
@@ -489,53 +588,53 @@ class Network(object):
     def generate_hypercube(self, n):
         # we create a n-dim hypercube by connecting two (n-1)-dim hypercubes
         i = 0
-        graph_nodes = [self.node_factory(str(0))]
+        graph_nodes = [self.nf(str(0))]
         graph_links = []
         while(i < n+1):
             for k in range(len(graph_nodes)):
                 # creation of the nodes of the second hypercube
-                graph_nodes.append(self.node_factory(str(k+2**i)))
+                graph_nodes.append(self.nf(str(k+2**i)))
             for trunk in graph_links[:]:
                 # connection of the two hypercubes
                 source, destination = trunk.source, trunk.destination
                 n1, n2 = str(int(source.name)+2**i), str(int(destination.name)+2**i)
-                graph_links.append(self.link_factory(s=self.node_factory(n1), d=self.node_factory(n2)))
+                graph_links.append(self.lf(s=self.nf(n1), d=self.nf(n2)))
             for k in range(len(graph_nodes)//2):
                 # creation of the links of the second hypercube
-                graph_links.append(self.link_factory(s=graph_nodes[k], d=graph_nodes[k+2**i]))
+                graph_links.append(self.lf(s=graph_nodes[k], d=graph_nodes[k+2**i]))
             i += 1
             
     def generate_meshed_square(self, n):
         for i in range(n**2):
             n1, n2, n3 = str(i), str(i-1), str(i+n)
             if(i-1 > -1 and i%n):
-                self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n2))
+                self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
             if(i+n < n**2):
-                self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n3))
+                self.lf(s=self.nf(name=n1), d=self.nf(name=n3))
                 
     def generate_tree(self, n):
         for i in range(2**n-1):
             n1, n2, n3 = str(i), str(2*i+1), str(2*i+2)
-            self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n2))
-            self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n3))
+            self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
+            self.lf(s=self.nf(name=n1), d=self.nf(name=n3))
             
     def generate_star(self, n):
         nb_node = len(self.pn["node"])
         for i in range(n):
             n1, n2 = str(nb_node), str(nb_node+1+i)
-            self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n2))
+            self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
             
     def generate_full_mesh(self, n):
         nb_node = len(self.pn["node"])
         for i in range(n):
             for j in range(i):
                 n1, n2 = str(nb_node+j), str(nb_node+i)
-                self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n2))
+                self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
                 
     def generate_ring(self, n):
         nb_node = len(self.pn["node"])
         for i in range(n):
             n1, n2 = str(nb_node+i), str(nb_node+(1+i)%n)
-            self.link_factory(s=self.node_factory(name=n1), d=self.node_factory(name=n2))
+            self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
             
             
