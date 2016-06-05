@@ -2,6 +2,7 @@ import sys
 import os
 import tkinter as tk
 from tkinter import ttk, filedialog
+from miscellaneous import CustomTopLevel
 import network
 import collections
 import object_management_window
@@ -56,26 +57,26 @@ class NetDim(tk.Tk):
         ("node", ("name", "x", "y", "longitude", "latitude")),
         ("trunk", ("name", "source", "destination", "distance", "costSD", "costDS", "capacitySD", "capacityDS")),
         ("route", ("name", "source", "destination", "distance", 
-        "path_constraints", "excluded_nodes", "excluded_trunks", "path", "subnets")),
+        "path_constraints", "excluded_nodes", "excluded_trunks", "subnets")),
         ("traffic", ("name", "source", "destination", "distance"))
         ])
         
         # methods for string to object conversions
         # ast.literal_eval doesn't work for set (known python bug)
         convert_node = lambda n: self.cs.ntw.nf(name=n)
-        convert_link = lambda l, t: self.cs.ntw.lf(name=l)
+        convert_link = lambda l: self.cs.ntw.lf(name=l)
         convert_AS = lambda AS: self.cs.ntw.AS_factory(name=AS)
-        convert_nodes_set = lambda ln: set(map(convert_node, eval(ln)))
-        convert_nodes_list = lambda ln: list(map(convert_node, ast.literal_eval(ln)))
-        convert_links_set = lambda ll: set(map(convert_link, eval(ll)))
-        convert_links_list = lambda ll: list(map(convert_link, ast.literal_eval(ll)))
+        self.convert_nodes_set = lambda ln: set(map(convert_node, eval(ln)))
+        convert_nodes_list = lambda ln: list(map(convert_node, eval(ln)))
+        self.convert_links_set = lambda ll: set(map(convert_link, eval(ll)))
+        convert_links_list = lambda ll: list(map(convert_link, eval(ll)))
         
         # dict property to conversion methods: used at import
         self.prop_to_type = {
         "name": str, "x": float, "y": float, "longitude": float, "latitude": float,
         "distance": float, "source": convert_node, "destination": convert_node, 
-        "path_constraints": convert_nodes_list, "excluded_nodes": convert_nodes_set,
-        "excluded_trunks": convert_links_set, "path": convert_links_list, 
+        "path_constraints": convert_nodes_list, "excluded_nodes": self.convert_nodes_set,
+        "excluded_trunks": self.convert_links_set, "path": convert_links_list, 
         "costSD": float, "costDS": float, "capacitySD": int, "capacityDS": int,
         "subnets": str, "AS": convert_AS
         }
@@ -96,6 +97,7 @@ class NetDim(tk.Tk):
         menubar.add_cascade(label="Network drawing",menu=menu_drawing)
         menu_routing = tk.Menu(menubar, tearoff=0)
         menu_routing.add_command(label="Advanced graph options", command=lambda: self.advanced_graph_options.deiconify())
+        menu_routing.add_command(label="Network Tree View", command=lambda: NetworkTreeView(self))
         menubar.add_cascade(label="Network routing",menu=menu_routing)
 
         # choose which label to display per type of object
@@ -258,9 +260,28 @@ class NetDim(tk.Tk):
                     if(obj_type == "node"):
                         n, *param = self.str_to_object(xls_sheet.row_values(row_index), "node")
                         self.cs.ntw.nf(*param, node_type="router", name=n)
-                    elif(obj_type == "link"):
+                    else:
                         n, s, d, *param = self.str_to_object(xls_sheet.row_values(row_index), obj_type)
-                        self.cs.ntw.lf(*param, link_type=obj_type, name=n, s=s, d=d)
+                        new_link = self.cs.ntw.lf(*param, link_type=obj_type, name=n, s=s, d=d)
+                        
+            AS_sheet, area_sheet = book.sheets()[4], book.sheets()[5]
+        
+            # creation of the AS
+            for row_index in range(1, AS_sheet.nrows):
+                AS_name, AS_type, AS_nodes, AS_trunks, AS_edges, *o = AS_sheet.row_values(row_index)
+                AS_nodes = self.convert_nodes_set(AS_nodes)
+                AS_trunks = self.convert_links_set(AS_trunks)
+                AS_edges = self.convert_nodes_set(AS_edges)
+                self.cs.ntw.AS_factory(AS_name, AS_type, AS_trunks, AS_nodes, AS_edges, True)
+            
+            # creation of the area
+            for row_index in range(1, area_sheet.nrows):
+                area_name, area_AS, area_nodes, area_trunks = area_sheet.row_values(row_index)
+                area_AS = self.cs.ntw.AS_factory(name=area_AS)
+                area_nodes = self.convert_nodes_set(area_nodes)
+                area_trunks = self.convert_links_set(area_trunks)
+                new_area = area_AS.area_factory(area_name, area_trunks, area_nodes)
+            
                 
         # for the topology zoo network graphs
         elif(filepath.endswith(".graphml")):
@@ -362,6 +383,35 @@ class NetDim(tk.Tk):
                     cpt += 1
             excel_workbook.save(selected_file.name)
             
-            
         selected_file.close()
         
+class NetworkTreeView(CustomTopLevel):
+
+    def __init__(self, master):
+        super().__init__()
+        self.geometry("500x500")
+        self.title("Network Tree View")
+        
+        tree = ttk.Treeview(self)
+        
+        tree["columns"]=("one","two")
+        tree.column("one", width=100 )
+        tree.column("two", width=100)
+        tree.heading("one", text="coulmn A")
+        tree.heading("two", text="column B")
+        
+        tree.insert("" , 0,    text="Line 1", values=("1A","1b"))
+        
+        id2 = tree.insert("", 1, "dir2", text="Dir 2", values=("1", "2"))
+        tree.insert(id2, "end", "dir 2", text="sub dir 2", values=("2A","2B"))
+        
+        ##alternatively:
+        tree.insert("", 3, "dir3", text="Dir 3")
+        tree.insert("dir3", 3, text=" sub dir 3",values=("3A"," 3B"))
+        
+        tree.pack(expand=tk.YES, fill=tk.BOTH)
+        
+        ttk.Style().configure("Treeview", background="#A1DBCD", 
+        foreground="white", fieldbackground="red")
+        
+        self.deiconify()

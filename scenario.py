@@ -9,7 +9,7 @@ class Scenario(tk.Canvas):
     def __init__(self, master, name):
         super().__init__(width=1100, height=600, background="bisque")
         self.name = name
-        self.ntw = network.Network()
+        self.ntw = network.Network(self)
         self.object_id_to_object = {}
         self.master = master
         
@@ -22,6 +22,7 @@ class Scenario(tk.Canvas):
         
         # default link width and node size
         self.LINK_WIDTH = 5
+        self.NODE_SIZE = 8
         
         # default label display
         self._current_object_label = {obj_type: "name" for obj_type in self.ntw.all_type}
@@ -259,92 +260,6 @@ class Scenario(tk.Canvas):
         new_node = self.ntw.nf(event.x, event.y, node_type=self._creation_mode)
         self.create_node(new_node)
         
-    def create_node(self, node, layer=0):
-        s = node.size
-        curr_image = self.master.dict_image["default"][node.type]
-        y = node.y - layer * self.diff_y
-        tags = () if layer else (node.type, node.class_type, "object")
-        node.image[layer] = self.create_image(node.x - (node.imagex)/2, y - (node.imagey)/2, image=curr_image, anchor=tk.NW, tags=tags)
-        node.oval[layer] = self.create_oval(node.x-s, y-s, node.x+s, y+s, outline=node.color, fill=node.color, tags=tags)
-        # create/hide the image/the oval depending on the current mode
-        self.itemconfig(node.oval[layer] if self.display_image else node.image[layer], state=tk.HIDDEN)
-        if not layer:
-            self.create_node_label(node)
-            self.object_id_to_object[node.oval[layer]] = node
-            self.object_id_to_object[node.image[layer]] = node
-    
-    def link_coordinates(self, source, destination, layer="all"):
-        xA, yA, xB, yB = source.x, source.y, destination.x, destination.y
-        angle = atan2(yB - yA, xB - xA)
-        dict_link_to_coords = {}
-        type = layer if layer == "all" else self.layers[1][layer]
-        for id, link in enumerate(self.ntw.links_between(source, destination, type)):
-            d = ((id+1)//2) * 20 * (-1)**id
-            xC, yC = (xA+xB)/2 + d*sin(angle), (yA+yB)/2 - d*cos(angle)
-            offset = 0 if layer == "all" else layer * self.diff_y
-            dict_link_to_coords[link] = (xA, yA - offset, xC, yC - offset, xB, yB - offset)
-            link.lpos = (xC, yC - offset)
-        return dict_link_to_coords
-        
-    def create_link(self, new_link):
-        edges = (new_link.source, new_link.destination)
-        for node in edges:
-            if not new_link.layer or self.layered_display:
-                if not node.image[new_link.layer]:
-                    self.create_node(node, new_link.layer)
-                    self.delete(node.layer_line)
-                    max_layer = 2 if self.ntw.graph[node]["traffic"] else 1 if self.ntw.graph[node]["route"] else 0
-                    coords = (node.x, node.y, node.x, node.y - max_layer * self.diff_y) 
-                    if self.layered_display:
-                        node.layer_line = self.create_line(*coords, fill="black", width=1, dash=(3,5))
-                        self.tag_lower(node.layer_line)
-        current_layer = "all" if not self.layered_display else new_link.layer
-        link_to_coords = self.link_coordinates(*edges, layer=current_layer)
-        for link in link_to_coords:
-            coords = link_to_coords[link]
-            if not link.line:
-                link.line = self.create_line(*coords, tags=(link.type, link.class_type, "object"), fill=link.color, width=self.LINK_WIDTH, dash=link.dash, smooth=True)
-            else:
-                self.coords(link.line, *coords)
-        self.tag_lower(new_link.line)
-        self.object_id_to_object[new_link.line] = new_link
-        self._create_link_label(new_link)
-        self._refresh_object_label(new_link)
-        
-    def planal_move(self, angle=45):
-        self.delete("all")
-        self.layered_display = not self.layered_display
-        
-        for node in self.ntw.pn["node"].values():
-            node.oval = {layer: None for layer in range(3)}
-            node.image = {layer: None for layer in range(3)}
-            
-        for link_type in self.ntw.link_type:
-            for link in self.ntw.pn[link_type].values():
-                link.line = None
-        
-        if self.layered_display:
-        
-            min_y = min(node.y for node in self.ntw.pn["node"].values())
-            max_y = max(node.y for node in self.ntw.pn["node"].values())
-            
-            for node in self.ntw.pn["node"].values():
-                diff_y = abs(node.y - min_y)
-                new_y = min_y + diff_y * cos(radians(angle))
-                node.y = new_y
-                
-            self.diff_y = max_y - min_y + 100
-            
-            for node in self.ntw.pn["node"].values():
-                self.create_node(node)
-                    
-            for link_type in self.ntw.link_type:
-                for link in self.ntw.pn[link_type].values():
-                    self.create_link(link)
-                    
-        else:
-            self.draw_all(False)
-        
     def change_display(self):
         # flip the display from icon to oval and vice-versa, depend on display_image boolean
         self.display_image = not self.display_image
@@ -376,7 +291,7 @@ class Scenario(tk.Canvas):
                 max_layer = 2 if self.ntw.graph[node]["traffic"] else 1 if self.ntw.graph[node]["route"] else 0
                 self.coords(node.layer_line, node.x, node.y, node.x, node.y - max_layer*self.diff_y)
             # the oval was also resized while scaling
-            node.size = abs(new_coords[0] - new_coords[2])/2 
+            #node.size = abs(new_coords[0] - new_coords[2])/2 
             for type in self.ntw.link_type:
                 for neighbor, t in self.ntw.graph[node][type]:
                     layer = "all" if not self.layered_display else t.layer
@@ -389,15 +304,12 @@ class Scenario(tk.Canvas):
     def zoomer(self, event):
         """ Zoom for window """
         self._cancel()
-        if(event.delta > 0):
-            self.scale("all", event.x, event.y, 1.1, 1.1)
-            self.diff_y *= 1.1
-        elif(event.delta < 0):
-            self.scale("all", event.x, event.y, 0.9, 0.9)
-            self.diff_y *= 0.9
+        factor = 1.1 if event.delta > 0 else 0.9
+        self.diff_y *= factor
+        self.NODE_SIZE *= factor
+        self.scale("all", event.x, event.y, factor, factor)
         self.configure(scrollregion = self.bbox("all"))
         self.update_nodes_coordinates()
-        
         
     @adapt_coordinates
     def zoomerP(self,event):
@@ -426,66 +338,7 @@ class Scenario(tk.Canvas):
             if node not in AS.edges:
                 AS.edges.add(node)
                 AS.management.listbox_edges.insert(tk.END, obj)
-    # TODO refactor
-    def remove_objects(self, *objects):
-        for obj in objects:
-            if(obj.class_type == "node"):
-                self.delete(obj.oval[0], obj.image[0], obj.lid)
-                self.remove_objects(*self.ntw.remove_node(obj))
-                # we make a list of the keys of obj.AS because the dict size
-                # will change while iterating
-                for AS in list(obj.AS):
-                    AS.management.remove_from_AS(obj)
-                if self.layered_display:
-                    self.delete(obj.layer_line)
-                    for layer in (1, 2):
-                        self.delete(obj.oval[layer], obj.image[layer])
-            if(obj.class_type == "link"):
-                self.delete(obj.line, obj.lid)
-                self.ntw.remove_link(obj)
-                # traffic links have no AS
-                if(obj.network_type not in ("traffic", "route")):
-                    # we make a list of the keys of obj.AS because the dict size
-                    # will change while iterating
-                    for AS in list(obj.AS):
-                        AS.management.remove_from_AS(obj)
-                if self.layered_display:
-                    link_type = self.layers[1][obj.layer]
-                    if not self.ntw.graph[obj.source][link_type]:
-                        self.delete(obj.source.oval[obj.layer], obj.source.image[obj.layer])
-                        self.delete(obj.source.layer_line)
-                        obj.source.image[obj.layer], obj.source.oval[obj.layer] = None, None
-                    if not self.ntw.graph[obj.destination][link_type]:
-                        obj.destination.image[obj.layer], obj.destination.oval[obj.layer] = None, None
-                        self.delete(obj.destination.oval[obj.layer], obj.destination.image[obj.layer])
-                        self.delete(obj.destination.layer_line)
-                        
-    def draw_objects(self, objects, random_drawing):
-        self._cancel()
-        for obj in objects:
-            if obj.network_type == "node":
-                if(random_drawing):
-                    obj.x, obj.y = random.randint(100,700), random.randint(100,700)
-                    if not obj.image[0]: 
-                        self.create_node(obj)
-            else:
-                self.create_link(obj)
-             
-    def draw_all(self, random=True):
-        self.delete("all")
-        
-        for node in self.ntw.pn["node"].values():
-            node.oval = {layer: None for layer in range(3)}
-            node.image = {layer: None for layer in range(3)}
-            
-        for link_type in self.ntw.link_type:
-            for link in self.ntw.pn[link_type].values():
-                link.line = None
-                
-        for type in self.ntw.pn:
-            # cannot draw an AS
-            if type != "AS":
-                self.draw_objects(self.ntw.pn[type].values(), random)
+
         
     ## Highlight and Unhighlight links and nodes (depending on class_type)
     def highlight_objects(self, *objects):
@@ -540,6 +393,7 @@ class Scenario(tk.Canvas):
             self.itemconfig(label_id, text="({}, {})".format(current_object.x, current_object.y))
         else:
             self.itemconfig(label_id, text=current_object.__dict__[label_type])
+        self.itemconfig(label_id, font="bold")
             
     # change label and refresh it for all objects
     def _refresh_object_labels(self, type, var_label):
@@ -570,7 +424,7 @@ class Scenario(tk.Canvas):
         
     def move_node(self, n):
         newx, newy = float(n.x), float(n.y)
-        s = n.size
+        s = self.NODE_SIZE
 
         for layer in self.layers[self.layered_display]:
             if n.image[layer]:
@@ -580,9 +434,10 @@ class Scenario(tk.Canvas):
             self.coords(n.lid, newx - 15, newy + 10)
         
         # move also the virtual line, which length depends on what layer exists
-        if self.layered_display and n.layer_line:
-            max_layer = 2 if self.ntw.graph[n]["traffic"] else 1 if self.ntw.graph[n]["route"] else 0
-            self.coords(n.layer_line, newx, newy, newx, newy - max_layer*self.diff_y)
+        if self.layered_display:
+            for layer in range(1, 3):
+                if n.layer_line[layer]:
+                    self.coords(n.layer_line[layer], newx, newy, newx, newy - layer*self.diff_y)
     
         # update links coordinates
         for type_link in self.ntw.link_type:
@@ -623,3 +478,130 @@ class Scenario(tk.Canvas):
             return self._cancel()
         self._job = self.after(1, lambda: self.ntw.frucht())
             
+            
+## TODO repair the 3D view
+            
+            
+    def create_node(self, node, layer=0):
+        s = self.NODE_SIZE
+        curr_image = self.master.dict_image["default"][node.type]
+        y = node.y - layer * self.diff_y
+        tags = () if layer else (node.type, node.class_type, "object")
+        node.image[layer] = self.create_image(node.x - (node.imagex)/2, y - (node.imagey)/2, image=curr_image, anchor=tk.NW, tags=tags)
+        node.oval[layer] = self.create_oval(node.x-s, y-s, node.x+s, y+s, outline=node.color, fill=node.color, tags=tags)
+        # create/hide the image/the oval depending on the current mode
+        self.itemconfig(node.oval[layer] if self.display_image else node.image[layer], state=tk.HIDDEN)
+        if not layer:
+            self.create_node_label(node)
+            self.object_id_to_object[node.oval[layer]] = node
+            self.object_id_to_object[node.image[layer]] = node
+    
+    def link_coordinates(self, source, destination, layer="all"):
+        xA, yA, xB, yB = source.x, source.y, destination.x, destination.y
+        angle = atan2(yB - yA, xB - xA)
+        dict_link_to_coords = {}
+        type = layer if layer == "all" else self.layers[1][layer]
+        for id, link in enumerate(self.ntw.links_between(source, destination, type)):
+            d = ((id+1)//2) * 30 * (-1)**id
+            xC, yC = (xA+xB)/2 + d*sin(angle), (yA+yB)/2 - d*cos(angle)
+            offset = 0 if layer == "all" else layer * self.diff_y
+            dict_link_to_coords[link] = (xA, yA - offset, xC, yC - offset, xB, yB - offset)
+            link.lpos = (xC, yC - offset)
+        return dict_link_to_coords
+        
+    def create_link(self, new_link):
+        edges = (new_link.source, new_link.destination)
+        for node in edges:
+            if not new_link.layer or self.layered_display:
+                if not node.image[new_link.layer]:
+                    self.create_node(node, new_link.layer)
+                    if self.layered_display and not node.layer_line[new_link.layer]:
+                        coords = (node.x, node.y, node.x, node.y - new_link.layer * self.diff_y) 
+                        node.layer_line[new_link.layer] = self.create_line(*coords, fill="black", width=1, dash=(3,5))
+                        self.tag_lower(node.layer_line[new_link.layer])
+        current_layer = "all" if not self.layered_display else new_link.layer
+        link_to_coords = self.link_coordinates(*edges, layer=current_layer)
+        for link in link_to_coords:
+            coords = link_to_coords[link]
+            if not link.line:
+                link.line = self.create_line(*coords, tags=(link.type, link.class_type, "object"), fill=link.color, width=self.LINK_WIDTH, dash=link.dash, smooth=True)
+            else:
+                self.coords(link.line, *coords)
+        self.tag_lower(new_link.line)
+        self.object_id_to_object[new_link.line] = new_link
+        self._create_link_label(new_link)
+        self._refresh_object_label(new_link)
+        
+    def erase_all(self):
+        self.delete("all")
+        
+        for node in self.ntw.pn["node"].values():
+            node.oval = {layer: None for layer in range(3)}
+            node.image = {layer: None for layer in range(3)}
+            node.layer_line = {layer: None for layer in range(1,3)}
+            
+        for link_type in self.ntw.link_type:
+            for link in self.ntw.pn[link_type].values():
+                link.line = None
+                
+    def switch_display_mode(self):
+        self.layered_display = not self.layered_display
+        
+        if self.layered_display:
+            self.planal_move(50)
+            min_y = min(node.y for node in self.ntw.pn["node"].values())
+            max_y = max(node.y for node in self.ntw.pn["node"].values())
+            self.diff_y = max_y - min_y + 100
+            
+        self.draw_all(False)
+            
+    def planal_move(self, angle=45):
+        min_y = min(node.y for node in self.ntw.pn["node"].values())
+        max_y = max(node.y for node in self.ntw.pn["node"].values())
+        
+        for node in self.ntw.pn["node"].values():
+            diff_y = abs(node.y - min_y)
+            new_y = min_y + diff_y * cos(radians(angle))
+            node.y = new_y
+                    
+    def remove_objects(self, *objects):
+        for obj in objects:
+            if(obj.network_type not in ("traffic", "route")):
+                for AS in list(obj.AS):
+                    AS.management.remove_from_AS(obj)
+            if(obj.class_type == "node"):
+                self.delete(obj.oval[0], obj.image[0], obj.lid)
+                self.remove_objects(*self.ntw.remove_node(obj))
+                if self.layered_display:
+                    for layer in (1, 2):
+                        self.delete(obj.oval[layer], obj.image[layer], obj.layer_line[layer])
+            if(obj.class_type == "link"):
+                self.delete(obj.line, obj.lid)
+                self.ntw.remove_link(obj)
+                if self.layered_display:
+                    link_type = self.layers[1][obj.layer]
+                    for edge in (obj.source, obj.destination):
+                        if not self.ntw.graph[edge][link_type]:
+                            self.delete(edge.oval[obj.layer], edge.image[obj.layer])
+                            edge.image[obj.layer], edge.oval[obj.layer] = None, None
+                            if obj.layer:
+                                self.delete(edge.layer_line[obj.layer])
+                                edge.layer_line[obj.layer] = None
+                            else:
+                                self.delete(edge.lid)
+                        
+    def draw_objects(self, objects, random_drawing):
+        self._cancel()
+        for obj in objects:
+            if obj.network_type == "node":
+                if(random_drawing):
+                    obj.x, obj.y = random.randint(100,700), random.randint(100,700)
+                if not obj.image[0]: 
+                    self.create_node(obj)
+            else:
+                self.create_link(obj)
+             
+    def draw_all(self, random=True):
+        self.erase_all()
+        for type in ("node", "trunk", "route", "traffic"):
+            self.draw_objects(self.ntw.pn[type].values(), random)

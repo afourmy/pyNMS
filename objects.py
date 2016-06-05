@@ -14,7 +14,7 @@ class Node(object):
         self.oval = {layer: None for layer in range(3)}
         # image of the node at all three layers: physical, logical and traffic
         self.image = {layer: None for layer in range(3)}
-        self.layer_line = None
+        self.layer_line = {layer: None for layer in range(1, 3)}
         self.lid = None
         self.lpos = None
         self.size = 8

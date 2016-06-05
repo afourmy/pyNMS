@@ -5,24 +5,20 @@ from miscellaneous import ObjectListbox, CustomTopLevel
 class AutonomousSystem(object):
     class_type = "AS"
 
-    def __init__(self, name, type, trunks=set(), nodes=set()):
+    def __init__(self, name, type, scenario, trunks=set(), nodes=set(), edges=set(), imp=False):
         self.name = name
         self.type = type
         # pAS as in "pool AS": same as pool network
-        self.pAS = {"trunk": trunks, "node": nodes, "edge": set()}
+        self.pAS = {"trunk": trunks, "node": nodes, "edge": edges}
         # areas is a dict associating a name to an area
         self.areas = {}
-        # there's only one area to begin with: the backbone
-        BB = self.area_factory("Backbone")
-        # at initialization, we populate the objects AS dictionnary: they 
-        # contains the object AS associated to a set of area to which the object
-        # belongs in the domain
-        # when the domain is created, all objects are in the backbone
-        for obj_type in ("trunk", "node"):
-            for obj in self.pAS[obj_type]:
-                obj.AS[self] = {BB}
+        for obj in nodes | trunks:
+            obj.AS[self] = set()
         # management window of the AS 
-        self.management = None
+        self.management = ASManagement(scenario, self, imp)
+        # imp tells us if the AS is imported or created from scratch.
+        if not imp:
+            self.area_factory("Backbone")
         
     def __repr__(self):
         return self.name
@@ -78,6 +74,14 @@ class Area(AutonomousSystem):
         if not nodes:
             nodes = set()
         self.pa = {"node": nodes, "trunk": trunks}
+        # update the AS dict for all objects, so that they are aware they
+        # belong to this new area
+        for obj in nodes | trunks:
+            obj.AS[self.AS].add(self)
+        # update the area dict of the AS with the new area
+        self.AS.areas[name] = self
+        # add the area to the AS management panel area listbox
+        self.AS.management.create_area(name)
         
     def add_to_area(self, *objects):
         for obj in objects:
@@ -91,7 +95,7 @@ class Area(AutonomousSystem):
         
 # TODO switch to custom toplevel
 class ASManagement(tk.Toplevel):
-    def __init__(self, scenario, AS):
+    def __init__(self, scenario, AS, imp):
         super().__init__()
         self.scenario = scenario
         self.AS = AS
@@ -124,9 +128,13 @@ class ASManagement(tk.Toplevel):
             yscroll.grid(row=2, column=1+2*index, sticky="ns")
             
         # populate the listbox with all objects from which the AS was created
-        for obj_type in ("trunk", "node"):
+        for obj_type in ("trunk", "node", "edge"):
             for obj in AS.pAS[obj_type]:
                 self.dict_listbox[obj_type].insert(obj)
+              
+        # if the AS is created from an import, close the management window
+        if imp:
+            self.withdraw()
         
         # find edge nodes of the AS
         self.button_find_edge_nodes = ttk.Button(self, text="Find edges", command=lambda: self.find_edge_nodes())
@@ -176,9 +184,6 @@ class ASManagement(tk.Toplevel):
         
         # at first, the backbone is the only area: we insert it in the listbox
         self.dict_listbox["area names"].insert("Backbone")
-        
-        # find the edges at initialization
-        self.find_edge_nodes()
         
     # function to change the focus
     def change_focus(self):
@@ -232,11 +237,14 @@ class ASManagement(tk.Toplevel):
         for eA in self.AS.pAS["edge"]:
             for eB in self.AS.pAS["edge"]:
                 if(eA != eB and not self.scenario.ntw.is_connected(eA, eB, "route")):
-                    route_name = "-".join((str(eA), str(eB)))
-                    new_route = self.scenario.ntw.lf(link_type="route", name=route_name, s=eA, d=eB)
-                    _, new_route.path = self.scenario.ntw.ISIS_dijkstra(eA, eB, self.AS)
-                    print(new_route.path)
-                    self.scenario.create_link(new_route)
+                    route_AB = "-".join((str(eA), str(eB)))
+                    route_BA = "-".join((str(eB), str(eA)))
+                    new_route_AB = self.scenario.ntw.lf(link_type="route", name=route_AB, s=eA, d=eB)
+                    new_route_BA = self.scenario.ntw.lf(link_type="route", name=route_BA, s=eB, d=eA)
+                    _, new_route_AB.path = self.scenario.ntw.ISIS_dijkstra(eA, eB, self.AS)
+                    _, new_route_BA.path = self.scenario.ntw.ISIS_dijkstra(eB, eA, self.AS)
+                    self.scenario.create_link(new_route_AB)
+                    self.scenario.create_link(new_route_BA)
             
     def create_area(self, name):
         self.AS.area_factory(name)
@@ -257,7 +265,9 @@ class ASManagement(tk.Toplevel):
     ## Functions used to modify AS from the right-click menu
             
     def remove_from_area(self, area, *objects):
+        print(self.AS.pAS["node"])
         self.AS.areas[area].remove_from_area(*objects)
+        print(self.AS.pAS["node"])
                 
     def remove_from_AS(self, *objects):
         self.AS.remove_from_AS(*objects)
@@ -268,7 +278,6 @@ class ASManagement(tk.Toplevel):
                 self.dict_listbox["edge"].pop(obj)
             elif(obj.network_type == "trunk"):
                 self.dict_listbox["trunk"].pop(obj)
-            
             
 class CreateArea(tk.Toplevel):
     def __init__(self, asm):
@@ -400,6 +409,5 @@ class ASCreation(tk.Toplevel):
 
     def create_AS(self, scenario, so):
         new_AS = scenario.ntw.AS_factory(name=self.var_name.get(), type=self.var_AS_type.get(), trunks=so["link"], nodes=so["node"])
-        new_AS.management = ASManagement(scenario, new_AS)
         self.destroy()
             

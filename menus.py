@@ -39,9 +39,6 @@ class RightClickMenu(tk.Menu):
             self.add_command(label="Remove from AS", command=lambda: self.change_AS(scenario, "remove"))
             self.add_command(label="Remove from area", command=lambda: self.change_AS(scenario, "remove area"))
             self.add_command(label="Manage AS", command=lambda: self.change_AS(scenario, "manage"))
-
-
-            
             
         # make the menu appear    
         self.tk_popup(event.x_root, event.y_root)

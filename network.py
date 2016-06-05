@@ -29,9 +29,10 @@ class Network(object):
     node_type = tuple(node_type_to_class.keys())
     all_type = link_type + node_type
     
-    def __init__(self):
+    def __init__(self, scenario):
         # pn for "pool network"
         self.pn = {"trunk": {}, "node": {}, "route": {}, "traffic": {}, "AS": {}}
+        self.scenario = scenario
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link, self.cpt_node, self.cpt_AS = (0,)*3
           
@@ -57,11 +58,11 @@ class Network(object):
             self.cpt_node += 1
         return self.pn["node"][name]
         
-    def AS_factory(self, name=None, type="RIP", trunks=set(), nodes=set()):
+    def AS_factory(self, name=None, type="RIP", trunks=set(), nodes=set(), edges=set(), imp=False):
         if not name:
             name = "AS" + str(self.cpt_AS)
         if name not in self.pn["AS"]:
-            self.pn["AS"][name] = AS.AutonomousSystem(name, type, trunks, nodes)
+            self.pn["AS"][name] = AS.AutonomousSystem(name, type, self.scenario, trunks, nodes, edges, imp)
             self.cpt_AS += 1
         return self.pn["AS"][name]
         
@@ -203,8 +204,6 @@ class Network(object):
         
     def ISIS_dijkstra(self, source, target, ISIS_AS):
         
-        print("test")
-                
         source_area, target_area = None, None
         backbone = ISIS_AS.areas["Backbone"]
         
@@ -231,10 +230,11 @@ class Network(object):
         step = 3 if source_area == target_area else 1
         
         print(step)
-        
+        print(ISIS_AS.pAS["node"])
         prec_node = {i: None for i in ISIS_AS.pAS["node"]}
         prec_link = {i: None for i in ISIS_AS.pAS["node"]}
         visited = {i: False for i in ISIS_AS.pAS["node"]}
+        print(visited)
         dist = {i: float("inf") for i in ISIS_AS.pAS["node"]}
         dist[source] = 0
         heap = [(0, source)]

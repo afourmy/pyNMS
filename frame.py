@@ -15,7 +15,7 @@ class MainFrame(tk.Frame):
         "creation": lambda: self.switch_to_creation(master),
         "draw": lambda: master.cs.spring_based_drawing(master),
         "stop": lambda: master.cs._cancel(),
-        "multi-layer": lambda: master.cs.planal_move(),
+        "multi-layer": lambda: master.cs.switch_display_mode(),
         }
         
         for topo in ("tree", "star", "full-mesh", "ring"):
