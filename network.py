@@ -142,7 +142,9 @@ class Network(object):
                 visited.update(new_comp)
                 yield new_comp
                 
-        ## Shortest path(s) algorithm: Dijkstra, Bellman-Ford, all-paths (BFS)
+        ## Shortest path(s) algorithm: Dijkstra, Bellman-Ford, all-paths (BFS), Floyd-Warshall
+        
+        # TODO the traceback should be common to all SP functions
             
     def dijkstra(self, source, target, excluded_trunks=None, excluded_nodes=None, 
     path_constraints=None, allowed_trunks=None, allowed_nodes=None):
@@ -181,7 +183,7 @@ class Network(object):
                         if not neighbor in allowed_nodes-excluded_nodes: continue
                         # excluded and allowed trunks
                         if not adj_trunk in allowed_trunks-excluded_trunks: continue
-                        dist_neighbor = dist_node + adj_trunk.__dict__["cost" + sd]
+                        dist_neighbor = dist_node + getattr(adj_trunk, "cost" + sd)
                         if dist_neighbor < dist[neighbor]:
                             dist[neighbor] = dist_neighbor
                             prec_node[neighbor] = node
@@ -220,8 +222,6 @@ class Network(object):
             target_area = backbone
         else:
             target_area ,= target.AS[ISIS_AS]
-            
-        print(source_area, target_area, backbone)
         
         # step indicates what we have to do:
         # step 1 means we are in the source area, heading for the backbone
@@ -229,19 +229,16 @@ class Network(object):
         # step 3 means we are in the target area
         step = 3 if source_area == target_area else 1
         
-        print(step)
-        print(ISIS_AS.pAS["node"])
         prec_node = {i: None for i in ISIS_AS.pAS["node"]}
         prec_link = {i: None for i in ISIS_AS.pAS["node"]}
         visited = {i: False for i in ISIS_AS.pAS["node"]}
-        print(visited)
+
         dist = {i: float("inf") for i in ISIS_AS.pAS["node"]}
         dist[source] = 0
         heap = [(0, source)]
         while heap:
             dist_node, node = heappop(heap)  
             if not visited[node]:
-                print(node, step)
                 visited[node] = True
                 if node == target:
                     break
@@ -251,9 +248,7 @@ class Network(object):
                 if step == 2 and target_area in node.AS[ISIS_AS]:
                     step = 3
                     heap.clear()
-                print(step)
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
-                    print(neighbor, adj_trunk)
                     sd = (node == adj_trunk.source)*"SD" or "DS"
                     # we ignore what's not in the AS
                     if not neighbor in ISIS_AS.pAS["node"]: continue
@@ -264,8 +259,7 @@ class Network(object):
                     elif step == 2 and neighbor not in backbone.pa["node"]: continue
                     # if step3, we use only L1 or L1/L2 nodes (L1 target area)
                     elif step == 3 and neighbor not in target_area.pa["node"]: continue
-                    print("passed")
-                    dist_neighbor = dist_node + adj_trunk.__dict__["cost" + sd]
+                    dist_neighbor = dist_node + getattr(adj_trunk, "cost" + sd)
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
                         prec_node[neighbor] = node
@@ -285,7 +279,6 @@ class Network(object):
         
     def bellman_ford(self, source, target, excluded_trunks=None, 
     excluded_nodes=None, allowed_trunks=None, allowed_nodes=None):
-        # Complexity: O(|V| + |E|log|V|)
         
         # initialize parameters
         if(excluded_nodes is None):
@@ -312,7 +305,7 @@ class Network(object):
                     if not neighbor in allowed_nodes-excluded_nodes: continue
                     # excluded and allowed trunks
                     if not adj_trunk in allowed_trunks-excluded_trunks: continue
-                    dist_neighbor = dist[node] + adj_trunk.__dict__["cost" + sd]
+                    dist_neighbor = dist[node] + getattr(adj_trunk, "cost" + sd)
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
                         prec_node[neighbor] = node
@@ -326,9 +319,41 @@ class Network(object):
                 curr = prec_node[curr]
                 path_link.append(prec_link[curr])
                 path_node.append(curr)
-            return reversed(path_node), reversed(path_link[:-1])
+            return path_node[::-1], path_link[:-1][::-1]
         else:
             return [], []
+            
+    def floyd_warshall(self):
+        
+        
+        nodes = list(self.pn["node"].values())
+        n = len(nodes)
+        W = [[0]*n for _ in range(n)]
+        
+        for id1, n1 in enumerate(nodes):
+            for id2, n2 in enumerate(nodes):
+                if id1 != id2:
+                    for neighbor, trunk in self.graph[n1]["trunk"]:
+                        if neighbor == n2:
+                            W[id1][id2] = trunk.costSD
+                            break
+                    else:
+                        W[id1][id2] = float("inf")
+                        
+        for k in range(n):
+            for u in range(n):
+                for v in range(n):
+                    W[u][v] = min(W[u][v], W[u][k] + W[k][v])
+                    
+        if any(W[v][v] < 0 for v in range(n)):
+            return False
+        else:
+            all_length = defaultdict(dict)
+            for id1, n1 in enumerate(nodes):
+                for id2, n2 in enumerate(nodes):
+                    all_length[n1][n2] = W[id1][id2]
+                    
+        return all_length                    
         
     def all_paths(self, source, target=None):
         # generates all cycle-free paths from source to optional target
@@ -365,8 +390,8 @@ class Network(object):
         for neighbor, adj_link in self.graph[curr_node]["trunk"]:
             direction = curr_node == adj_link.source
             sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
-            cap = adj_link.__dict__["capacity" + sd]
-            current_flow = adj_link.__dict__["flow" + sd]
+            cap = getattr(adj_link, "capacity" + sd)
+            current_flow = getattr(adj_link, "flow" + sd)
             if cap > current_flow and not visit[neighbor]:
                 residual_capacity = min(val, cap - current_flow)
                 global_flow = self.augment_ff(residual_capacity, neighbor, target, visit)
@@ -381,7 +406,7 @@ class Network(object):
         while(self.augment_ff(float("inf"), s, d, {n:0 for n in self.graph})):
             pass
         # flow leaving from the source 
-        return sum(adj.__dict__["flow" + (s == adj.source)*"SD" or "DS"] for _, adj in self.graph[s]["trunk"])
+        return sum(getattr(adj, "flow" + (s==adj.source)*"SD" or "DS") for _, adj in self.graph[s]["trunk"])
         
     def augment_ek(self, source, destination):
         res_cap = {n:0 for n in self.graph}
@@ -395,7 +420,7 @@ class Network(object):
             for neighbor, adj_link in self.graph[curr_node]["trunk"]:
                 direction = curr_node == adj_link.source
                 sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
-                residual = adj_link.__dict__["capacity" + sd] - adj_link.__dict__["flow" + sd]
+                residual = getattr(adj_link, "capacity" + sd) - getattr(adj_link, "flow" + sd)
                 if residual and augmenting_path[neighbor] is None:
                     augmenting_path[neighbor] = curr_node
                     res_cap[neighbor] = min(res_cap[curr_node], residual)
@@ -423,7 +448,7 @@ class Network(object):
                 trunk.__dict__["flow" + ds] += global_flow
                 trunk.__dict__["flow" + sd] -= global_flow
                 curr_node = prec_node 
-        return sum(adj.__dict__["flow" + ((source == adj.source)*"SD" or "DS")] for _, adj in self.graph[source]["trunk"])
+        return sum(getattr(adj, "flow" + ((source==adj.source)*"SD" or "DS")) for _, adj in self.graph[source]["trunk"])
         
     ## Minimum Spanning Tree algorithms: Kruskal
         
@@ -454,7 +479,7 @@ class Network(object):
         for node in self.graph:
             for neighbor, trunk in self.graph[node]["trunk"]:
                 sd = (node == trunk.source)*"SD" or "DS"
-                new_graph[node][neighbor] = trunk.__dict__["capacity" + sd]
+                new_graph[node][neighbor] = getattr(trunk, "capacity" + sd)
 
         n = 2*len(self.pn["trunk"])
         v = len(new_graph)
@@ -491,7 +516,7 @@ class Network(object):
             trunk.flowSD = new_graph[src][dest]
             trunk.flowDS = new_graph[dest][src]
 
-        return sum(adj.__dict__["flow" + ((s == adj.source)*"SD" or "DS")] for _, adj in self.graph[s]["trunk"])
+        return sum(getattr(adj, "flow" + ((s==adj.source)*"SD" or "DS")) for _, adj in self.graph[s]["trunk"])
             
     ## Distance functions
     

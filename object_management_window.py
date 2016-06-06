@@ -83,20 +83,21 @@ class ObjectManagementWindow(CustomTopLevel):
             # if it is a node, we need to remove and readd the entry in the graph dict
             # for all objects, we need to update pn
             if(property == "name"):
-                if(self.current_obj.__dict__[property] != str_var.get()):
+                name = getattr(self.current_obj, property)
+                if(name != str_var.get()):
                     if(self.current_obj.network_type == "node"):
                         adj_links = master.cs.ntw.graph.pop(self.current_obj, None)
-                    old_name = self.current_obj.__dict__[property]
+                    old_name = name
                     del master.cs.ntw.pn[self.current_obj.network_type][old_name]
-                    self.current_obj.__dict__[property] = str_var.get()
+                    setattr(self.current_obj, property, str_var.get())
                     master.cs.ntw.pn[self.current_obj.network_type][str_var.get()] = self.current_obj
                     if(self.current_obj.network_type == "node"):
                         master.cs.ntw.graph[self.current_obj] = adj_links
             elif(property == "path"):
-                self.current_obj.__dict__[property] = self.current_path
+                setattr(self.current_obj, property, self.current_path)
             else:
                 if(property not in ("source", "destination", "AS")):
-                    self.current_obj.__dict__[property] = eval(str_var.get())
+                    setattr(self.current_obj, property, eval(str_var.get()))
             # refresh the label if it was changed
             master.cs._refresh_object_label(self.current_obj)
             # move the node on the canvas in case it's coordinates were updated
@@ -105,10 +106,11 @@ class ObjectManagementWindow(CustomTopLevel):
             
     def update(self):
         for property, str_var in self.dict_var.items():
-            if(type(self.current_obj.__dict__[property]) == list):
-                str_var.set(",".join(map(str, self.current_obj.__dict__[property])))
+            obj_prop = getattr(self.current_obj, property)
+            if(type(obj_prop) == list):
+                str_var.set(",".join(map(str, obj_prop)))
             else:
-                str_var.set(self.current_obj.__dict__[property])
+                str_var.set(obj_prop)
             # if there is a path, we set current_path in case the object is saved
             # without computing a new path
             if(property == "path"):

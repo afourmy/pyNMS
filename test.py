@@ -93,6 +93,46 @@ class TestMST(unittest.TestCase):
         mst_costs = set(map(lambda trunk: trunk.costSD, mst))
         self.assertEqual(mst_costs, {1, 2, 4})
         
+class TestSP(unittest.TestCase):
+ 
+    @start_and_import("test_SP.xls")
+    def setUp(self):
+        self.route9 = self.netdim.cs.ntw.pn["route"]["route9"]
+        self.route10 = self.netdim.cs.ntw.pn["route"]["route10"]
+        self.route11 = self.netdim.cs.ntw.pn["route"]["route11"]
+        self.netdim.cs.ntw.calculate_all()
+ 
+    def tearDown(self):
+        self.netdim.destroy()
+ 
+    def test_dijkstra(self):
+        self.assertEqual(list(map(str, self.route9.path)), ["trunk1", "trunk3", "trunk5"])
+        self.assertEqual(list(map(str, self.route10.path)), ["trunk1", "trunk7"])
+        self.assertEqual(list(map(str, self.route11.path)), ["trunk1", "trunk3"])
+        
+    def test_bellman_ford(self):
+        _, path_route9 = self.netdim.cs.ntw.bellman_ford(self.route9.source, self.route9.destination)
+        _, path_route10 = self.netdim.cs.ntw.bellman_ford(self.route10.source, self.route10.destination)
+        _, path_route11 = self.netdim.cs.ntw.bellman_ford(self.route11.source, self.route11.destination)
+        
+        self.assertEqual(list(map(str, path_route9)), ["trunk1", "trunk3", "trunk5"])
+        self.assertEqual(list(map(str, path_route10)), ["trunk1", "trunk7"])
+        self.assertEqual(list(map(str, path_route11)), ["trunk1", "trunk3"])
+        
+    def test_floyd_warshall(self):
+        cost_trunk = lambda t: t.costSD
+        length_route9 = sum(map(cost_trunk, self.route9.path))
+        length_route10 = sum(map(cost_trunk, self.route10.path))
+        length_route11 = sum(map(cost_trunk, self.route11.path))
+        all_length = self.netdim.cs.ntw.floyd_warshall()
+        
+        self.assertEqual(length_route9, all_length[self.route9.source][self.route9.destination])
+        self.assertEqual(length_route10, all_length[self.route10.source][self.route10.destination])
+        self.assertEqual(length_route11, all_length[self.route11.source][self.route11.destination])
+        
+        
+
+        
 if __name__ == '__main__':
     unittest.main(warnings='ignore')  
     unittest.main()

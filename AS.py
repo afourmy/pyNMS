@@ -265,9 +265,7 @@ class ASManagement(tk.Toplevel):
     ## Functions used to modify AS from the right-click menu
             
     def remove_from_area(self, area, *objects):
-        print(self.AS.pAS["node"])
         self.AS.areas[area].remove_from_area(*objects)
-        print(self.AS.pAS["node"])
                 
     def remove_from_AS(self, *objects):
         self.AS.remove_from_AS(*objects)

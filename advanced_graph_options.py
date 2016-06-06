@@ -18,7 +18,7 @@ class AdvancedGraphOptionsWindow(CustomTopLevel):
         
         # selection des paths par l'utilisateur
         self.button_create_hypercube = ttk.Button(self, text='Create hypercube', command = lambda: self.add_nodes(master))
-        self.button_create_square_tiling = ttk.Button(self, text='Create square tiling', command = lambda: self.add_links(master))
+        self.button_create_square_tiling = ttk.Button(self, text='Create square tiling', command = lambda: master.cs.ntw.generate_meshed_square(10))
         self.button_highlight_connected_components = ttk.Button(self, text='Highlight connected components', command = lambda: self.highlight_connected_components(master))
         self.button_LP = ttk.Button(self, text='LP', command = lambda: self.LP(master))
         self.button_fulkerson = ttk.Button(self, text='Fulkerson', command = lambda: self.fulkerson(master))

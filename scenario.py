@@ -15,6 +15,8 @@ class Scenario(tk.Canvas):
         
         # job running or not (e.g drawing)
         self._job = None
+        # number of iteration of the graph layout algorithm
+        self.drawing_iteration = 0
         
         # default colors for highlighting areas
         # TODO use this for the image dict
@@ -326,12 +328,6 @@ class Scenario(tk.Canvas):
         self.scale("all", event.x, event.y, 0.9, 0.9)
         self.configure(scrollregion = self.bbox("all"))
         self.update_nodes_coordinates()
-        
-    # cancel the on-going job (e.g graph drawing)
-    def _cancel(self):
-        if self._job is not None:
-            self.after_cancel(self._job)
-            self._job = None
     
     def add_to_edges(self, AS, *nodes):
         for node in nodes:
@@ -386,13 +382,13 @@ class Scenario(tk.Canvas):
             self.itemconfig(label_id, text="")
         elif(label_type in ["capacity", "flow", "cost"]):
             # retrieve the value of the parameter depending on label type
-            valueSD = current_object.__dict__[label_type + "SD"]
-            valueDS = current_object.__dict__[label_type + "DS"]
+            valueSD = getattr(current_object, label_type + "SD")
+            valueDS = getattr(current_object, label_type + "DS")
             self.itemconfig(label_id, text="SD:{} | DS:{}".format(valueSD, valueDS))
         elif(label_type == "position"):
             self.itemconfig(label_id, text="({}, {})".format(current_object.x, current_object.y))
         else:
-            self.itemconfig(label_id, text=current_object.__dict__[label_type])
+            self.itemconfig(label_id, text=getattr(current_object, label_type))
         self.itemconfig(label_id, font="bold")
             
     # change label and refresh it for all objects
@@ -459,13 +455,16 @@ class Scenario(tk.Canvas):
         self.coords(link.lid, middle_x, middle_y)
             
     def spring_based_drawing(self, master):
+        # TODO option to not redraw everything all the time. links and label position takes time !!!!
         # if the canvas is empty, drawing required first
         if not self._job:
             self.draw_all()
-        self.ntw.spring_layout(master.alpha, master.beta, master.k, master.eta, master.delta, master.raideur)                
-        for n in self.ntw.pn["node"].values():
-            self.move_node(n)
-        self._job = self.after(10, lambda: self.spring_based_drawing(master))
+        self.drawing_iteration += 1
+        self.ntw.spring_layout(master.alpha, master.beta, master.k, master.eta, master.delta, master.raideur)
+        if not self.drawing_iteration % 50:   
+            for n in self.ntw.pn["node"].values():
+                self.move_node(n)
+        self._job = self.after(1, lambda: self.spring_based_drawing(master))
         
     def frucht(self):
         # update the optimal pairwise distance
@@ -476,11 +475,17 @@ class Scenario(tk.Canvas):
         # stop job if convergence reached
         if(all(-10**(-2) < n.vx * n.vy < 10**(-2) for n in self.ntw.pn["node"].values())):
             return self._cancel()
+        print(self._job)
         self._job = self.after(1, lambda: self.ntw.frucht())
+        
+    # cancel the graph drawing job
+    def _cancel(self):
+        if self._job is not None:
+            self.after_cancel(self._job)
+            self._job = None
+            #self.draw_all(False)
             
-            
-## TODO repair the 3D view
-            
+    ## TODO repair the 3D view
             
     def create_node(self, node, layer=0):
         s = self.NODE_SIZE

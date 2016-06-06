@@ -39,7 +39,8 @@ class NetDim(tk.Tk):
         ("antenna", ("name", "x", "y", "longitude", "latitude", "AS")),
         ("regenerator", ("name", "x", "y", "longitude", "latitude", "AS")),
         ("splitter", ("name", "x", "y", "longitude", "latitude", "AS")),
-        ("trunk", ("name", "source", "destination", "distance", "costSD", "costDS", "capacitySD", "capacityDS", "flowSD", "flowDS", "AS")),
+        ("trunk", ("name", "source", "destination", "distance", "costSD", 
+        "costDS", "capacitySD", "capacityDS", "flowSD", "flowDS", "AS")),
         ("route", ("name","source", "destination", "distance", "path_constraints", 
         "excluded_nodes", "excluded_trunks", "path", "subnets", "AS")),
         ("traffic", ("name", "source", "destination", "distance"))
@@ -55,14 +56,14 @@ class NetDim(tk.Tk):
         # object import export (properties)
         self.object_ie = collections.OrderedDict([
         ("node", ("name", "x", "y", "longitude", "latitude")),
-        ("trunk", ("name", "source", "destination", "distance", "costSD", "costDS", "capacitySD", "capacityDS")),
+        ("trunk", ("name", "source", "destination", "distance", "costSD", 
+        "costDS", "capacitySD", "capacityDS")),
         ("route", ("name", "source", "destination", "distance", 
         "path_constraints", "excluded_nodes", "excluded_trunks", "subnets")),
         ("traffic", ("name", "source", "destination", "distance"))
         ])
         
         # methods for string to object conversions
-        # ast.literal_eval doesn't work for set (known python bug)
         convert_node = lambda n: self.cs.ntw.nf(name=n)
         convert_link = lambda l: self.cs.ntw.lf(name=l)
         convert_AS = lambda AS: self.cs.ntw.AS_factory(name=AS)
@@ -73,12 +74,24 @@ class NetDim(tk.Tk):
         
         # dict property to conversion methods: used at import
         self.prop_to_type = {
-        "name": str, "x": float, "y": float, "longitude": float, "latitude": float,
-        "distance": float, "source": convert_node, "destination": convert_node, 
-        "path_constraints": convert_nodes_list, "excluded_nodes": self.convert_nodes_set,
-        "excluded_trunks": self.convert_links_set, "path": convert_links_list, 
-        "costSD": float, "costDS": float, "capacitySD": int, "capacityDS": int,
-        "subnets": str, "AS": convert_AS
+        "name": str, 
+        "x": float, 
+        "y": float, 
+        "longitude": float, 
+        "latitude": float,
+        "distance": float, 
+        "costSD": float, 
+        "costDS": float, 
+        "capacitySD": int, 
+        "capacityDS": int,
+        "source": convert_node, 
+        "destination": convert_node, 
+        "path_constraints": convert_nodes_list, 
+        "excluded_nodes": self.convert_nodes_set,
+        "excluded_trunks": self.convert_links_set, 
+        "path": convert_links_list, 
+        "subnets": str, 
+        "AS": convert_AS
         }
         
         ## ----- Menus : -----
@@ -128,7 +141,7 @@ class NetDim(tk.Tk):
         self.scenario_notebook.bind("<ButtonRelease-1>", self.change_cs)
         self.dict_scenario = {}
         
-        # cs for "current scenario" (the first one which we create)
+        # cs for "current scenario" (the first one, which we create)
         self.cs = scenario.Scenario(self, "scenario 0")
         self.cpt_scenario = 0
         self.scenario_notebook.add(self.cs, text=self.cs.name, compound=tk.TOP)
@@ -162,16 +175,29 @@ class NetDim(tk.Tk):
         # dict of nodes image for node creation
         self.dict_image = collections.defaultdict(dict)
         
-        self.node_size_image = {"router": (33, 25), "oxc": (35, 32), "host": (35, 32), 
-        "antenna": (35, 35), "regenerator": (64, 50), "splitter": (64, 50)}
+        self.node_size_image = {
+        "router": (33, 25), 
+        "oxc": (35, 32), 
+        "host": (35, 32), 
+        "antenna": (35, 35), 
+        "regenerator": (64, 50), 
+        "splitter": (64, 50)
+        }
         
         self.dict_size_image = {
         "general": {general: (75, 75) for general in ("netdim", "motion", "creation")},
         "l_type": {l_type: (85, 15) for l_type in self.cs.ntw.link_type},
-        "ntw_topo": {"ring": (38, 33), "tree": (35, 21), 
-        "star": (36, 35), "full-mesh": (40, 36)},
-        "drawing": {"draw": (50, 50), "stop": (50, 50), "multi-layer": (160, 120)}
-        }
+        "ntw_topo": {
+        "ring": (38, 33), 
+        "tree": (35, 21), 
+        "star": (36, 35), 
+        "full-mesh": (40, 36)
+        },
+        "drawing": {
+        "draw": (50, 50), 
+        "stop": (50, 50), 
+        "multi-layer": (160, 120)
+        }}
         
         for color in ["default", "red"]:
             for node_type in self.cs.ntw.node_type:
@@ -312,8 +338,14 @@ class NetDim(tk.Tk):
                         
                         # set the latitude and longitude of the newly created nodes
                         for coord in ("latitude", "longitude"):
-                            src.__dict__[coord] = dict_id_to_prop[s_id][coord.capitalize()]
-                            dest.__dict__[coord] = dict_id_to_prop[d_id][coord.capitalize()]
+                            # in some graphml files, nodes have no latitude/longitude
+                            try:
+                                setattr(src, coord, dict_id_to_prop[s_id][coord.capitalize()])
+                                setattr(dest, coord, dict_id_to_prop[d_id][coord.capitalize()])
+                            except KeyError:
+                                # we catch the KeyError exception, but 
+                                # the resulting haversine distance will be wrong
+                                print("Wrong geographical coordinates")
                         
                         # distance between src and dest
                         param = map(float, (src.longitude, src.latitude, dest.longitude, dest.latitude))
@@ -346,7 +378,7 @@ class NetDim(tk.Tk):
             for obj_type, properties in self.object_ie.items():
                 graph_per_line.append(obj_type)
                 for obj in self.cs.ntw.pn[obj_type].values():
-                    param = ",".join(str(obj.__dict__[property]) for property in properties)
+                    param = ",".join(str(getattr(obj, property)) for property in properties)
                     graph_per_line.append(",".join((obj_type, param)))
             if(file_format == ".txt"):
                 selected_file.write("\n".join(graph_per_line))
@@ -362,7 +394,7 @@ class NetDim(tk.Tk):
                 for id, property in enumerate(properties):
                     xls_sheet.write(0, id, property)
                     for i, t in enumerate(self.cs.ntw.pn[obj_type].values(), 1):
-                        xls_sheet.write(i, id, str(t.__dict__[property]))
+                        xls_sheet.write(i, id, str(getattr(t, property)))
             AS_sheet = excel_workbook.add_sheet("AS")
             for i, AS in enumerate(self.cs.ntw.pn["AS"].values(), 1):
                 AS_sheet.write(i, 0, str(AS.name))
@@ -389,29 +421,30 @@ class NetworkTreeView(CustomTopLevel):
 
     def __init__(self, master):
         super().__init__()
-        self.geometry("500x500")
+        self.geometry("900x500")
         self.title("Network Tree View")
+        # TODO add AS property too, botrh in manage AS and here
+        self.ntv = ttk.Treeview(self, selectmode="extended")
+        n = max(map(len, master.object_ie.values()))
+
+        self.ntv["columns"] = tuple(map(str, range(n)))
+        for i in range(n):
+            self.ntv.column(str(i), width=70)
+            
+        self.ntv.bind('<ButtonRelease-1>', lambda e: self.select(e))
         
-        tree = ttk.Treeview(self)
+        for obj_type, properties in master.object_ie.items():
+            self.ntv.insert("", "end", obj_type, text=obj_type.title(), values=properties)
+            for obj in master.cs.ntw.pn[obj_type].values():
+                values = tuple(map(lambda p: getattr(obj, p), properties))
+                self.ntv.insert(obj_type, "end", text=obj.name, values=values)
         
-        tree["columns"]=("one","two")
-        tree.column("one", width=100 )
-        tree.column("two", width=100)
-        tree.heading("one", text="coulmn A")
-        tree.heading("two", text="column B")
+        self.ntv.pack(expand=tk.YES, fill=tk.BOTH)
         
-        tree.insert("" , 0,    text="Line 1", values=("1A","1b"))
-        
-        id2 = tree.insert("", 1, "dir2", text="Dir 2", values=("1", "2"))
-        tree.insert(id2, "end", "dir 2", text="sub dir 2", values=("2A","2B"))
-        
-        ##alternatively:
-        tree.insert("", 3, "dir3", text="Dir 3")
-        tree.insert("dir3", 3, text=" sub dir 3",values=("3A"," 3B"))
-        
-        tree.pack(expand=tk.YES, fill=tk.BOTH)
-        
-        ttk.Style().configure("Treeview", background="#A1DBCD", 
-        foreground="white", fieldbackground="red")
-        
+        ttk.Style().configure("Treeview", background="#A1DBCD", foreground="black")
         self.deiconify()
+        
+    def select(self, event):
+        for item in self.ntv.selection():
+            item_text = self.ntv.item(item,"text")
+            print(item_text)
