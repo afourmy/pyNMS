@@ -1,9 +1,14 @@
+# NetDim
+# Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
+# Released under the GNU General Public License GPLv3
+
 import sys
 from inspect import getsourcefile
 from os.path import abspath
 
 # add path to the module in sys.path
 path_app = abspath(getsourcefile(lambda: 0))[:-7]
+
 if path_app not in sys.path:
     sys.path.append(path_app)
 

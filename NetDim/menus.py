@@ -1,3 +1,7 @@
+# NetDim
+# Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
+# Released under the GNU General Public License GPLv3
+
 import tkinter as tk
 import AS
 
@@ -19,23 +23,21 @@ class RightClickMenu(tk.Menu):
         self.add_command(label="Create AS", command=lambda: self.create_AS(scenario))  
         
         # exactly one object: property window 
-        if(len(scenario.so["node"]) == 1 or len(scenario.so["link"]) == 1):
+        if len(scenario.so["node"]) == 1 or len(scenario.so["link"]) == 1:
             self.add_command(label="Properties", command=lambda: self.show_object_properties(scenario))
       
         # at least one AS in the network: add to AS
-        if(scenario.ntw.pn["AS"]):
+        if scenario.ntw.pn["AS"]:
             self.add_command(label="Add to AS", command=lambda: self.change_AS(scenario, "add"))
         
         # we compute the set of common AS among all selected objects
-        self.common_AS = set(scenario.ntw.pn["AS"].values())
-        # TODO refactor with allso
-        for link in filter(lambda l: l.network_type == "trunk", scenario.so["link"]):
-            self.common_AS &= link.AS.keys()
-        for node in scenario.so["node"]:
-            self.common_AS &= node.AS.keys()
+        self.common_AS = set(scenario.ntw.pn["AS"].values())        
+        for obj in filter(lambda o: o.network_type in ("node", "trunk"), self.all_so):
+            self.common_AS &= obj.AS.keys()
+
             
         # if at least one common AS: remove from AS or manage AS
-        if(self.common_AS):
+        if self.common_AS:
             self.add_command(label="Remove from AS", command=lambda: self.change_AS(scenario, "remove"))
             self.add_command(label="Remove from area", command=lambda: self.change_AS(scenario, "remove area"))
             self.add_command(label="Manage AS", command=lambda: self.change_AS(scenario, "manage"))
@@ -56,7 +58,7 @@ class RightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def change_AS(self, scenario, mode):
-        AS.ChangeAS(scenario, mode, self.all_so, self.common_AS)
+        AS.ModifyAS(scenario, mode, self.all_so, self.common_AS)
         
     @empty_selection_and_destroy_menu
     def create_AS(self, scenario):

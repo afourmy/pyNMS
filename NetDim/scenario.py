@@ -1,3 +1,7 @@
+# NetDim
+# Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
+# Released under the GNU General Public License GPLv3
+
 import tkinter as tk
 import network
 import menus
@@ -93,7 +97,7 @@ class Scenario(tk.Canvas):
         # in case there were selected nodes, so that they don't remain highlighted
         self.unhighlight_all()
         
-        if(self._mode == "motion"):
+        if self._mode == "motion":
             # unbind unecessary bindings
             self.unbind("<Button 1>")
             self.tag_unbind("node", "<Button-1>")
@@ -123,7 +127,7 @@ class Scenario(tk.Canvas):
             self.unbind("<ButtonMotion-1>")
             self.tag_unbind("node", "<Button-1>")
             
-            if(self._creation_mode in self.ntw.node_type_to_class):
+            if self._creation_mode in self.ntw.node_type_to_class:
                 # add bindings to create a node with left-click
                 self.bind("<ButtonPress-1>", self.create_node_on_binding)
             
@@ -199,7 +203,7 @@ class Scenario(tk.Canvas):
     @adapt_coordinates
     def rectangle_drawing(self, event):
         # draw the line only if they were created in the first place
-        if(self._start_position != [None, None]):
+        if self._start_position != [None, None]:
             # update the position of the temporary lines
             x0, y0 = self._start_position
             self.coords(self.temp_line_x_top, x0, y0, event.x, y0)
@@ -212,7 +216,7 @@ class Scenario(tk.Canvas):
 
     @adapt_coordinates
     def end_point_select_nodes(self, event):
-        if(self._start_position != [None, None]):
+        if self._start_position != [None, None]:
             # delete the temporary lines
             self.delete(self.temp_line_x_top)
             self.delete(self.temp_line_x_bottom)
@@ -221,9 +225,9 @@ class Scenario(tk.Canvas):
             # select all nodes enclosed in the rectangle
             start_x, start_y = self._start_position
             for obj in self.find_enclosed(start_x, start_y, event.x, event.y):
-                if(obj in self.object_id_to_object):
+                if obj in self.object_id_to_object:
                     enclosed_obj = self.object_id_to_object[obj]
-                    if(enclosed_obj.class_type == self.object_selection):
+                    if enclosed_obj.class_type == self.object_selection:
                         self.so[self.object_selection].add(enclosed_obj)
             self.highlight_objects(*self.so["node"]|self.so["link"])
             self._start_position = [None, None]
@@ -249,11 +253,11 @@ class Scenario(tk.Canvas):
         start_node = self.object_id_to_object[self.drag_item]
         # node close to the point where the mouse button is released
         self.drag_item = self.find_closest(event.x, event.y)[0]
-        if(self.drag_item in self.object_id_to_object): # to avoid labels
+        if self.drag_item in self.object_id_to_object: # to avoid labels
             destination_node = self.object_id_to_object[self.drag_item]
-            if(destination_node.class_type == "node"): # because tag filtering doesn't work !
+            if destination_node.class_type == "node": # because tag filtering doesn't work !
                 # create the link and the associated line
-                if(start_node != destination_node):
+                if start_node != destination_node:
                     new_link = self.ntw.lf(link_type=type, s=start_node, d=destination_node)
                     self.create_link(new_link)
               
@@ -339,18 +343,18 @@ class Scenario(tk.Canvas):
     ## Highlight and Unhighlight links and nodes (depending on class_type)
     def highlight_objects(self, *objects):
         for obj in objects:
-            if(obj.class_type == "node"):
+            if obj.class_type == "node":
                 self.itemconfig(obj.oval, fill="red")
                 self.itemconfig(obj.image[0], image=self.master.dict_image["red"][obj.type])
-            elif(obj.class_type == "link"):
+            elif obj.class_type == "link":
                 self.itemconfig(obj.line, fill="red", width=5)
                 
     def unhighlight_objects(self, *objects):
         for obj in objects:
-            if(obj.class_type == "node"):
+            if obj.class_type == "node":
                 self.itemconfig(obj.oval, fill=obj.color)
                 self.itemconfig(obj.image[0], image=self.master.dict_image["default"][obj.type])
-            elif(obj.class_type == "link"):
+            elif obj.class_type == "link":
                 self.itemconfig(obj.line, fill=obj.color, width=self.LINK_WIDTH)  
                 
     def unhighlight_all(self):
@@ -380,12 +384,12 @@ class Scenario(tk.Canvas):
         label_id = current_object.lid
         if label_type == "none":
             self.itemconfig(label_id, text="")
-        elif(label_type in ["capacity", "flow", "cost"]):
+        elif label_type in ("capacity", "flow", "cost"):
             # retrieve the value of the parameter depending on label type
             valueSD = getattr(current_object, label_type + "SD")
             valueDS = getattr(current_object, label_type + "DS")
             self.itemconfig(label_id, text="SD:{} | DS:{}".format(valueSD, valueDS))
-        elif(label_type == "position"):
+        elif label_type == "position":
             self.itemconfig(label_id, text="({}, {})".format(current_object.x, current_object.y))
         else:
             self.itemconfig(label_id, text=getattr(current_object, label_type))
@@ -403,7 +407,7 @@ class Scenario(tk.Canvas):
         new_label = self.display_per_type[type]*"Hide" or "Show"
         menu.entryconfigure(index, label=" ".join((new_label, type)))
         new_state = tk.NORMAL if self.display_per_type[type] else tk.HIDDEN
-        if(type in self.ntw.node_type_to_class):
+        if type in self.ntw.node_type_to_class:
             for node in filter(lambda o: o.type == type, self.ntw.pn["node"].values()):
                 self.itemconfig(node.image[0] if self.display_image else node.oval, state=new_state)
                 self.itemconfig(node.lid, state=new_state)
@@ -455,13 +459,13 @@ class Scenario(tk.Canvas):
         self.coords(link.lid, middle_x, middle_y)
             
     def spring_based_drawing(self, master):
-        # TODO option to not redraw everything all the time. links and label position takes time !!!!
-        # if the canvas is empty, drawing required first
         if not self._job:
             self.draw_all()
+            # reset the number of iterations
+            self.drawing_iteration = 0
         self.drawing_iteration += 1
         self.ntw.spring_layout(master.alpha, master.beta, master.k, master.eta, master.delta, master.raideur)
-        if not self.drawing_iteration % 50:   
+        if not self.drawing_iteration % 5:   
             for n in self.ntw.pn["node"].values():
                 self.move_node(n)
         self._job = self.after(1, lambda: self.spring_based_drawing(master))
@@ -473,7 +477,7 @@ class Scenario(tk.Canvas):
         for n in self.ntw.pn["node"].values():
             self.move_node(n)
         # stop job if convergence reached
-        if(all(-10**(-2) < n.vx * n.vy < 10**(-2) for n in self.ntw.pn["node"].values())):
+        if all(-10**(-2) < n.vx * n.vy < 10**(-2) for n in self.ntw.pn["node"].values()):
             return self._cancel()
         print(self._job)
         self._job = self.after(1, lambda: self.ntw.frucht())
@@ -571,16 +575,16 @@ class Scenario(tk.Canvas):
                     
     def remove_objects(self, *objects):
         for obj in objects:
-            if(obj.network_type not in ("traffic", "route")):
+            if obj.network_type not in ("traffic", "route"):
                 for AS in list(obj.AS):
                     AS.management.remove_from_AS(obj)
-            if(obj.class_type == "node"):
+            if obj.class_type == "node":
                 self.delete(obj.oval[0], obj.image[0], obj.lid)
                 self.remove_objects(*self.ntw.remove_node(obj))
                 if self.layered_display:
                     for layer in (1, 2):
                         self.delete(obj.oval[layer], obj.image[layer], obj.layer_line[layer])
-            if(obj.class_type == "link"):
+            if obj.class_type == "link":
                 self.delete(obj.line, obj.lid)
                 self.ntw.remove_link(obj)
                 if self.layered_display:
@@ -599,7 +603,7 @@ class Scenario(tk.Canvas):
         self._cancel()
         for obj in objects:
             if obj.network_type == "node":
-                if(random_drawing):
+                if random_drawing:
                     obj.x, obj.y = random.randint(100,700), random.randint(100,700)
                 if not obj.image[0]: 
                     self.create_node(obj)

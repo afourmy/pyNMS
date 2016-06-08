@@ -1,19 +1,24 @@
+# NetDim
+# Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
+# Released under the GNU General Public License GPLv3
+
 import unittest
 import sys
 from inspect import getsourcefile
-from os.path import abspath
+from os.path import abspath, pardir, join
 
 path_app = abspath(getsourcefile(lambda: 0))[:-7]
 if path_app not in sys.path:
     sys.path.append(path_app)
-    
+path_parent = abspath(join(path_app, pardir))
+
 import gui
 
 def start_and_import(filename):
     def inner_decorator(function):
         def wrapper(self):
             self.netdim = gui.NetDim(path_app)
-            path_test = path_app + "Tests\\"
+            path_test = path_parent + "\\Tests\\"
             self.netdim.import_graph(path_test + filename)
             function(self)
         return wrapper
@@ -33,7 +38,7 @@ class TestExportImport(unittest.TestCase):
         route = cls.netdim.cs.ntw.lf(link_type="route", s=src, d=dest)
         # export in all 3 format: excel, text and csv
         for extension in ("xls", "txt", "csv"):
-            cls.netdim.export_graph(path_app + "Tests\\test_export." + extension)
+            cls.netdim.export_graph(path_parent + "\\Tests\\test_export." + extension)
         cls.netdim.destroy()
         
     def tearDown(self):
@@ -41,7 +46,7 @@ class TestExportImport(unittest.TestCase):
         
     def object_import(self, ext):
         self.netdim = gui.NetDim(path_app)
-        self.netdim.import_graph(path_app + "Tests\\test_export." + ext)
+        self.netdim.import_graph(path_parent + "\\Tests\\test_export." + ext)
         x_coord = set(map(lambda n: n.x, self.netdim.cs.ntw.pn["node"].values()))
         self.assertEqual(x_coord, {42, 24})
         trunk ,= self.netdim.cs.ntw.pn["trunk"].values()
@@ -50,9 +55,6 @@ class TestExportImport(unittest.TestCase):
         
     def test_object_import_xls(self):
         self.object_import("xls")
-        
-    def test_object_import_txt(self):
-        self.object_import("txt")
         
     def test_object_import_csv(self):
         self.object_import("csv")

@@ -1,5 +1,10 @@
+# NetDim
+# Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
+# Released under the GNU General Public License GPLv3
+
 import tkinter as tk
 from tkinter import ttk
+from miscellaneous import CustomTopLevel
 
 class MainFrame(tk.Frame):
     
@@ -11,8 +16,8 @@ class MainFrame(tk.Frame):
         
         self.type_to_action = {
         "netdim": lambda: master.cs.ntw.calculate_all(),
-        "motion": lambda: self.switch_to_motion(master),
-        "creation": lambda: self.switch_to_creation(master),
+        "motion": lambda: self.switch_to(master, "motion"),
+        "creation": lambda: self.switch_to(master, "creation"),
         "draw": lambda: master.cs.spring_based_drawing(master),
         "stop": lambda: master.cs._cancel(),
         "multi-layer": lambda: master.cs.switch_display_mode(),
@@ -69,25 +74,19 @@ class MainFrame(tk.Frame):
         # multi-layer
         self.type_to_button["multi-layer"].grid(row=16, columnspan=4, sticky="ew")
         
-    # TODO refactor switch to into one function
-    def switch_to_creation(self, master):
-        self.type_to_button["creation"].config(relief=tk.SUNKEN)
-        self.type_to_button["motion"].config(relief=tk.RAISED)
-        master.cs._mode = "creation"
-        master.cs.switch_binding()
-        
-    def switch_to_motion(self, master):
-        self.type_to_button["creation"].config(relief=tk.RAISED)
-        self.type_to_button["motion"].config(relief=tk.SUNKEN)
-        master.cs._mode = "motion"
+    def switch_to(self, master, mode):
+        alt_mode = "creation" if mode == "motion" else "motion"
+        self.type_to_button[mode].config(relief=tk.SUNKEN)
+        self.type_to_button[alt_mode].config(relief=tk.RAISED)
+        master.cs._mode = mode
         master.cs.switch_binding()
         
     def change_creation_mode(self, master, mode):
         # change the mode to creation 
-        self.switch_to_creation(master)
+        self.switch_to(master, "creation")
         master.cs._creation_mode = mode
         for obj_type in self.type_to_button:
-            if(mode == obj_type):
+            if mode == obj_type:
                 self.type_to_button[obj_type].config(relief=tk.SUNKEN)
             else:
                 self.type_to_button[obj_type].config(relief=tk.FLAT)
@@ -97,15 +96,14 @@ class MainFrame(tk.Frame):
         scenario.erase_graph()
         scenario.ntw.erase_network()
         
-class NetworkDimension(tk.Toplevel):
+class NetworkDimension(CustomTopLevel):
     def __init__(self, scenario, type):
         super().__init__()
         self.geometry("145x70")
         self.title("Dimension")
-        self.configure(background="#A1DBCD")
     
         # Network dimension
-        if(type != "tree"):
+        if type != "tree":
             self.dimension = tk.Label(self, bg="#A1DBCD", text="Number of nodes")
         else:
             self.dimension = tk.Label(self, bg="#A1DBCD", text="Depth of the tree")
@@ -115,7 +113,6 @@ class NetworkDimension(tk.Toplevel):
     
         # confirmation button
         self.button_confirmation = ttk.Button(self, text="OK", command=lambda: self.create_graph(scenario, type))
-        ttk.Style().configure("TButton", background="#A1DBCD")
         
         # position in the grid
         self.dimension.grid(row=0, column=0, pady=5, padx=5, sticky=tk.W)
@@ -123,11 +120,12 @@ class NetworkDimension(tk.Toplevel):
         self.button_confirmation.grid(row=1, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
         
     def create_graph(self, scenario, type):
-        if(type == "star"):
+        #TODO make it a dict
+        if type == "star":
             scenario.ntw.generate_star(self.var_dimension.get() - 1)
-        elif(type == "ring"):
+        elif type == "ring":
             scenario.ntw.generate_ring(self.var_dimension.get() - 1)
-        elif(type == "full-mesh"):
+        elif type == "full-mesh":
             scenario.ntw.generate_full_mesh(self.var_dimension.get())
         else:
             scenario.ntw.generate_tree(self.var_dimension.get())

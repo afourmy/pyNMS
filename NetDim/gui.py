@@ -1,8 +1,13 @@
+# NetDim
+# Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
+# Released under the GNU General Public License GPLv3
+
 import sys
-import os
 import tkinter as tk
+import os
+from os.path import abspath, pardir, join
 from tkinter import ttk, filedialog
-from miscellaneous import CustomTopLevel
+from miscellaneous import FocusTopLevel
 import network
 import collections
 import object_management_window
@@ -14,15 +19,16 @@ import pickle
 import csv
 import xlrd, xlwt
 import xml.etree.ElementTree as etree
-import ast
+import warnings
 from PIL import ImageTk
 
 class NetDim(tk.Tk):
     
     def __init__(self, path_app):
         tk.Tk.__init__(self)
-        self.path_icon = path_app + "Icons\\"
-        self.path_workspace = path_app + "Workspace\\"
+        path_parent = abspath(join(path_app, pardir))
+        self.path_icon = path_parent + "\\Icons\\"
+        self.path_workspace = path_parent + "\\Workspace\\"
             
         ## ----- Programme principal : -----
         self.title("NetDim")
@@ -42,14 +48,14 @@ class NetDim(tk.Tk):
         ("trunk", ("name", "source", "destination", "distance", "costSD", 
         "costDS", "capacitySD", "capacityDS", "flowSD", "flowDS", "AS")),
         ("route", ("name","source", "destination", "distance", "path_constraints", 
-        "excluded_nodes", "excluded_trunks", "path", "subnets", "AS")),
+        "excluded_nodes", "excluded_trunks", "path", "subnets", "cost", "AS")),
         ("traffic", ("name", "source", "destination", "distance"))
         ])
         
         self.object_label = collections.OrderedDict([
         ("Node", ("None", "Name", "Position", "Coordinates")),
         ("Trunk", ("None", "Name", "Distance", "Cost", "Capacity", "Flow")),
-        ("Route", ("None", "Name", "Distance", "Type", "Path", "Subnet")),
+        ("Route", ("None", "Name", "Distance", "Type", "Path", "Cost", "Subnet")),
         ("Traffic", ("None", "Name", "Distance"))
         ])
         
@@ -58,8 +64,8 @@ class NetDim(tk.Tk):
         ("node", ("name", "x", "y", "longitude", "latitude")),
         ("trunk", ("name", "source", "destination", "distance", "costSD", 
         "costDS", "capacitySD", "capacityDS")),
-        ("route", ("name", "source", "destination", "distance", 
-        "path_constraints", "excluded_nodes", "excluded_trunks", "subnets")),
+        ("route", ("name", "source", "destination", "distance", "path_constraints",
+        "excluded_nodes", "excluded_trunks", "cost", "subnets")),
         ("traffic", ("name", "source", "destination", "distance"))
         ])
         
@@ -73,6 +79,8 @@ class NetDim(tk.Tk):
         convert_links_list = lambda ll: list(map(convert_link, eval(ll)))
         
         # dict property to conversion methods: used at import
+        #TODO string to type and type to string needed to refactor
+        # the code for AS export
         self.prop_to_type = {
         "name": str, 
         "x": float, 
@@ -82,6 +90,7 @@ class NetDim(tk.Tk):
         "distance": float, 
         "costSD": float, 
         "costDS": float, 
+        "cost": float,
         "capacitySD": int, 
         "capacityDS": int,
         "source": convert_node, 
@@ -154,7 +163,7 @@ class NetDim(tk.Tk):
             self.dict_obj_mgmt_window[obj] = object_management_window.ObjectManagementWindow(self,obj)
         
         # parameters for spring-based drawing: per project
-        self.alpha = 1
+        self.alpha = 0.5
         self.beta = 10000
         self.k = 0.5
         self.eta = 0.5
@@ -205,7 +214,7 @@ class NetDim(tk.Tk):
                 img_pil = ImageTk.Image.open(img_path).resize(self.node_size_image[node_type])
                 img = ImageTk.PhotoImage(img_pil)
                 # set the default image for the button of the frame
-                if(color == "default"):
+                if color == "default":
                     self.main_frame.type_to_button[node_type].config(image=img, width=50, height=50)
                 self.dict_image[color][node_type] = img
         
@@ -249,14 +258,14 @@ class NetDim(tk.Tk):
             else: 
                 filepath ,= filepath
 
-        if(filepath.endswith(".csv")):
+        if filepath.endswith(".csv"):
             try:
                 file_to_import = open(filepath, "rt")
                 reader = csv.reader(file_to_import)
                 for row in filter(None, reader):
                     obj_type, *other = row
-                    if(other):
-                        if(obj_type == "node"):
+                    if other:
+                        if obj_type == "node":
                             n, *param = self.str_to_object(other, "node")
                             self.cs.ntw.nf(*param, node_type="router", name=n)
                         else:
@@ -265,25 +274,13 @@ class NetDim(tk.Tk):
                             
             finally:
                 file_to_import.close()
-                
-        elif(filepath.endswith(".txt")):
-            with open(filepath, "r") as file_to_import:
-                for row in file_to_import:
-                    obj_type, *other = row.split(",")
-                    if(other):
-                        if(obj_type == "node"):
-                            n, *param = self.str_to_object(other, "node")
-                            self.cs.ntw.nf(*param, node_type="router", name=n)
-                        else:
-                            n, s, d, *param = self.str_to_object(other, obj_type)
-                            self.cs.ntw.lf(*param, link_type=obj_type, name=n, s=s, d=d)
                     
-        elif(filepath.endswith(".xls")):
+        elif filepath.endswith(".xls"):
             book = xlrd.open_workbook(filepath)
             for id, obj_type in enumerate(self.object_ie):
                 xls_sheet = book.sheets()[id]
                 for row_index in range(1, xls_sheet.nrows):
-                    if(obj_type == "node"):
+                    if obj_type == "node":
                         n, *param = self.str_to_object(xls_sheet.row_values(row_index), "node")
                         self.cs.ntw.nf(*param, node_type="router", name=n)
                     else:
@@ -295,6 +292,7 @@ class NetDim(tk.Tk):
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):
                 AS_name, AS_type, AS_nodes, AS_trunks, AS_edges, *o = AS_sheet.row_values(row_index)
+                print(AS_type)
                 AS_nodes = self.convert_nodes_set(AS_nodes)
                 AS_trunks = self.convert_links_set(AS_trunks)
                 AS_edges = self.convert_nodes_set(AS_edges)
@@ -310,7 +308,7 @@ class NetDim(tk.Tk):
             
                 
         # for the topology zoo network graphs
-        elif(filepath.endswith(".graphml")):
+        elif filepath.endswith(".graphml"):
             tree = etree.parse(filepath)
             # dict associating an id ("dxx") to a property ("label", etc)
             dict_prop_values = {}
@@ -322,7 +320,7 @@ class NetDim(tk.Tk):
             for element in tree.iter():
                 for child in element:
                     if "key" in child.tag:
-                        if(child.attrib["attr.name"] in properties and child.attrib["for"] == "node"):
+                        if child.attrib["attr.name"] in properties and child.attrib["for"] == "node":
                             dict_prop_values[child.attrib["id"]] = child.attrib["attr.name"]
                     if "node" in child.tag:
                         node_id = child.attrib["id"]
@@ -340,16 +338,15 @@ class NetDim(tk.Tk):
                         for coord in ("latitude", "longitude"):
                             # in some graphml files, nodes have no latitude/longitude
                             try:
-                                setattr(src, coord, dict_id_to_prop[s_id][coord.capitalize()])
-                                setattr(dest, coord, dict_id_to_prop[d_id][coord.capitalize()])
+                                setattr(src, coord, float(dict_id_to_prop[s_id][coord.capitalize()]))
+                                setattr(dest, coord, float(dict_id_to_prop[d_id][coord.capitalize()]))
                             except KeyError:
                                 # we catch the KeyError exception, but 
                                 # the resulting haversine distance will be wrong
-                                print("Wrong geographical coordinates")
+                                warnings.warn("Wrong geographical coordinates")
                         
                         # distance between src and dest
-                        param = map(float, (src.longitude, src.latitude, dest.longitude, dest.latitude))
-                        distance = round(self.cs.ntw.haversine_distance(*param))
+                        distance = round(self.cs.ntw.haversine_distance(src, dest))
 
                         # in some graphml files, there are nodes with loopback link
                         if src_name != dest_name:
@@ -373,21 +370,18 @@ class NetDim(tk.Tk):
             filename, file_format = os.path.splitext(filepath)
             selected_file = open(filepath, "w")
 
-        if(file_format in (".txt", ".csv")):
+        if file_format == ".csv":
             graph_per_line = []
             for obj_type, properties in self.object_ie.items():
                 graph_per_line.append(obj_type)
                 for obj in self.cs.ntw.pn[obj_type].values():
                     param = ",".join(str(getattr(obj, property)) for property in properties)
                     graph_per_line.append(",".join((obj_type, param)))
-            if(file_format == ".txt"):
-                selected_file.write("\n".join(graph_per_line))
-            else:
-                graph_writer = csv.writer(selected_file, delimiter=",", lineterminator="\n")
-                for line in graph_per_line:
-                    graph_writer.writerow(line.split(","))
+            graph_writer = csv.writer(selected_file, delimiter=",", lineterminator="\n")
+            for line in graph_per_line:
+                graph_writer.writerow(line.split(","))
             
-        if(file_format == ".xls"):
+        if file_format == ".xls":
             excel_workbook = xlwt.Workbook()
             for obj_type, properties in self.object_ie.items():
                 xls_sheet = excel_workbook.add_sheet(obj_type)
@@ -417,7 +411,7 @@ class NetDim(tk.Tk):
             
         selected_file.close()
         
-class NetworkTreeView(CustomTopLevel):
+class NetworkTreeView(FocusTopLevel):
 
     def __init__(self, master):
         super().__init__()
@@ -441,7 +435,6 @@ class NetworkTreeView(CustomTopLevel):
         
         self.ntv.pack(expand=tk.YES, fill=tk.BOTH)
         
-        ttk.Style().configure("Treeview", background="#A1DBCD", foreground="black")
         self.deiconify()
         
     def select(self, event):

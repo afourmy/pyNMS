@@ -1,8 +1,12 @@
+# NetDim
+# Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
+# Released under the GNU General Public License GPLv3
+
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous import CustomTopLevel
+from miscellaneous import FocusTopLevel
 
-class AdvancedGraphOptionsWindow(CustomTopLevel):
+class AdvancedGraphOptionsWindow(FocusTopLevel):
     def __init__(self, master):
         super().__init__()
         self.geometry("600x300")
@@ -36,6 +40,10 @@ class AdvancedGraphOptionsWindow(CustomTopLevel):
         self.label_destination.grid(row=4,column=0, pady=5, padx=5, sticky=tk.W)
         self.entry_source.grid(row=3,column=1, pady=5, padx=5, sticky=tk.W)
         self.entry_destination.grid(row=4,column=1, pady=5, padx=5, sticky=tk.W)
+        
+        # hide the window when closed
+        self.protocol("WM_DELETE_WINDOW", self.withdraw)
+        self.withdraw()
         
     def highlight_connected_components(self, master):
         master.cs.unhighlight_all()

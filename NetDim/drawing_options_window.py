@@ -1,8 +1,12 @@
+# NetDim
+# Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
+# Released under the GNU General Public License GPLv3
+
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous import CustomTopLevel
+from miscellaneous import FocusTopLevel
 
-class DrawingOptions(CustomTopLevel):
+class DrawingOptions(FocusTopLevel):
     def __init__(self, master):
         super().__init__()
         self.geometry("600x300")
@@ -85,6 +89,10 @@ class DrawingOptions(CustomTopLevel):
         self.bouton_reingold.grid(row=7,column=3, pady=5, padx=5, sticky=tk.E)
         self.bouton_draw_graph.grid(row=7,column=0, pady=5, padx=5, sticky=tk.E)
         self.bouton_stop.grid(row=7,column=2, pady=5, padx=5, sticky=tk.E)
+        
+        # hide the window when closed
+        self.protocol("WM_DELETE_WINDOW", self.withdraw)
+        self.withdraw()
     
     def save_value(self, master):
         # retrieve variables values

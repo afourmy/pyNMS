@@ -1,3 +1,7 @@
+# NetDim
+# Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
+# Released under the GNU General Public License GPLv3
+
 from collections import defaultdict
 
 ## Nodes
@@ -82,8 +86,8 @@ class Antenna(Node):
 class Regenerator(Node):
 
     color = "black"
-    type = "antenna"
-    imagex, imagey = 35, 32
+    type = "regenerator"
+    imagex, imagey = 64, 48
     
     def __init__(self, name, x=100, y=100, longitude=0, latitude=0):
         super().__init__(name, x, y, longitude, latitude)
@@ -91,8 +95,8 @@ class Regenerator(Node):
 class Splitter(Node):
 
     color = "black"
-    type = "antenna"
-    imagex, imagey = 35, 32
+    type = "splitter"
+    imagex, imagey = 64, 48
     
     def __init__(self, name, x=100, y=100, longitude=0, latitude=0):
         super().__init__(name, x, y, longitude, latitude)
@@ -102,11 +106,12 @@ class Link(object):
     
     class_type = "link"
     
-    def __init__(self, name, source, destination, distance=0):
+    def __init__(self, name, source, destination, distance=0, bandwidth=0.):
         self.name = name
         self.source = source
         self.destination = destination
         self.distance = int(distance)
+        self.bandwidth = float(bandwidth)
         # self id and id of the corresponding label on the canvas
         self.line = None
         self.lid = None
@@ -157,13 +162,18 @@ class Route(Link):
     color = "green"
     layer = 1
     
-    def __init__(self, name, source, destination, distance=0, path_constraints=[], excluded_trunks=set(), excluded_nodes=set(), path=[], subnets=set(), AS=None):
+    def __init__(
+        self, name, source, destination, distance=0, 
+        path_constraints=[], excluded_trunks=set(), excluded_nodes=set(), 
+        path=[], subnets=set(), cost=1, AS=None
+        ):
         super().__init__(name, source, destination, distance)
         self.path_constraints = path_constraints
         self.excluded_nodes = excluded_nodes
         self.excluded_trunks = excluded_trunks
         self.path = path
         self.subnets = subnets
+        self.cost = cost
         self.AS = AS
         
 class Traffic(Link):

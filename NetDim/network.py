@@ -1,9 +1,13 @@
+# NetDim
+# Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
+# Released under the GNU General Public License GPLv3
+
 import miscellaneous
 import objects
 import AS
-import math
 import random
 import numpy
+from math import cos, sin, asin, radians, sqrt
 from cvxopt import matrix, glpk
 from collections import defaultdict, deque
 from heapq import heappop, heappush
@@ -42,7 +46,7 @@ class Network(object):
             name = link_type + str(self.cpt_link)
         # creation link in the s-d direction if no link at all yet
         if not name in self.pn[link_type]:
-            new_link = Network.link_type_to_class[link_type](name, s, d, *param)
+            new_link = self.link_type_to_class[link_type](name, s, d, *param)
             self.cpt_link += 1
             self.pn[link_type][name] = new_link
             self.graph[s][link_type].add((d, new_link))
@@ -54,15 +58,15 @@ class Network(object):
         if not name:
             name = "node" + str(self.cpt_node)
         if name not in self.pn["node"]:
-            self.pn["node"][name] = Network.node_type_to_class[node_type](name, *param)
+            self.pn["node"][name] = self.node_type_to_class[node_type](name, *param)
             self.cpt_node += 1
         return self.pn["node"][name]
         
-    def AS_factory(self, name=None, type="RIP", trunks=set(), nodes=set(), edges=set(), imp=False):
+    def AS_factory(self, name=None, _type="RIP", trunks=set(), nodes=set(), edges=set(), imp=False):
         if not name:
             name = "AS" + str(self.cpt_AS)
         if name not in self.pn["AS"]:
-            self.pn["AS"][name] = AS.AutonomousSystem(name, type, self.scenario, trunks, nodes, edges, imp)
+            self.pn["AS"][name] = AS.AutonomousSystem(self.scenario, _type, name, trunks, nodes, edges, imp)
             self.cpt_AS += 1
         return self.pn["AS"][name]
         
@@ -95,7 +99,7 @@ class Network(object):
     def find_edge_nodes(self, AS):
         AS.pAS["edge"].clear()
         for node in AS.pAS["node"]:
-            if(any(n not in AS.pAS["node"] for n, _ in self.graph[node]["trunk"])):
+            if any(n not in AS.pAS["node"] for n, _ in self.graph[node]["trunk"]):
                 AS.pAS["edge"].add(node)
                 yield node
             
@@ -103,23 +107,31 @@ class Network(object):
         return any(n == nodeA for n, _ in self.graph[nodeB][link_type])
         
     def number_of_links_between(self, nodeA, nodeB):
-        return sum(n == nodeB for type in self.link_type for n, _ in self.graph[nodeA][type])
+        return sum(n == nodeB for _type in self.link_type for n, _ in self.graph[nodeA][_type])
         
-    def links_between(self, nodeA, nodeB, type="all"):
-        if type == "all":
-            return [t for type in self.link_type for n, t in self.graph[nodeA][type] if n == nodeB]
+    def links_between(self, nodeA, nodeB, _type="all"):
+        if _type == "all":
+            for link_type in self.link_type:
+                for neighbor, trunk in self.graph[nodeA][link_type]:
+                    if neighbor == nodeB:
+                        yield trunk
         else:
-            return [t for n, t in self.graph[nodeA][type] if n == nodeB]
+            for neighbor, trunk in self.graph[nodeA][_type]:
+                if neighbor == nodeB:
+                    yield trunk
             
     def calculate_all(self):
-        # TODO: pour ceux qui appartiennent à un AS, appeler la fonction de l'AS
-        # qui prendra en compte seuelement les liens/noeuds de l'AS
-        # et la fonction de routage spécifique de l'AS
+        # for routes that do not belong to an AS, we find a path based on the 
+        # route constraints (CSPF)
         for route in self.pn["route"].values():
-            param = (route.source, route.destination, route.excluded_trunks,
-                        route.excluded_nodes, route.path_constraints)
-            _, trunk_path = self.dijkstra(*param)
-            route.path = trunk_path
+            if not route.AS:
+                param = (route.source, route.destination, route.excluded_trunks,
+                            route.excluded_nodes, route.path_constraints)
+                _, trunk_path = self.dijkstra(*param)
+                route.path = trunk_path
+        # if they do belong to an AS, we use the AS specific routing algorithm
+        for AS in self.pn["AS"].values():
+            AS.management.create_routes()
         
     def bfs(self, source):
         visited = set()
@@ -142,23 +154,23 @@ class Network(object):
                 visited.update(new_comp)
                 yield new_comp
                 
-        ## Shortest path(s) algorithm: Dijkstra, Bellman-Ford, all-paths (BFS), Floyd-Warshall
+    ## Shortest path(s) algorithms
         
-        # TODO the traceback should be common to all SP functions
+    ## 1) Dijkstra algorithm
             
     def dijkstra(self, source, target, excluded_trunks=None, excluded_nodes=None, 
     path_constraints=None, allowed_trunks=None, allowed_nodes=None):
                 
         # initialize parameters
-        if(excluded_nodes is None):
+        if excluded_nodes is None:
             excluded_nodes = set()
-        if(excluded_trunks is None):
+        if excluded_trunks is None:
             excluded_trunks = set()
-        if(path_constraints is None):
+        if path_constraints is None:
             path_constraints = []
-        if(allowed_trunks is None):
+        if allowed_trunks is None:
             allowed_trunks = set(self.pn["trunk"].values())
-        if(allowed_nodes is None):
+        if allowed_nodes is None:
             allowed_nodes = set(self.pn["node"].values())
             
         full_path_node, full_path_link = [], []
@@ -191,9 +203,9 @@ class Network(object):
                             heappush(heap, (dist_neighbor, neighbor))
             
             # traceback the path from t to s, for each (s,t) from source to target
-            if(visited[t]):
+            if visited[t]:
                 curr, path_node, path_link = t, [t], [prec_link[t]]
-                while(curr != s):
+                while curr != s:
                     curr = prec_node[curr]
                     path_link.append(prec_link[curr])
                     path_node.append(curr)
@@ -204,7 +216,15 @@ class Network(object):
                 
         return sum(full_path_node, [source]), sum(full_path_link, [])
         
-    def ISIS_dijkstra(self, source, target, ISIS_AS):
+    ## 2) RIP routing algorithm
+    
+    def RIP_routing(self, source, target, RIP_AS):
+        return self.dijkstra(source, target, allowed_nodes=RIP_AS.pAS["node"],
+                                            allowed_trunks=RIP_AS.pAS["trunk"])
+        
+    ## 2) IS-IS routing algorithm 
+        
+    def ISIS_routing(self, source, target, ISIS_AS):
         
         source_area, target_area = None, None
         backbone = ISIS_AS.areas["Backbone"]
@@ -242,11 +262,15 @@ class Network(object):
                 visited[node] = True
                 if node == target:
                     break
+                # if we are in the source area and reach an ABR that belongs to
+                # the destination, both conditions will be valid and step will
+                # be incremented from 1 to 3 at once. This situation explains 
+                # why we cannot merge the conditions into a single one
                 if step == 1 and backbone in node.AS[ISIS_AS]:
-                    step = 2
+                    step += 1
                     heap.clear()
                 if step == 2 and target_area in node.AS[ISIS_AS]:
-                    step = 3
+                    step += 1
                     heap.clear()
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     sd = (node == adj_trunk.source)*"SD" or "DS"
@@ -267,27 +291,29 @@ class Network(object):
                         heappush(heap, (dist_neighbor, neighbor))
         
         # traceback the path from target to source
-        if(visited[target]):
+        if visited[target]:
             curr, path_node, path_link = target, [target], [prec_link[target]]
-            while(curr != source):
+            while curr != source:
                 curr = prec_node[curr]
                 path_link.append(prec_link[curr])
                 path_node.append(curr)
             return path_node[::-1], path_link[:-1][::-1]
         else:
             return [], []
+            
+    ## 3) Bellman-Ford algorithm
         
     def bellman_ford(self, source, target, excluded_trunks=None, 
     excluded_nodes=None, allowed_trunks=None, allowed_nodes=None):
         
         # initialize parameters
-        if(excluded_nodes is None):
+        if excluded_nodes is None:
             excluded_nodes = set()
-        if(excluded_trunks is None):
+        if excluded_trunks is None:
             excluded_trunks = set()
-        if(allowed_trunks is None):
+        if allowed_trunks is None:
             allowed_trunks = set(self.pn["trunk"].values())
-        if(allowed_nodes is None):
+        if allowed_nodes is None:
             allowed_nodes = set(self.pn["node"].values())
 
         n = len(allowed_nodes)
@@ -313,9 +339,9 @@ class Network(object):
                         negative_cycle = True
                         
         # traceback the path from target to source
-        if(dist[target] != float("inf")):
+        if dist[target] != float("inf"):
             curr, path_node, path_link = target, [target], [prec_link[target]]
-            while(curr != source):
+            while curr != source:
                 curr = prec_node[curr]
                 path_link.append(prec_link[curr])
                 path_node.append(curr)
@@ -323,9 +349,9 @@ class Network(object):
         else:
             return [], []
             
+    ## 4) Floyd-Warshall algorithm
+            
     def floyd_warshall(self):
-        
-        
         nodes = list(self.pn["node"].values())
         n = len(nodes)
         W = [[0]*n for _ in range(n)]
@@ -353,16 +379,18 @@ class Network(object):
                 for id2, n2 in enumerate(nodes):
                     all_length[n1][n2] = W[id1][id2]
                     
-        return all_length                    
+        return all_length  
+        
+    ## 5) DFS (all loop-free paths)
         
     def all_paths(self, source, target=None):
-        # generates all cycle-free paths from source to optional target
+        # generates all loop-free paths from source to optional target
         path = [source]
         seen = {source}
         def find_all_paths():
             dead_end = True
             node = path[-1]
-            if(node == target):
+            if node == target:
                 yield list(path)
             else:
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
@@ -377,15 +405,17 @@ class Network(object):
                 yield list(path)
         yield from find_all_paths()
         
-    ## Flow algorithms: Ford-Fulkerson, Edmonds-Karp
-        
+    ## Flow algorithms
+    
     def reset_flow(self):
         for link in self.pn["trunk"].values():
             link.flowSD, link.flowDS = 0, 0
+    
+    ## 1) Ford-Fulkerson algorithm
         
     def augment_ff(self, val, curr_node, target, visit):
         visit[curr_node] = True
-        if(curr_node == target):
+        if curr_node == target:
             return val
         for neighbor, adj_link in self.graph[curr_node]["trunk"]:
             direction = curr_node == adj_link.source
@@ -395,7 +425,7 @@ class Network(object):
             if cap > current_flow and not visit[neighbor]:
                 residual_capacity = min(val, cap - current_flow)
                 global_flow = self.augment_ff(residual_capacity, neighbor, target, visit)
-                if(global_flow > 0):
+                if global_flow > 0:
                     adj_link.__dict__["flow" + sd] += global_flow
                     adj_link.__dict__["flow" + ds] -= global_flow
                     return global_flow
@@ -403,10 +433,12 @@ class Network(object):
         
     def ford_fulkerson(self, s, d):
         self.reset_flow()
-        while(self.augment_ff(float("inf"), s, d, {n:0 for n in self.graph})):
+        while self.augment_ff(float("inf"), s, d, {n:0 for n in self.graph}):
             pass
         # flow leaving from the source 
         return sum(getattr(adj, "flow" + (s==adj.source)*"SD" or "DS") for _, adj in self.graph[s]["trunk"])
+        
+    ## 2) Edmonds-Karp algorithm
         
     def augment_ek(self, source, destination):
         res_cap = {n:0 for n in self.graph}
@@ -432,7 +464,7 @@ class Network(object):
         
     def edmonds_karp(self, source, destination):
         self.reset_flow()
-        while(True):
+        while True:
             augmenting_path, global_flow = self.augment_ek(source, destination)
             if not global_flow:
                 break
@@ -450,7 +482,9 @@ class Network(object):
                 curr_node = prec_node 
         return sum(getattr(adj, "flow" + ((source==adj.source)*"SD" or "DS")) for _, adj in self.graph[source]["trunk"])
         
-    ## Minimum Spanning Tree algorithms: Kruskal
+    ## Minimum spanning tree algorithms 
+    
+    ## 1) Kruskal algorithm
         
     def kruskal(self, allowed_nodes):
         uf = miscellaneous.UnionFind(allowed_nodes)
@@ -459,12 +493,13 @@ class Network(object):
             for neighbor, adj_trunk in self.graph[node]["trunk"]:
                 if neighbor in allowed_nodes:
                     edges.append((adj_trunk.costSD, adj_trunk, node, neighbor))
-        minimum_spanning_tree = []
         for w, t, u, v in sorted(edges, key=lambda x: x[0]):
             if uf.union(u, v):
                 yield t
                 
-    ## Linear programming to solve the maximum flow problem
+    ## Linear programming algorithm
+    
+    ## 1) Single-source single-destination maximum flow
                
     def LP_MF_formulation(self, s, t):
         """
@@ -521,71 +556,73 @@ class Network(object):
     ## Distance functions
     
     def distance(self, p, q): 
-        return math.sqrt(p*p + q*q)
+        return sqrt(p*p + q*q)
         
-    # TODO take 2 node as argument and set the distance of trunk between them
-    def haversine_distance(self, lon_nA, lat_nA, lon_nB, lat_nB):
+    def haversine_distance(self, s, d):
         """ Earth distance between two nodes """
-        
+        coord = (s.longitude, s.latitude, d.longitude, d.latitude)
         # decimal degrees to radians conversion
-        lon_nA, lat_nA, lon_nB, lat_nB = map(math.radians, (lon_nA, lat_nA, lon_nB, lat_nB))
+        lon_s, lat_s, lon_d, lat_d = map(radians, coord)
     
-        d_lon = lon_nB - lon_nA 
-        d_lat = lat_nB - lat_nA 
-        a = math.sin(d_lat/2)**2 + math.cos(lat_nA)*math.cos(lat_nB)*math.sin(d_lon/2)**2
-        c = 2*math.asin(math.sqrt(a)) 
-        r = 6371 # Radius of earth in kilometers. Use 3956 for miles
+        delta_lon = lon_d - lon_s 
+        delta_lat = lat_d - lat_s 
+        a = sin(delta_lat/2)**2 + cos(lat_s) * cos(lat_d) * sin(delta_lon/2)**2
+        c = 2 * asin(sqrt(a)) 
+        # radius of earth (km)
+        r = 6371 
         return c*r
-            
-    ## Force functions
+ 
+    ## Force-directed layout algorithms
     
-    def force_de_coulomb(self, dx, dy, dist, beta):
+    ## 1) Eades algorithm 
+    
+    def coulomb_force(self, dx, dy, dist, beta):
         c = dist and beta/dist**3
         return (-c*dx, -c*dy)
         
-    def force_de_hooke(self, dx, dy, dist, dij, k):
-        dl = dist - dij
+    def hooke_force(self, dx, dy, dist, L0, k):
+        dl = dist - L0
         const = k * dl / dist
         return (const * dx, const * dy)
-        
+            
+    def spring_layout(self, alpha, beta, k, eta, delta, L0):   
+        for nodeA in self.pn["node"].values():
+            Fx = Fy = 0
+            for nodeB in self.pn["node"].values():
+                if nodeA != nodeB:
+                    dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
+                    dist = self.distance(dx, dy)
+                    F_hooke = F_coulomb = (0,)*2
+                    if self.is_connected(nodeA, nodeB, "trunk"):
+                        F_hooke = self.hooke_force(dx, dy, dist, L0, k) 
+                    F_coulomb = self.coulomb_force(dx, dy, dist, beta)
+                    Fx += F_hooke[0] + F_coulomb[0]
+                    Fy += F_hooke[1] + F_coulomb[1]
+            nodeA.vx = (nodeA.vx + alpha * Fx) * eta
+            nodeA.vy = (nodeA.vy + alpha * Fy) * eta
+    
+        for node in self.pn["node"].values():
+            node.x += round(node.vx * delta)
+            node.y += round(node.vy * delta)
+            
+    ## 2) Fruchterman-Reingold algorithms
+    
     def fa(self, d, k):
         return (d**2)/k
     
     def fr(self, d, k):
         return -(k**2)/d
         
-    ## force-directed layout algorithms: Eades ("spring") and Fruchterman-Reingold algorithms
-            
-    def spring_layout(self, alpha, beta, k, eta, delta, raideur):            
-        for nodeA in self.pn["node"].values():
-            Fx, Fy = 0, 0
-            for nodeB in self.pn["node"].values():
-                if(nodeA != nodeB):
-                    dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
-                    dist = self.distance(dx, dy)
-                    F_hooke, F_coulomb = [0]*2, [0]*2
-                    if(self.is_connected(nodeA, nodeB, "trunk")):
-                        F_hooke = self.force_de_hooke(dx, dy, dist, raideur, k) 
-                    F_coulomb = self.force_de_coulomb(dx, dy, dist, beta)
-                    Fx += F_hooke[0] + F_coulomb[0]
-                    Fy += F_hooke[1] + F_coulomb[1]
-            nodeA.vx = (nodeA.vx + alpha * Fx * delta) * eta
-            nodeA.vy = (nodeA.vy + alpha * Fy * delta) * eta
-    
-        for n in self.pn["node"].values():
-            n.x += round(n.vx * delta)
-            n.y += round(n.vy * delta)
-        
     def fruchterman(self, k):
         t = 1
         for nA in self.pn["node"].values():
             nA.vx, nA.vy = 0, 0
             for nB in self.pn["node"].values():
-                if(nA != nB):
+                if nA != nB:
                     deltax = nA.x - nB.x
                     deltay = nA.y - nB.y
                     dist = self.distance(deltax, deltay)
-                    if(dist):
+                    if dist:
                         nA.vx += (deltay*(k**2))/dist**3
                         nA.vy += (deltay*(k**2))/dist**3                        
                     
@@ -593,7 +630,7 @@ class Network(object):
             deltax = l.source.x - l.destination.x
             deltay = l.source.y - l.destination.y
             dist = self.distance(deltax, deltay)
-            if(dist):
+            if dist:
                 l.source.vx -= (dist*deltax)/k
                 l.source.vy -= (dist*deltay)/k
                 l.destination.vx += (dist*deltax)/k
@@ -601,21 +638,23 @@ class Network(object):
             
         for n in self.pn["node"].values():
             d = self.distance(n.vx, n.vy)
-            n.x += ((n.vx)/(math.sqrt(d)+0.1))
-            n.y += ((n.vy)/(math.sqrt(d)+0.1))
+            n.x += ((n.vx)/(sqrt(d)+0.1))
+            n.y += ((n.vy)/(sqrt(d)+0.1))
             # n.x = min(700, max(0, n.x))
             # n.y = min(700, max(0, n.y))
             
         t *= 0.99
         
-    ## graph generation functions: hypercube, square tiling, tree, star, full mesh, ring 
+    ## Graph generation functions
+    
+    ## 1) Hypercube generation
             
     def generate_hypercube(self, n):
         # we create a n-dim hypercube by connecting two (n-1)-dim hypercubes
         i = 0
         graph_nodes = [self.nf(str(0))]
         graph_links = []
-        while(i < n+1):
+        while i < n+1:
             for k in range(len(graph_nodes)):
                 # creation of the nodes of the second hypercube
                 graph_nodes.append(self.nf(str(k+2**i)))
@@ -629,13 +668,17 @@ class Network(object):
                 graph_links.append(self.lf(s=graph_nodes[k], d=graph_nodes[k+2**i]))
             i += 1
             
-    def generate_meshed_square(self, n):
+    ## 2) Square tiling generation
+            
+    def generate_square_tiling(self, n):
         for i in range(n**2):
             n1, n2, n3 = str(i), str(i-1), str(i+n)
-            if(i-1 > -1 and i%n):
+            if i-1 > -1 and i%n:
                 self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
-            if(i+n < n**2):
+            if i+n < n**2:
                 self.lf(s=self.nf(name=n1), d=self.nf(name=n3))
+                
+    ## 3) Tree generation
                 
     def generate_tree(self, n):
         for i in range(2**n-1):
@@ -643,11 +686,15 @@ class Network(object):
             self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
             self.lf(s=self.nf(name=n1), d=self.nf(name=n3))
             
+    ## 4) Star generation
+            
     def generate_star(self, n):
         nb_node = len(self.pn["node"])
         for i in range(n):
             n1, n2 = str(nb_node), str(nb_node+1+i)
             self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
+            
+    ## 5) Full-meshed network generation
             
     def generate_full_mesh(self, n):
         nb_node = len(self.pn["node"])
@@ -655,6 +702,8 @@ class Network(object):
             for j in range(i):
                 n1, n2 = str(nb_node+j), str(nb_node+i)
                 self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
+                
+    ## 6) Ring generation
                 
     def generate_ring(self, n):
         nb_node = len(self.pn["node"])
