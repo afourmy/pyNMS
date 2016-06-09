@@ -27,7 +27,7 @@ in the AS.
 - [x] Dijkstra algorithm with constraints to find CSPF paths
 - [x] Bellman-Ford to find the shortest path
 - [x] BFS to find all loop-free paths
-- [ ] Floyd Warshall to find all SP length
+- [x] Floyd Warshall to find all SP length
 - [ ] Prim algorithm to find the minimum spanning tree
 - [ ] Minimum cut. Useful to find the bottleneck of the network, and partition the graph before visualisation.
 - [ ] K-means before graph drawing if the graph is too big.
@@ -81,14 +81,14 @@ in the AS.
 - [ ] Failure simulation system to see where the traffic is going. Route's protection path highlight.
 
 ## AS
+- [x] Add to/remove from AS should be done graphically only: no need for buttons.
 - [ ] Highlight all elements of a domain
 - [ ] Improve the AS management window. Button with arrows instead of add/remove edge
-- [ ] Add to/remove from AS should be done graphically only: no need for buttons.
 - [ ] Use the K-shortest paths for load-balancing at the edge of an AS
 
 ## Tests
-- [ ] Add tests for SP (Dijkstra, BF, all-paths BFS)
-- [ ] Add test for import export
+- [x] Add tests for SP (Dijkstra, BF, all-paths BFS)
+- [x] Add test for import export
 
 ## Other
 - [x] Convert tk drop-down list into ttk combo box
@@ -98,13 +98,13 @@ in the AS.
 - [x] Delete scenario
 - [x] Merge Add to AS and Manage AS window
 - [x] Use haversine formula to compute the distance of a link based on GPS coordinates
+- [x] Add new devices: splitter, regenerator/amplifier
 - [ ] Check box in the frame to hide/show nodes
 - [ ] Filter route display depending on whether a traffic link is using them
 - [ ] Find a way to silence GLPK
 - [ ] Remove all Var() when not necessary (set, get can be used instead)
 - [ ] Scenario duplication
 - [ ] Drawing for a selection of nodes only
-- [ ] Add new devices: splitter, regenerator/amplifier
 - [ ] Message window (display log) + error window: catch error
 - [ ] Dockable frame system
 - [ ] Add regex for sanity checks in all user input entry boxes

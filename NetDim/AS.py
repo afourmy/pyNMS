@@ -185,6 +185,6 @@ class ASCreation(CustomTopLevel):
         self.button_create_AS.grid(row=3,column=0, columnspan=2, pady=5, padx=5)
 
     def create_AS(self, scenario, so):
-        new_AS = scenario.ntw.AS_factory(name=self.var_name.get(), type=self.var_AS_type.get(), trunks=so["link"], nodes=so["node"])
+        new_AS = scenario.ntw.AS_factory(name=self.var_name.get(), _type=self.var_AS_type.get(), trunks=so["link"], nodes=so["node"])
         self.destroy()
             
