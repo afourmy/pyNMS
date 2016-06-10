@@ -246,8 +246,7 @@ class Network(object):
         # step indicates what we have to do:
         # step 1 means we are in the source area, heading for the backbone
         # step 2 means we are in the backbone, heading for the target area
-        # step 3 means we are in the target area
-        step = 3 if source_area == target_area else 1
+        step = source_area in (backbone, target_area)
         
         prec_node = {i: None for i in ISIS_AS.pAS["node"]}
         prec_link = {i: None for i in ISIS_AS.pAS["node"]}
@@ -262,15 +261,8 @@ class Network(object):
                 visited[node] = True
                 if node == target:
                     break
-                # if we are in the source area and reach an ABR that belongs to
-                # the destination, both conditions will be valid and step will
-                # be incremented from 1 to 3 at once. This situation explains 
-                # why we cannot merge the conditions into a single one
-                if step == 1 and backbone in node.AS[ISIS_AS]:
-                    step += 1
-                    heap.clear()
-                if step == 2 and target_area in node.AS[ISIS_AS]:
-                    step += 1
+                if not step and backbone in node.AS[ISIS_AS]:
+                    step = True
                     heap.clear()
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     sd = (node == adj_trunk.source)*"SD" or "DS"
@@ -278,11 +270,9 @@ class Network(object):
                     if not neighbor in ISIS_AS.pAS["node"]: continue
                     if not adj_trunk in ISIS_AS.pAS["trunk"]: continue
                     # if step 1, we use only L1 or L1/L2 nodes (L1 source area)
-                    if step == 1 and neighbor not in source_area.pa["node"]: continue
+                    if not step and neighbor not in source_area.pa["node"]: continue
                     # if step2, we use only backbone nodes (L1/L2)
-                    elif step == 2 and neighbor not in backbone.pa["node"]: continue
-                    # if step3, we use only L1 or L1/L2 nodes (L1 target area)
-                    elif step == 3 and neighbor not in target_area.pa["node"]: continue
+                    if step and neighbor not in backbone.pa["node"] | target_area.pa["node"]: continue
                     dist_neighbor = dist_node + getattr(adj_trunk, "cost" + sd)
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
