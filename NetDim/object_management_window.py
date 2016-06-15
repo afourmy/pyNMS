@@ -104,8 +104,10 @@ class ObjectManagementWindow(FocusTopLevel):
             elif property == "path":
                 setattr(self.current_obj, property, self.current_path)
             else:
-                if property not in ("source", "destination", "AS"):
-                    setattr(self.current_obj, property, eval(str_var.get()))
+                if property not in ("AS",):
+                    print(property, str_var.get())
+                    value = master.prop_to_type[property](str_var.get())
+                    setattr(self.current_obj, property, value)
             # refresh the label if it was changed
             master.cs._refresh_object_label(self.current_obj)
             # move the node on the canvas in case it's coordinates were updated
@@ -116,7 +118,7 @@ class ObjectManagementWindow(FocusTopLevel):
         for property, str_var in self.dict_var.items():
             obj_prop = getattr(self.current_obj, property)
             if type(obj_prop) == list:
-                str_var.set(",".join(map(str, obj_prop)))
+                str_var.set("[" + ",".join(map(str, obj_prop)) + "]")
             else:
                 str_var.set(obj_prop)
             # if there is a path, we set current_path in case the object is saved

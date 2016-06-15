@@ -30,9 +30,9 @@ class NetDim(tk.Tk):
         self.path_icon = path_parent + "\\Icons\\"
         self.path_workspace = path_parent + "\\Workspace\\"
             
-        ## ----- Programme principal : -----
+        ## ----- Main app : -----
         self.title("NetDim")
-        netdim_icon = tk.PhotoImage(file=self.path_icon+"netdim_icon.gif")
+        netdim_icon = tk.PhotoImage(file=self.path_icon + "netdim_icon.gif")
         self.tk.call('wm', 'iconphoto', self._w, netdim_icon)
         
         ## User-defined properties and labels per type of object
@@ -45,29 +45,97 @@ class NetDim(tk.Tk):
         ("antenna", ("name", "x", "y", "longitude", "latitude", "AS")),
         ("regenerator", ("name", "x", "y", "longitude", "latitude", "AS")),
         ("splitter", ("name", "x", "y", "longitude", "latitude", "AS")),
-        ("trunk", ("name", "source", "destination", "distance", "costSD", 
-        "costDS", "capacitySD", "capacityDS", "flowSD", "flowDS", "AS")),
-        ("route", ("name","source", "destination", "distance", "path_constraints", 
-        "excluded_nodes", "excluded_trunks", "path", "subnets", "cost", "AS")),
-        ("traffic", ("name", "source", "destination", "distance"))
-        ])
+        
+        ("trunk", 
+        (
+        "name", 
+        "source", 
+        "destination", 
+        "distance", 
+        "costSD", 
+        "costDS", 
+        "capacitySD", 
+        "capacityDS", 
+        "trafficSD", 
+        "trafficDS",
+        "flowSD", 
+        "flowDS", 
+        "AS"
+        )),
+        
+        ("route", 
+        (
+        "name",
+        "source", 
+        "destination", 
+        "distance", 
+        "path_constraints", 
+        "excluded_nodes", 
+        "excluded_trunks", 
+        "path", 
+        "subnets", 
+        "costSD", 
+        "costDS", 
+        "traffic", 
+        "AS"
+        )),
+        
+        ("traffic", 
+        (
+        "name", 
+        "source", 
+        "destination", 
+        "distance", 
+        "throughput",
+        ))])
         
         self.object_label = collections.OrderedDict([
         ("Node", ("None", "Name", "Position", "Coordinates")),
-        ("Trunk", ("None", "Name", "Distance", "Cost", "Capacity", "Flow")),
-        ("Route", ("None", "Name", "Distance", "Type", "Path", "Cost", "Subnet")),
-        ("Traffic", ("None", "Name", "Distance"))
+        ("Trunk", ("None", "Name", "Distance", "Cost", "Capacity", "Flow", "Traffic")),
+        ("Route", ("None", "Name", "Distance", "Type", "Path", "Cost", "Subnet", "Traffic")),
+        ("Traffic", ("None", "Name", "Distance", "Throughput"))
         ])
         
         # object import export (properties)
         self.object_ie = collections.OrderedDict([
         ("node", ("name", "x", "y", "longitude", "latitude")),
-        ("trunk", ("name", "source", "destination", "distance", "costSD", 
-        "costDS", "capacitySD", "capacityDS")),
-        ("route", ("name", "source", "destination", "distance", "path_constraints",
-        "excluded_nodes", "excluded_trunks", "cost", "subnets")),
-        ("traffic", ("name", "source", "destination", "distance"))
-        ])
+        
+        ("trunk", 
+        (
+        "name", 
+        "source", 
+        "destination", 
+        "distance", 
+        "costSD", 
+        "costDS", 
+        "capacitySD", 
+        "capacityDS", 
+        "trafficSD",
+        "trafficDS"
+        )),
+        
+        ("route", 
+        (
+        "name", 
+        "source", 
+        "destination", 
+        "distance", 
+        "path_constraints",
+        "excluded_nodes", 
+        "excluded_trunks", 
+        "costSD", "costDS", 
+        "subnets", 
+        "traffic"
+        )),
+        
+        ("traffic", 
+        (
+        "name", 
+        "source", 
+        "destination", 
+        "distance", 
+        "throughput"
+        ))])
         
         # methods for string to object conversions
         convert_node = lambda n: self.cs.ntw.nf(name=n)
@@ -93,6 +161,10 @@ class NetDim(tk.Tk):
         "cost": float,
         "capacitySD": int, 
         "capacityDS": int,
+        "traffic": float,
+        "trafficSD": float,
+        "trafficDS": float,
+        "throughput": float,
         "source": convert_node, 
         "destination": convert_node, 
         "path_constraints": convert_nodes_list, 
@@ -194,14 +266,23 @@ class NetDim(tk.Tk):
         }
         
         self.dict_size_image = {
-        "general": {general: (75, 75) for general in ("netdim", "motion", "creation")},
-        "l_type": {l_type: (85, 15) for l_type in self.cs.ntw.link_type},
+        "general": {general: (75, 75) for general in (
+        "netdim", 
+        "motion", 
+        "creation"
+        )},
+        
+        "l_type": {
+        l_type: (85, 15) for l_type in self.cs.ntw.link_type
+        },
+        
         "ntw_topo": {
         "ring": (38, 33), 
         "tree": (35, 21), 
         "star": (36, 35), 
         "full-mesh": (40, 36)
         },
+        
         "drawing": {
         "draw": (50, 50), 
         "stop": (50, 50), 
@@ -227,6 +308,9 @@ class NetDim(tk.Tk):
                 self.dict_image[category_type][image_type] = img
                 self.main_frame.type_to_button[image_type].config(image=img, width=x, height=y+10)
                 
+        # image for a link failure
+        img_pil = ImageTk.Image.open(self.path_icon + "failure.png").resize((25,25))
+        self.img_failure = ImageTk.PhotoImage(img_pil)
             
     def change_cs(self, event=None):
         cs_name = self.scenario_notebook.tab(self.scenario_notebook.select(), "text")
@@ -292,11 +376,10 @@ class NetDim(tk.Tk):
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):
                 AS_name, AS_type, AS_nodes, AS_trunks, AS_edges, *o = AS_sheet.row_values(row_index)
-                print(AS_type)
                 AS_nodes = self.convert_nodes_set(AS_nodes)
                 AS_trunks = self.convert_links_set(AS_trunks)
                 AS_edges = self.convert_nodes_set(AS_edges)
-                self.cs.ntw.AS_factory(AS_name, AS_type, AS_trunks, AS_nodes, AS_edges, True)
+                self.cs.ntw.AS_factory(AS_name, AS_type, AS_trunks, AS_nodes, AS_edges, set(), True)
             
             # creation of the area
             for row_index in range(1, area_sheet.nrows):

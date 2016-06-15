@@ -82,7 +82,10 @@ class ASManagement(FocusTopLevel):
         # hide the window when closed
         self.protocol("WM_DELETE_WINDOW", self.withdraw)
         # if the AS is created from an import, close the management window
-        if imp: self.withdraw()
+        print(imp)
+        if imp: 
+            print("test")
+            self.withdraw()
         
     ## Functions used directly from the AS Management window
         
@@ -136,7 +139,18 @@ class ASManagement(FocusTopLevel):
                     route = self.scenario.ntw.lf(link_type="route", name=name, s=eA, d=eB)
                     _, route.path = self.AS.algorithm(eA, eB, self.AS)
                     route.AS = self.AS
+                    self.AS.pAS["route"].add(route)
                     self.scenario.create_link(route)
+                    
+    def link_dimensioning(self):
+        for route in self.AS.pAS["route"]:
+            s, d = route.source, route.destination
+            for failed_trunk in route.path:
+                # list of allowed trunks: all AS trunks but the failed one
+                a_t = self.AS.pAS["trunk"] - {failed_trunk}
+                # apply the AS routing algorithm, ignoring the failed trunk
+                _, recovery_path = self.AS.algorithm(s, d, self.AS, a_t=a_t)
+                route.r_path[failed_trunk] = recovery_path
             
     def create_area(self, name):
         self.AS.area_factory(name)

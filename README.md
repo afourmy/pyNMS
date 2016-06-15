@@ -41,6 +41,10 @@ in the AS.
 - [ ] Use LP to solve RWA simple version
 - [ ] Use a genetic algorithm to find the maximum flow, compare with LP
 - [ ] Use a genetic algorithm to solve RWA, compare with LP
+- [ ] Graph drawing on the right-click for a selection of nodes
+- [ ] degree centrality. number of neighbor of each node (graph + make node size depend on it)
+- [ ] Algorithm to determine link weight in order to optimize load sharing (is-is/ospf optimization)
+- [ ] Protection-based link dimensioning: IGP reconvergence, FRR, etc
 
 ## Links
 - [x] Possibility to change the cost of a link (UD-metric)
@@ -55,7 +59,8 @@ in the AS.
 - [x] Fix the zoom that doesn't work well (zooming and unzooming)
 - [x] Left-clicking on an object updates the property window if it is deiconified
 - [x] Hide/show display per type of objects
-- [ ] Draw an arc instead of a straigth line when there are several links between two nodes.
+- [x] Draw an arc instead of a straigth line when there are several links between two nodes.
+- [ ] Add arrows on trunks for route highlight
 - [ ] Change the mouse pointeur when going over an object
 - [ ] Per-layer 3D display with nodes duplication
 - [ ] Modified Dijkstra to find the longest path/widest path
@@ -63,6 +68,18 @@ in the AS.
 - [ ] Protection highlight: highlight first the protection path's links, then the working path's.
 - [ ] Generate text and shapes on the canvas
 - [ ] When switching to simple oval display, keep track of the size of the object so that it is always the same.
+- [ ] Label position issue + label deletion for routes after calculate all
+- [ ] Highlight should include the nodes too
+- [ ] Upload icon with all possible colors and have a special folder for them
+- [ ] Radio button for nodes and link selection. Add to menu
+- [ ] Click on a node should select only the node (erase previous selection). Ctrl to add to selection
+- [ ] Center on view for one node and multiple node
+- [ ] Highlight the LL when highlighting the path
+- [ ] Remove switch to creation button
+- [ ] Drawing: choose between "random drawing, random + spring layout, draw at position, spring layout (warning if colocated nodes)
+- [ ] Highlight recovery path with dash
+- [ ] Highlight routes / traffic methods should depend on whether there is or not a link in failure.
+
 
 ## Routing
 - [ ] Traffic link routing. All nodes that belongs to an AS should be excluded.
@@ -71,7 +88,11 @@ in the AS.
 - [ ] G8032 ring with RPL protection
 - [ ] Ring AS with steering/wrapping protection mode
 - [ ] Dimensioning with Maximally redundant tree
-- [ ] OSPF: route leaking, multi-ABR, multi-area links, etc (RFC 5086, ...)
+- [ ] OSPF routing. 
+- [ ] OSPF options: route leaking, multi-ABR, multi-area links, etc (RFC 5086, ...)
+- [ ] ISIS routing
+- [ ] IS-IS improvement: route leaking option (RFC 2966)
+- [ ] Load balancing for the edges of an AS.
 
 ## Protection
 - [ ] FRR implementation for MPLS. A LSP can have a protection mode (Local Detour to Merge point, Local Detour to Destination, Next-Hop protection) or a user-defined back-up LSP.
@@ -85,10 +106,15 @@ in the AS.
 - [ ] Highlight all elements of a domain
 - [ ] Improve the AS management window. Button with arrows instead of add/remove edge
 - [ ] Use the K-shortest paths for load-balancing at the edge of an AS
+- [ ] Delete AS button. Rename AS. Delete area. Rename area.
+- [ ] Interaction between rename an object and the AS management. 
+- [ ] Add AS properties in the model, NTV and ASm panel
 
 ## Tests
 - [x] Add tests for SP (Dijkstra, BF, all-paths BFS)
 - [x] Add test for import export
+- [x] Add test for AS creation, modification, renaming, deletion, etc + area management
+- [x] Add test for IS-IS
 
 ## Other
 - [x] Convert tk drop-down list into ttk combo box
@@ -99,6 +125,9 @@ in the AS.
 - [x] Merge Add to AS and Manage AS window
 - [x] Use haversine formula to compute the distance of a link based on GPS coordinates
 - [x] Add new devices: splitter, regenerator/amplifier
+- [ ] Replace splitter with switch
+- [ ] Dict reset from keys
+- [ ] Selection dict should include all type of link: trunk, route, traffic
 - [ ] Check box in the frame to hide/show nodes
 - [ ] Filter route display depending on whether a traffic link is using them
 - [ ] Find a way to silence GLPK
@@ -122,7 +151,23 @@ in the AS.
 - [ ] when clicking on a link, window displaying all routes / traffic link mapped on it
 - [ ] Right-click of the tree view equivalent to a right-click on the canvas
 - [ ] Menu to generate complex graph: hypercube, square tiling in a special window
-- [ ] Delete AS button
+- [ ] Remove all keyword argument (type e.g)
+- [ ] Complex graph generation: https://www.youtube.com/watch?v=nJEfq8qduKA
+- [ ] Make a clear distinction between class variable and init
+- [ ] __bool__ for link: means bw > 0
+- [ ] Remove AS from pn
+- [ ] Rename objects bugs
+- [ ] Property decorator to summarize routes param
+- [ ] Vertical bars in RC menu to separate methods
+
+
+## Config generation
+- [ ] Have an "AS number" and an "area" number. BB is 0 all the time
+- [ ] Generate RIP config
+- [ ] Generate IS-IS config
+- [ ] Generate OSPF config
+- [ ] Generate MPLS config
+- [ ] Generate RSTP config 
 
 ## Import/Export/Save
 - [x] Import and export the graph with CSV
@@ -132,3 +177,4 @@ in the AS.
 - [ ] Consider all scenario when saving/opening a saved project
 - [ ] Save all scenario
 - [ ] Import Export all scenario
+- [ ] Import new and update mode

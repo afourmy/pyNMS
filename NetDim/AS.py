@@ -12,11 +12,26 @@ import AS_management
 class AutonomousSystem(object):
     class_type = "AS"
 
-    def __init__(self, scenario, type, name, trunks=set(), nodes=set(), edges=set(), imp=False):
+    def __init__(
+                 self, 
+                 scenario, 
+                 type, 
+                 name, 
+                 trunks = set(), 
+                 nodes = set(), 
+                 edges = set(), 
+                 routes = set(), 
+                 imp=False
+                 ):
         self.name = name
         self.type = type
         # pAS as in "pool AS": same as pool network
-        self.pAS = {"trunk": trunks, "node": nodes, "edge": edges}
+        self.pAS = {
+        "trunk": trunks, 
+        "node": nodes, 
+        "edge": edges,
+        "route": routes
+        }
         # areas is a dict associating a name to an area
         self.areas = {}
         # routes is a dict of dict such that routes[eA][eB] returns the route

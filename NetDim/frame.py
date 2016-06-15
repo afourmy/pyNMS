@@ -9,10 +9,17 @@ from miscellaneous import CustomTopLevel
 class MainFrame(tk.Frame):
     
     def __init__(self, master):
-        super().__init__(width=200,height=600, borderwidth=1, relief="solid", background="#A1DBCD")
+        super().__init__(
+        width = 200,
+        height = 600, 
+        borderwidth = 1, 
+        relief = "solid", 
+        background = "#A1DBCD"
+        )
+        
         self.bg_color = "#E6E6FA"
         self.font = ("Helvetica", 8, "bold")
-        self.type_to_button = {}
+        self.type_to_button = dict()
         
         self.type_to_action = {
         "netdim": lambda: master.cs.ntw.calculate_all(),

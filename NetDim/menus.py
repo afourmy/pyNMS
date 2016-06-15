@@ -22,6 +22,12 @@ class RightClickMenu(tk.Menu):
         self.add_command(label="Delete", command=lambda: self.remove_objects(scenario))
         self.add_command(label="Create AS", command=lambda: self.create_AS(scenario))  
         
+        # exactly one trunk: failure simulation menu
+        if not scenario.so["node"] and len(scenario.so["link"]) == 1:
+            trunk ,= scenario.so["link"]
+            if trunk.network_type == "trunk" and trunk.AS:
+                self.add_command(label="Simulate failure", command=lambda: self.simulate_failure(trunk, scenario))
+        
         # exactly one object: property window 
         if len(scenario.so["node"]) == 1 or len(scenario.so["link"]) == 1:
             self.add_command(label="Properties", command=lambda: self.show_object_properties(scenario))
@@ -34,7 +40,6 @@ class RightClickMenu(tk.Menu):
         self.common_AS = set(scenario.ntw.pn["AS"].values())        
         for obj in filter(lambda o: o.network_type in ("node", "trunk"), self.all_so):
             self.common_AS &= obj.AS.keys()
-
             
         # if at least one common AS: remove from AS or manage AS
         if self.common_AS:
@@ -63,6 +68,10 @@ class RightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def create_AS(self, scenario):
         AS.ASCreation(scenario, scenario.so)
+        
+    @empty_selection_and_destroy_menu
+    def simulate_failure(self, trunk, scenario):
+        scenario.simulate_failure(trunk)
     
     @empty_selection_and_destroy_menu
     def show_object_properties(self, scenario):

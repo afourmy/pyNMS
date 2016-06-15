@@ -63,6 +63,9 @@ class Scenario(tk.Canvas):
         # display state per type of objects
         self.display_per_type = {type: True for type in self.ntw.all_type}
         
+        # id of the failure icon
+        self.id_failure = None
+        
         # list of currently selected object ("so")
         self.so = {"node": set(), "link": set()}
         
@@ -70,8 +73,9 @@ class Scenario(tk.Canvas):
         self.switch_binding()
         
         ## bindings that remain available in all modes
-        # highlight the path of a route with left-click
+        # highlight the path of a route/traffic link with left-click
         self.tag_bind("route", "<ButtonPress-1>", self.closest_route_path)
+        self.tag_bind("traffic", "<ButtonPress-1>", self.closest_traffic_path)
         
         # zoom and unzoom on windows
         self.bind("<MouseWheel>",self.zoomer)
@@ -142,12 +146,22 @@ class Scenario(tk.Canvas):
             event.x, event.y = self.canvasx(event.x), self.canvasy(event.y)
             function(self, event, *others)
         return wrapper
-                
+            
+    @adapt_coordinates
     def closest_route_path(self, event):
         self.unhighlight_all()
-        x, y = self.canvasx(event.x), self.canvasy(event.y)
-        route = self.object_id_to_object[self.find_closest(x, y)[0]]
+        route = self.object_id_to_object[self.find_closest(event.x, event.y)[0]]
         self.highlight_objects(*route.path)
+        if self.ntw.failed_trunk in route.r_path:
+            self.highlight_objects(*route.r_path[self.ntw.failed_trunk], color="green")
+        
+    @adapt_coordinates
+    def closest_traffic_path(self, event):
+        self.unhighlight_all()
+        traffic = self.object_id_to_object[self.find_closest(event.x, event.y)[0]]
+        self.highlight_objects(*traffic.path)
+        for route in filter(lambda l: l.network_type == "route", traffic.path):
+            self.highlight_objects(*route.path)
         
     @adapt_coordinates
     def find_closest_node(self, event):
@@ -341,13 +355,13 @@ class Scenario(tk.Canvas):
 
         
     ## Highlight and Unhighlight links and nodes (depending on class_type)
-    def highlight_objects(self, *objects):
+    def highlight_objects(self, *objects, color="red"):
         for obj in objects:
             if obj.class_type == "node":
-                self.itemconfig(obj.oval, fill="red")
+                self.itemconfig(obj.oval, fill=color)
                 self.itemconfig(obj.image[0], image=self.master.dict_image["red"][obj.type])
             elif obj.class_type == "link":
-                self.itemconfig(obj.line, fill="red", width=5)
+                self.itemconfig(obj.line, fill=color, width=5)
                 
     def unhighlight_objects(self, *objects):
         for obj in objects:
@@ -519,7 +533,9 @@ class Scenario(tk.Canvas):
         return dict_link_to_coords
         
     def create_link(self, new_link):
+        
         edges = (new_link.source, new_link.destination)
+        print(new_link, edges)
         for node in edges:
             if not new_link.layer or self.layered_display:
                 if not node.image[new_link.layer]:
@@ -614,3 +630,13 @@ class Scenario(tk.Canvas):
         self.erase_all()
         for type in ("node", "trunk", "route", "traffic"):
             self.draw_objects(self.ntw.pn[type].values(), random)
+            
+    ## Failure simulation
+    
+    def simulate_failure(self, trunk):
+        self.delete(self.id_failure)
+        self.ntw.failed_trunk = trunk
+        source, destination = trunk.source, trunk.destination
+        xA, yA, xB, yB = source.x, source.y, destination.x, destination.y
+        img = self.master.img_failure
+        self.id_failure = self.create_image((xA+xB)/2, (yA+yB)/2, image=img)

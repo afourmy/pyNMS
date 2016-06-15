@@ -135,10 +135,25 @@ class Trunk(Link):
     layer = 0
     dash = ()
 
-    def __init__(self, name, source, destination, distance=0, costSD=1, costDS=1, capacitySD=3, capacityDS=3):
+    def __init__(
+                 self, 
+                 name, 
+                 source, 
+                 destination, 
+                 distance = 0, 
+                 costSD = 1, 
+                 costDS = 1, 
+                 capacitySD = 3, 
+                 capacityDS = 3, 
+                 trafficSD = 0,
+                 trafficDS = 0,
+                 ):
+                     
         super().__init__(name, source, destination, distance)
         self.costSD, self.costDS = int(costSD), int(costDS)
         self.capacitySD, self.capacityDS = int(capacitySD), int(capacityDS)
+        self.trafficSD = trafficSD
+        self.trafficDS = trafficDS
         self.flowSD, self.flowDS = 0, 0
         # list of AS to which the trunks belongs. AS is actually a dictionnary
         # associating an AS to a set of area the trunks belongs to
@@ -163,18 +178,36 @@ class Route(Link):
     layer = 1
     
     def __init__(
-        self, name, source, destination, distance=0, 
-        path_constraints=[], excluded_trunks=set(), excluded_nodes=set(), 
-        path=[], subnets=set(), cost=1, AS=None
-        ):
+                 self, 
+                 name, 
+                 source, 
+                 destination, 
+                 distance = 0, 
+                 path_constraints = [], 
+                 excluded_trunks = set(), 
+                 excluded_nodes = set(), 
+                 path = [], 
+                 subnets = set(), 
+                 costSD = 1,
+                 costDS = 1,
+                 traffic = 0,
+                 AS = None
+                 ):
+                     
         super().__init__(name, source, destination, distance)
         self.path_constraints = path_constraints
         self.excluded_nodes = excluded_nodes
         self.excluded_trunks = excluded_trunks
         self.path = path
         self.subnets = subnets
-        self.cost = cost
+        self.costSD = costSD
+        self.costDS = costDS
+        self.traffic = traffic
         self.AS = AS
+        # r_path ("recovery path") contains, for each link of the route's path 
+        # the associated recovery path, i.e the path of the route if the link 
+        # in failure did not exist.
+        self.r_path = dict()
         
 class Traffic(Link):
     type = "traffic"
@@ -183,7 +216,17 @@ class Traffic(Link):
     color = "purple"
     layer = 2
     
-    def __init__(self, name, source, destination, subnet=0, traffic=0):
+    def __init__(
+                 self, 
+                 name, 
+                 source, 
+                 destination, 
+                 subnet = 0, 
+                 throughput = 15, 
+                 path = []
+                 ):
         super().__init__(name, source, destination)
-        self.traffic = traffic
+        # throughput in Mbps
+        self.throughput = throughput
         self.subnet = subnet
+        self.path = path

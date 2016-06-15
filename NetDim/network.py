@@ -11,6 +11,7 @@ from math import cos, sin, asin, radians, sqrt
 from cvxopt import matrix, glpk
 from collections import defaultdict, deque
 from heapq import heappop, heappush
+from operator import getitem, itemgetter
 
 class Network(object):
     
@@ -39,6 +40,10 @@ class Network(object):
         self.scenario = scenario
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link, self.cpt_node, self.cpt_AS = (0,)*3
+        
+        # this parameter is used for failure simulation, to display the 
+        # recovery path of a route considering the failed trunk
+        self.failed_trunk = None
           
     # "lf" is the link factory. Creates or retrieves any type of link
     def lf(self, *param, link_type="trunk", name=None, s=None, d=None):
@@ -62,11 +67,31 @@ class Network(object):
             self.cpt_node += 1
         return self.pn["node"][name]
         
-    def AS_factory(self, name=None, _type="RIP", trunks=set(), nodes=set(), edges=set(), imp=False):
+    def AS_factory(
+                   self, 
+                   name = None, 
+                   _type = "RIP", 
+                   trunks = set(), 
+                   nodes = set(), 
+                   edges = set(), 
+                   routes = set(),
+                   imp = False
+                   ):
         if not name:
             name = "AS" + str(self.cpt_AS)
         if name not in self.pn["AS"]:
-            self.pn["AS"][name] = AS.AutonomousSystem(self.scenario, _type, name, trunks, nodes, edges, imp)
+            # creation of the AS
+            self.pn["AS"][name] = AS.AutonomousSystem(
+                                                      self.scenario, 
+                                                      _type, 
+                                                      name, 
+                                                      trunks, 
+                                                      nodes, 
+                                                      edges,
+                                                      routes, 
+                                                      imp
+                                                      )
+            # increase the AS counter by one
             self.cpt_AS += 1
         return self.pn["AS"][name]
         
@@ -79,6 +104,7 @@ class Network(object):
             
     def erase_network(self):
         self.graph.clear()
+        # TODO dict.fromkeys({})
         for dict_of_objects in self.pn.values():
             dict_of_objects.clear()
             
@@ -107,7 +133,11 @@ class Network(object):
         return any(n == nodeA for n, _ in self.graph[nodeB][link_type])
         
     def number_of_links_between(self, nodeA, nodeB):
-        return sum(n == nodeB for _type in self.link_type for n, _ in self.graph[nodeA][_type])
+        return sum(
+        n == nodeB 
+        for _type in self.link_type 
+        for n, _ in self.graph[nodeA][_type]
+        )
         
     def links_between(self, nodeA, nodeB, _type="all"):
         if _type == "all":
@@ -121,18 +151,59 @@ class Network(object):
                     yield trunk
             
     def calculate_all(self):
-        # for routes that do not belong to an AS, we find a path based on the 
-        # route constraints (CSPF)
-        for route in self.pn["route"].values():
-            if not route.AS:
-                param = (route.source, route.destination, route.excluded_trunks,
-                            route.excluded_nodes, route.path_constraints)
-                _, trunk_path = self.dijkstra(*param)
-                route.path = trunk_path
-        # if they do belong to an AS, we use the AS specific routing algorithm
+        # reset the traffic for all trunks
+        for trunk in self.pn["trunk"].values():
+            trunk.trafficSD = trunk.trafficDS = 0.
+        # create all AS routes
         for AS in self.pn["AS"].values():
             AS.management.create_routes()
-        
+        # we reset the traffic for all routes and for routes that do not 
+        # belong to an AS, we find a path based on the route constraints (~CSPF) 
+        for route in self.pn["route"].values():
+            route.traffic = 0.
+            if not route.AS:
+                route_param = (
+                               route.source, 
+                               route.destination, 
+                               route.excluded_trunks,
+                               route.excluded_nodes, 
+                               route.path_constraints
+                               )
+                _, route_path = self.dijkstra(*route_param)
+                route.path = route_path
+
+        # for traffic link, we use a BGP-like routing to restraint the routing
+        # path to routes when crossing an AS
+        for traffic_link in self.pn["traffic"].values():
+            _, traffic_link.path = self.traffic_routing(traffic_link)
+            if not traffic_link.path:
+                print("no path found for {}".format(traffic_link))
+            # compute the traffic going over the routes and trunks. 
+            # trunks are bidirectionnal while routes and traffic link aren't.
+            # Starting from the source of the traffic link, we keep in memory
+            # the previous node, which indicates us the direction of the traffic
+            # flow.
+            prec_node = traffic_link.source
+            for link in traffic_link.path:
+                sd = (link.source == prec_node)*"SD" or "DS"
+                if link.network_type == "trunk":
+                    link.__dict__["traffic" + sd] += traffic_link.throughput
+                else:
+                    link.__dict__["traffic"] += traffic_link.throughput
+                # update of the previous node
+                prec_node = link.source if sd == "DS" else link.destination
+                
+        for AS in self.pn["AS"].values():
+            AS.management.link_dimensioning()
+                # faire cette partie dans une deuxième fonction, car il faut dimensionner 
+                # en fonction de la protection du domaine
+                # comme on a le traffic sur la route, on peut désormais appeler une fonction
+                # spéicifique au domaine
+                # TODO
+                # if link.network_type == "route":
+                #     for trunk in link.path:
+                #         trunk.traffic += traffic_link.throughput
+            
     def bfs(self, source):
         visited = set()
         layer = {source}
@@ -158,8 +229,16 @@ class Network(object):
         
     ## 1) Dijkstra algorithm
             
-    def dijkstra(self, source, target, excluded_trunks=None, excluded_nodes=None, 
-    path_constraints=None, allowed_trunks=None, allowed_nodes=None):
+    def dijkstra(
+                 self, 
+                 source, 
+                 target, 
+                 excluded_trunks = None, 
+                 excluded_nodes = None, 
+                 path_constraints = None, 
+                 allowed_trunks = None, 
+                 allowed_nodes = None
+                 ):
                 
         # initialize parameters
         if excluded_nodes is None:
@@ -167,7 +246,7 @@ class Network(object):
         if excluded_trunks is None:
             excluded_trunks = set()
         if path_constraints is None:
-            path_constraints = []
+            path_constraints = list()
         if allowed_trunks is None:
             allowed_trunks = set(self.pn["trunk"].values())
         if allowed_nodes is None:
@@ -192,9 +271,9 @@ class Network(object):
                     for neighbor, adj_trunk in self.graph[node]["trunk"]:
                         sd = (node == adj_trunk.source)*"SD" or "DS"
                         # excluded and allowed nodes
-                        if not neighbor in allowed_nodes-excluded_nodes: continue
+                        if neighbor not in allowed_nodes-excluded_nodes: continue
                         # excluded and allowed trunks
-                        if not adj_trunk in allowed_trunks-excluded_trunks: continue
+                        if adj_trunk not in allowed_trunks-excluded_trunks: continue
                         dist_neighbor = dist_node + getattr(adj_trunk, "cost" + sd)
                         if dist_neighbor < dist[neighbor]:
                             dist[neighbor] = dist_neighbor
@@ -218,13 +297,28 @@ class Network(object):
         
     ## 2) RIP routing algorithm
     
-    def RIP_routing(self, source, target, RIP_AS):
-        return self.dijkstra(source, target, allowed_nodes=RIP_AS.pAS["node"],
-                                            allowed_trunks=RIP_AS.pAS["trunk"])
+    def RIP_routing(self, source, target, RIP_AS, a_n=None, a_t=None):
+        
+        if a_n is None:
+            a_n = RIP_AS.pAS["node"]
+        if a_t is None:
+            a_t = RIP_AS.pAS["trunk"]
+                    
+        return self.dijkstra(
+                             source, 
+                             target, 
+                             allowed_nodes = a_n,
+                             allowed_trunks = a_t
+                             )
         
     ## 2) IS-IS routing algorithm 
         
-    def ISIS_routing(self, source, target, ISIS_AS):
+    def ISIS_routing(self, source, target, ISIS_AS, a_n=None, a_t=None):
+        
+        if a_n is None:
+            a_n = ISIS_AS.pAS["node"]
+        if a_t is None:
+            a_t = ISIS_AS.pAS["trunk"]
         
         source_area, target_area = None, None
         backbone = ISIS_AS.areas["Backbone"]
@@ -248,11 +342,11 @@ class Network(object):
         # step 2 means we are in the backbone, heading for the target area
         step = source_area in (backbone, target_area)
         
-        prec_node = {i: None for i in ISIS_AS.pAS["node"]}
-        prec_link = {i: None for i in ISIS_AS.pAS["node"]}
-        visited = {i: False for i in ISIS_AS.pAS["node"]}
+        prec_node = {i: None for i in a_n}
+        prec_link = {i: None for i in a_n}
+        visited = {i: False for i in a_n}
 
-        dist = {i: float("inf") for i in ISIS_AS.pAS["node"]}
+        dist = {i: float("inf") for i in a_n}
         dist[source] = 0
         heap = [(0, source)]
         while heap:
@@ -266,9 +360,10 @@ class Network(object):
                     heap.clear()
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     sd = (node == adj_trunk.source)*"SD" or "DS"
-                    # we ignore what's not in the AS
-                    if not neighbor in ISIS_AS.pAS["node"]: continue
-                    if not adj_trunk in ISIS_AS.pAS["trunk"]: continue
+                    # we ignore what's not allowed, i.e not in the AS
+                    # or in failure 
+                    if neighbor not in a_n: continue
+                    if adj_trunk not in a_t: continue
                     # if step 1, we use only L1 or L1/L2 nodes (L1 source area)
                     if not step and neighbor not in source_area.pa["node"]: continue
                     # if step2, we use only backbone nodes (L1/L2)
@@ -291,10 +386,60 @@ class Network(object):
         else:
             return [], []
             
-    ## 3) Bellman-Ford algorithm
+    ## 3) Traffic routing algorithm
+    
+    def traffic_routing(self, traffic_link):
         
-    def bellman_ford(self, source, target, excluded_trunks=None, 
-    excluded_nodes=None, allowed_trunks=None, allowed_nodes=None):
+        source, target = traffic_link.source, traffic_link.destination
+        prec_node = {i: None for i in self.pn["node"].values()}
+        prec_link = {i: None for i in self.pn["node"].values()}
+        visited = {i: False for i in self.pn["node"].values()}
+
+        dist = {i: float("inf") for i in self.pn["node"].values()}
+        dist[source] = 0
+        heap = [(0, source)]
+        # we count how many AS we cross in case of ECMP AS path, to keep the 
+        # shortest in terms of AS
+        while heap:
+            dist_node, node = heappop(heap)  
+            if not visited[node]:
+                visited[node] = True
+                if node == target:
+                    break
+                for neighbor, adj_link in self.graph[node]["trunk"] | self.graph[node]["route"]:
+                    sd = (node == adj_link.source)*"SD" or "DS"
+                    # if the link is a trunk and belongs to an AS,  
+                    # we ignore it because we use only AS's routes
+                    if adj_link.network_type == "trunk" and adj_link.AS: continue
+                    dist_neighbor = dist_node + getattr(adj_link, "cost" + sd)
+                    if dist_neighbor < dist[neighbor]:
+                        dist[neighbor] = dist_neighbor
+                        prec_node[neighbor] = node
+                        prec_link[neighbor] = adj_link
+                        heappush(heap, (dist_neighbor, neighbor))
+        
+        # traceback the path from target to source
+        if visited[target]:
+            curr, path_node, path_link = target, [target], [prec_link[target]]
+            while curr != source:
+                curr = prec_node[curr]
+                path_link.append(prec_link[curr])
+                path_node.append(curr)
+            return path_node[::-1], path_link[:-1][::-1]
+        else:
+            return [], []
+            
+    ## 4) Bellman-Ford algorithm
+        
+    def bellman_ford(
+                     self, 
+                     source, 
+                     target, 
+                     excluded_trunks = None, 
+                     excluded_nodes = None, 
+                     allowed_trunks = None, 
+                     allowed_nodes = None
+                     ):
         
         # initialize parameters
         if excluded_nodes is None:
@@ -318,9 +463,9 @@ class Network(object):
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     sd = (node == adj_trunk.source)*"SD" or "DS"
                     # excluded and allowed nodes
-                    if not neighbor in allowed_nodes-excluded_nodes: continue
+                    if neighbor not in allowed_nodes-excluded_nodes: continue
                     # excluded and allowed trunks
-                    if not adj_trunk in allowed_trunks-excluded_trunks: continue
+                    if adj_trunk not in allowed_trunks-excluded_trunks: continue
                     dist_neighbor = dist[node] + getattr(adj_trunk, "cost" + sd)
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
@@ -339,7 +484,7 @@ class Network(object):
         else:
             return [], []
             
-    ## 4) Floyd-Warshall algorithm
+    ## 5) Floyd-Warshall algorithm
             
     def floyd_warshall(self):
         nodes = list(self.pn["node"].values())
@@ -371,7 +516,7 @@ class Network(object):
                     
         return all_length  
         
-    ## 5) DFS (all loop-free paths)
+    ## 6) DFS (all loop-free paths)
         
     def all_paths(self, source, target=None):
         # generates all loop-free paths from source to optional target
@@ -462,7 +607,7 @@ class Network(object):
             while curr_node != source:
                 # find the trunk between the two nodes
                 prec_node = augmenting_path[curr_node]
-                find_trunk = lambda p: p[0] == prec_node
+                find_trunk = lambda p: getitem(p, 0) == prec_node
                 (_, trunk) ,= filter(find_trunk, self.graph[curr_node]["trunk"])
                 # define sd and ds depending on how the link is defined
                 direction = curr_node == trunk.source
@@ -483,7 +628,7 @@ class Network(object):
             for neighbor, adj_trunk in self.graph[node]["trunk"]:
                 if neighbor in allowed_nodes:
                     edges.append((adj_trunk.costSD, adj_trunk, node, neighbor))
-        for w, t, u, v in sorted(edges, key=lambda x: x[0]):
+        for w, t, u, v in sorted(edges, key=itemgetter(0)):
             if uf.union(u, v):
                 yield t
                 
