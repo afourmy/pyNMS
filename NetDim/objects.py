@@ -10,10 +10,21 @@ class Node(object):
     class_type = "node"
     network_type = class_type
     
-    def __init__(self, name, x=100, y=100, longitude=0, latitude=0):
+    def __init__(
+                 self, 
+                 name, 
+                 x = 100, 
+                 y = 100, 
+                 longitude = 0, 
+                 latitude = 0, 
+                 IP_address = "0.0.0.0",
+                 subnet_mask = "255.255.255.255"
+                 ):
         self.name = name
         self.longitude = int(longitude)
         self.latitude = int(latitude)
+        self.IP_address = IP_address
+        self.subnet_mask = subnet_mask
         # self id and id of the corresponding label on the canvas
         self.oval = {layer: None for layer in range(3)}
         # image of the node at all three layers: physical, logical and traffic
@@ -53,8 +64,17 @@ class Router(Node):
     type = "router"
     imagex, imagey = 33, 25
     
-    def __init__(self, name, x=100, y=100, longitude=0, latitude=0):
-        super().__init__(name, x, y, longitude, latitude)
+    def __init__(
+                 self, 
+                 name, 
+                 x = 100, 
+                 y = 100, 
+                 longitude = 0, 
+                 latitude = 0, 
+                 IP_address = "0.0.0.0",
+                 subnet_mask = "255.255.255.255"
+                 ):
+        super().__init__(name, x, y, longitude, latitude, IP_address, subnet_mask)
         
 class OXC(Node):
 
@@ -62,8 +82,17 @@ class OXC(Node):
     type = "oxc"
     imagex, imagey = 35, 32
     
-    def __init__(self, name, x=100, y=100, longitude=0, latitude=0):
-        super().__init__(name, x, y, longitude, latitude)
+    def __init__(
+                 self, 
+                 name, 
+                 x = 100, 
+                 y = 100, 
+                 longitude = 0, 
+                 latitude = 0, 
+                 IP_address = "0.0.0.0",
+                 subnet_mask = "255.255.255.255"
+                 ):
+        super().__init__(name, x, y, longitude, latitude, IP_address, subnet_mask)
         
 class Host(Node):
 
@@ -71,8 +100,17 @@ class Host(Node):
     type = "host"
     imagex, imagey = 35, 32
     
-    def __init__(self, name, x=100, y=100, longitude=0, latitude=0):
-        super().__init__(name, x, y, longitude, latitude)
+    def __init__(
+                 self, 
+                 name, 
+                 x = 100, 
+                 y = 100, 
+                 longitude = 0, 
+                 latitude = 0, 
+                 IP_address = "0.0.0.0",
+                 subnet_mask = "255.255.255.255"
+                 ):
+        super().__init__(name, x, y, longitude, latitude, IP_address, subnet_mask)
         
 class Antenna(Node):
 
@@ -80,8 +118,17 @@ class Antenna(Node):
     type = "antenna"
     imagex, imagey = 35, 32
     
-    def __init__(self, name, x=100, y=100, longitude=0, latitude=0):
-        super().__init__(name, x, y, longitude, latitude)
+    def __init__(
+                 self, 
+                 name, 
+                 x = 100, 
+                 y = 100, 
+                 longitude = 0, 
+                 latitude = 0, 
+                 IP_address = "0.0.0.0",
+                 subnet_mask = "255.255.255.255"
+                 ):
+        super().__init__(name, x, y, longitude, latitude, IP_address, subnet_mask)
         
 class Regenerator(Node):
 
@@ -89,8 +136,17 @@ class Regenerator(Node):
     type = "regenerator"
     imagex, imagey = 64, 48
     
-    def __init__(self, name, x=100, y=100, longitude=0, latitude=0):
-        super().__init__(name, x, y, longitude, latitude)
+    def __init__(
+                 self, 
+                 name, 
+                 x = 100, 
+                 y = 100, 
+                 longitude = 0, 
+                 latitude = 0, 
+                 IP_address = "0.0.0.0",
+                 subnet_mask = "255.255.255.255"
+                 ):
+        super().__init__(name, x, y, longitude, latitude, IP_address, subnet_mask)
         
 class Splitter(Node):
 
@@ -98,8 +154,17 @@ class Splitter(Node):
     type = "splitter"
     imagex, imagey = 64, 48
     
-    def __init__(self, name, x=100, y=100, longitude=0, latitude=0):
-        super().__init__(name, x, y, longitude, latitude)
+    def __init__(
+                 self, 
+                 name, 
+                 x = 100, 
+                 y = 100, 
+                 longitude = 0, 
+                 latitude = 0, 
+                 IP_address = "0.0.0.0",
+                 subnet_mask = "255.255.255.255"
+                 ):
+        super().__init__(name, x, y, longitude, latitude, IP_address, subnet_mask)
         
 ## Links
 class Link(object):

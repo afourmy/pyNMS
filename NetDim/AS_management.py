@@ -145,12 +145,18 @@ class ASManagement(FocusTopLevel):
     def link_dimensioning(self):
         for route in self.AS.pAS["route"]:
             s, d = route.source, route.destination
-            for failed_trunk in route.path:
+            prec_node = s
+            for trunk in route.path:
                 # list of allowed trunks: all AS trunks but the failed one
-                a_t = self.AS.pAS["trunk"] - {failed_trunk}
+                a_t = self.AS.pAS["trunk"] - {trunk}
                 # apply the AS routing algorithm, ignoring the failed trunk
                 _, recovery_path = self.AS.algorithm(s, d, self.AS, a_t=a_t)
-                route.r_path[failed_trunk] = recovery_path
+                route.r_path[trunk] = recovery_path
+                # we add the route traffic of the trunk (normal mode dimensioning)
+                sd = (trunk.source == prec_node)*"SD" or "DS"
+                trunk.__dict__["traffic" + sd] += route.traffic
+                # update of the previous node
+                prec_node = trunk.source if sd == "DS" else trunk.destination
             
     def create_area(self, name):
         self.AS.area_factory(name)

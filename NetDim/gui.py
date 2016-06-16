@@ -38,13 +38,24 @@ class NetDim(tk.Tk):
         ## User-defined properties and labels per type of object
         
         # I used ordered dicts to have the same menu order 
+        node_properties = (
+        "name", 
+        "x", 
+        "y", 
+        "longitude", 
+        "latitude", 
+        "IP_address", 
+        "subnet_mask", 
+        "AS"
+        )
+        
         self.object_properties = collections.OrderedDict([
-        ("router", ("name", "x", "y", "longitude", "latitude", "AS")),
-        ("oxc", ("name", "x", "y", "longitude", "latitude", "AS")),
-        ("host", ("name", "x", "y", "longitude", "latitude", "AS")),
-        ("antenna", ("name", "x", "y", "longitude", "latitude", "AS")),
-        ("regenerator", ("name", "x", "y", "longitude", "latitude", "AS")),
-        ("splitter", ("name", "x", "y", "longitude", "latitude", "AS")),
+        ("router", node_properties),
+        ("oxc", node_properties),
+        ("host", node_properties),
+        ("antenna", node_properties),
+        ("regenerator", node_properties),
+        ("splitter", node_properties),
         
         ("trunk", 
         (
@@ -90,7 +101,7 @@ class NetDim(tk.Tk):
         ))])
         
         self.object_label = collections.OrderedDict([
-        ("Node", ("None", "Name", "Position", "Coordinates")),
+        ("Node", ("None", "Name", "Position", "Coordinates", "IP Address")),
         ("Trunk", ("None", "Name", "Distance", "Cost", "Capacity", "Flow", "Traffic")),
         ("Route", ("None", "Name", "Distance", "Type", "Path", "Cost", "Subnet", "Traffic")),
         ("Traffic", ("None", "Name", "Distance", "Throughput"))
@@ -98,7 +109,15 @@ class NetDim(tk.Tk):
         
         # object import export (properties)
         self.object_ie = collections.OrderedDict([
-        ("node", ("name", "x", "y", "longitude", "latitude")),
+        ("node", (
+        "name", 
+        "x", 
+        "y", 
+        "longitude", 
+        "latitude", 
+        "IP_address", 
+        "subnet_mask", 
+        )),
         
         ("trunk", 
         (
@@ -151,6 +170,8 @@ class NetDim(tk.Tk):
         # the code for AS export
         self.prop_to_type = {
         "name": str, 
+        "IP_address": str,
+        "subnet_mask": str,
         "x": float, 
         "y": float, 
         "longitude": float, 

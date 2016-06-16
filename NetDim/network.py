@@ -182,10 +182,14 @@ class Network(object):
             # trunks are bidirectionnal while routes and traffic link aren't.
             # Starting from the source of the traffic link, we keep in memory
             # the previous node, which indicates us the direction of the traffic
-            # flow.
             prec_node = traffic_link.source
             for link in traffic_link.path:
                 sd = (link.source == prec_node)*"SD" or "DS"
+                # if the link is a trunk, we add the traffic throughput in
+                # the appropriate direction, if it is a route, there is only one
+                # direction given that routes are unidirectional.
+                # the trunks on which the route is mapped will be dimensioned
+                # in the AS dimensioning step that follows
                 if link.network_type == "trunk":
                     link.__dict__["traffic" + sd] += traffic_link.throughput
                 else:
@@ -194,6 +198,7 @@ class Network(object):
                 prec_node = link.source if sd == "DS" else link.destination
                 
         for AS in self.pn["AS"].values():
+            # we dimension the trunks of all routes 
             AS.management.link_dimensioning()
                 # faire cette partie dans une deuxième fonction, car il faut dimensionner 
                 # en fonction de la protection du domaine
@@ -203,6 +208,7 @@ class Network(object):
                 # if link.network_type == "route":
                 #     for trunk in link.path:
                 #         trunk.traffic += traffic_link.throughput
+        self.scenario.refresh_all_labels()
             
     def bfs(self, source):
         visited = set()
@@ -411,6 +417,9 @@ class Network(object):
                     # if the link is a trunk and belongs to an AS,  
                     # we ignore it because we use only AS's routes
                     if adj_link.network_type == "trunk" and adj_link.AS: continue
+                    # if the link is a route, we make sure the current node is 
+                    # the source of the route, because routes are unidirectionnal
+                    if adj_link.network_type == "route" and adj_link.source != node: continue
                     dist_neighbor = dist_node + getattr(adj_link, "cost" + sd)
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor

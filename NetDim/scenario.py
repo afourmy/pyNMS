@@ -23,7 +23,6 @@ class Scenario(tk.Canvas):
         self.drawing_iteration = 0
         
         # default colors for highlighting areas
-        # TODO use this for the image dict
         self.default_colors = ["black", "red", "green", "blue", "cyan", "yellow", "magenta"]
         
         # default link width and node size
@@ -31,10 +30,10 @@ class Scenario(tk.Canvas):
         self.NODE_SIZE = 8
         
         # default label display
-        self._current_object_label = {obj_type: "name" for obj_type in self.ntw.all_type}
+        self._current_object_label = {obj_type: "none" for obj_type in ("node", "trunk", "route", "traffic")}
         
         # creation mode, object type, and associated bindings
-        self._start_position = [None, None]
+        self._start_position = [None]*2
         self._object_type = "trunk"
         self.drag_item = None
         self.temp_line = None
@@ -43,7 +42,7 @@ class Scenario(tk.Canvas):
         self.object_selection = "node"
         
         # used to move several node at once
-        self._start_pos_main_node = [None, None]
+        self._start_pos_main_node = [None]*2
         self._dict_start_position = {}
         
         # the default motion is creation of nodes
@@ -151,9 +150,7 @@ class Scenario(tk.Canvas):
     def closest_route_path(self, event):
         self.unhighlight_all()
         route = self.object_id_to_object[self.find_closest(event.x, event.y)[0]]
-        self.highlight_objects(*route.path)
-        if self.ntw.failed_trunk in route.r_path:
-            self.highlight_objects(*route.r_path[self.ntw.failed_trunk], color="green")
+        self.highlight_route(route)
         
     @adapt_coordinates
     def closest_traffic_path(self, event):
@@ -161,6 +158,13 @@ class Scenario(tk.Canvas):
         traffic = self.object_id_to_object[self.find_closest(event.x, event.y)[0]]
         self.highlight_objects(*traffic.path)
         for route in filter(lambda l: l.network_type == "route", traffic.path):
+            self.highlight_route(route)
+            
+    def highlight_route(self, route):
+        ft = self.ntw.failed_trunk
+        if ft in route.r_path:
+            self.highlight_objects(*route.r_path[ft], color="gold", dash=True)
+        else:
             self.highlight_objects(*route.path)
         
     @adapt_coordinates
@@ -217,7 +221,7 @@ class Scenario(tk.Canvas):
     @adapt_coordinates
     def rectangle_drawing(self, event):
         # draw the line only if they were created in the first place
-        if self._start_position != [None, None]:
+        if self._start_position != [None]*2:
             # update the position of the temporary lines
             x0, y0 = self._start_position
             self.coords(self.temp_line_x_top, x0, y0, event.x, y0)
@@ -230,7 +234,7 @@ class Scenario(tk.Canvas):
 
     @adapt_coordinates
     def end_point_select_nodes(self, event):
-        if self._start_position != [None, None]:
+        if self._start_position != [None]*2:
             # delete the temporary lines
             self.delete(self.temp_line_x_top)
             self.delete(self.temp_line_x_bottom)
@@ -244,7 +248,7 @@ class Scenario(tk.Canvas):
                     if enclosed_obj.class_type == self.object_selection:
                         self.so[self.object_selection].add(enclosed_obj)
             self.highlight_objects(*self.so["node"]|self.so["link"])
-            self._start_position = [None, None]
+            self._start_position = [None]*2
         
     @adapt_coordinates
     def start_link(self, event):
@@ -355,13 +359,14 @@ class Scenario(tk.Canvas):
 
         
     ## Highlight and Unhighlight links and nodes (depending on class_type)
-    def highlight_objects(self, *objects, color="red"):
+    def highlight_objects(self, *objects, color="red", dash=False):
         for obj in objects:
             if obj.class_type == "node":
                 self.itemconfig(obj.oval, fill=color)
                 self.itemconfig(obj.image[0], image=self.master.dict_image["red"][obj.type])
             elif obj.class_type == "link":
-                self.itemconfig(obj.line, fill=color, width=5)
+                dash = (3, 5) if dash else ()
+                self.itemconfig(obj.line, fill=color, width=5, dash=dash)
                 
     def unhighlight_objects(self, *objects):
         for obj in objects:
@@ -369,7 +374,7 @@ class Scenario(tk.Canvas):
                 self.itemconfig(obj.oval, fill=obj.color)
                 self.itemconfig(obj.image[0], image=self.master.dict_image["default"][obj.type])
             elif obj.class_type == "link":
-                self.itemconfig(obj.line, fill=obj.color, width=self.LINK_WIDTH)  
+                self.itemconfig(obj.line, fill=obj.color, width=self.LINK_WIDTH, dash=obj.dash)  
                 
     def unhighlight_all(self):
         for object_type in self.ntw.pn:
@@ -394,15 +399,18 @@ class Scenario(tk.Canvas):
     # refresh the label for one object with the current object label
     def _refresh_object_label(self, current_object, label_type=None):
         if not label_type:
-            label_type = self._current_object_label[current_object.type]
+            label_type = self._current_object_label[current_object.network_type]
         label_id = current_object.lid
         if label_type == "none":
             self.itemconfig(label_id, text="")
-        elif label_type in ("capacity", "flow", "cost"):
+        elif label_type in ("capacity", "flow", "cost", "traffic"):
             # retrieve the value of the parameter depending on label type
             valueSD = getattr(current_object, label_type + "SD")
             valueDS = getattr(current_object, label_type + "DS")
-            self.itemconfig(label_id, text="SD:{} | DS:{}".format(valueSD, valueDS))
+            if label_type == "traffic":
+                self.itemconfig(label_id, text=str(valueSD + valueDS))
+            else:
+                self.itemconfig(label_id, text="SD:{} | DS:{}".format(valueSD, valueDS))
         elif label_type == "position":
             self.itemconfig(label_id, text="({}, {})".format(current_object.x, current_object.y))
         else:
@@ -410,10 +418,15 @@ class Scenario(tk.Canvas):
         self.itemconfig(label_id, font="bold")
             
     # change label and refresh it for all objects
-    def _refresh_object_labels(self, type, var_label):
-        self._current_object_label[type] = var_label
+    def _refresh_object_labels(self, type, var_label=None):
+        if var_label:
+            self._current_object_label[type] = var_label
         for obj in self.ntw.pn[type].values():
-            self._refresh_object_label(obj, var_label)
+            self._refresh_object_label(obj, self._current_object_label[type])
+            
+    def refresh_all_labels(self):
+        for type in ("node", "trunk", "route", "traffic"):
+            self._refresh_object_labels(type)
             
     # show/hide display menu per type of objects
     def show_hide(self, menu, type, index):
@@ -462,6 +475,11 @@ class Scenario(tk.Canvas):
                     self.coords(link.line, *link_to_coords[link])
                     # update link label coordinates
                     self.update_link_label_coordinates(link)
+                    # if there is a link in failure, we need to update the
+                    # failure icon by retrieving the middle position of the arc
+                    if link == self.ntw.failed_trunk:
+                        mid_x, mid_y = link_to_coords[link][2:4]
+                        self.coords(self.id_failure, mid_x, mid_y)
                     
     def update_link_label_coordinates(self, link):
         try:
@@ -493,7 +511,6 @@ class Scenario(tk.Canvas):
         # stop job if convergence reached
         if all(-10**(-2) < n.vx * n.vy < 10**(-2) for n in self.ntw.pn["node"].values()):
             return self._cancel()
-        print(self._job)
         self._job = self.after(1, lambda: self.ntw.frucht())
         
     # cancel the graph drawing job
@@ -535,7 +552,6 @@ class Scenario(tk.Canvas):
     def create_link(self, new_link):
         
         edges = (new_link.source, new_link.destination)
-        print(new_link, edges)
         for node in edges:
             if not new_link.layer or self.layered_display:
                 if not node.image[new_link.layer]:
@@ -599,21 +615,32 @@ class Scenario(tk.Canvas):
                 self.remove_objects(*self.ntw.remove_node(obj))
                 if self.layered_display:
                     for layer in (1, 2):
-                        self.delete(obj.oval[layer], obj.image[layer], obj.layer_line[layer])
+                        self.delete(
+                                    obj.oval[layer], 
+                                    obj.image[layer], 
+                                    obj.layer_line[layer]
+                                    )
             if obj.class_type == "link":
+                # we remove the line as well as the label on the canvas
                 self.delete(obj.line, obj.lid)
+                # we remove the associated link in the network model
                 self.ntw.remove_link(obj)
-                if self.layered_display:
-                    link_type = self.layers[1][obj.layer]
+                # if the layered display is activate and the link 
+                # to delete is not a physical link (trunk)
+                if self.layered_display and obj.layer:
                     for edge in (obj.source, obj.destination):
-                        if not self.ntw.graph[edge][link_type]:
+                        # we check if there still are other links of the same
+                        # type (i.e at the same layer) between the edge nodes
+                        if not self.ntw.graph[edge][obj.network_type]:
+                            # if that's not the case, we delete the upper-layer
+                            # projection of the edge nodes, and reset the 
+                            # associated "layer to projection id" dictionnary
                             self.delete(edge.oval[obj.layer], edge.image[obj.layer])
-                            edge.image[obj.layer], edge.oval[obj.layer] = None, None
-                            if obj.layer:
-                                self.delete(edge.layer_line[obj.layer])
-                                edge.layer_line[obj.layer] = None
-                            else:
-                                self.delete(edge.lid)
+                            edge.image[obj.layer] = edge.oval[obj.layer] = None
+                            # we delete the dashed "layer line" and reset the
+                            # associated "layer to layer line id" dictionnary
+                            self.delete(edge.layer_line[obj.layer])
+                            edge.layer_line[obj.layer] = None
                         
     def draw_objects(self, objects, random_drawing):
         self._cancel()

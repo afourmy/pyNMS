@@ -1,7 +1,6 @@
 ﻿# Introduction
 
-Netdim is a network design and planning software. 
-Created in April 2016, it is still at an early stage of its development.
+Netdim is a network design and planning software.
 
 A network in NetDim is made of:
 - devices (router, optical switch, host machine or antenna)
@@ -10,12 +9,76 @@ A network in NetDim is made of:
 - traffic links
 - [autonomous systems] (https://en.wikipedia.org/wiki/Autonomous_system_%28Internet%29) (AS)
 
-A physical link in NetDim is called a trunk: it represents a set of physical links aggregated together. 
-An autonomous system is a set of devices exchanging routing and signalization messages to carry the incoming traffic. 
+A physical link in NetDim is called a trunk: it represents a set of physical links aggregated together.
+An autonomous system is a set of devices exchanging routing and signalization messages to carry the incoming traffic.
 The path of a traffic flow inside an AS depends on the [protocol] (https://en.wikipedia.org/wiki/Communications_protocol) used
 in the AS.
 
-![Netdim](https://github.com/mintoo/networks/raw/master/Readme/introduction.PNG)
+# Features
+
+## Graph visualization
+
+The first step to network modelization is graph visualization. One way to visualize a network is to locate all devices on a map. However, this can only be done if we have all GPS coordinates: it is rarely the case. Instead, NetDim relies on graph visualization algorithms to display the network.
+Two spring-layout algorithms are implemented: Eades and Fructherman-Reingold.
+
+On a 5-layer deep tree which nodes are initially drawn at a random position on the canvas, the algorithm converges within a few seconds to a visually pleasing tree shape.
+
+![Graph visualization](https://github.com/mintoo/networks/raw/master/Readme/visualization.PNG)
+
+## Saving and import/export
+
+Projects can be saved to an excel or a csv format. This is also a way to import an existing network into NetDim.
+
+![Excel project](https://github.com/mintoo/networks/raw/master/Readme/xls_import.PNG)
+
+It is also possible to import graphml files from the [Topology Zoo] (http://www.topology-zoo.org/). The Topology Zoo gathers information about existing networks. All files are provided in the Workspace Folder.
+As an example, this is the topology of the BENESTRA network in Slovakia:
+
+![Graphml Impport](https://github.com/mintoo/networks/raw/master/Readme/BenestraBB.PNG)
+
+## Routing algorithms
+
+Three shortest path algorithms are implemented to modelize network routing:
+- Dijkstra algorithm
+- Bellman-Ford algorithm
+- Floyd-Warshall algorithm
+
+Dijkstra algorithm (quasi-linear complexity) is used by default. Variations of Dijkstra algorithm were implemented to find the traffic path in an AS depending on the protocol.
+The reason for using a specific algorithm is that multi-area configuration can lead to suboptimal routing:
+- In IS-IS, an L1 router sends all traffic to the closest L1/L2 router, even though there could be a shorter path in terms of metric if there are multiple L1/L2 routers in the starting area.
+- In OSPF, intra-area routes are always favored over inter-area routes, even when inter-area routes happen to be the shortest.
+
+Clicking on a route or a traffic link highlights its path through the network:
+
+![Route highlight](https://github.com/mintoo/networks/raw/master/Readme/routing.PNG)
+
+## AS Management
+
+Nodes and trunks can be added to the network by selecting them on the canvas, from the right-click menu. The AS topology is display in a specific window. The "AS Management" panel is also used to create and manage areas.
+Routes are created between everry couple of "edge nodes".
+
+![AS Management](https://github.com/mintoo/networks/raw/master/Readme/AS_management.PNG)
+
+## 3D display
+
+There are 3 layers in NetDim: the physical layers (trunks), the logical layer (routes), and the traffic layer (traffic link).
+In order to improve the network visualization, it is possible to have a per-layer view of the network.
+Nodes are draw at all 3 layers, and connected with a dashed line to further improve the display.
+
+![AS Management](https://github.com/mintoo/networks/raw/master/Readme/3D-display.PNG)
+
+## Capacity planning
+
+Once traffic links are created, they are routed on the trunks outside an AS, and the routes to cross an AS. The resulting traffic flow is computed for each trunks. This is then used for trunk dimensioning and capacity planning.
+
+![Capacity planning](https://github.com/mintoo/networks/raw/master/Readme/capacity_planning.PNG)
+
+## Failure simulation
+
+It is also possible to simulate the failure of a device and see how it impacts the network routing and dimensioning.
+When highlighting a route's path, the recovery path is display.
+
+![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/failure_simulation.PNG)
 
 # To be done
 
