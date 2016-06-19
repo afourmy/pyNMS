@@ -198,17 +198,33 @@ class Network(object):
                 prec_node = link.source if sd == "DS" else link.destination
                 
         for AS in self.pn["AS"].values():
-            # we dimension the trunks of all routes 
+            # we dimension the trunks of all AS routes 
             AS.management.link_dimensioning()
-                # faire cette partie dans une deuxième fonction, car il faut dimensionner 
-                # en fonction de la protection du domaine
-                # comme on a le traffic sur la route, on peut désormais appeler une fonction
-                # spéicifique au domaine
-                # TODO
-                # if link.network_type == "route":
-                #     for trunk in link.path:
-                #         trunk.traffic += traffic_link.throughput
+        self.ip_allocation()
+        self.interface_allocation()
         self.scenario.refresh_all_labels()
+        
+    def ip_allocation(self):
+        cpt_ip = 1
+        address = "10.0.0."
+        # we use a /30 subnet mask for all trunks
+        mask = "255.255.255.252"
+        for trunk in self.pn["trunk"].values():
+            trunk.subnetmaskS = trunk.subnetmaskD = mask
+            trunk.ipaddressS = address + str(cpt_ip)
+            trunk.ipaddressD = address + str(cpt_ip + 1)
+            # with /30, there are two unused IP address for each subnetwork
+            # we could use /31 but this isn't a common practice
+            cpt_ip += 4
+            
+    def interface_allocation(self):
+        for node in self.graph:
+            index_interface = 0
+            for _, adj_trunk in self.graph[node]["trunk"]:
+                direction = "S"*(adj_trunk.source == node) or "D"
+                interface = "Ethernet0/{}".format(index_interface)
+                setattr(adj_trunk, "interface" + direction, interface)
+                index_interface += 1
             
     def bfs(self, source):
         visited = set()

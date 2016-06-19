@@ -52,14 +52,17 @@ class ObjectManagementWindow(FocusTopLevel):
         destination = master.cs.ntw.nf(name=self.dict_var["destination"].get())
         excluded_trunks = filter(None, self.dict_var["excluded_trunks"].get().strip().split(","))
         excluded_nodes = filter(None, self.dict_var["excluded_nodes"].get().strip().split(","))
-        path_constraints = filter(None, self.dict_var["path_constraints"].get().strip().split(","))
+        print(self.dict_var["path_constraints"].get())
+        path_constraints = master.prop_to_type["path_constraints"](self.dict_var["path_constraints"].get())
+        print(path_constraints)
+        #path_constraints = filter(None, self.dict_var["path_constraints"].get().strip().split(","))
         if excluded_trunks:
             l_excluded_trunks = {master.cs.ntw.lf(name=t) for t in excluded_trunks}
         if excluded_nodes:
             l_excluded_nodes = {master.cs.ntw.nf(name=n) for n in excluded_nodes}
-        if path_constraints:
-            l_path_constraints = [master.cs.ntw.nf(name=n) for n in path_constraints]
-        return (name, source, destination, l_excluded_trunks, l_excluded_nodes, l_path_constraints)
+        # if path_constraints:
+        #     l_path_constraints = [master.cs.ntw.nf(name=n) for n in path_constraints]
+        return (name, source, destination, l_excluded_trunks, l_excluded_nodes, path_constraints)
         
     def find_path(self, master):
         name, *parameters = self.get_user_input(master)

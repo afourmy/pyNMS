@@ -53,7 +53,7 @@ class FocusTopLevel(CustomTopLevel):
         
         self.var_focus = tk.IntVar()
         self.checkbutton_focus = tk.Checkbutton(self, text="Focus", bg="#A1DBCD", variable=self.var_focus, command=self.change_focus)
-        self.checkbutton_focus.place(x=0, y=2, width=60, height=15)
+        self.checkbutton_focus.grid(row=0, column=0)
             
     def change_focus(self):
         self.wm_attributes("-topmost", self.var_focus.get())

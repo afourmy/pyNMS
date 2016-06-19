@@ -17,14 +17,14 @@ class Node(object):
                  y = 100, 
                  longitude = 0, 
                  latitude = 0, 
-                 IP_address = "0.0.0.0",
-                 subnet_mask = "255.255.255.255"
+                 ipaddress = "0.0.0.0",
+                 subnetmask = "255.255.255.255"
                  ):
         self.name = name
         self.longitude = int(longitude)
         self.latitude = int(latitude)
-        self.IP_address = IP_address
-        self.subnet_mask = subnet_mask
+        self.ipaddress = ipaddress
+        self.subnetmask = subnetmask
         # self id and id of the corresponding label on the canvas
         self.oval = {layer: None for layer in range(3)}
         # image of the node at all three layers: physical, logical and traffic
@@ -71,10 +71,10 @@ class Router(Node):
                  y = 100, 
                  longitude = 0, 
                  latitude = 0, 
-                 IP_address = "0.0.0.0",
-                 subnet_mask = "255.255.255.255"
+                 ipaddress = "0.0.0.0",
+                 subnetmask = "255.255.255.255"
                  ):
-        super().__init__(name, x, y, longitude, latitude, IP_address, subnet_mask)
+        super().__init__(name, x, y, longitude, latitude, ipaddress, subnetmask)
         
 class OXC(Node):
 
@@ -89,10 +89,10 @@ class OXC(Node):
                  y = 100, 
                  longitude = 0, 
                  latitude = 0, 
-                 IP_address = "0.0.0.0",
-                 subnet_mask = "255.255.255.255"
+                 ipaddress = "0.0.0.0",
+                 subnetmask = "255.255.255.255"
                  ):
-        super().__init__(name, x, y, longitude, latitude, IP_address, subnet_mask)
+        super().__init__(name, x, y, longitude, latitude, ipaddress, subnetmask)
         
 class Host(Node):
 
@@ -107,10 +107,10 @@ class Host(Node):
                  y = 100, 
                  longitude = 0, 
                  latitude = 0, 
-                 IP_address = "0.0.0.0",
-                 subnet_mask = "255.255.255.255"
+                 ipaddress = "0.0.0.0",
+                 subnetmask = "255.255.255.255"
                  ):
-        super().__init__(name, x, y, longitude, latitude, IP_address, subnet_mask)
+        super().__init__(name, x, y, longitude, latitude, ipaddress, subnetmask)
         
 class Antenna(Node):
 
@@ -125,10 +125,10 @@ class Antenna(Node):
                  y = 100, 
                  longitude = 0, 
                  latitude = 0, 
-                 IP_address = "0.0.0.0",
-                 subnet_mask = "255.255.255.255"
+                 ipaddress = "0.0.0.0",
+                 subnetmask = "255.255.255.255"
                  ):
-        super().__init__(name, x, y, longitude, latitude, IP_address, subnet_mask)
+        super().__init__(name, x, y, longitude, latitude, ipaddress, subnetmask)
         
 class Regenerator(Node):
 
@@ -143,10 +143,10 @@ class Regenerator(Node):
                  y = 100, 
                  longitude = 0, 
                  latitude = 0, 
-                 IP_address = "0.0.0.0",
-                 subnet_mask = "255.255.255.255"
+                 ipaddress = "0.0.0.0",
+                 subnetmask = "255.255.255.255"
                  ):
-        super().__init__(name, x, y, longitude, latitude, IP_address, subnet_mask)
+        super().__init__(name, x, y, longitude, latitude, ipaddress, subnetmask)
         
 class Splitter(Node):
 
@@ -161,10 +161,10 @@ class Splitter(Node):
                  y = 100, 
                  longitude = 0, 
                  latitude = 0, 
-                 IP_address = "0.0.0.0",
-                 subnet_mask = "255.255.255.255"
+                 ipaddress = "0.0.0.0",
+                 subnetmask = "255.255.255.255"
                  ):
-        super().__init__(name, x, y, longitude, latitude, IP_address, subnet_mask)
+        super().__init__(name, x, y, longitude, latitude, ipaddress, subnetmask)
         
 ## Links
 class Link(object):
@@ -212,6 +212,12 @@ class Trunk(Link):
                  capacityDS = 3, 
                  trafficSD = 0,
                  trafficDS = 0,
+                 ipaddressS = "0.0.0.0", 
+                 subnetmaskS = "255.255.255.255",
+                 interfaceS = "",
+                 ipaddressD = "0.0.0.0", 
+                 subnetmaskD = "255.255.255.255", 
+                 interfaceD = ""
                  ):
                      
         super().__init__(name, source, destination, distance)
@@ -219,6 +225,13 @@ class Trunk(Link):
         self.capacitySD, self.capacityDS = int(capacitySD), int(capacityDS)
         self.trafficSD = trafficSD
         self.trafficDS = trafficDS
+        self.ipaddressS = ipaddressS
+        self.subnetmaskS = subnetmaskS
+        self.interfaceS = interfaceS
+        self.ipaddressD = ipaddressD
+        self.subnetmaskD = subnetmaskD
+        self.interfaceD = interfaceD
+        
         self.flowSD, self.flowDS = 0, 0
         # list of AS to which the trunks belongs. AS is actually a dictionnary
         # associating an AS to a set of area the trunks belongs to
@@ -253,8 +266,7 @@ class Route(Link):
                  excluded_nodes = set(), 
                  path = [], 
                  subnets = set(), 
-                 costSD = 1,
-                 costDS = 1,
+                 cost = 1,
                  traffic = 0,
                  AS = None
                  ):
@@ -265,8 +277,7 @@ class Route(Link):
         self.excluded_trunks = excluded_trunks
         self.path = path
         self.subnets = subnets
-        self.costSD = costSD
-        self.costDS = costDS
+        self.cost = cost
         self.traffic = traffic
         self.AS = AS
         # r_path ("recovery path") contains, for each link of the route's path 

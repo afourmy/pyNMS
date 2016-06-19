@@ -132,6 +132,19 @@ class TestSP(unittest.TestCase):
         self.assertEqual(length_route10, all_length[self.route10.source][self.route10.destination])
         self.assertEqual(length_route11, all_length[self.route11.source][self.route11.destination])
         
+class TestISIS(unittest.TestCase):
+ 
+    @start_and_import("test_ISIS.xls")
+    def setUp(self):
+        pass
+ 
+    def tearDown(self):
+        self.netdim.destroy()
+ 
+    def test_ISIS(self):
+        self.netdim.cs.ntw.calculate_all()
+        self.assertEqual(len(self.netdim.cs.ntw.pn["route"]), 2)
+        
         
 
         

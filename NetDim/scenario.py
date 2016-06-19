@@ -408,11 +408,20 @@ class Scenario(tk.Canvas):
             valueSD = getattr(current_object, label_type + "SD")
             valueDS = getattr(current_object, label_type + "DS")
             if label_type == "traffic":
-                self.itemconfig(label_id, text=str(valueSD + valueDS))
+                text = str(valueSD + valueDS)
             else:
-                self.itemconfig(label_id, text="SD:{} | DS:{}".format(valueSD, valueDS))
+                text = "SD:{} | DS:{}".format(valueSD, valueDS)
+            self.itemconfig(label_id, text=text)
         elif label_type == "position":
-            self.itemconfig(label_id, text="({}, {})".format(current_object.x, current_object.y))
+            text = "({}, {})".format(current_object.x, current_object.y)
+            self.itemconfig(label_id, text=text)
+        elif label_type == "ipaddress":
+            valueS = getattr(current_object, label_type + "S")
+            valueD = getattr(current_object, label_type + "D")
+            s = getattr(current_object, "source")
+            d = getattr(current_object, "destination")
+            text = "{}: {}\n{}: {}".format(s, valueS, d, valueD)
+            self.itemconfig(label_id, text=text)
         else:
             self.itemconfig(label_id, text=getattr(current_object, label_type))
         self.itemconfig(label_id, font="bold")

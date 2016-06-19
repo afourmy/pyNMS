@@ -43,13 +43,14 @@ class AutonomousSystem(object):
         self.management = AS_management.ASManagement(scenario, self, imp)
         # imp tells us if the AS is imported or created from scratch.
         if not imp:
-            self.area_factory("Backbone")
+            self.area_factory("Backbone", 2 if type == "ISIS" else 0)
             
         # each type of algorithm will have a specific algorithm, that defines
         # how to compute a path in the AS
         self.AS_type_to_class = {
         "RIP": scenario.ntw.RIP_routing,
-        "ISIS": scenario.ntw.ISIS_routing
+        "ISIS": scenario.ntw.ISIS_routing,
+        "OSPF": scenario.ntw.ISIS_routing
         }
         self.algorithm = self.AS_type_to_class[type]
         
@@ -65,9 +66,9 @@ class AutonomousSystem(object):
     def __hash__(self):
         return hash(self.name)
         
-    def area_factory(self, name, trunks=set(), nodes=set()):
+    def area_factory(self, name, id=0, trunks=set(), nodes=set()):
         if name not in self.areas:
-            self.areas[name] = area.Area(name, self, trunks, nodes)
+            self.areas[name] = area.Area(name, id, self, trunks, nodes)
         return self.areas[name]
         
     def add_to_AS(self, area, *objects):

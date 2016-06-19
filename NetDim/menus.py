@@ -4,6 +4,7 @@
 
 import tkinter as tk
 import AS
+import config
 
 class RightClickMenu(tk.Menu):
     def __init__(self, event, scenario):
@@ -27,6 +28,11 @@ class RightClickMenu(tk.Menu):
             trunk ,= scenario.so["link"]
             if trunk.network_type == "trunk" and trunk.AS:
                 self.add_command(label="Simulate failure", command=lambda: self.simulate_failure(trunk, scenario))
+                
+        # exactly one node: configuration menu
+        if not scenario.so["link"] and len(scenario.so["node"]) == 1:
+            node ,= scenario.so["node"]
+            self.add_command(label="Configuration", command=lambda: self.configure(node, scenario))
         
         # exactly one object: property window 
         if len(scenario.so["node"]) == 1 or len(scenario.so["link"]) == 1:
@@ -72,6 +78,10 @@ class RightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def simulate_failure(self, trunk, scenario):
         scenario.simulate_failure(trunk)
+        
+    @empty_selection_and_destroy_menu
+    def configure(self, node, scenario):
+        config.Configuration(node, scenario)
     
     @empty_selection_and_destroy_menu
     def show_object_properties(self, scenario):

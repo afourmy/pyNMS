@@ -44,8 +44,8 @@ class NetDim(tk.Tk):
         "y", 
         "longitude", 
         "latitude", 
-        "IP_address", 
-        "subnet_mask", 
+        "ipaddress", 
+        "subnetmask", 
         "AS"
         )
         
@@ -70,7 +70,13 @@ class NetDim(tk.Tk):
         "trafficSD", 
         "trafficDS",
         "flowSD", 
-        "flowDS", 
+        "flowDS",
+        "ipaddressS", 
+        "subnetmaskS", 
+        "interfaceS",
+        "ipaddressD", 
+        "subnetmaskD", 
+        "interfaceD",
         "AS"
         )),
         
@@ -85,8 +91,7 @@ class NetDim(tk.Tk):
         "excluded_trunks", 
         "path", 
         "subnets", 
-        "costSD", 
-        "costDS", 
+        "cost", 
         "traffic", 
         "AS"
         )),
@@ -101,11 +106,45 @@ class NetDim(tk.Tk):
         ))])
         
         self.object_label = collections.OrderedDict([
-        ("Node", ("None", "Name", "Position", "Coordinates", "IP Address")),
-        ("Trunk", ("None", "Name", "Distance", "Cost", "Capacity", "Flow", "Traffic")),
-        ("Route", ("None", "Name", "Distance", "Type", "Path", "Cost", "Subnet", "Traffic")),
-        ("Traffic", ("None", "Name", "Distance", "Throughput"))
-        ])
+        ("Node", 
+        (
+        "None", 
+        "Name", 
+        "Position", 
+        "Coordinates", 
+        "IPAddress"
+        )),
+        
+        ("Trunk", 
+        (
+        "None", 
+        "Name", 
+        "Distance", 
+        "Cost", 
+        "Capacity", 
+        "Flow", 
+        "Traffic", 
+        "IPaddress"
+        )),
+        
+        ("Route", 
+        (
+        "None", 
+        "Name", 
+        "Distance", 
+        "Type", 
+        "Path", 
+        "Cost", 
+        "Subnet", 
+        "Traffic"
+        )),
+        ("Traffic", 
+        (
+        "None", 
+        "Name", 
+        "Distance", 
+        "Throughput"
+        ))])
         
         # object import export (properties)
         self.object_ie = collections.OrderedDict([
@@ -115,8 +154,8 @@ class NetDim(tk.Tk):
         "y", 
         "longitude", 
         "latitude", 
-        "IP_address", 
-        "subnet_mask", 
+        "ipaddress", 
+        "subnetmask", 
         )),
         
         ("trunk", 
@@ -130,7 +169,13 @@ class NetDim(tk.Tk):
         "capacitySD", 
         "capacityDS", 
         "trafficSD",
-        "trafficDS"
+        "trafficDS",
+        "ipaddressS", 
+        "subnetmaskS", 
+        "interfaceS",
+        "ipaddressD", 
+        "subnetmaskD", 
+        "interfaceD",
         )),
         
         ("route", 
@@ -142,9 +187,8 @@ class NetDim(tk.Tk):
         "path_constraints",
         "excluded_nodes", 
         "excluded_trunks", 
-        "costSD", "costDS", 
+        "cost", 
         "subnets", 
-        "traffic"
         )),
         
         ("traffic", 
@@ -170,8 +214,8 @@ class NetDim(tk.Tk):
         # the code for AS export
         self.prop_to_type = {
         "name": str, 
-        "IP_address": str,
-        "subnet_mask": str,
+        "ipaddress": str,
+        "subnetmask": str,
         "x": float, 
         "y": float, 
         "longitude": float, 
@@ -185,6 +229,12 @@ class NetDim(tk.Tk):
         "traffic": float,
         "trafficSD": float,
         "trafficDS": float,
+        "ipaddressS": str,
+        "subnetmaskS": str,
+        "ipaddressD": str,
+        "subnetmaskD": str, 
+        "interfaceS": str,
+        "interfaceD": str,
         "throughput": float,
         "source": convert_node, 
         "destination": convert_node, 

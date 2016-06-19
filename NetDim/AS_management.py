@@ -2,6 +2,7 @@
 # Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
 # Released under the GNU General Public License GPLv3
 
+import area
 import tkinter as tk
 from tkinter import ttk
 from miscellaneous import ObjectListbox, FocusTopLevel
@@ -158,8 +159,8 @@ class ASManagement(FocusTopLevel):
                 # update of the previous node
                 prec_node = trunk.source if sd == "DS" else trunk.destination
             
-    def create_area(self, name):
-        self.AS.area_factory(name)
+    def create_area(self, name, id):
+        self.AS.area_factory(name, id)
         self.dict_listbox["area names"].insert(name)
                 
     def display_area(self, event):
