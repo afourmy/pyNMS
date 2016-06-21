@@ -23,9 +23,11 @@ class ASManagement(FocusTopLevel):
             tk.Label(self, bg="#A1DBCD", text="".join(("AS ",type,"s"))).grid(row=1, column=2*index)
             listbox = ObjectListbox(self, activestyle="none", width=15, height=7)
             self.dict_listbox[type] = listbox
-            yscroll = tk.Scrollbar(self, command=self.dict_listbox[type].yview, orient=tk.VERTICAL)
+            yscroll = tk.Scrollbar(self, 
+                    command=self.dict_listbox[type].yview, orient=tk.VERTICAL)
             listbox.configure(yscrollcommand=yscroll.set)
-            listbox.bind("<<ListboxSelect>>", lambda e, type=type: self.highlight_object(e, type))
+            listbox.bind("<<ListboxSelect>>", 
+                            lambda e, type=type: self.highlight_object(e, type))
             listbox.grid(row=2, column=2*index)
             yscroll.grid(row=2, column=1+2*index, sticky="ns")
             
@@ -36,29 +38,46 @@ class ASManagement(FocusTopLevel):
                             
         # listbox for areas
         for index, type in enumerate(self.area_listbox):
-            tk.Label(self, bg="#A1DBCD", text=type.title()).grid(row=5, column=2*index)
+            lbl = tk.Label(self, bg="#A1DBCD", text=type.title())
             listbox = ObjectListbox(self, activestyle="none", width=15, height=7)
             self.dict_listbox[type] = listbox
-            yscroll = tk.Scrollbar(self, command=self.dict_listbox[type].yview, orient=tk.VERTICAL)
+            yscroll = tk.Scrollbar(self, 
+                    command=self.dict_listbox[type].yview, orient=tk.VERTICAL)
             listbox.configure(yscrollcommand=yscroll.set)
             if type == "area names":
-                listbox.bind("<<ListboxSelect>>", lambda e: self.display_area(e))
+                listbox.bind("<<ListboxSelect>>", 
+                            lambda e: self.display_area(e))
             else:
-                listbox.bind("<<ListboxSelect>>", lambda e, type=type: self.highlight_object(e, type))
+                listbox.bind("<<ListboxSelect>>", 
+                            lambda e, type=type: self.highlight_object(e, type))
+            lbl.grid(row=5, column=2*index)
             listbox.grid(row=6, column=2*index)
             yscroll.grid(row=6, column=1+2*index, sticky="ns")
         
         # find edge nodes of the AS
-        self.button_find_edge_nodes = ttk.Button(self, text="Find edges", command=lambda: self.find_edge_nodes())
-        self.button_create_route = ttk.Button(self, text="Create route", command=lambda: self.create_routes())
+        self.button_find_edge_nodes = ttk.Button(self, text="Find edges", 
+                                command=lambda: self.find_edge_nodes())
+                                
+        self.button_create_route = ttk.Button(self, text="Create route", 
+                                command=lambda: self.create_routes())
         
         # find domain trunks: the trunks between nodes of the AS
-        self.button_find_trunks = ttk.Button(self, text="Find trunks", command=lambda: self.find_trunks())
+        self.button_find_trunks = ttk.Button(self, text="Find trunks", 
+                                command=lambda: self.find_trunks())
         
         # operation on nodes
-        self.button_remove_node_from_AS = ttk.Button(self, text="Remove node", command=lambda: self.remove_selected("node"))
-        self.button_add_to_edges = ttk.Button(self, text="Add to edges", command=lambda: self.add_to_edges())
-        self.button_remove_from_edges = ttk.Button(self, text="Remove edge", command=lambda: self.remove_from_edges())
+        self.button_remove_node_from_AS = ttk.Button(self, text="Remove node", 
+                                command=lambda: self.remove_selected("node"))
+                                
+        self.button_add_to_edges = ttk.Button(self, text="Add to edges", 
+                                command=lambda: self.add_to_edges())
+                                
+        self.button_remove_from_edges = ttk.Button(self, text="Remove edge", 
+                                command=lambda: self.remove_from_edges())
+                                
+        # button to create an area
+        self.button_create_area = ttk.Button(self, text="Create area", 
+                                command=lambda: area.CreateArea(self))
         
         # buttons under the trunks column
         self.button_create_route.grid(row=3, column=0)
@@ -73,8 +92,7 @@ class ASManagement(FocusTopLevel):
         self.button_find_edge_nodes.grid(row=3, column=4)
         self.button_remove_from_edges.grid(row=4, column=4)
             
-        # button to create an area
-        self.button_create_area = ttk.Button(self, text="Create area", command=lambda: area.CreateArea(self))
+        # button under the area column
         self.button_create_area.grid(row=7, column=0)
         
         # at first, the backbone is the only area: we insert it in the listbox
@@ -82,10 +100,9 @@ class ASManagement(FocusTopLevel):
         
         # hide the window when closed
         self.protocol("WM_DELETE_WINDOW", self.withdraw)
+        
         # if the AS is created from an import, close the management window
-        print(imp)
         if imp: 
-            print("test")
             self.withdraw()
         
     ## Functions used directly from the AS Management window
@@ -153,7 +170,7 @@ class ASManagement(FocusTopLevel):
                 # apply the AS routing algorithm, ignoring the failed trunk
                 _, recovery_path = self.AS.algorithm(s, d, self.AS, a_t=a_t)
                 route.r_path[trunk] = recovery_path
-                # we add the route traffic of the trunk (normal mode dimensioning)
+                # we add the route traffic of the trunk (normal dimensioning)
                 sd = (trunk.source == prec_node)*"SD" or "DS"
                 trunk.__dict__["traffic" + sd] += route.traffic
                 # update of the previous node

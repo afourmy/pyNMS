@@ -9,11 +9,30 @@ from miscellaneous import FocusTopLevel
 # http://stackoverflow.com/questions/7546050/switch-between-two-frames-in-tkinter
 # TODO: only one window containing all 5 frames
 class ObjectManagementWindow(FocusTopLevel):
+    
+    read_only = (
+                 "source", 
+                 "destination",
+                 "path",
+                 "flowSD",
+                 "flowDS", 
+                 "AS"
+                )
+                
     def __init__(self, master, type):
         super().__init__()
         n = len(master.object_properties[type])
-        size_per_type = {"router": "180x220", "oxc": "180x220", "host":"180x220", "antenna":"180x220",
-        "regenerator": "180x220", "splitter": "180x220", "trunk": "190x360", "route": "220x370", "traffic": "250x300"}
+        size_per_type = {
+        "router": "180x250", 
+        "oxc": "180x250", 
+        "host":"180x250", 
+        "antenna":"180x250", 
+        "regenerator": "180x250", 
+        "splitter": "180x250", 
+        "trunk": "200x480", 
+        "route": "220x400", 
+        "traffic": "250x400"
+        }
         
         self.geometry(size_per_type[type])
         self.title("Manage {} properties".format(type))
@@ -29,17 +48,20 @@ class ObjectManagementWindow(FocusTopLevel):
             str_var = tk.StringVar()
             self.dict_var[property] = str_var
             label = tk.Label(self, text=property.title(), bg="#A1DBCD")
-            label.grid(row=index+1, pady=5, padx=5, column=0, sticky=tk.W)
-            s = "readonly" if property in ("source","destination","path","flowSD","flowDS", "AS") else tk.NORMAL
+            label.grid(row=index+1, pady=1, padx=5, column=0, sticky=tk.W)
+            s = "readonly" if property in self.read_only else tk.NORMAL
             entry = tk.Entry(self, textvariable=str_var, width=15, state=s)
-            entry.grid(row=index+1, pady=5, padx=5, column=1, sticky=tk.W)
+            entry.grid(row=index+1, pady=1, padx=5, column=1, sticky=tk.W)
     
         # route finding possibilities for a route 
         if type == "route":
-            self.button_compute_path = ttk.Button(self, text="Compute path", command=lambda: self.find_path(master))
-            self.button_compute_path.grid(row=n+1, column=0, columnspan=2, pady=5, padx=5)
+            self.button_compute_path = ttk.Button(self, text="Compute path", 
+                                    command=lambda: self.find_path(master))
+            self.button_compute_path.grid(row=n+1, column=0, columnspan=2, 
+                                                                pady=5, padx=5)
         
-        self.button_save_obj = ttk.Button(self, text="Save", command=lambda: self.save_obj(master))
+        self.button_save_obj = ttk.Button(self, text="Save", 
+                                    command=lambda: self.save_obj(master))
         self.button_save_obj.grid(row=0,column=1, columnspan=2, pady=5, padx=5)
         
         # hide the window when closed
@@ -50,19 +72,24 @@ class ObjectManagementWindow(FocusTopLevel):
         name = self.dict_var["name"].get()
         source = master.cs.ntw.nf(name=self.dict_var["source"].get())
         destination = master.cs.ntw.nf(name=self.dict_var["destination"].get())
-        excluded_trunks = filter(None, self.dict_var["excluded_trunks"].get().strip().split(","))
-        excluded_nodes = filter(None, self.dict_var["excluded_nodes"].get().strip().split(","))
-        print(self.dict_var["path_constraints"].get())
-        path_constraints = master.prop_to_type["path_constraints"](self.dict_var["path_constraints"].get())
-        print(path_constraints)
-        #path_constraints = filter(None, self.dict_var["path_constraints"].get().strip().split(","))
+        ex_trunks = self.dict_var["excluded_trunks"].get().strip().split(",")
+        excluded_trunks = filter(None, ex_trunks)
+        ex_nodes = self.dict_var["excluded_nodes"].get().strip().split(",")
+        excluded_nodes = filter(None, ex_nodes)
+        pc = self.dict_var["path_constraints"].get()
+        path_constraints = master.prop_to_type["path_constraints"](pc)
         if excluded_trunks:
             l_excluded_trunks = {master.cs.ntw.lf(name=t) for t in excluded_trunks}
         if excluded_nodes:
             l_excluded_nodes = {master.cs.ntw.nf(name=n) for n in excluded_nodes}
-        # if path_constraints:
-        #     l_path_constraints = [master.cs.ntw.nf(name=n) for n in path_constraints]
-        return (name, source, destination, l_excluded_trunks, l_excluded_nodes, path_constraints)
+        return (
+                name, 
+                source, 
+                destination, 
+                l_excluded_trunks, 
+                l_excluded_nodes, 
+                path_constraints
+                )
         
     def find_path(self, master):
         name, *parameters = self.get_user_input(master)
@@ -108,7 +135,6 @@ class ObjectManagementWindow(FocusTopLevel):
                 setattr(self.current_obj, property, self.current_path)
             else:
                 if property not in ("AS",):
-                    print(property, str_var.get())
                     value = master.prop_to_type[property](str_var.get())
                     setattr(self.current_obj, property, value)
             # refresh the label if it was changed

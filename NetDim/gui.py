@@ -337,11 +337,11 @@ class NetDim(tk.Tk):
         }
         
         self.dict_size_image = {
-        "general": {general: (75, 75) for general in (
-        "netdim", 
-        "motion", 
-        "creation"
-        )},
+        "general": {
+        "netdim": (75, 75), 
+        "motion": (75, 75), 
+        "multi-layer": (75, 75)
+        },
         
         "l_type": {
         l_type: (85, 15) for l_type in self.cs.ntw.link_type
@@ -356,8 +356,7 @@ class NetDim(tk.Tk):
         
         "drawing": {
         "draw": (50, 50), 
-        "stop": (50, 50), 
-        "multi-layer": (160, 120)
+        "stop": (50, 50)
         }}
         
         for color in ["default", "red"]:

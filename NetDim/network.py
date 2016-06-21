@@ -36,10 +36,11 @@ class Network(object):
     
     def __init__(self, scenario):
         # pn for "pool network"
-        self.pn = {"trunk": {}, "node": {}, "route": {}, "traffic": {}, "AS": {}}
+        self.pn = {"trunk": {}, "node": {}, "route": {}, "traffic": {}}
+        self.pnAS = {}
         self.scenario = scenario
         self.graph = defaultdict(lambda: defaultdict(set))
-        self.cpt_link, self.cpt_node, self.cpt_AS = (0,)*3
+        self.cpt_link = self.cpt_node = self.cpt_AS = 1
         
         # this parameter is used for failure simulation, to display the 
         # recovery path of a route considering the failed trunk
@@ -59,11 +60,11 @@ class Network(object):
         return self.pn[link_type][name]
         
     # "nf" is the node factory. Creates or retrieves any type of nodes
-    def nf(self, *param, node_type="router", name=None):
+    def nf(self, *p, node_type="router", name=None):
         if not name:
             name = "node" + str(self.cpt_node)
         if name not in self.pn["node"]:
-            self.pn["node"][name] = self.node_type_to_class[node_type](name, *param)
+            self.pn["node"][name] = self.node_type_to_class[node_type](name, *p)
             self.cpt_node += 1
         return self.pn["node"][name]
         
@@ -79,23 +80,23 @@ class Network(object):
                    ):
         if not name:
             name = "AS" + str(self.cpt_AS)
-        if name not in self.pn["AS"]:
+        if name not in self.pnAS:
             # creation of the AS
-            self.pn["AS"][name] = AS.AutonomousSystem(
-                                                      self.scenario, 
-                                                      _type, 
-                                                      name, 
-                                                      trunks, 
-                                                      nodes, 
-                                                      edges,
-                                                      routes, 
-                                                      imp
-                                                      )
+            self.pnAS[name] = AS.AutonomousSystem(
+                                                  self.scenario, 
+                                                  _type, 
+                                                  name, 
+                                                  trunks, 
+                                                  nodes, 
+                                                  edges,
+                                                  routes, 
+                                                  imp
+                                                  )
             # increase the AS counter by one
             self.cpt_AS += 1
-        return self.pn["AS"][name]
+        return self.pnAS[name]
         
-    # "of" is the object factory: returns an object, link or node, from its name
+    # "of" is the object factory: returns a link or a node from its name
     def of(self, name, _type):
         if _type == "node":
             return self.nf(name=name)
@@ -134,10 +135,10 @@ class Network(object):
         
     def number_of_links_between(self, nodeA, nodeB):
         return sum(
-        n == nodeB 
-        for _type in self.link_type 
-        for n, _ in self.graph[nodeA][_type]
-        )
+                   n == nodeB 
+                   for _type in self.link_type 
+                   for n, _ in self.graph[nodeA][_type]
+                   )
         
     def links_between(self, nodeA, nodeB, _type="all"):
         if _type == "all":
@@ -154,8 +155,15 @@ class Network(object):
         # reset the traffic for all trunks
         for trunk in self.pn["trunk"].values():
             trunk.trafficSD = trunk.trafficDS = 0.
+        
+        # for all OSPF and IS-IS AS, fill the ABR/L1L2 sets
+        for AS in self.pnAS.values():
+            for node in AS.pAS["node"]:
+                if len(node.AS[AS]) > 1:
+                    AS.border_routers.add(node)
+        
         # create all AS routes
-        for AS in self.pn["AS"].values():
+        for AS in self.pnAS.values():
             AS.management.create_routes()
         # we reset the traffic for all routes and for routes that do not 
         # belong to an AS, we find a path based on the route constraints (~CSPF) 
@@ -197,7 +205,7 @@ class Network(object):
                 # update of the previous node
                 prec_node = link.source if sd == "DS" else link.destination
                 
-        for AS in self.pn["AS"].values():
+        for AS in self.pnAS.values():
             # we dimension the trunks of all AS routes 
             AS.management.link_dimensioning()
         self.ip_allocation()
@@ -360,14 +368,20 @@ class Network(object):
             target_area ,= target.AS[ISIS_AS]
         
         # step indicates what we have to do:
-        # step 1 means we are in the source area, heading for the backbone
-        # step 2 means we are in the backbone, heading for the target area
+        # if step is False, it means we are in the source area, heading 
+        # for the backbone. The traffic will be routed to the closest L1/L2
+        # router of the source area.
+        # if step is True, it means we are in the backbone or the target area, 
+        # heading to the destination edge via the shortest path.
         step = source_area in (backbone, target_area)
+        
+        # when heading for the destination, we are allowed to use only nodes
+        # that belong to the backbone or to the destination area
+        allowed = backbone.pa["node"] | target_area.pa["node"]
         
         prec_node = {i: None for i in a_n}
         prec_link = {i: None for i in a_n}
         visited = {i: False for i in a_n}
-
         dist = {i: float("inf") for i in a_n}
         dist[source] = 0
         heap = [(0, source)]
@@ -386,10 +400,12 @@ class Network(object):
                     # or in failure 
                     if neighbor not in a_n: continue
                     if adj_trunk not in a_t: continue
-                    # if step 1, we use only L1 or L1/L2 nodes (L1 source area)
+                    # if step is False, we use only L1 or L1/L2 nodes that 
+                    # belong to the source area
                     if not step and neighbor not in source_area.pa["node"]: continue
-                    # if step2, we use only backbone nodes (L1/L2)
-                    if step and neighbor not in backbone.pa["node"] | target_area.pa["node"]: continue
+                    # else, we use only backbone nodes (L1/L2 or L2) or nodes
+                    # that belong to the destination area
+                    if step and neighbor not in allowed: continue
                     dist_neighbor = dist_node + getattr(adj_trunk, "cost" + sd)
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
@@ -416,7 +432,6 @@ class Network(object):
         prec_node = {i: None for i in self.pn["node"].values()}
         prec_link = {i: None for i in self.pn["node"].values()}
         visited = {i: False for i in self.pn["node"].values()}
-
         dist = {i: float("inf") for i in self.pn["node"].values()}
         dist[source] = 0
         heap = [(0, source)]
@@ -428,7 +443,8 @@ class Network(object):
                 visited[node] = True
                 if node == target:
                     break
-                for neighbor, adj_link in self.graph[node]["trunk"] | self.graph[node]["route"]:
+                adj_links = self.graph[node]["trunk"] | self.graph[node]["route"]
+                for neighbor, adj_link in adj_links:
                     sd = (node == adj_link.source)*"SD" or "DS"
                     # if the link is a trunk and belongs to an AS,  
                     # we ignore it because we use only AS's routes
@@ -436,7 +452,7 @@ class Network(object):
                     # if the link is a route, we make sure the current node is 
                     # the source of the route, because routes are unidirectionnal
                     if adj_link.network_type == "route" and adj_link.source != node: continue
-                    dist_neighbor = dist_node + getattr(adj_link, "cost" + sd)
+                    dist_neighbor = dist_node + getattr(adj_link, "cost")
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
                         prec_node[neighbor] = node
@@ -569,7 +585,7 @@ class Network(object):
     
     def reset_flow(self):
         for link in self.pn["trunk"].values():
-            link.flowSD, link.flowDS = 0, 0
+            link.flowSD = link.flowDS = 0
     
     ## 1) Ford-Fulkerson algorithm
         
@@ -584,7 +600,12 @@ class Network(object):
             current_flow = getattr(adj_link, "flow" + sd)
             if cap > current_flow and not visit[neighbor]:
                 residual_capacity = min(val, cap - current_flow)
-                global_flow = self.augment_ff(residual_capacity, neighbor, target, visit)
+                global_flow = self.augment_ff(
+                                              residual_capacity, 
+                                              neighbor, 
+                                              target, 
+                                              visit
+                                              )
                 if global_flow > 0:
                     adj_link.__dict__["flow" + sd] += global_flow
                     adj_link.__dict__["flow" + ds] -= global_flow
@@ -596,7 +617,10 @@ class Network(object):
         while self.augment_ff(float("inf"), s, d, {n:0 for n in self.graph}):
             pass
         # flow leaving from the source 
-        return sum(getattr(adj, "flow" + (s==adj.source)*"SD" or "DS") for _, adj in self.graph[s]["trunk"])
+        return sum(
+                  getattr(adj, "flow" + (s==adj.source)*"SD" or "DS") 
+                  for _, adj in self.graph[s]["trunk"]
+                  )
         
     ## 2) Edmonds-Karp algorithm
         
@@ -640,7 +664,10 @@ class Network(object):
                 trunk.__dict__["flow" + ds] += global_flow
                 trunk.__dict__["flow" + sd] -= global_flow
                 curr_node = prec_node 
-        return sum(getattr(adj, "flow" + ((source==adj.source)*"SD" or "DS")) for _, adj in self.graph[source]["trunk"])
+        return sum(
+                   getattr(adj, "flow" + ((source==adj.source)*"SD" or "DS")) 
+                   for _, adj in self.graph[source]["trunk"]
+                  )
         
     ## Minimum spanning tree algorithms 
     
@@ -691,7 +718,10 @@ class Network(object):
             if node_r not in (s, t):
                 for node in new_graph:
                     for neighbor in new_graph[node]:
-                        row.append(1. if neighbor == node_r else -1. if node == node_r else 0.)
+                        row.append(
+                             1. if neighbor == node_r 
+                       else -1. if node == node_r 
+                       else  0.)
                 A.append(row)
                 
         b, h, x = [0.]*(v-2), h+[0.]*n, numpy.eye(n, n)
@@ -711,7 +741,10 @@ class Network(object):
             trunk.flowSD = new_graph[src][dest]
             trunk.flowDS = new_graph[dest][src]
 
-        return sum(getattr(adj, "flow" + ((s==adj.source)*"SD" or "DS")) for _, adj in self.graph[s]["trunk"])
+        return sum(
+                   getattr(adj, "flow" + ((s==adj.source)*"SD" or "DS")) 
+                   for _, adj in self.graph[s]["trunk"]
+                  )
             
     ## Distance functions
     
@@ -809,15 +842,15 @@ class Network(object):
     
     ## 1) Hypercube generation
             
-    def generate_hypercube(self, n):
+    def generate_hypercube(self, n, _type):
         # we create a n-dim hypercube by connecting two (n-1)-dim hypercubes
         i = 0
-        graph_nodes = [self.nf(str(0))]
+        graph_nodes = [self.nf(name=str(0), node_type=_type)]
         graph_links = []
         while i < n+1:
             for k in range(len(graph_nodes)):
                 # creation of the nodes of the second hypercube
-                graph_nodes.append(self.nf(str(k+2**i)))
+                graph_nodes.append(self.nf(name=str(k+2**i), node_type=_type))
             for trunk in graph_links[:]:
                 # connection of the two hypercubes
                 source, destination = trunk.source, trunk.destination
@@ -830,45 +863,45 @@ class Network(object):
             
     ## 2) Square tiling generation
             
-    def generate_square_tiling(self, n):
+    def generate_square_tiling(self, n, _type):
         for i in range(n**2):
             n1, n2, n3 = str(i), str(i-1), str(i+n)
             if i-1 > -1 and i%n:
-                self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
+                self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n2, node_type=_type))
             if i+n < n**2:
-                self.lf(s=self.nf(name=n1), d=self.nf(name=n3))
+                self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n3, node_type=_type))
                 
     ## 3) Tree generation
                 
-    def generate_tree(self, n):
+    def generate_tree(self, n, _type):
         for i in range(2**n-1):
             n1, n2, n3 = str(i), str(2*i+1), str(2*i+2)
-            self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
-            self.lf(s=self.nf(name=n1), d=self.nf(name=n3))
+            self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n2, node_type=_type))
+            self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n3, node_type=_type))
             
     ## 4) Star generation
             
-    def generate_star(self, n):
+    def generate_star(self, n, _type):
         nb_node = len(self.pn["node"])
         for i in range(n):
             n1, n2 = str(nb_node), str(nb_node+1+i)
-            self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
+            self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n2, node_type=_type))
             
     ## 5) Full-meshed network generation
             
-    def generate_full_mesh(self, n):
+    def generate_full_mesh(self, n, _type):
         nb_node = len(self.pn["node"])
         for i in range(n):
             for j in range(i):
                 n1, n2 = str(nb_node+j), str(nb_node+i)
-                self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
+                self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n2, node_type=_type))
                 
     ## 6) Ring generation
                 
-    def generate_ring(self, n):
+    def generate_ring(self, n, _type):
         nb_node = len(self.pn["node"])
         for i in range(n):
             n1, n2 = str(nb_node+i), str(nb_node+(1+i)%n)
-            self.lf(s=self.nf(name=n1), d=self.nf(name=n2))
+            self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n2, node_type=_type))
             
             

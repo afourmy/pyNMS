@@ -53,6 +53,10 @@ class AutonomousSystem(object):
         "OSPF": scenario.ntw.ISIS_routing
         }
         self.algorithm = self.AS_type_to_class[type]
+        if type in ("ISIS", "OSPF"):
+            # for an IS-IS domain, this set contains all L1/L2 nodes.
+            # for an OSPF domain, it contains all ABRs (Area Border Router)
+            self.border_routers = set()
         
     def __repr__(self):
         return self.name
@@ -115,7 +119,7 @@ class ModifyAS(CustomTopLevel):
         # TODO make it a dict
         if mode == "add":
             command = lambda: self.add(scenario, *obj)
-            values = tuple(map(str, scenario.ntw.pn["AS"].values()))
+            values = tuple(map(str, scenario.ntw.pnAS.values()))
         elif mode == "remove":
             values = tuple(map(str, AS))
             command = lambda: self.remove_from_AS(scenario, *obj)

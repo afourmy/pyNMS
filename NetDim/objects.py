@@ -64,17 +64,8 @@ class Router(Node):
     type = "router"
     imagex, imagey = 33, 25
     
-    def __init__(
-                 self, 
-                 name, 
-                 x = 100, 
-                 y = 100, 
-                 longitude = 0, 
-                 latitude = 0, 
-                 ipaddress = "0.0.0.0",
-                 subnetmask = "255.255.255.255"
-                 ):
-        super().__init__(name, x, y, longitude, latitude, ipaddress, subnetmask)
+    def __init__(self, *args):
+        super().__init__(*args)
         
 class OXC(Node):
 
@@ -82,17 +73,8 @@ class OXC(Node):
     type = "oxc"
     imagex, imagey = 35, 32
     
-    def __init__(
-                 self, 
-                 name, 
-                 x = 100, 
-                 y = 100, 
-                 longitude = 0, 
-                 latitude = 0, 
-                 ipaddress = "0.0.0.0",
-                 subnetmask = "255.255.255.255"
-                 ):
-        super().__init__(name, x, y, longitude, latitude, ipaddress, subnetmask)
+    def __init__(self, *args):
+        super().__init__(*args)
         
 class Host(Node):
 
@@ -100,17 +82,8 @@ class Host(Node):
     type = "host"
     imagex, imagey = 35, 32
     
-    def __init__(
-                 self, 
-                 name, 
-                 x = 100, 
-                 y = 100, 
-                 longitude = 0, 
-                 latitude = 0, 
-                 ipaddress = "0.0.0.0",
-                 subnetmask = "255.255.255.255"
-                 ):
-        super().__init__(name, x, y, longitude, latitude, ipaddress, subnetmask)
+    def __init__(self, *args):
+        super().__init__(*args)
         
 class Antenna(Node):
 
@@ -118,17 +91,8 @@ class Antenna(Node):
     type = "antenna"
     imagex, imagey = 35, 32
     
-    def __init__(
-                 self, 
-                 name, 
-                 x = 100, 
-                 y = 100, 
-                 longitude = 0, 
-                 latitude = 0, 
-                 ipaddress = "0.0.0.0",
-                 subnetmask = "255.255.255.255"
-                 ):
-        super().__init__(name, x, y, longitude, latitude, ipaddress, subnetmask)
+    def __init__(self, *args):
+        super().__init__(*args)
         
 class Regenerator(Node):
 
@@ -136,17 +100,8 @@ class Regenerator(Node):
     type = "regenerator"
     imagex, imagey = 64, 48
     
-    def __init__(
-                 self, 
-                 name, 
-                 x = 100, 
-                 y = 100, 
-                 longitude = 0, 
-                 latitude = 0, 
-                 ipaddress = "0.0.0.0",
-                 subnetmask = "255.255.255.255"
-                 ):
-        super().__init__(name, x, y, longitude, latitude, ipaddress, subnetmask)
+    def __init__(self, *args):
+        super().__init__(*args)
         
 class Splitter(Node):
 
@@ -154,17 +109,8 @@ class Splitter(Node):
     type = "splitter"
     imagex, imagey = 64, 48
     
-    def __init__(
-                 self, 
-                 name, 
-                 x = 100, 
-                 y = 100, 
-                 longitude = 0, 
-                 latitude = 0, 
-                 ipaddress = "0.0.0.0",
-                 subnetmask = "255.255.255.255"
-                 ):
-        super().__init__(name, x, y, longitude, latitude, ipaddress, subnetmask)
+    def __init__(self, *args):
+        super().__init__(*args)
         
 ## Links
 class Link(object):

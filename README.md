@@ -80,6 +80,22 @@ When highlighting a route's path, the recovery path is display.
 
 ![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/failure_simulation.PNG)
 
+## Automatic device configuration
+
+Netdim automatically assigns IP addresses and interfaces to all devices. After an AS is created, Netdim shows all Cisco commands required to configure the protocol on the device.
+
+![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/config.PNG)
+
+## Transportation problem
+
+The transportation problem consists in finding the maximum flow that can transit through the network: it is a multi-source multi-destination maximum flow problem.
+Three methods were implemented in NetDim to solve the transportation problem:
+
+- Ford-Fulkerson algorithm
+- Edmond-Karps algorithm
+- Linear programming with GLPK
+
+
 # To be done
 
 ## Algorithms
@@ -123,14 +139,15 @@ When highlighting a route's path, the recovery path is display.
 - [x] Left-clicking on an object updates the property window if it is deiconified
 - [x] Hide/show display per type of objects
 - [x] Draw an arc instead of a straigth line when there are several links between two nodes.
+- [x] Per-layer 3D display with nodes duplication
+- [x] When switching to simple oval display, keep track of the size of the object so that it is always the same.
+- [x] Remove switch to creation button
 - [ ] Add arrows on trunks for route highlight
 - [ ] Change the mouse pointeur when going over an object
-- [ ] Per-layer 3D display with nodes duplication
 - [ ] Modified Dijkstra to find the longest path/widest path
 - [ ] Capacity label display: should be with an arrow
 - [ ] Protection highlight: highlight first the protection path's links, then the working path's.
 - [ ] Generate text and shapes on the canvas
-- [ ] When switching to simple oval display, keep track of the size of the object so that it is always the same.
 - [ ] Label position issue + label deletion for routes after calculate all
 - [ ] Highlight should include the nodes too
 - [ ] Upload icon with all possible colors and have a special folder for them
@@ -138,13 +155,13 @@ When highlighting a route's path, the recovery path is display.
 - [ ] Click on a node should select only the node (erase previous selection). Ctrl to add to selection
 - [ ] Center on view for one node and multiple node
 - [ ] Highlight the LL when highlighting the path
-- [ ] Remove switch to creation button
 - [ ] Drawing: choose between "random drawing, random + spring layout, draw at position, spring layout (warning if colocated nodes)
 - [ ] Highlight recovery path with dash
 - [ ] Highlight routes / traffic methods should depend on whether there is or not a link in failure.
 
 
 ## Routing
+- [x] ISIS routing
 - [ ] Traffic link routing. All nodes that belongs to an AS should be excluded.
 - [ ] BGP routing
 - [ ] subnet and filtering system on routes/traffic link
@@ -153,16 +170,15 @@ When highlighting a route's path, the recovery path is display.
 - [ ] Dimensioning with Maximally redundant tree
 - [ ] OSPF routing. 
 - [ ] OSPF options: route leaking, multi-ABR, multi-area links, etc (RFC 5086, ...)
-- [ ] ISIS routing
 - [ ] IS-IS improvement: route leaking option (RFC 2966)
 - [ ] Load balancing for the edges of an AS.
 
 ## Protection
+- [x] Failure simulation system to see where the traffic is going. Route's protection path highlight.
 - [ ] FRR implementation for MPLS. A LSP can have a protection mode (Local Detour to Merge point, Local Detour to Destination, Next-Hop protection) or a user-defined back-up LSP.
 - [ ] Protection by pruning the failed link(s): dimensioning considering IGP convergence
 - [ ] Highlight the protection path with a different color
 - [ ] K-failure AS dimensioning
-- [ ] Failure simulation system to see where the traffic is going. Route's protection path highlight.
 
 ## AS
 - [x] Add to/remove from AS should be done graphically only: no need for buttons.
@@ -225,10 +241,10 @@ When highlighting a route's path, the recovery path is display.
 
 
 ## Config generation
+- [x] Generate OSPF config
+- [x] Generate RIP config
 - [ ] Have an "AS number" and an "area" number. BB is 0 all the time
-- [ ] Generate RIP config
 - [ ] Generate IS-IS config
-- [ ] Generate OSPF config
 - [ ] Generate MPLS config
 - [ ] Generate RSTP config 
 
