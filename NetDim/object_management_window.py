@@ -118,7 +118,7 @@ class ObjectManagementWindow(FocusTopLevel):
     def save_obj(self, master):
         for property, str_var in self.dict_var.items():
             # update dict when the object is renamed
-            # if it is a node, we need to remove and readd the entry in the graph dict
+            # if it is a node, we need to remove and read the entry in the graph dict
             # for all objects, we need to update pn
             if property == "name":
                 name = getattr(self.current_obj, property)

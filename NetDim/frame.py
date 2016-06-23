@@ -5,6 +5,7 @@
 import tkinter as tk
 from tkinter import ttk
 from miscellaneous import CustomTopLevel
+import drawing_options_window
 
 class MainFrame(tk.Frame):
     
@@ -24,7 +25,8 @@ class MainFrame(tk.Frame):
         self.type_to_action = {
         "netdim": lambda: master.cs.ntw.calculate_all(),
         "motion": lambda: self.switch_to(master, "motion"),
-        "draw": lambda: master.cs.spring_based_drawing(master),
+        "draw": lambda: drawing_options_window.NetworkDrawing(
+                                master.cs, master.cs.ntw.pn["node"].values()),
         "stop": lambda: master.cs._cancel(),
         "multi-layer": lambda: master.cs.switch_display_mode(),
         }
@@ -33,12 +35,14 @@ class MainFrame(tk.Frame):
             self.type_to_action[topo] = lambda t=topo: NetworkDimension(master.cs, t)
             
         for obj_type in master.object_properties:
-            self.type_to_action[obj_type] = lambda o=obj_type: self.change_creation_mode(master, o)
+            cmd = lambda o=obj_type: self.change_creation_mode(master, o)
+            self.type_to_action[obj_type] = cmd
         
         for button_type, cmd in self.type_to_action.items():
             button = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=cmd)
             if button_type in ("trunk", "route", "traffic", "draw", "stop"):
-                button.configure(text=button_type.capitalize(), compound="top", font=self.font)
+                button.configure(text=button_type.capitalize(), 
+                                            compound="top", font=self.font)
             self.type_to_button[button_type] = button
         
         # netdim mode: motion or creation
@@ -65,6 +69,7 @@ class MainFrame(tk.Frame):
                                                 pady=5, padx=5, sticky=tk.W)
         self.type_to_button["traffic"].grid(row=8, column=0, columnspan=2, 
                                                 pady=5, padx=5, sticky=tk.W)
+                                                
         sep = ttk.Separator(self, orient=tk.HORIZONTAL)
         sep.grid(row=9, columnspan=4, sticky="ew")
         
@@ -76,6 +81,7 @@ class MainFrame(tk.Frame):
                                                 pady=5, padx=20, sticky="nsew")
         self.type_to_button["stop"].grid(row=11, column=2, columnspan=2, 
                                                 pady=5, padx=20, sticky="nsew")
+                                                
         sep = ttk.Separator(self, orient=tk.HORIZONTAL)
         sep.grid(row=12, columnspan=4, sticky="ew")
         
@@ -87,7 +93,9 @@ class MainFrame(tk.Frame):
         self.type_to_button["star"].grid(row=14,column=1, sticky="w")
         self.type_to_button["full-mesh"].grid(row=14,column=2, sticky="w")
         self.type_to_button["ring"].grid(row=14,column=3, sticky="w")
-        sep = ttk.Separator(self, orient=tk.HORIZONTAL).grid(row=15, columnspan=4, sticky="ew")
+        
+        sep = ttk.Separator(self, orient=tk.HORIZONTAL)
+        sep.grid(row=15, columnspan=4, sticky="ew")
 
         
     def switch_to(self, master, mode):

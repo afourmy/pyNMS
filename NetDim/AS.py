@@ -184,7 +184,7 @@ class ASCreation(CustomTopLevel):
         # List of AS type
         self.var_AS_type = tk.StringVar()
         self.AS_type_list = ttk.Combobox(self, textvariable=self.var_AS_type, width=6)
-        self.AS_type_list["values"] = ("RIP", "IS-IS", "OSPF", "MPLS", "RSTP")
+        self.AS_type_list["values"] = ("RIP", "ISIS", "OSPF", "MPLS", "RSTP")
         self.AS_type_list.current(0)
 
         # retrieve and save node data

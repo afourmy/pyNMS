@@ -4,7 +4,7 @@
 
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous import FocusTopLevel
+from miscellaneous import FocusTopLevel, CustomTopLevel
 
 class DrawingOptions(FocusTopLevel):
     def __init__(self, master):
@@ -57,11 +57,11 @@ class DrawingOptions(FocusTopLevel):
         self.entry_opd = tk.Entry(self, textvariable=self.var_opd, width=15)
         
         # Raideur du ressort d
-        self.label_raideur = ttk.Label(self, text = "Raideur")
-        self.var_raideur = tk.DoubleVar()
-        self.var_raideur.set(master.raideur)
-        self.ender_variables.append(self.var_raideur)
-        self.entry_raideur = tk.Entry(self, textvariable=self.var_raideur, width=15)
+        self.label_L0 = ttk.Label(self, text = "Raideur")
+        self.var_L0 = tk.DoubleVar()
+        self.var_L0.set(master.L0)
+        self.ender_variables.append(self.var_L0)
+        self.entry_L0 = tk.Entry(self, textvariable=self.var_L0, width=15)
         
         # drawing button
         self.bouton_force_based = ttk.Button(self, text="Force-based", command = lambda: self.spring_layout())
@@ -80,8 +80,8 @@ class DrawingOptions(FocusTopLevel):
         self.entry_eta.grid(row=3, column=1, sticky=tk.W)
         self.label_delta.grid(row=4, column=0, pady=5, padx=5, sticky=tk.W)
         self.entry_delta.grid(row=4, column=1, sticky=tk.W)
-        self.label_raideur.grid(row=5, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_raideur.grid(row=5, column=1, sticky=tk.W)
+        self.label_L0.grid(row=5, column=0, pady=5, padx=5, sticky=tk.W)
+        self.entry_L0.grid(row=5, column=1, sticky=tk.W)
         self.label_opd.grid(row=0, column=2, pady=5, padx=5, sticky=tk.W)
         self.entry_opd.grid(row=0, column=3, sticky=tk.W)
 
@@ -96,6 +96,45 @@ class DrawingOptions(FocusTopLevel):
     
     def save_value(self, master):
         # retrieve variables values
-        master.alpha, master.beta, master.k, master.eta, master.delta, master.raideur = [v.get() for v in self.ender_variables]
+        master.alpha, master.beta, master.k, master.eta, master.delta, master.L0 = [v.get() for v in self.ender_variables]
+        
+class NetworkDrawing(CustomTopLevel):    
+    def __init__(self, scenario, nodes):
+        super().__init__()
+        self.geometry("160x100")
+        self.title("Network drawing")
+        
+        drawing_modes = (
+        "Random drawing",
+        "Force-based drawing",
+        "Random + Force-based drawing"
+        )
+        
+        # List of drawing modes
+        self.drawing_label = ttk.Label(self, text="Drawing mode :")
+        self.var_mode = tk.StringVar()
+        self.drawing_mode = ttk.Combobox(self, textvariable=self.var_mode, width=20)
+        self.drawing_mode["values"] = drawing_modes
+        self.drawing_mode.current(0)
+    
+        # confirmation button
+        self.OK_button = ttk.Button(self, text="OK",
+                            command=lambda: self.draw_graph(scenario, nodes))
+        
+        # position in the grid
+        self.drawing_label.grid(row=0, column=0, pady=5, padx=5)
+        self.drawing_mode.grid(row=1, column=0, pady=5, padx=5, sticky="nsew")
+        self.OK_button.grid(row=2, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
+        
+    def draw_graph(self, scenario, nodes):
+        mode = self.var_mode.get()
+        if mode == "Random drawing":
+            scenario.draw_objects(nodes, True)
+        elif mode == "Force-based drawing":
+            scenario.spring_based_drawing(scenario.master, nodes)
+        elif mode == "Random + Force-based":
+            scenario.draw_objects(nodes, True)
+            scenario.spring_based_drawing(scenario.master, nodes)
+        self.destroy()
         
         

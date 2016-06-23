@@ -229,6 +229,8 @@ class NetDim(tk.Tk):
         "traffic": float,
         "trafficSD": float,
         "trafficDS": float,
+        "flowSD": int,
+        "flowDS": int,
         "ipaddressS": str,
         "subnetmaskS": str,
         "ipaddressD": str,
@@ -311,8 +313,10 @@ class NetDim(tk.Tk):
         self.k = 0.5
         self.eta = 0.5
         self.delta = 0.35
-        self.raideur = 8
+        self.L0 = 8
         self.opd = 0
+        self.drawing_param = (self.alpha, self.beta, self.k, self.eta,
+                                                        self.delta, self.L0)
         
         # drawing options window
         self.drawing_option_window = drawing_options_window.DrawingOptions(self)

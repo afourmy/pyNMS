@@ -5,6 +5,7 @@
 import tkinter as tk
 import AS
 import config
+import drawing_options_window
 
 class RightClickMenu(tk.Menu):
     def __init__(self, event, scenario):
@@ -24,6 +25,11 @@ class RightClickMenu(tk.Menu):
                             command=lambda: self.remove_objects(scenario))
         self.add_command(label="Create AS", 
                             command=lambda: self.create_AS(scenario))  
+                            
+        # only nodes: force-based layout
+        if not scenario.so["link"]:
+            self.add_command(label="Force-based layout", 
+                    command=lambda: self.force_based_layout(scenario))
         
         # exactly one trunk: failure simulation menu
         if not scenario.so["node"] and len(scenario.so["link"]) == 1:
@@ -92,6 +98,10 @@ class RightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def configure(self, node, scenario):
         config.Configuration(node, scenario)
+        
+    @empty_selection_and_destroy_menu
+    def force_based_layout(self, scenario):
+        drawing_options_window.NetworkDrawing(scenario, scenario.so["node"])
     
     @empty_selection_and_destroy_menu
     def show_object_properties(self, scenario):

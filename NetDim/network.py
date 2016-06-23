@@ -452,7 +452,11 @@ class Network(object):
                     # if the link is a route, we make sure the current node is 
                     # the source of the route, because routes are unidirectionnal
                     if adj_link.network_type == "route" and adj_link.source != node: continue
-                    dist_neighbor = dist_node + getattr(adj_link, "cost")
+                    # if the link is a route, it is unidirectional and the
+                    # property is simply cost, but if it is a trunk, there are
+                    # one cost per direction and we retrieve the right one
+                    cost = "cost"*(adj_link.type == "route") or "cost" + sd 
+                    dist_neighbor = dist_node + getattr(adj_link, cost)
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
                         prec_node[neighbor] = node
@@ -719,9 +723,10 @@ class Network(object):
                 for node in new_graph:
                     for neighbor in new_graph[node]:
                         row.append(
-                             1. if neighbor == node_r 
-                       else -1. if node == node_r 
-                       else  0.)
+                                   1. if neighbor == node_r 
+                             else -1. if node == node_r 
+                              else 0.
+                                   )
                 A.append(row)
                 
         b, h, x = [0.]*(v-2), h+[0.]*n, numpy.eye(n, n)
@@ -778,10 +783,10 @@ class Network(object):
         const = k * dl / dist
         return (const * dx, const * dy)
             
-    def spring_layout(self, alpha, beta, k, eta, delta, L0):   
-        for nodeA in self.pn["node"].values():
+    def spring_layout(self, allowed_nodes, alpha, beta, k, eta, delta, L0):
+        for nodeA in allowed_nodes:
             Fx = Fy = 0
-            for nodeB in self.pn["node"].values():
+            for nodeB in allowed_nodes:
                 if nodeA != nodeB:
                     dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
                     dist = self.distance(dx, dy)
@@ -794,7 +799,7 @@ class Network(object):
             nodeA.vx = (nodeA.vx + alpha * Fx) * eta
             nodeA.vy = (nodeA.vy + alpha * Fy) * eta
     
-        for node in self.pn["node"].values():
+        for node in allowed_nodes:
             node.x += round(node.vx * delta)
             node.y += round(node.vy * delta)
             

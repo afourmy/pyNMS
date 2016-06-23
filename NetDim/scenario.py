@@ -498,18 +498,6 @@ class Scenario(tk.Canvas):
         middle_x = link.lpos[0] + 4*(1+(coeff>0))
         middle_y = link.lpos[1] - 12*(coeff>0)
         self.coords(link.lid, middle_x, middle_y)
-            
-    def spring_based_drawing(self, master):
-        if not self._job:
-            self.draw_all()
-            # reset the number of iterations
-            self.drawing_iteration = 0
-        self.drawing_iteration += 1
-        self.ntw.spring_layout(master.alpha, master.beta, master.k, master.eta, master.delta, master.raideur)
-        if not self.drawing_iteration % 5:   
-            for n in self.ntw.pn["node"].values():
-                self.move_node(n)
-        self._job = self.after(1, lambda: self.spring_based_drawing(master))
         
     def frucht(self):
         # update the optimal pairwise distance
@@ -657,6 +645,7 @@ class Scenario(tk.Canvas):
             if obj.network_type == "node":
                 if random_drawing:
                     obj.x, obj.y = random.randint(100,700), random.randint(100,700)
+                    self.move_node(obj)
                 if not obj.image[0]: 
                     self.create_node(obj)
             else:
@@ -664,8 +653,19 @@ class Scenario(tk.Canvas):
              
     def draw_all(self, random=True):
         self.erase_all()
-        for type in ("node", "trunk", "route", "traffic"):
+        for type in self.ntw.pn:
             self.draw_objects(self.ntw.pn[type].values(), random)
+            
+    def spring_based_drawing(self, master, nodes):
+        if not self._job:
+            # reset the number of iterations
+            self.drawing_iteration = 0
+        self.drawing_iteration += 1
+        self.ntw.spring_layout(nodes, *self.master.drawing_param)
+        if not self.drawing_iteration % 5:   
+            for node in nodes:
+                self.move_node(node)
+        self._job = self.after(1, lambda: self.spring_based_drawing(master, nodes))
             
     ## Failure simulation
     
@@ -674,5 +674,8 @@ class Scenario(tk.Canvas):
         self.ntw.failed_trunk = trunk
         source, destination = trunk.source, trunk.destination
         xA, yA, xB, yB = source.x, source.y, destination.x, destination.y
-        img = self.master.img_failure
-        self.id_failure = self.create_image((xA+xB)/2, (yA+yB)/2, image=img)
+        self.id_failure = self.create_image(
+                                            (xA+xB)/2, 
+                                            (yA+yB)/2, 
+                                            image = self.master.img_failure
+                                            )
