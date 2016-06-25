@@ -96,6 +96,13 @@ class Scenario(tk.Canvas):
         # switch the object rectangle selection by pressing space
         self.bind("<space>", self.change_object_selection)
         
+        # add nodes to a current selection by pressing control
+        self.ctrl = False
+        def change_ctrl(value):
+            self.ctrl = value
+        self.bind("<Control-KeyRelease>", lambda _: change_ctrl(False))
+        self.bind("<Control-KeyPress>", lambda _: change_ctrl(True))
+        
     def switch_binding(self):   
         # in case there were selected nodes, so that they don't remain highlighted
         self.unhighlight_all()
@@ -175,8 +182,20 @@ class Scenario(tk.Canvas):
         # save the initial position to compute the delta for multiple nodes motion
         main_node_selected = self.object_id_to_object[self.drag_item]
         self._start_pos_main_node = main_node_selected.x, main_node_selected.y
-        for selected_node in self.so["node"]:
-            self._dict_start_position[selected_node] = [selected_node.x, selected_node.y]
+        if main_node_selected in self.so["node"]:
+            # for all selected node (sn), we store the initial position
+            for sn in self.so["node"]:
+                self._dict_start_position[sn] = [sn.x, sn.y]
+        else:
+            # we forget about the old selection, consider only the 
+            # newly selected node, and update the dict of start position
+            self.so = {"node": {main_node_selected}, "link": set()}
+            x, y = main_node_selected.x, main_node_selected.y
+            self._dict_start_position[main_node_selected] = [x, y]
+            # we also need to update the highlight to that the old selection
+            # is no longer highlighted but the newly selected node is.
+            self.unhighlight_all()
+            self.highlight_objects(main_node_selected)
             
     @adapt_coordinates
     def find_closest_object(self, event):
@@ -208,8 +227,9 @@ class Scenario(tk.Canvas):
         # create the temporary line, only if there is nothing below
         # this is to avoid drawing a rectangle when moving a node
         if not self.find_overlapping(x-1, y-1, x+1, y+1):
-            self.unhighlight_all()
-            self.so = {"node": set(), "link": set()}
+            if not self.ctrl:
+                self.unhighlight_all()
+                self.so = {"node": set(), "link": set()}
             self._start_position = x, y
             # create the temporary line
             x, y = self._start_position
@@ -434,7 +454,7 @@ class Scenario(tk.Canvas):
             self._refresh_object_label(obj, self._current_object_label[type])
             
     def refresh_all_labels(self):
-        for type in ("node", "trunk", "route", "traffic"):
+        for type in self.ntw.pn:
             self._refresh_object_labels(type)
             
     # show/hide display menu per type of objects
@@ -515,7 +535,6 @@ class Scenario(tk.Canvas):
         if self._job is not None:
             self.after_cancel(self._job)
             self._job = None
-            #self.draw_all(False)
             
     ## TODO repair the 3D view
             
@@ -524,8 +543,10 @@ class Scenario(tk.Canvas):
         curr_image = self.master.dict_image["default"][node.type]
         y = node.y - layer * self.diff_y
         tags = () if layer else (node.type, node.class_type, "object")
-        node.image[layer] = self.create_image(node.x - (node.imagex)/2, y - (node.imagey)/2, image=curr_image, anchor=tk.NW, tags=tags)
-        node.oval[layer] = self.create_oval(node.x-s, y-s, node.x+s, y+s, outline=node.color, fill=node.color, tags=tags)
+        node.image[layer] = self.create_image(node.x - (node.imagex)/2, 
+                y - (node.imagey)/2, image=curr_image, anchor=tk.NW, tags=tags)
+        node.oval[layer] = self.create_oval(node.x-s, y-s, node.x+s, y+s, 
+                                outline=node.color, fill=node.color, tags=tags)
         # create/hide the image/the oval depending on the current mode
         self.itemconfig(node.oval[layer] if self.display_image else node.image[layer], state=tk.HIDDEN)
         if not layer:

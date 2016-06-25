@@ -25,11 +25,21 @@ class Configuration(tk.Toplevel):
             interface_ip = " {name}(config-if)# ip address {ip} {mask}\n"\
                                     .format(name=node.name, ip=ip, mask=mask)
             no_shut = " {name}(config-if)# no shutdown\n".format(name=node.name)
-            exit = " {name}(config-if)# exit\n".format(name=node.name)
             
             self.entry_config.insert("insert", interface_config)
             self.entry_config.insert("insert", interface_ip)
             self.entry_config.insert("insert", no_shut)
+            
+            if any(AS.type == "OSPF" for AS in adj_trunk.AS):
+                direction = "SD" if direction == "S" else "DS"
+                cost = getattr(adj_trunk, "cost" + direction)
+                if cost != 1:
+                    change_cost = (" {name}(config-if)#"
+                                    " ip ospf cost {cost}\n")\
+                                    .format(name=node.name, cost=cost)
+                    self.entry_config.insert("insert", change_cost)
+                    
+            exit = " {name}(config-if)# exit\n".format(name=node.name)
             self.entry_config.insert("insert", exit)
             
         for AS in node.AS:
@@ -69,8 +79,8 @@ class Configuration(tk.Toplevel):
                         interface_ip = (" {name}(config-router)# network" 
                                         " {ip} 0.0.0.3 area {area_id}\n")\
                         .format(name=node.name, ip=ip, area_id=trunk_area.id)
-                        end = " {name}(config-router)# end\n".format(name=node.name, ip=ip)
                         self.entry_config.insert("insert", interface_ip)
+                            
                     else:
                         interface = getattr(adj_trunk, "interface" + direction)
                         pi = " {name}(config-router)# passive-interface {i}\n"\

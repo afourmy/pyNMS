@@ -183,6 +183,9 @@ class Trunk(Link):
         # associating an AS to a set of area the trunks belongs to
         self.AS = defaultdict(set)
         
+    def __lt__(self, other):
+        return hash(self.name)
+        
 class Ethernet(Trunk):
     def __init__(self, name, source, destination, cost=1, capacitySD=3, capacityDS=3, interface="GE"):
         super().__init__(name, source, destination, cost=1, capacitySD=3, capacityDS=3)

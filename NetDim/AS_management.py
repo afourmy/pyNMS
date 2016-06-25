@@ -154,7 +154,8 @@ class ASManagement(FocusTopLevel):
             for eB in self.AS.pAS["edge"]:
                 if eA != eB and eB not in self.AS.routes[eA]:
                     name = "->".join((str(eA), str(eB)))
-                    route = self.scenario.ntw.lf(link_type="route", name=name, s=eA, d=eB)
+                    route = self.scenario.ntw.lf(link_type="route", 
+                                                        name=name, s=eA, d=eB)
                     _, route.path = self.AS.algorithm(eA, eB, self.AS)
                     route.AS = self.AS
                     self.AS.pAS["route"].add(route)
@@ -163,6 +164,7 @@ class ASManagement(FocusTopLevel):
     def link_dimensioning(self):
         for route in self.AS.pAS["route"]:
             s, d = route.source, route.destination
+            print(s, d)
             prec_node = s
             for trunk in route.path:
                 # list of allowed trunks: all AS trunks but the failed one
@@ -175,6 +177,25 @@ class ASManagement(FocusTopLevel):
                 trunk.__dict__["traffic" + sd] += route.traffic
                 # update of the previous node
                 prec_node = trunk.source if sd == "DS" else trunk.destination
+                
+    def update_AS_topology(self):
+        for node in self.AS.pAS["node"]:
+            for neighbor, adj_trunk in self.scenario.ntw.graph[node]["trunk"]:
+                # a multi-area IS-IS AS is defined by the status of its nodes (L1/L2)
+                # we automatically update the trunk area status, by considering that a 
+                # trunk belong to an area as soon as both of its ends do.
+                if self.AS.type == "ISIS":
+                    for area in node.AS[self.AS] & neighbor.AS[self.AS]:
+                        area.add_to_area(adj_trunk)
+                # OTOH, a multi-area OSPF AS is defined by the area of its trunk.
+                # we automatically update the node area status, by considering that a 
+                # node belongs to an area as soon as one of its adjacent trunk does.
+                elif self.AS.type == "OSPF":
+                    for area in adj_trunk.AS[self.AS]:
+                        area.add_to_area(node)
+            # finally, we update the border routes set with all border nodes
+            if len(node.AS[self.AS]) > 2:
+                self.AS.border_routers.add(node)
             
     def create_area(self, name, id):
         self.AS.area_factory(name, id)
@@ -193,6 +214,9 @@ class ASManagement(FocusTopLevel):
             self.dict_listbox["area trunks"].insert(trunk)
             
     ## Functions used to modify AS from the right-click menu
+    
+    def add_to_area(self, area, *objects):
+        self.AS.areas[area].add_to_area(*objects)
             
     def remove_from_area(self, area, *objects):
         self.AS.areas[area].remove_from_area(*objects)

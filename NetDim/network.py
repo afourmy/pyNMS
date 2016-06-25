@@ -126,7 +126,10 @@ class Network(object):
     def find_edge_nodes(self, AS):
         AS.pAS["edge"].clear()
         for node in AS.pAS["node"]:
-            if any(n not in AS.pAS["node"] for n, _ in self.graph[node]["trunk"]):
+            if any(
+                   n not in AS.pAS["node"] 
+                   for n, _ in self.graph[node]["trunk"]
+                   ):
                 AS.pAS["edge"].add(node)
                 yield node
             
@@ -156,14 +159,11 @@ class Network(object):
         for trunk in self.pn["trunk"].values():
             trunk.trafficSD = trunk.trafficDS = 0.
         
-        # for all OSPF and IS-IS AS, fill the ABR/L1L2 sets
         for AS in self.pnAS.values():
-            for node in AS.pAS["node"]:
-                if len(node.AS[AS]) > 1:
-                    AS.border_routers.add(node)
-        
-        # create all AS routes
-        for AS in self.pnAS.values():
+            # for all OSPF and IS-IS AS, fill the ABR/L1L2 sets
+            # update link area based on nodes area (ISIS) and vice-versa (OSPF)
+            AS.management.update_AS_topology()
+            # create all AS routes
             AS.management.create_routes()
         # we reset the traffic for all routes and for routes that do not 
         # belong to an AS, we find a path based on the route constraints (~CSPF) 
@@ -301,9 +301,11 @@ class Network(object):
                     for neighbor, adj_trunk in self.graph[node]["trunk"]:
                         sd = (node == adj_trunk.source)*"SD" or "DS"
                         # excluded and allowed nodes
-                        if neighbor not in allowed_nodes-excluded_nodes: continue
+                        if neighbor not in allowed_nodes-excluded_nodes: 
+                            continue
                         # excluded and allowed trunks
-                        if adj_trunk not in allowed_trunks-excluded_trunks: continue
+                        if adj_trunk not in allowed_trunks-excluded_trunks: 
+                            continue
                         dist_neighbor = dist_node + getattr(adj_trunk, "cost" + sd)
                         if dist_neighbor < dist[neighbor]:
                             dist[neighbor] = dist_neighbor
@@ -396,16 +398,17 @@ class Network(object):
                     heap.clear()
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     sd = (node == adj_trunk.source)*"SD" or "DS"
-                    # we ignore what's not allowed, i.e not in the AS
-                    # or in failure 
-                    if neighbor not in a_n: continue
-                    if adj_trunk not in a_t: continue
+                    # we ignore what's not allowed (not in the AS or in failure)
+                    if neighbor not in a_n or adj_trunk not in a_t:
+                        continue
                     # if step is False, we use only L1 or L1/L2 nodes that 
                     # belong to the source area
-                    if not step and neighbor not in source_area.pa["node"]: continue
+                    if not step and neighbor not in source_area.pa["node"]: 
+                        continue
                     # else, we use only backbone nodes (L1/L2 or L2) or nodes
                     # that belong to the destination area
-                    if step and neighbor not in allowed: continue
+                    if step and neighbor not in allowed: 
+                        continue
                     dist_neighbor = dist_node + getattr(adj_trunk, "cost" + sd)
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
@@ -423,6 +426,72 @@ class Network(object):
             return path_node[::-1], path_link[:-1][::-1]
         else:
             return [], []
+            
+    ## OSPF routing algorithm
+    
+    def OSPF_routing(self, source, target, OSPF_AS, a_n=None, a_t=None):
+        
+        if a_n is None:
+            a_n = OSPF_AS.pAS["node"]
+        if a_t is None:
+            a_t = OSPF_AS.pAS["trunk"]
+        
+        source_area = target_area = None
+        backbone = OSPF_AS.areas["Backbone"]
+        
+        # if source has more than one area, it is a L1/L2 node
+        # which means it is in the backbone
+        if len(source.AS[OSPF_AS]) > 1:
+            source_area = backbone
+        # else, it has only one area, which we retrieve
+        else:
+            source_area ,= source.AS[OSPF_AS]
+            
+        # same for target
+        if len(target.AS[OSPF_AS]) > 1:
+            target_area = backbone
+        else:
+            target_area ,= target.AS[OSPF_AS]
+        
+        # step indicates in which area we are, which tells us which links 
+        # can/cannot be used. 
+        # If step is 0, we are in the source area, heading to the backbone. 
+        # If step is 1, we are in the backbone, heading to the destination area.
+        # If step is 2, we are in the destination area, heading to the exit edge.
+        # Because of OSPF intra-area priority, we cannot use links that belong
+        # to the source area once we've reached the backbone, and we cannot 
+        # use links from the backbone once we've reached the destination
+        # area.
+        step = 2*(source_area == target_area) or source_area == backbone
+
+        visited = set()
+        heap = [(0, source, [], step)]
+        while heap:
+            dist, node, path, step = heappop(heap)  
+            if (node, step) not in visited:
+                visited.add((node, step))
+                if node == target:
+                    return [], path
+                if (not step and backbone in node.AS[OSPF_AS] or
+                    step == 1 and target_area in node.AS[OSPF_AS]):
+                    step += 1
+                for neighbor, adj_trunk in self.graph[node]["trunk"]:
+                    sd = (node == adj_trunk.source)*"SD" or "DS"
+                    # we ignore what's not allowed (not in the AS or in failure)
+                    if neighbor not in a_n or adj_trunk not in a_t:
+                        continue
+                    # if step is 0, we can only use links of the source area
+                    if not step and adj_trunk not in source_area.pa["trunk"]: 
+                        continue
+                    # else if step is 1, we can only use links of the backbone
+                    if step == 1 and adj_trunk not in backbone.pa["trunk"]: 
+                        continue
+                    # else if step is 2, we can only use links of the target area
+                    if step == 2 and adj_trunk not in target_area.pa["trunk"]: 
+                        continue
+                    dist_neighbor = dist + getattr(adj_trunk, "cost" + sd)
+                    heappush(heap, (dist + dist_neighbor, neighbor, 
+                                                    path + [adj_trunk], step))
             
     ## 3) Traffic routing algorithm
     
@@ -448,10 +517,12 @@ class Network(object):
                     sd = (node == adj_link.source)*"SD" or "DS"
                     # if the link is a trunk and belongs to an AS,  
                     # we ignore it because we use only AS's routes
-                    if adj_link.network_type == "trunk" and adj_link.AS: continue
+                    if adj_link.network_type == "trunk" and adj_link.AS: 
+                        continue
                     # if the link is a route, we make sure the current node is 
                     # the source of the route, because routes are unidirectionnal
-                    if adj_link.network_type == "route" and adj_link.source != node: continue
+                    if adj_link.network_type == "route" and adj_link.source != node: 
+                        continue
                     # if the link is a route, it is unidirectional and the
                     # property is simply cost, but if it is a trunk, there are
                     # one cost per direction and we retrieve the right one
@@ -508,9 +579,11 @@ class Network(object):
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     sd = (node == adj_trunk.source)*"SD" or "DS"
                     # excluded and allowed nodes
-                    if neighbor not in allowed_nodes-excluded_nodes: continue
+                    if neighbor not in allowed_nodes-excluded_nodes: 
+                        continue
                     # excluded and allowed trunks
-                    if adj_trunk not in allowed_trunks-excluded_trunks: continue
+                    if adj_trunk not in allowed_trunks-excluded_trunks: 
+                        continue
                     dist_neighbor = dist[node] + getattr(adj_trunk, "cost" + sd)
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
@@ -749,7 +822,7 @@ class Network(object):
         return sum(
                    getattr(adj, "flow" + ((s==adj.source)*"SD" or "DS")) 
                    for _, adj in self.graph[s]["trunk"]
-                  )
+                   )
             
     ## Distance functions
     
@@ -872,17 +945,29 @@ class Network(object):
         for i in range(n**2):
             n1, n2, n3 = str(i), str(i-1), str(i+n)
             if i-1 > -1 and i%n:
-                self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n2, node_type=_type))
+                self.lf(
+                        s=self.nf(name=n1, node_type=_type), 
+                        d=self.nf(name=n2, node_type=_type)
+                        )
             if i+n < n**2:
-                self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n3, node_type=_type))
+                self.lf(
+                        s=self.nf(name=n1, node_type=_type), 
+                        d=self.nf(name=n3, node_type=_type)
+                        )
                 
     ## 3) Tree generation
                 
     def generate_tree(self, n, _type):
         for i in range(2**n-1):
             n1, n2, n3 = str(i), str(2*i+1), str(2*i+2)
-            self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n2, node_type=_type))
-            self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n3, node_type=_type))
+            self.lf(
+                    s=self.nf(name=n1, node_type=_type), 
+                    d=self.nf(name=n2, node_type=_type)
+                    )
+            self.lf(
+                    s=self.nf(name=n1, node_type=_type), 
+                    d=self.nf(name=n3, node_type=_type)
+                    )
             
     ## 4) Star generation
             
@@ -890,7 +975,10 @@ class Network(object):
         nb_node = len(self.pn["node"])
         for i in range(n):
             n1, n2 = str(nb_node), str(nb_node+1+i)
-            self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n2, node_type=_type))
+            self.lf(
+                    s=self.nf(name=n1, node_type=_type), 
+                    d=self.nf(name=n2, node_type=_type)
+                    )
             
     ## 5) Full-meshed network generation
             
@@ -899,7 +987,10 @@ class Network(object):
         for i in range(n):
             for j in range(i):
                 n1, n2 = str(nb_node+j), str(nb_node+i)
-                self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n2, node_type=_type))
+                self.lf(
+                        s=self.nf(name=n1, node_type=_type), 
+                        d=self.nf(name=n2, node_type=_type)
+                        )
                 
     ## 6) Ring generation
                 
@@ -907,6 +998,9 @@ class Network(object):
         nb_node = len(self.pn["node"])
         for i in range(n):
             n1, n2 = str(nb_node+i), str(nb_node+(1+i)%n)
-            self.lf(s=self.nf(name=n1, node_type=_type), d=self.nf(name=n2, node_type=_type))
+            self.lf(
+                    s=self.nf(name=n1, node_type=_type), 
+                    d=self.nf(name=n2, node_type=_type)
+                    )
             
             

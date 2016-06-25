@@ -50,7 +50,7 @@ class AutonomousSystem(object):
         self.AS_type_to_class = {
         "RIP": scenario.ntw.RIP_routing,
         "ISIS": scenario.ntw.ISIS_routing,
-        "OSPF": scenario.ntw.ISIS_routing
+        "OSPF": scenario.ntw.OSPF_routing
         }
         self.algorithm = self.AS_type_to_class[type]
         if type in ("ISIS", "OSPF"):

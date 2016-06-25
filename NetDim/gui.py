@@ -10,9 +10,9 @@ from tkinter import ttk, filedialog
 from miscellaneous import FocusTopLevel
 import network
 import collections
-import object_management_window
-import advanced_graph_options
-import drawing_options_window
+import object_management_window as omw
+import advanced_graph_options as ago
+import drawing_options_window as dow
 import frame
 import scenario
 import pickle
@@ -251,20 +251,27 @@ class NetDim(tk.Tk):
         ## ----- Menus : -----
         menubar = tk.Menu(self)
         main_menu = tk.Menu(menubar, tearoff=0)
-        main_menu.add_command(label="Add scenario", command=lambda: self.add_scenario())
-        main_menu.add_command(label="Delete scenario", command=lambda: self.delete_scenario())
+        main_menu.add_command(label="Add scenario", 
+                                        command=lambda: self.add_scenario())
+        main_menu.add_command(label="Delete scenario", 
+                                        command=lambda: self.delete_scenario())
         main_menu.add_separator()
-        main_menu.add_command(label="Import graph", command=lambda: self.import_graph())
-        main_menu.add_command(label="Export graph", command=lambda: self.export_graph())
+        main_menu.add_command(label="Import graph", 
+                                        command=lambda: self.import_graph())
+        main_menu.add_command(label="Export graph", 
+                                        command=lambda: self.export_graph())
         main_menu.add_separator()
         main_menu.add_command(label="Exit", command=self.destroy)
         menubar.add_cascade(label="Main",menu=main_menu)
         menu_drawing = tk.Menu(menubar, tearoff=0)
-        menu_drawing.add_command(label="Default drawing parameters", command=lambda: self.drawing_option_window.deiconify())
+        menu_drawing.add_command(label="Default drawing parameters", 
+                        command=lambda: self.drawing_option_window.deiconify())
         menubar.add_cascade(label="Network drawing",menu=menu_drawing)
         menu_routing = tk.Menu(menubar, tearoff=0)
-        menu_routing.add_command(label="Advanced graph options", command=lambda: self.advanced_graph_options.deiconify())
-        menu_routing.add_command(label="Network Tree View", command=lambda: NetworkTreeView(self))
+        menu_routing.add_command(label="Advanced graph options", 
+                        command=lambda: self.advanced_graph_options.deiconify())
+        menu_routing.add_command(label="Network Tree View", 
+                                        command=lambda: NetworkTreeView(self))
         menubar.add_cascade(label="Network routing",menu=menu_routing)
 
         # choose which label to display per type of object
@@ -272,7 +279,7 @@ class NetDim(tk.Tk):
         for obj_type, label_type in self.object_label.items():
             menu_type = tk.Menu(menubar, tearoff=0)
             for lbl in label_type:
-                cmd = lambda o=obj_type, l=lbl:  self.cs._refresh_object_labels(o.lower(), l.lower())
+                cmd = lambda o=obj_type, l=lbl: self.cs._refresh_object_labels(o.lower(), l.lower())
                 menu_type.add_command(label=lbl, command=cmd)
             menu_options.add_cascade(label=obj_type + " label", menu=menu_type)
             
@@ -305,7 +312,7 @@ class NetDim(tk.Tk):
         # object management windows
         self.dict_obj_mgmt_window = {}
         for obj in self.object_properties:
-            self.dict_obj_mgmt_window[obj] = object_management_window.ObjectManagementWindow(self,obj)
+            self.dict_obj_mgmt_window[obj] = omw.ObjectManagementWindow(self, obj)
         
         # parameters for spring-based drawing: per project
         self.alpha = 0.5
@@ -319,9 +326,9 @@ class NetDim(tk.Tk):
                                                         self.delta, self.L0)
         
         # drawing options window
-        self.drawing_option_window = drawing_options_window.DrawingOptions(self)
+        self.drawing_option_window = dow.DrawingOptions(self)
         # advanced graph options
-        self.advanced_graph_options = advanced_graph_options.AdvancedGraphOptionsWindow(self)
+        self.advanced_graph_options = ago.AdvancedGraphOptionsWindow(self)
         
         # create a frame
         self.main_frame = frame.MainFrame(self)
@@ -370,7 +377,8 @@ class NetDim(tk.Tk):
                 img = ImageTk.PhotoImage(img_pil)
                 # set the default image for the button of the frame
                 if color == "default":
-                    self.main_frame.type_to_button[node_type].config(image=img, width=50, height=50)
+                    self.main_frame.type_to_button[node_type].config(image=img, 
+                                                        width=50, height=50)
                 self.dict_image[color][node_type] = img
         
         for category_type, dict_size in self.dict_size_image.items():
@@ -380,7 +388,8 @@ class NetDim(tk.Tk):
                 img_pil = ImageTk.Image.open(img_path).resize(image_size)
                 img = ImageTk.PhotoImage(img_pil)
                 self.dict_image[category_type][image_type] = img
-                self.main_frame.type_to_button[image_type].config(image=img, width=x, height=y+10)
+                self.main_frame.type_to_button[image_type].config(image=img, 
+                                                        width=x, height=y+10)
                 
         # image for a link failure
         img_pil = ImageTk.Image.open(self.path_icon + "failure.png").resize((25,25))
@@ -408,7 +417,15 @@ class NetDim(tk.Tk):
     def import_graph(self, filepath=None):
         # filepath is set for unittest
         if not filepath:
-            filepath = filedialog.askopenfilenames(initialdir=self.path_workspace, title="Import graph", filetypes=(("all files","*.*"), ("csv files","*.csv"), ("xls files","*.xls"), ("txt files","*.txt")))
+            filepath = filedialog.askopenfilenames(
+                            initialdir=self.path_workspace, 
+                            title="Import graph", 
+                            filetypes=(
+                            ("all files","*.*"), 
+                            ("csv files","*.csv"), 
+                            ("xls files","*.xls"), 
+                            ("txt files","*.txt")
+                            ))
             
             # no error when closing the window
             if not filepath: 
@@ -428,7 +445,8 @@ class NetDim(tk.Tk):
                             self.cs.ntw.nf(*param, node_type="router", name=n)
                         else:
                             n, s, d, *param = self.str_to_object(other, obj_type)
-                            self.cs.ntw.lf(*param, link_type=obj_type, name=n, s=s, d=d)
+                            self.cs.ntw.lf(*param, link_type=obj_type, 
+                                                            name=n, s=s, d=d)
                             
             finally:
                 file_to_import.close()
@@ -439,11 +457,14 @@ class NetDim(tk.Tk):
                 xls_sheet = book.sheets()[id]
                 for row_index in range(1, xls_sheet.nrows):
                     if obj_type == "node":
-                        n, *param = self.str_to_object(xls_sheet.row_values(row_index), "node")
+                        n, *param = self.str_to_object(
+                                    xls_sheet.row_values(row_index), "node")
                         self.cs.ntw.nf(*param, node_type="router", name=n)
                     else:
-                        n, s, d, *param = self.str_to_object(xls_sheet.row_values(row_index), obj_type)
-                        new_link = self.cs.ntw.lf(*param, link_type=obj_type, name=n, s=s, d=d)
+                        n, s, d, *param = self.str_to_object(
+                                    xls_sheet.row_values(row_index), obj_type)
+                        new_link = self.cs.ntw.lf(*param, link_type=obj_type, 
+                                                            name=n, s=s, d=d)
                         
             AS_sheet, area_sheet = book.sheets()[4], book.sheets()[5]
         
@@ -453,15 +474,16 @@ class NetDim(tk.Tk):
                 AS_nodes = self.convert_nodes_set(AS_nodes)
                 AS_trunks = self.convert_links_set(AS_trunks)
                 AS_edges = self.convert_nodes_set(AS_edges)
-                self.cs.ntw.AS_factory(AS_name, AS_type, AS_trunks, AS_nodes, AS_edges, set(), True)
+                self.cs.ntw.AS_factory(AS_name, AS_type, AS_trunks, AS_nodes, 
+                                                        AS_edges, set(), True)
             
             # creation of the area
             for row_index in range(1, area_sheet.nrows):
-                area_name, area_AS, area_nodes, area_trunks = area_sheet.row_values(row_index)
-                area_AS = self.cs.ntw.AS_factory(name=area_AS)
-                area_nodes = self.convert_nodes_set(area_nodes)
-                area_trunks = self.convert_links_set(area_trunks)
-                new_area = area_AS.area_factory(area_name, area_trunks, area_nodes)
+                name, AS, id, nodes, trunks = area_sheet.row_values(row_index)
+                AS = self.cs.ntw.AS_factory(name=AS)
+                nodes = self.convert_nodes_set(nodes)
+                trunks = self.convert_links_set(trunks)
+                new_area = AS.area_factory(name, int(id), trunks, nodes)
             
                 
         # for the topology zoo network graphs
@@ -495,8 +517,10 @@ class NetDim(tk.Tk):
                         for coord in ("latitude", "longitude"):
                             # in some graphml files, nodes have no latitude/longitude
                             try:
-                                setattr(src, coord, float(dict_id_to_prop[s_id][coord.capitalize()]))
-                                setattr(dest, coord, float(dict_id_to_prop[d_id][coord.capitalize()]))
+                                p_s = dict_id_to_prop[s_id][coord.capitalize()]
+                                setattr(src, coord, float(p_s))
+                                p_d = dict_id_to_prop[d_id][coord.capitalize()]
+                                setattr(dest, coord, float(p_d))
                             except KeyError:
                                 # we catch the KeyError exception, but 
                                 # the resulting haversine distance will be wrong
@@ -547,7 +571,7 @@ class NetDim(tk.Tk):
                     for i, t in enumerate(self.cs.ntw.pn[obj_type].values(), 1):
                         xls_sheet.write(i, id, str(getattr(t, property)))
             AS_sheet = excel_workbook.add_sheet("AS")
-            for i, AS in enumerate(self.cs.ntw.pn["AS"].values(), 1):
+            for i, AS in enumerate(self.cs.ntw.pnAS.values(), 1):
                 AS_sheet.write(i, 0, str(AS.name))
                 AS_sheet.write(i, 1, str(AS.type))
                 AS_sheet.write(i, 2, str(list(map(str, AS.pAS["node"]))))
@@ -557,12 +581,13 @@ class NetDim(tk.Tk):
                 
             area_sheet = excel_workbook.add_sheet("area")
             cpt = 1
-            for AS in self.cs.ntw.pn["AS"].values():
+            for AS in self.cs.ntw.pnAS.values():
                 for area in AS.areas.values():
                     area_sheet.write(cpt, 0, str(area.name))
                     area_sheet.write(cpt, 1, str(area.AS))
-                    area_sheet.write(cpt, 2, str(list(map(str, area.pa["node"]))))
-                    area_sheet.write(cpt, 3, str(list(map(str, area.pa["trunk"]))))
+                    area_sheet.write(cpt, 2, str(area.id))
+                    area_sheet.write(cpt, 3, str(list(map(str, area.pa["node"]))))
+                    area_sheet.write(cpt, 4, str(list(map(str, area.pa["trunk"]))))
                     cpt += 1
             excel_workbook.save(selected_file.name)
             
@@ -585,7 +610,8 @@ class NetworkTreeView(FocusTopLevel):
         self.ntv.bind('<ButtonRelease-1>', lambda e: self.select(e))
         
         for obj_type, properties in master.object_ie.items():
-            self.ntv.insert("", "end", obj_type, text=obj_type.title(), values=properties)
+            self.ntv.insert("", "end", obj_type, text=obj_type.title(), 
+                                                            values=properties)
             for obj in master.cs.ntw.pn[obj_type].values():
                 values = tuple(map(lambda p: getattr(obj, p), properties))
                 self.ntv.insert(obj_type, "end", text=obj.name, values=values)

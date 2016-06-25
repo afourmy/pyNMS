@@ -11,10 +11,18 @@ class RightClickMenu(tk.Menu):
     def __init__(self, event, scenario):
         super().__init__(tearoff=0)
         
-        # Add the object from which the menu started to the selected objects
         x, y = scenario.canvasx(event.x), scenario.canvasy(event.y)
-        self.selected_obj = scenario.object_id_to_object[scenario.find_closest(x, y)[0]]
-        scenario.so[self.selected_obj.class_type].add(self.selected_obj)
+        closest_obj = scenario.find_closest(x, y)[0]
+        selected_obj = scenario.object_id_to_object[closest_obj]
+        # if the object from which the menu was started does not belong to
+        # the current selection, it means the current selection is no longer
+        # to be considered, and only the selected objected is considered 
+        # as having been selected by the user
+        if selected_obj not in scenario.so[selected_obj.class_type]:
+            scenario.so = {"node": set(), "link": set()}
+            scenario.so[selected_obj.class_type].add(selected_obj)
+            # we also have to unhighlight the current selection 
+            scenario.unhighlight_all()
         self.all_so = scenario.so["node"] | scenario.so["link"]
         
         # highlight all to add the selected object to the highlight
