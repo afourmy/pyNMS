@@ -121,7 +121,7 @@ Three methods were implemented in NetDim to solve the transportation problem:
 - [ ] Use a genetic algorithm to find the maximum flow, compare with LP
 - [ ] Use a genetic algorithm to solve RWA, compare with LP
 - [ ] Graph drawing on the right-click for a selection of nodes
-- [ ] degree centrality. number of neighbor of each node (graph + make node size depend on it)
+- [ ] Degree centrality. number of neighbor of each node (graph + make node size depend on it)
 - [ ] Algorithm to determine link weight in order to optimize load sharing (is-is/ospf optimization)
 - [ ] Protection-based link dimensioning: IGP reconvergence, FRR, etc
 
@@ -142,17 +142,16 @@ Three methods were implemented in NetDim to solve the transportation problem:
 - [x] Per-layer 3D display with nodes duplication
 - [x] When switching to simple oval display, keep track of the size of the object so that it is always the same.
 - [x] Remove switch to creation button
+- [x] Click on a node should select only the node (erase previous selection). Ctrl to add to selection
 - [ ] Add arrows on trunks for route highlight
 - [ ] Change the mouse pointeur when going over an object
 - [ ] Modified Dijkstra to find the longest path/widest path
 - [ ] Capacity label display: should be with an arrow
-- [ ] Protection highlight: highlight first the protection path's links, then the working path's.
 - [ ] Generate text and shapes on the canvas
 - [ ] Label position issue + label deletion for routes after calculate all
 - [ ] Highlight should include the nodes too
 - [ ] Upload icon with all possible colors and have a special folder for them
 - [ ] Radio button for nodes and link selection. Add to menu
-- [ ] Click on a node should select only the node (erase previous selection). Ctrl to add to selection
 - [ ] Center on view for one node and multiple node
 - [ ] Highlight the LL when highlighting the path
 - [ ] Drawing: choose between "random drawing, random + spring layout, draw at position, spring layout (warning if colocated nodes)
@@ -162,21 +161,20 @@ Three methods were implemented in NetDim to solve the transportation problem:
 
 ## Routing
 - [x] ISIS routing
-- [ ] Traffic link routing. All nodes that belongs to an AS should be excluded.
-- [ ] BGP routing
+- [x] OSPF routing. 
+- [x] Traffic link routing. All nodes that belongs to an AS should be excluded.
 - [ ] subnet and filtering system on routes/traffic link
 - [ ] G8032 ring with RPL protection
 - [ ] Ring AS with steering/wrapping protection mode
 - [ ] Dimensioning with Maximally redundant tree
-- [ ] OSPF routing. 
 - [ ] OSPF options: route leaking, multi-ABR, multi-area links, etc (RFC 5086, ...)
 - [ ] IS-IS improvement: route leaking option (RFC 2966)
 - [ ] Load balancing for the edges of an AS.
 
 ## Protection
 - [x] Failure simulation system to see where the traffic is going. Route's protection path highlight.
+- [x] Protection by pruning the failed link(s): dimensioning considering IGP convergence
 - [ ] FRR implementation for MPLS. A LSP can have a protection mode (Local Detour to Merge point, Local Detour to Destination, Next-Hop protection) or a user-defined back-up LSP.
-- [ ] Protection by pruning the failed link(s): dimensioning considering IGP convergence
 - [ ] Highlight the protection path with a different color
 - [ ] K-failure AS dimensioning
 
@@ -204,6 +202,8 @@ Three methods were implemented in NetDim to solve the transportation problem:
 - [x] Merge Add to AS and Manage AS window
 - [x] Use haversine formula to compute the distance of a link based on GPS coordinates
 - [x] Add new devices: splitter, regenerator/amplifier
+- [x] Graph generation: select the type of nodes
+- [x] Remove AS from pn
 - [ ] Replace splitter with switch
 - [ ] Dict reset from keys
 - [ ] Selection dict should include all type of link: trunk, route, traffic
@@ -224,8 +224,6 @@ Three methods were implemented in NetDim to solve the transportation problem:
 - [ ] Common top-level window for object property display to avoid having several windows at once
 - [ ] Keyboard shortcut: Ctrl, Suppr, Ctrl Z/Y, etc
 - [ ] Interface: could be a little oval at the end of a physical links
-- [ ] Graph generation: select the type of nodes
-- [ ] Add new types of graph
 - [ ] Treeview to display the list of object of the network
 - [ ] when clicking on a link, window displaying all routes / traffic link mapped on it
 - [ ] Right-click of the tree view equivalent to a right-click on the canvas
@@ -234,7 +232,6 @@ Three methods were implemented in NetDim to solve the transportation problem:
 - [ ] Complex graph generation: https://www.youtube.com/watch?v=nJEfq8qduKA
 - [ ] Make a clear distinction between class variable and init
 - [ ] __bool__ for link: means bw > 0
-- [ ] Remove AS from pn
 - [ ] Rename objects bugs
 - [ ] Property decorator to summarize routes param
 - [ ] Vertical bars in RC menu to separate methods
@@ -243,7 +240,7 @@ Three methods were implemented in NetDim to solve the transportation problem:
 ## Config generation
 - [x] Generate OSPF config
 - [x] Generate RIP config
-- [ ] Have an "AS number" and an "area" number. BB is 0 all the time
+- [x] Have an "AS number" and an "area" number.
 - [ ] Generate IS-IS config
 - [ ] Generate MPLS config
 - [ ] Generate RSTP config 

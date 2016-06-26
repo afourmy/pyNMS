@@ -14,9 +14,10 @@ class AutonomousSystem(object):
 
     def __init__(
                  self, 
-                 scenario, 
+                 scenario,
                  type, 
                  name, 
+                 id,
                  trunks = set(), 
                  nodes = set(), 
                  edges = set(), 
@@ -25,6 +26,7 @@ class AutonomousSystem(object):
                  ):
         self.name = name
         self.type = type
+        self.id = id
         # pAS as in "pool AS": same as pool network
         self.pAS = {
         "trunk": trunks, 
@@ -99,6 +101,15 @@ class AutonomousSystem(object):
         
     def remove_from_edges(self, node):
         self.pAS["edge"].discard(node)
+        
+    def delete_area(self, area):
+        # we remove the area of the AS areas dictionary
+        area = self.areas.pop(area.name)
+        for obj_type in ("node", "trunk"):
+            for obj in area.pa[obj_type]:
+                # we remove the area to the list of area in the AS 
+                # dictionary, for all objects of the area
+                obj.AS[area.AS].remove(area)
                     
 class ModifyAS(CustomTopLevel):
     def __init__(self, scenario, mode, obj, AS=set()):
@@ -178,33 +189,50 @@ class ModifyAS(CustomTopLevel):
 class ASCreation(CustomTopLevel):
     def __init__(self, scenario, so):
         super().__init__()
-        self.geometry("120x100")
+        self.geometry("120x130")
         self.title("Create AS")
         
         # List of AS type
         self.var_AS_type = tk.StringVar()
-        self.AS_type_list = ttk.Combobox(self, textvariable=self.var_AS_type, width=6)
+        self.AS_type_list = ttk.Combobox(self, 
+                                    textvariable=self.var_AS_type, width=6)
         self.AS_type_list["values"] = ("RIP", "ISIS", "OSPF", "MPLS", "RSTP")
         self.AS_type_list.current(0)
 
         # retrieve and save node data
-        self.button_create_AS = ttk.Button(self, text="Create AS", command=lambda: self.create_AS(scenario, so))
+        self.button_create_AS = ttk.Button(self, text="Create AS", 
+                                command=lambda: self.create_AS(scenario, so))
         
         # Label for the name/type of the AS
         self.label_name = tk.Label(self, bg="#A1DBCD", text="Name")
         self.label_type = tk.Label(self, bg="#A1DBCD", text="Type")
+        self.label_id = tk.Label(self, bg="#A1DBCD", text="ID")
         
         # Entry box for the name of the AS
-        self.var_name = tk.StringVar()
-        self.entry_name  = tk.Entry(self, textvariable=self.var_name, width=10)
+        self.entry_name  = tk.Entry(self, width=10)
+        self.entry_id  = tk.Entry(self, width=10)
         
         self.label_name.grid(row=0, column=0, pady=5, padx=5, sticky=tk.W)
+        self.label_id.grid(row=1, column=0, pady=5, padx=5, sticky=tk.W)
         self.entry_name.grid(row=0, column=1, sticky=tk.W)
-        self.label_type.grid(row=1, column=0, pady=5, padx=5, sticky=tk.W)
-        self.AS_type_list.grid(row=1,column=1, pady=5, padx=5, sticky=tk.W)
+        self.entry_id.grid(row=1, column=1, sticky=tk.W)
+        self.label_type.grid(row=2, column=0, pady=5, padx=5, sticky=tk.W)
+        self.AS_type_list.grid(row=2,column=1, pady=5, padx=5, sticky=tk.W)
         self.button_create_AS.grid(row=3,column=0, columnspan=2, pady=5, padx=5)
 
     def create_AS(self, scenario, so):
-        new_AS = scenario.ntw.AS_factory(name=self.var_name.get(), _type=self.var_AS_type.get(), trunks=so["link"], nodes=so["node"])
+        # automatic initialization of the AS id in case it is empty
+        if self.entry_id.get():
+            id = int(self.entry_id.get())
+        else:
+            id = len(scenario.ntw.pnAS) + 1
+        
+        new_AS = scenario.ntw.AS_factory(
+                                         name = self.entry_name.get(), 
+                                         _type = self.var_AS_type.get(), 
+                                         id = id,
+                                         trunks = so["link"], 
+                                         nodes = so["node"]
+                                         )
         self.destroy()
             

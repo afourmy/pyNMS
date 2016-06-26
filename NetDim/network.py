@@ -15,7 +15,7 @@ from operator import getitem, itemgetter
 
 class Network(object):
     
-    node_type_to_class = {
+    node_class = {
     "router": objects.Router,
     "oxc": objects.OXC,
     "host": objects.Host,
@@ -24,14 +24,17 @@ class Network(object):
     "splitter": objects.Splitter
     }
     
-    link_type_to_class = {
-    "trunk": objects.Trunk, 
+    link_class = {
+    "trunk": {
+    "ethernet": objects.Ethernet,
+    "wdm": objects.WDMFiber
+    },
     "route": objects.Route,
     "traffic": objects.Traffic
     }
     
-    link_type = tuple(link_type_to_class.keys())
-    node_type = tuple(node_type_to_class.keys())
+    link_type = tuple(link_class.keys())
+    node_type = tuple(node_class.keys())
     all_type = link_type + node_type
     
     def __init__(self, scenario):
@@ -47,12 +50,25 @@ class Network(object):
         self.failed_trunk = None
           
     # "lf" is the link factory. Creates or retrieves any type of link
-    def lf(self, *param, link_type="trunk", name=None, s=None, d=None):
+    def lf(
+           self, 
+           *param, 
+           protocol = "ethernet", 
+           interface = "10GE", 
+           link_type = "trunk", 
+           name = None, 
+           s = None, 
+           d = None
+           ):
         if not name:
             name = link_type + str(self.cpt_link)
         # creation link in the s-d direction if no link at all yet
         if not name in self.pn[link_type]:
-            new_link = self.link_type_to_class[link_type](name, s, d, *param)
+            if link_type == "trunk":
+                new_link = self.link_class[link_type][protocol](interface, name, 
+                                                                s, d, *param)
+            else:
+                new_link = self.link_class[link_type](name, s, d, *param)
             self.cpt_link += 1
             self.pn[link_type][name] = new_link
             self.graph[s][link_type].add((d, new_link))
@@ -64,14 +80,15 @@ class Network(object):
         if not name:
             name = "node" + str(self.cpt_node)
         if name not in self.pn["node"]:
-            self.pn["node"][name] = self.node_type_to_class[node_type](name, *p)
+            self.pn["node"][name] = self.node_class[node_type](name, *p)
             self.cpt_node += 1
         return self.pn["node"][name]
         
     def AS_factory(
                    self, 
                    name = None, 
-                   _type = "RIP", 
+                   _type = "RIP",
+                   id = 0,
                    trunks = set(), 
                    nodes = set(), 
                    edges = set(), 
@@ -86,6 +103,7 @@ class Network(object):
                                                   self.scenario, 
                                                   _type, 
                                                   name, 
+                                                  id,
                                                   trunks, 
                                                   nodes, 
                                                   edges,
@@ -105,7 +123,6 @@ class Network(object):
             
     def erase_network(self):
         self.graph.clear()
-        # TODO dict.fromkeys({})
         for dict_of_objects in self.pn.values():
             dict_of_objects.clear()
             
@@ -158,6 +175,12 @@ class Network(object):
         # reset the traffic for all trunks
         for trunk in self.pn["trunk"].values():
             trunk.trafficSD = trunk.trafficDS = 0.
+            trunk.wctrafficSD = trunk.wctrafficDS = 0.
+            
+        # remove all link in failure, so that when we call "link dimensioning",
+        # which in turns calls "failure traffic", the traffic is computed in
+        # normal mode, without considering any existing failure
+        self.scenario.remove_failures()
         
         for AS in self.pnAS.values():
             # for all OSPF and IS-IS AS, fill the ABR/L1L2 sets
@@ -492,6 +515,7 @@ class Network(object):
                     dist_neighbor = dist + getattr(adj_trunk, "cost" + sd)
                     heappush(heap, (dist + dist_neighbor, neighbor, 
                                                     path + [adj_trunk], step))
+        return [], []
             
     ## 3) Traffic routing algorithm
     
@@ -863,7 +887,7 @@ class Network(object):
                 if nodeA != nodeB:
                     dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
                     dist = self.distance(dx, dy)
-                    F_hooke = F_coulomb = (0,)*2
+                    F_hooke = (0,)*2
                     if self.is_connected(nodeA, nodeB, "trunk"):
                         F_hooke = self.hooke_force(dx, dy, dist, L0, k) 
                     F_coulomb = self.coulomb_force(dx, dy, dist, beta)

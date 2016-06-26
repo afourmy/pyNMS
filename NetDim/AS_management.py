@@ -8,19 +8,46 @@ from tkinter import ttk
 from miscellaneous import ObjectListbox, FocusTopLevel
 
 class ASManagement(FocusTopLevel):
+    
     def __init__(self, scenario, AS, imp):
         super().__init__()
         self.scenario = scenario
         self.AS = AS
-        self.geometry("345x440")
+        self.failed_trunk = None
+        self.geometry("345x450")
         self.title("Manage AS")
         self.obj_type = ("trunk", "node", "edge") 
         self.area_listbox = ("area names", "area trunks", "area nodes")
         
+        self.label_name = ttk.Label(self, text="AS name")
+        self.label_id = ttk.Label(self, text="AS ID")
+        self.label_type = ttk.Label(self, text="AS Type")
+        
+        self.str_name = tk.StringVar()
+        self.entry_name  = tk.Entry(self, textvariable=self.str_name, width=10)
+        self.str_name.set(AS.name)
+        self.str_id = tk.StringVar()
+        self.entry_id  = tk.Entry(self, textvariable=self.str_id, width=10)
+        self.str_id.set(AS.id)
+        
+        # combobox for the user to change the type of the AS
+        self.var_AS_type = tk.StringVar()
+        self.AS_type_list = ttk.Combobox(self, 
+                                    textvariable=self.var_AS_type, width=7)
+        self.AS_type_list["values"] = ("RIP", "ISIS", "OSPF", "MPLS", "RSTP")
+        self.var_AS_type.set(AS.type)
+        
+        self.label_name.grid(row=0, column=2, pady=5, padx=5, sticky="e")
+        self.label_id.grid(row=1, column=2, pady=5, padx=5, sticky="e")
+        self.label_type.grid(row=2, column=2, pady=5, padx=5, sticky="e")
+        self.entry_name.grid(row=0, column=4, pady=5, padx=5, sticky="w")
+        self.entry_id.grid(row=1, column=4, pady=5, padx=5, sticky="w")
+        self.AS_type_list.grid(row=2, column=4, pady=5, padx=5, sticky="w")
+        
         # listbox of all AS objects
         self.dict_listbox = {}
         for index, type in enumerate(self.obj_type):
-            tk.Label(self, bg="#A1DBCD", text="".join(("AS ",type,"s"))).grid(row=1, column=2*index)
+            lbl = tk.Label(self, bg="#A1DBCD", text="".join(("AS ",type,"s")))
             listbox = ObjectListbox(self, activestyle="none", width=15, height=7)
             self.dict_listbox[type] = listbox
             yscroll = tk.Scrollbar(self, 
@@ -28,8 +55,9 @@ class ASManagement(FocusTopLevel):
             listbox.configure(yscrollcommand=yscroll.set)
             listbox.bind("<<ListboxSelect>>", 
                             lambda e, type=type: self.highlight_object(e, type))
-            listbox.grid(row=2, column=2*index)
-            yscroll.grid(row=2, column=1+2*index, sticky="ns")
+            lbl.grid(row=3, column=2*index)
+            listbox.grid(row=4, column=2*index)
+            yscroll.grid(row=4, column=1+2*index, sticky="ns")
             
         # populate the listbox with all objects from which the AS was created
         for obj_type in ("trunk", "node", "edge"):
@@ -50,9 +78,9 @@ class ASManagement(FocusTopLevel):
             else:
                 listbox.bind("<<ListboxSelect>>", 
                             lambda e, type=type: self.highlight_object(e, type))
-            lbl.grid(row=5, column=2*index)
-            listbox.grid(row=6, column=2*index)
-            yscroll.grid(row=6, column=1+2*index, sticky="ns")
+            lbl.grid(row=6, column=2*index)
+            listbox.grid(row=7, column=2*index)
+            yscroll.grid(row=7, column=1+2*index, sticky="ns")
         
         # find edge nodes of the AS
         self.button_find_edge_nodes = ttk.Button(self, text="Find edges", 
@@ -78,22 +106,27 @@ class ASManagement(FocusTopLevel):
         # button to create an area
         self.button_create_area = ttk.Button(self, text="Create area", 
                                 command=lambda: area.CreateArea(self))
+                                
+        # button to delete an area
+        self.button_delete_area = ttk.Button(self, text="Delete area", 
+                                command=lambda: self.delete_area())
         
         # buttons under the trunks column
-        self.button_create_route.grid(row=3, column=0)
-        self.button_find_trunks.grid(row=4, column=0)
+        self.button_create_route.grid(row=5, column=0)
+        self.button_find_trunks.grid(row=6, column=0)
         
         # button under the nodes column
-        self.button_remove_node_from_AS.grid(row=3, column=2)
-        self.button_add_to_edges.grid(row=4, column=2)
-        self.button_remove_from_edges.grid(row=5)
+        self.button_remove_node_from_AS.grid(row=5, column=2)
+        self.button_add_to_edges.grid(row=6, column=2)
+        self.button_remove_from_edges.grid(row=7, column=2)
         
         # button under the edge column
-        self.button_find_edge_nodes.grid(row=3, column=4)
-        self.button_remove_from_edges.grid(row=4, column=4)
+        self.button_find_edge_nodes.grid(row=5, column=4)
+        self.button_remove_from_edges.grid(row=6, column=4)
             
         # button under the area column
-        self.button_create_area.grid(row=7, column=0)
+        self.button_create_area.grid(row=8, column=0)
+        self.button_delete_area.grid(row=9, column=0)
         
         # at first, the backbone is the only area: we insert it in the listbox
         self.dict_listbox["area names"].insert("Backbone")
@@ -128,7 +161,8 @@ class ASManagement(FocusTopLevel):
         self.AS.add_to_edges(selected_node)
             
     def remove_from_edges(self):
-        selected = self.scenario.ntw.nf(name=self.dict_listbox["edge"].pop_selected()) 
+        selected_edge = self.dict_listbox["edge"].pop_selected()
+        selected = self.scenario.ntw.nf(name=selected_edge) 
         self.AS.remove_from_edges(selected)
         
     def add_to_AS(self, area, *objects):
@@ -161,22 +195,92 @@ class ASManagement(FocusTopLevel):
                     self.AS.pAS["route"].add(route)
                     self.scenario.create_link(route)
                     
+    def trigger_failure(self, trunk):
+        self.failed_trunk = trunk
+        self.failure_traffic()
+                    
+    def failure_traffic(self):
+        for trunk in self.AS.pAS["trunk"]:
+            trunk.trafficSD = trunk.trafficDS = 0.
+        # this function is used for failure simulation. When a link is set in
+        # failure, the traffic property display the traffic going over the link
+        # considering this failure case.
+        # It is also used when removing the failure, to update the trunk traffic 
+        # back to the "normal mode" traffic
+        for route in self.AS.pAS["route"]:
+            s, d = route.source, route.destination
+            prec_node = s
+            ft = self.failed_trunk
+            # if there is no failed trunk or the failed trunk is not on the
+            # normal patf of the route, we consider the normal route
+            if not ft or ft not in route.path:
+                traffic_path = route.path
+            else:
+                traffic_path = route.r_path[ft]
+            # if there is no link in failure, we add the route traffic 
+            # of the trunk (normal dimensioning), but if there is a failure,
+            # we add the traffic to the recovery path instead
+            for trunk in traffic_path:
+                sd = (trunk.source == prec_node)*"SD" or "DS"
+                trunk.__dict__["traffic" + sd] += route.traffic
+                # update of the previous node
+                prec_node = trunk.source if sd == "DS" else trunk.destination
+                    
     def link_dimensioning(self):
         for route in self.AS.pAS["route"]:
             s, d = route.source, route.destination
-            print(s, d)
-            prec_node = s
             for trunk in route.path:
                 # list of allowed trunks: all AS trunks but the failed one
                 a_t = self.AS.pAS["trunk"] - {trunk}
                 # apply the AS routing algorithm, ignoring the failed trunk
                 _, recovery_path = self.AS.algorithm(s, d, self.AS, a_t=a_t)
                 route.r_path[trunk] = recovery_path
-                # we add the route traffic of the trunk (normal dimensioning)
-                sd = (trunk.source == prec_node)*"SD" or "DS"
-                trunk.__dict__["traffic" + sd] += route.traffic
-                # update of the previous node
-                prec_node = trunk.source if sd == "DS" else trunk.destination
+
+        # we call failure traffic, knowing that link dimensioning is 
+        # called during "calculate all", and all failed trunk have been
+        # previously reseted.
+        # this means that failure traffic will trigger the normal procedure,
+        # and the traffic computation will not consider any failure case.
+        self.failure_traffic()
+            
+        # finally, we must compute the worst case traffic, that is the 
+        # maximum amount of traffic that can be sent on the link, 
+        # considering all possible failure cases
+        # we consider all_traffic, a dict that will contains the list of 
+        # resulting traffic for all possible failure case
+        all_traffic = {trunk: {"SD": [], "DS": []} 
+                                        for trunk in self.AS.pAS["trunk"]}
+        for failed_trunk in self.AS.pAS["trunk"]:
+            # we create a dict of trunk, that contains for all trunks the 
+            # resulting traffic, considering that failed_trunk is in failure
+            trunk_traffic = {trunk: {"SD": 0, "DS": 0} 
+                                        for trunk in self.AS.pAS["trunk"]}
+            
+            for route in self.AS.pAS["route"]:
+                prec_node = route.source
+                if failed_trunk not in route.path:
+                    traffic_path = route.path
+                else:
+                    traffic_path = route.r_path[failed_trunk]
+                for trunk in traffic_path:
+                    sd = (trunk.source == prec_node)*"SD" or "DS"
+                    trunk_traffic[trunk][sd] += route.traffic
+                    # update of the previous node
+                    prec_node = trunk.source if sd == "DS" else trunk.destination
+            # we add the resulting traffic for the given failure case considered
+            # to all_traffic, which contains all such resulting traffic
+            for trunk in trunk_traffic:
+                for sd in ("SD", "DS"):
+                    all_traffic[trunk][sd].append(trunk_traffic[trunk][sd])
+
+        # finally, now that we have, for all trunk, the maximum traffic for
+        # all possible failure case, we take the maximum between all failure
+        # case AND the normal case (which might be the worse)
+        for trunk in all_traffic:
+            for sd in ("SD", "DS"):
+                normal_traffic = getattr(trunk, "traffic" + sd)
+                max_traffic = max(normal_traffic, max(all_traffic[trunk][sd]))
+                setattr(trunk, "wctraffic" + sd, max_traffic)
                 
     def update_AS_topology(self):
         for node in self.AS.pAS["node"]:
@@ -200,6 +304,11 @@ class ASManagement(FocusTopLevel):
     def create_area(self, name, id):
         self.AS.area_factory(name, id)
         self.dict_listbox["area names"].insert(name)
+
+    def delete_area(self):
+        selected_area_name = self.dict_listbox["area names"].pop_selected()
+        selected_area = self.AS.area_factory(name=selected_area_name)
+        self.AS.delete_area(selected_area)
                 
     def display_area(self, event):
         area = self.dict_listbox["area names"].selected()

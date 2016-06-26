@@ -30,7 +30,7 @@ class Scenario(tk.Canvas):
         self.NODE_SIZE = 8
         
         # default label display
-        self._current_object_label = {obj_type: "none" for obj_type in ("node", "trunk", "route", "traffic")}
+        self._current_object_label = dict.fromkeys(self.ntw.pn, "none")
         
         # creation mode, object type, and associated bindings
         self._start_position = [None]*2
@@ -60,7 +60,7 @@ class Scenario(tk.Canvas):
         self.diff_y = 0
         
         # display state per type of objects
-        self.display_per_type = {type: True for type in self.ntw.all_type}
+        self.display_per_type = dict.fromkeys(self.ntw.all_type, True)
         
         # id of the failure icon
         self.id_failure = None
@@ -84,7 +84,8 @@ class Scenario(tk.Canvas):
         self.bind("<Button-5>", self.zoomerM)
         
         # add binding for right-click menu 
-        self.tag_bind("object", "<ButtonPress-3>",lambda e: menus.RightClickMenu(e, self))
+        self.tag_bind("object", "<ButtonPress-3>",
+                                    lambda e: menus.RightClickMenu(e, self))
         
         # use the right-click to move the background
         self.bind("<ButtonPress-3>", self.scroll_start)
@@ -104,7 +105,7 @@ class Scenario(tk.Canvas):
         self.bind("<Control-KeyPress>", lambda _: change_ctrl(True))
         
     def switch_binding(self):   
-        # in case there were selected nodes, so that they don't remain highlighted
+        # if there were selected nodes, so that they don't remain highlighted
         self.unhighlight_all()
         
         if self._mode == "motion":
@@ -137,7 +138,7 @@ class Scenario(tk.Canvas):
             self.unbind("<ButtonMotion-1>")
             self.tag_unbind("node", "<Button-1>")
             
-            if self._creation_mode in self.ntw.node_type_to_class:
+            if self._creation_mode in self.ntw.node_class:
                 # add bindings to create a node with left-click
                 self.bind("<ButtonPress-1>", self.create_node_on_binding)
             
@@ -168,8 +169,8 @@ class Scenario(tk.Canvas):
             self.highlight_route(route)
             
     def highlight_route(self, route):
-        ft = self.ntw.failed_trunk
-        if ft in route.r_path:
+        ft = route.AS.management.failed_trunk
+        if ft and ft in route.path:
             self.highlight_objects(*route.r_path[ft], color="gold", dash=True)
         else:
             self.highlight_objects(*route.path)
@@ -208,12 +209,13 @@ class Scenario(tk.Canvas):
     @adapt_coordinates
     def node_motion(self, event):
         for selected_node in self.so["node"]:
-            # the main node initial position, the main node current position, and
-            # the other node initial position form a rectangle.
+            # the main node initial position, the main node current position, 
+            # and the other node initial position form a rectangle.
             # we find the position of the fourth vertix.
             x0, y0 = self._start_pos_main_node
             x1, y1 = self._dict_start_position[selected_node]
-            selected_node.x, selected_node.y = x1 + (event.x - x0), y1 + (event.y - y0)
+            selected_node.x = x1 + (event.x - x0)
+            selected_node.y = y1 + (event.y - y0)
             self.move_node(selected_node)
         # record the new position
         node = self.object_id_to_object[self.drag_item]
@@ -423,7 +425,7 @@ class Scenario(tk.Canvas):
         label_id = current_object.lid
         if label_type == "none":
             self.itemconfig(label_id, text="")
-        elif label_type in ("capacity", "flow", "cost", "traffic"):
+        elif label_type in ("capacity", "flow", "cost", "traffic", "wctraffic"):
             # retrieve the value of the parameter depending on label type
             valueSD = getattr(current_object, label_type + "SD")
             valueDS = getattr(current_object, label_type + "DS")
@@ -463,7 +465,7 @@ class Scenario(tk.Canvas):
         new_label = self.display_per_type[type]*"Hide" or "Show"
         menu.entryconfigure(index, label=" ".join((new_label, type)))
         new_state = tk.NORMAL if self.display_per_type[type] else tk.HIDDEN
-        if type in self.ntw.node_type_to_class:
+        if type in self.ntw.node_class:
             for node in filter(lambda o: o.type == type, self.ntw.pn["node"].values()):
                 self.itemconfig(node.image[0] if self.display_image else node.oval, state=new_state)
                 self.itemconfig(node.lid, state=new_state)
@@ -568,15 +570,28 @@ class Scenario(tk.Canvas):
         return dict_link_to_coords
         
     def create_link(self, new_link):
-        
         edges = (new_link.source, new_link.destination)
         for node in edges:
+            # we always have to create the nodes at layer 0, no matter whether
+            # the layered display option is activated or not.
             if not new_link.layer or self.layered_display:
+                # we check whether the node image already exist or not, and 
+                # create it only if it doesn't.
                 if not node.image[new_link.layer]:
                     self.create_node(node, new_link.layer)
-                    if self.layered_display and not node.layer_line[new_link.layer]:
-                        coords = (node.x, node.y, node.x, node.y - new_link.layer * self.diff_y) 
-                        node.layer_line[new_link.layer] = self.create_line(*coords, fill="black", width=1, dash=(3,5))
+                    if (
+                        # if the layered display is activated
+                        self.layered_display 
+                        # and the link we consider is not a trunk
+                        and new_link.layer 
+                        # and the associated "layer line" does not yet exist
+                        and not node.layer_line[new_link.layer]
+                        ):
+                        # we create it
+                        coords = (node.x, node.y, node.x, 
+                                        node.y - new_link.layer * self.diff_y) 
+                        node.layer_line[new_link.layer] = self.create_line(
+                                    *coords, fill="black", width=1, dash=(3,5))
                         self.tag_lower(node.layer_line[new_link.layer])
         current_layer = "all" if not self.layered_display else new_link.layer
         link_to_coords = self.link_coordinates(*edges, layer=current_layer)
@@ -690,9 +705,16 @@ class Scenario(tk.Canvas):
             
     ## Failure simulation
     
+    def remove_failures(self):
+        for AS in self.ntw.pnAS.values():
+            AS.failed_trunk = None
+            self.delete(self.id_failure)
+    
     def simulate_failure(self, trunk):
         self.delete(self.id_failure)
-        self.ntw.failed_trunk = trunk
+        for AS in trunk.AS:
+            AS.management.trigger_failure(trunk)
+        self.refresh_all_labels()
         source, destination = trunk.source, trunk.destination
         xA, yA, xB, yB = source.x, source.y, destination.x, destination.y
         self.id_failure = self.create_image(

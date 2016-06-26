@@ -15,9 +15,9 @@ import advanced_graph_options as ago
 import drawing_options_window as dow
 import frame
 import scenario
-import pickle
 import csv
-import xlrd, xlwt
+import xlrd
+import xlwt
 import xml.etree.ElementTree as etree
 import warnings
 from PIL import ImageTk
@@ -59,6 +59,8 @@ class NetDim(tk.Tk):
         
         ("trunk", 
         (
+        "protocol",
+        "interface",
         "name", 
         "source", 
         "destination", 
@@ -67,8 +69,18 @@ class NetDim(tk.Tk):
         "costDS", 
         "capacitySD", 
         "capacityDS", 
+        # if there is no failure simulation, the traffic property tells us how
+        # much traffic is transiting on the trunk in a "no failure" situation
+        # if there is a link in failure, the traffic that is redirected will 
+        # also contribute to this "traffic parameter".
         "trafficSD", 
         "trafficDS",
+        # unlike the traffic property above, wctraffic is the worst case
+        # traffic. It is the traffic that we use for dimensioning purposes, and
+        # it considers the maximum traffic that the link must be able to 
+        # handle, considering all possible failure cases.
+        "wctrafficSD",
+        "wctrafficDS",
         "flowSD", 
         "flowDS",
         "ipaddressS", 
@@ -118,12 +130,15 @@ class NetDim(tk.Tk):
         ("Trunk", 
         (
         "None", 
+        "Protocol",
+        "Interface",
         "Name", 
         "Distance", 
         "Cost", 
         "Capacity", 
         "Flow", 
         "Traffic", 
+        "WCTraffic",
         "IPaddress"
         )),
         
@@ -160,6 +175,8 @@ class NetDim(tk.Tk):
         
         ("trunk", 
         (
+        "protocol",
+        "interface",
         "name", 
         "source", 
         "destination", 
@@ -168,8 +185,6 @@ class NetDim(tk.Tk):
         "costDS", 
         "capacitySD", 
         "capacityDS", 
-        "trafficSD",
-        "trafficDS",
         "ipaddressS", 
         "subnetmaskS", 
         "interfaceS",
@@ -214,6 +229,8 @@ class NetDim(tk.Tk):
         # the code for AS export
         self.prop_to_type = {
         "name": str, 
+        "protocol": str,
+        "interface": str,
         "ipaddress": str,
         "subnetmask": str,
         "x": float, 
@@ -443,6 +460,10 @@ class NetDim(tk.Tk):
                         if obj_type == "node":
                             n, *param = self.str_to_object(other, "node")
                             self.cs.ntw.nf(*param, node_type="router", name=n)
+                        elif obj_type == "trunk":
+                            p, i, n, s, d, *param = self.str_to_object(other, obj_type)
+                            self.cs.ntw.lf(*param, link_type=obj_type, 
+                                    interface=i, protocol=p, name=n, s=s, d=d)
                         else:
                             n, s, d, *param = self.str_to_object(other, obj_type)
                             self.cs.ntw.lf(*param, link_type=obj_type, 
@@ -460,21 +481,27 @@ class NetDim(tk.Tk):
                         n, *param = self.str_to_object(
                                     xls_sheet.row_values(row_index), "node")
                         self.cs.ntw.nf(*param, node_type="router", name=n)
+                    elif obj_type == "trunk":
+                        p, i, n, s, d, *param = self.str_to_object(
+                                    xls_sheet.row_values(row_index), obj_type)
+                        self.cs.ntw.lf(*param, link_type=obj_type, 
+                                    interface=i, protocol=p, name=n, s=s, d=d)
                     else:
                         n, s, d, *param = self.str_to_object(
                                     xls_sheet.row_values(row_index), obj_type)
-                        new_link = self.cs.ntw.lf(*param, link_type=obj_type, 
+                        self.cs.ntw.lf(*param, link_type=obj_type, 
                                                             name=n, s=s, d=d)
                         
             AS_sheet, area_sheet = book.sheets()[4], book.sheets()[5]
         
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):
-                AS_name, AS_type, AS_nodes, AS_trunks, AS_edges, *o = AS_sheet.row_values(row_index)
+                AS_name, AS_type, AS_id, AS_nodes, AS_trunks, AS_edges, *o = AS_sheet.row_values(row_index)
+                AS_id = int(AS_id)
                 AS_nodes = self.convert_nodes_set(AS_nodes)
                 AS_trunks = self.convert_links_set(AS_trunks)
                 AS_edges = self.convert_nodes_set(AS_edges)
-                self.cs.ntw.AS_factory(AS_name, AS_type, AS_trunks, AS_nodes, 
+                self.cs.ntw.AS_factory(AS_name, AS_type, AS_id, AS_trunks, AS_nodes, 
                                                         AS_edges, set(), True)
             
             # creation of the area
@@ -574,10 +601,11 @@ class NetDim(tk.Tk):
             for i, AS in enumerate(self.cs.ntw.pnAS.values(), 1):
                 AS_sheet.write(i, 0, str(AS.name))
                 AS_sheet.write(i, 1, str(AS.type))
-                AS_sheet.write(i, 2, str(list(map(str, AS.pAS["node"]))))
-                AS_sheet.write(i, 3, str(list(map(str, AS.pAS["trunk"]))))
-                AS_sheet.write(i, 4, str(list(map(str, AS.pAS["edge"]))))
-                AS_sheet.write(i, 5, str(list(AS.areas.keys())))
+                AS_sheet.write(i, 2, str(AS.id))
+                AS_sheet.write(i, 3, str(list(map(str, AS.pAS["node"]))))
+                AS_sheet.write(i, 4, str(list(map(str, AS.pAS["trunk"]))))
+                AS_sheet.write(i, 5, str(list(map(str, AS.pAS["edge"]))))
+                AS_sheet.write(i, 6, str(list(AS.areas.keys())))
                 
             area_sheet = excel_workbook.add_sheet("area")
             cpt = 1

@@ -140,6 +140,7 @@ class Link(object):
         return hash(self.name)
 
 class Trunk(Link):
+    
     type = "trunk"
     network_type = type
     color = "blue"
@@ -148,6 +149,7 @@ class Trunk(Link):
 
     def __init__(
                  self, 
+                 interface,
                  name, 
                  source, 
                  destination, 
@@ -158,15 +160,16 @@ class Trunk(Link):
                  capacityDS = 3, 
                  trafficSD = 0,
                  trafficDS = 0,
-                 ipaddressS = "0.0.0.0", 
-                 subnetmaskS = "255.255.255.255",
-                 interfaceS = "",
-                 ipaddressD = "0.0.0.0", 
-                 subnetmaskD = "255.255.255.255", 
-                 interfaceD = ""
+                 ipaddressS = None, 
+                 subnetmaskS = None,
+                 interfaceS = None,
+                 ipaddressD = None, 
+                 subnetmaskD = None, 
+                 interfaceD = None
                  ):
                      
         super().__init__(name, source, destination, distance)
+        self.interface = interface
         self.costSD, self.costDS = int(costSD), int(costDS)
         self.capacitySD, self.capacityDS = int(capacitySD), int(capacityDS)
         self.trafficSD = trafficSD
@@ -187,14 +190,18 @@ class Trunk(Link):
         return hash(self.name)
         
 class Ethernet(Trunk):
-    def __init__(self, name, source, destination, cost=1, capacitySD=3, capacityDS=3, interface="GE"):
-        super().__init__(name, source, destination, cost=1, capacitySD=3, capacityDS=3)
-        self.interface = interface
+    
+    protocol = "ethernet"
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         
 class WDMFiber(Trunk):
-    def __init__(self, name, source, destination, cost=1, capacitySD=3, capacityDS=3, interface="GE"):
-        super().__init__(name, source, destination, cost=1, capacitySD=3, capacityDS=3, interface="GE", lambda_capacity=88)
-        self.interface = interface
+    
+    protocol = "wdm"
+    
+    def __init__(self, lambda_capacity=88, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.lambda_capacity = lambda_capacity
         
 class Route(Link):

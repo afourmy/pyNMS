@@ -37,8 +37,9 @@ class TestExportImport(unittest.TestCase):
         trunk.distance = 666
         route = cls.netdim.cs.ntw.lf(link_type="route", s=src, d=dest)
         # export in all 3 format: excel, text and csv
+        path = "\\Tests\\test_export."
         for extension in ("xls", "txt", "csv"):
-            cls.netdim.export_graph(path_parent + "\\Tests\\test_export." + extension)
+            cls.netdim.export_graph("".join((path_parent, path, extension)))
         cls.netdim.destroy()
         
     def tearDown(self):
@@ -96,6 +97,12 @@ class TestMST(unittest.TestCase):
         self.assertEqual(mst_costs, {1, 2, 4})
         
 class TestSP(unittest.TestCase):
+    
+    results = (
+    ["trunk1", "trunk3", "trunk5"], 
+    ["trunk1", "trunk7"],
+    ["trunk1", "trunk3"]
+    )
  
     @start_and_import("test_SP.xls")
     def setUp(self):
@@ -108,45 +115,67 @@ class TestSP(unittest.TestCase):
         self.netdim.destroy()
  
     def test_dijkstra(self):
-        self.assertEqual(list(map(str, self.route9.path)), ["trunk1", "trunk3", "trunk5"])
-        self.assertEqual(list(map(str, self.route10.path)), ["trunk1", "trunk7"])
-        self.assertEqual(list(map(str, self.route11.path)), ["trunk1", "trunk3"])
+        for i, r in enumerate((self.route9, self.route10, self.route11)):
+            self.assertEqual(list(map(str, r.path)), self.results[i])
         
     def test_bellman_ford(self):
-        _, path_route9 = self.netdim.cs.ntw.bellman_ford(self.route9.source, self.route9.destination)
-        _, path_route10 = self.netdim.cs.ntw.bellman_ford(self.route10.source, self.route10.destination)
-        _, path_route11 = self.netdim.cs.ntw.bellman_ford(self.route11.source, self.route11.destination)
-        
-        self.assertEqual(list(map(str, path_route9)), ["trunk1", "trunk3", "trunk5"])
-        self.assertEqual(list(map(str, path_route10)), ["trunk1", "trunk7"])
-        self.assertEqual(list(map(str, path_route11)), ["trunk1", "trunk3"])
+        for i, r in enumerate((self.route9, self.route10, self.route11)):
+            _, path = self.netdim.cs.ntw.bellman_ford(r.source, r.destination)
+            self.assertEqual(list(map(str, path)), self.results[i])
         
     def test_floyd_warshall(self):
-        cost_trunk = lambda t: t.costSD
-        length_route9 = sum(map(cost_trunk, self.route9.path))
-        length_route10 = sum(map(cost_trunk, self.route10.path))
-        length_route11 = sum(map(cost_trunk, self.route11.path))
+        cost_trunk = lambda trunk: getattr(trunk, "costSD")
         all_length = self.netdim.cs.ntw.floyd_warshall()
-        
-        self.assertEqual(length_route9, all_length[self.route9.source][self.route9.destination])
-        self.assertEqual(length_route10, all_length[self.route10.source][self.route10.destination])
-        self.assertEqual(length_route11, all_length[self.route11.source][self.route11.destination])
+        for r in (self.route9, self.route10, self.route11):
+            path_length = all_length[r.source][r.destination]
+            self.assertEqual(sum(map(cost_trunk, r.path)), path_length)
         
 class TestISIS(unittest.TestCase):
+    
+    results = (
+    ("node5->node0", ["trunk5","trunk3","trunk2"]),
+    ("node0->node5", ["trunk1","trunk0","trunk4","trunk5"])
+    )
  
     @start_and_import("test_ISIS.xls")
     def setUp(self):
-        pass
+        self.netdim.cs.ntw.calculate_all()
  
     def tearDown(self):
         self.netdim.destroy()
  
     def test_ISIS(self):
-        self.netdim.cs.ntw.calculate_all()
         self.assertEqual(len(self.netdim.cs.ntw.pn["route"]), 2)
+        for route, path in self.results:
+            # we retrieve the actual route from its name in pn
+            route = self.netdim.cs.ntw.pn["route"][route]
+            # we check that the path is conform to IS-IS protocol
+            self.assertEqual(list(map(str, route.path)), path)
+            
+    def test_failure_simulation(self):
         
-        
-
+            
+# class TestISIS(unittest.TestCase):
+#     
+#     results = (
+#     ("node5->node0", ["trunk5","trunk3","trunk2"]),
+#     ("node0->node5", ["trunk1","trunk0","trunk4","trunk5"])
+#     )
+#  
+#     @start_and_import("test_ISIS.xls")
+#     def setUp(self):
+#         self.netdim.cs.ntw.calculate_all()
+#  
+#     def tearDown(self):
+#         self.netdim.destroy()
+#  
+#     def test_ISIS(self):
+#         self.assertEqual(len(self.netdim.cs.ntw.pn["route"]), 2)
+#         for route, path in self.results:
+#             # we retrieve the actual route from its name in pn
+#             route = self.netdim.cs.ntw.pn["route"][route]
+#             # we check that the path is conform to IS-IS protocol
+#             self.assertEqual(list(map(str, route.path)), path)
         
 if __name__ == '__main__':
     unittest.main(warnings='ignore')  

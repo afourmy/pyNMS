@@ -53,8 +53,10 @@ class CreateArea(CustomTopLevel):
         self.entry_name.grid(row=0, column=1, pady=5, padx=5)
         self.entry_id.grid(row=1, column=1, pady=5, padx=5)
         
-        self.button_OK = ttk.Button(self, text="OK", command=lambda: self.create_area(asm))
-        self.button_OK.grid(row=2, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
+        self.button_OK = ttk.Button(self, text="OK", 
+                                        command=lambda: self.create_area(asm))
+        self.button_OK.grid(row=2, column=0, columnspan=2, 
+                                        pady=5, padx=5, sticky="nsew")
         
     def create_area(self, asm):
         asm.create_area(self.entry_name.get(), self.entry_id.get())
