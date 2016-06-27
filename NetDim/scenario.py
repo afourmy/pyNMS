@@ -169,7 +169,8 @@ class Scenario(tk.Canvas):
             self.highlight_route(route)
             
     def highlight_route(self, route):
-        ft = route.AS.management.failed_trunk
+        # if the route has no AS, there is no management window
+        ft = route.AS.management.failed_trunk if route.AS else None
         if ft and ft in route.path:
             self.highlight_objects(*route.r_path[ft], color="gold", dash=True)
         else:

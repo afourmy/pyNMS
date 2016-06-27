@@ -151,31 +151,6 @@ class TestISIS(unittest.TestCase):
             route = self.netdim.cs.ntw.pn["route"][route]
             # we check that the path is conform to IS-IS protocol
             self.assertEqual(list(map(str, route.path)), path)
-            
-    def test_failure_simulation(self):
-        
-            
-# class TestISIS(unittest.TestCase):
-#     
-#     results = (
-#     ("node5->node0", ["trunk5","trunk3","trunk2"]),
-#     ("node0->node5", ["trunk1","trunk0","trunk4","trunk5"])
-#     )
-#  
-#     @start_and_import("test_ISIS.xls")
-#     def setUp(self):
-#         self.netdim.cs.ntw.calculate_all()
-#  
-#     def tearDown(self):
-#         self.netdim.destroy()
-#  
-#     def test_ISIS(self):
-#         self.assertEqual(len(self.netdim.cs.ntw.pn["route"]), 2)
-#         for route, path in self.results:
-#             # we retrieve the actual route from its name in pn
-#             route = self.netdim.cs.ntw.pn["route"][route]
-#             # we check that the path is conform to IS-IS protocol
-#             self.assertEqual(list(map(str, route.path)), path)
         
 if __name__ == '__main__':
     unittest.main(warnings='ignore')  
