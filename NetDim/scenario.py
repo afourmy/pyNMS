@@ -697,6 +697,8 @@ class Scenario(tk.Canvas):
         if not self._job:
             # reset the number of iterations
             self.drawing_iteration = 0
+        else:
+            self._cancel()
         self.drawing_iteration += 1
         self.ntw.spring_layout(nodes, *self.master.drawing_param)
         if not self.drawing_iteration % 5:   

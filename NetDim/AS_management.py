@@ -250,6 +250,11 @@ class ASManagement(FocusTopLevel):
         # resulting traffic for all possible failure case
         all_traffic = {trunk: {"SD": [], "DS": []} 
                                         for trunk in self.AS.pAS["trunk"]}
+        # TODO refactor this part. I don't need to store all values in a list,
+        # TODO all I need is to compare and store just the maximum value.
+        # TODO in other words I can change all_traffic so that it keeps just one
+        # TODO trunk: {"SD": max value, "DS": max value}
+        # the initial value should be the normal traffic value !!!
         for failed_trunk in self.AS.pAS["trunk"]:
             # we create a dict of trunk, that contains for all trunks the 
             # resulting traffic, considering that failed_trunk is in failure

@@ -45,7 +45,8 @@ class AutonomousSystem(object):
         self.management = AS_management.ASManagement(scenario, self, imp)
         # imp tells us if the AS is imported or created from scratch.
         if not imp:
-            self.area_factory("Backbone", 2 if type == "ISIS" else 0)
+            id = 2 if type == "ISIS" else 0
+            self.area_factory("Backbone", id=id, trunks=trunks, nodes=nodes)
             
         # each type of algorithm will have a specific algorithm, that defines
         # how to compute a path in the AS
@@ -145,19 +146,23 @@ class ModifyAS(CustomTopLevel):
         self.AS_list = ttk.Combobox(self, width=9)
         self.AS_list["values"] = values
         self.AS_list.current(0)
-        self.AS_list.grid(row=0, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
-        self.AS_list.bind('<<ComboboxSelected>>', lambda e: self.update_value(scenario))
+        self.AS_list.grid(row=0, column=0, columnspan=2, 
+                                            pady=5, padx=5, sticky="nsew")
+        self.AS_list.bind('<<ComboboxSelected>>', 
+                                        lambda e: self.update_value(scenario))
         
         if mode in ("add", "remove area"):
             self.area_list = ttk.Combobox(self, width=9)
             self.update_value(scenario)
             self.area_list.current(0)
-            self.area_list.grid(row=1, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
+            self.area_list.grid(row=1, column=0, columnspan=2, 
+                                            pady=5, padx=5, sticky="nsew")
         
         # Button to add in an AS
         self.button_add_AS = ttk.Button(self, text="OK", command=command)
         #row = 2 if mode in ("add", "remove area") else 1
-        self.button_add_AS.grid(row=2, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
+        self.button_add_AS.grid(row=2, column=0, columnspan=2, 
+                                            pady=5, padx=5, sticky="nsew")
         
     # when a different AS is selected, the area combobox is updated accordingly
     def update_value(self, scenario):

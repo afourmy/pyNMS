@@ -51,52 +51,76 @@ class MainFrame(tk.Frame):
         self.type_to_button["motion"].grid(row=2, column=0, 
                     columnspan=2, rowspan=2, padx=20, pady=5, sticky="nsew")
         self.type_to_button["multi-layer"].grid(row=2, column=2, columnspan=2)
+        
         sep = ttk.Separator(self, orient=tk.HORIZONTAL)
         sep.grid(row=4, columnspan=4, sticky="ew")
+        
+        # radio button to choose between link and node selection
+        selection_value = tk.StringVar()
+        selection_value.set("node") 
+        # ttk radiobutton style
+        ttk.Style().configure("TRadiobutton", background="#A1DBCD")
+        node_selection = ttk.Radiobutton(self, text="Node selection",
+                        variable=selection_value, value="node", 
+                        command=lambda: self.change_selection(master, "node"))
+        link_selection = ttk.Radiobutton(self, text="Link selection",
+                        variable=selection_value, value="link", 
+                        command=lambda: self.change_selection(master, "link"))
+        
+        # affichage des radio button
+        node_selection.grid(row=5, column=0, columnspan=2, 
+                                                pady=5, padx=5, sticky="w")
+        link_selection.grid(row=5, column=2, columnspan=2, 
+                                                pady=5, padx=5, sticky="w")
+        
+        sep = ttk.Separator(self, orient=tk.HORIZONTAL)
+        sep.grid(row=6, columnspan=4, sticky="ew")
         
         # creation mode: type of node or link
         label_creation_mode = tk.Label(self, text="Object creation", 
                                             bg="#A1DBCD", font=self.font)
-        label_creation_mode.grid(row=5, columnspan=4, sticky="ew")
-        self.type_to_button["router"].grid(row=6, column=0, padx=2)
-        self.type_to_button["oxc"].grid(row=6, column=1, padx=2)
-        self.type_to_button["host"].grid(row=6, column=2, padx=2)
-        self.type_to_button["antenna"].grid(row=6, column=3, padx=2)
-        self.type_to_button["regenerator"].grid(row=7, column=0, padx=2)
-        self.type_to_button["splitter"].grid(row=7, column=1, padx=2)
-        self.type_to_button["trunk"].grid(row=7, column=2, columnspan=2, padx=2)
-        self.type_to_button["route"].grid(row=8, column=2, columnspan=2, 
+        label_creation_mode.grid(row=7, columnspan=4, sticky="ew")
+        self.type_to_button["router"].grid(row=8, column=0, padx=2)
+        self.type_to_button["oxc"].grid(row=8, column=1, padx=2)
+        self.type_to_button["host"].grid(row=8, column=2, padx=2)
+        self.type_to_button["antenna"].grid(row=8, column=3, padx=2)
+        self.type_to_button["regenerator"].grid(row=9, column=0, padx=2)
+        self.type_to_button["splitter"].grid(row=9, column=1, padx=2)
+        self.type_to_button["trunk"].grid(row=9, column=2, columnspan=2, padx=2)
+        self.type_to_button["route"].grid(row=10, column=2, columnspan=2, 
                                                 pady=5, padx=5, sticky=tk.W)
-        self.type_to_button["traffic"].grid(row=8, column=0, columnspan=2, 
+        self.type_to_button["traffic"].grid(row=10, column=0, columnspan=2, 
                                                 pady=5, padx=5, sticky=tk.W)
                                                 
         sep = ttk.Separator(self, orient=tk.HORIZONTAL)
-        sep.grid(row=9, columnspan=4, sticky="ew")
+        sep.grid(row=11, columnspan=4, sticky="ew")
         
         # drawing options
         label_drawing_options = tk.Label(self, text="Force-directed layout", 
                                                 bg="#A1DBCD", font=self.font)
-        label_drawing_options.grid(row=10, columnspan=4, sticky="ew")
-        self.type_to_button["draw"].grid(row=11, column=0, columnspan=2, 
+        label_drawing_options.grid(row=12, columnspan=4, sticky="ew")
+        self.type_to_button["draw"].grid(row=13, column=0, columnspan=2, 
                                                 pady=5, padx=20, sticky="nsew")
-        self.type_to_button["stop"].grid(row=11, column=2, columnspan=2, 
+        self.type_to_button["stop"].grid(row=13, column=2, columnspan=2, 
                                                 pady=5, padx=20, sticky="nsew")
                                                 
         sep = ttk.Separator(self, orient=tk.HORIZONTAL)
-        sep.grid(row=12, columnspan=4, sticky="ew")
+        sep.grid(row=14, columnspan=4, sticky="ew")
         
         # graph generation
         label_graph_generation = tk.Label(self, text="Graph generation", 
                                             bg="#A1DBCD", font=self.font)
-        label_graph_generation.grid(row=13, columnspan=4, sticky="ew")
-        self.type_to_button["tree"].grid(row=14,column=0, sticky="w")
-        self.type_to_button["star"].grid(row=14,column=1, sticky="w")
-        self.type_to_button["full-mesh"].grid(row=14,column=2, sticky="w")
-        self.type_to_button["ring"].grid(row=14,column=3, sticky="w")
+        label_graph_generation.grid(row=15, columnspan=4, sticky="ew")
+        self.type_to_button["tree"].grid(row=16,column=0, sticky="w")
+        self.type_to_button["star"].grid(row=16,column=1, sticky="w")
+        self.type_to_button["full-mesh"].grid(row=16,column=2, sticky="w")
+        self.type_to_button["ring"].grid(row=16,column=3, sticky="w")
         
         sep = ttk.Separator(self, orient=tk.HORIZONTAL)
-        sep.grid(row=15, columnspan=4, sticky="ew")
+        sep.grid(row=17, columnspan=4, sticky="ew")
 
+    def change_selection(self, master, mode):
+        master.cs.object_selection = mode
         
     def switch_to(self, master, mode):
         relief = tk.SUNKEN if mode == "motion" else tk.RAISED

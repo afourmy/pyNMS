@@ -851,7 +851,7 @@ class Network(object):
     ## Distance functions
     
     def distance(self, p, q): 
-        return sqrt(p*p + q*q)
+        return sqrt(p * p + q * q)
         
     def haversine_distance(self, s, d):
         """ Earth distance between two nodes """
@@ -861,7 +861,7 @@ class Network(object):
     
         delta_lon = lon_d - lon_s 
         delta_lat = lat_d - lat_s 
-        a = sin(delta_lat/2)**2 + cos(lat_s) * cos(lat_d) * sin(delta_lon/2)**2
+        a = sin(delta_lat / 2)**2 + cos(lat_s) * cos(lat_d) * sin(delta_lon / 2)**2
         c = 2 * asin(sqrt(a)) 
         # radius of earth (km)
         r = 6371 
@@ -872,12 +872,11 @@ class Network(object):
     ## 1) Eades algorithm 
     
     def coulomb_force(self, dx, dy, dist, beta):
-        c = dist and beta/dist**3
-        return (-c*dx, -c*dy)
+        c = dist and beta / dist**3
+        return (-c * dx, -c * dy)
         
     def hooke_force(self, dx, dy, dist, L0, k):
-        dl = dist - L0
-        const = k * dl / dist
+        const = k * (dist - L0) / dist
         return (const * dx, const * dy)
             
     def spring_layout(self, allowed_nodes, alpha, beta, k, eta, delta, L0):
