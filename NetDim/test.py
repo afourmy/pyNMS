@@ -38,7 +38,7 @@ class TestExportImport(unittest.TestCase):
         route = cls.netdim.cs.ntw.lf(link_type="route", s=src, d=dest)
         # export in all 3 format: excel, text and csv
         path = "\\Tests\\test_export."
-        for extension in ("xls", "txt", "csv"):
+        for extension in ("xls", "csv"):
             cls.netdim.export_graph("".join((path_parent, path, extension)))
         cls.netdim.destroy()
         
@@ -57,8 +57,8 @@ class TestExportImport(unittest.TestCase):
     def test_object_import_xls(self):
         self.object_import("xls")
         
-    def test_object_import_csv(self):
-        self.object_import("csv")
+    # def test_object_import_csv(self):
+    #     self.object_import("csv")
 
 class TestFlow(unittest.TestCase):
  

@@ -29,7 +29,8 @@ class ObjectManagementWindow(FocusTopLevel):
         "antenna":"180x250", 
         "regenerator": "180x250", 
         "splitter": "180x250", 
-        "trunk": "200x480", 
+        "ethernet": "200x480", 
+        "wdm": "200x480", 
         "route": "220x400", 
         "traffic": "250x400"
         }

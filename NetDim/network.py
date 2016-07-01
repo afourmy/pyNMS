@@ -132,13 +132,13 @@ class Network(object):
         dict_of_adj_links = self.graph.pop(node, {})
         for type_link, adj_obj in dict_of_adj_links.items():
             for neighbor, adj_link in adj_obj:
-                self.graph[neighbor][type_link].discard((neighbor, adj_link))
+                self.graph[neighbor][type_link].discard((node, adj_link))
                 yield self.pn[type_link].pop(adj_link.name, None)
             
     def remove_link(self, link):
         self.graph[link.source][link.type].discard((link.destination, link))
         self.graph[link.destination][link.type].discard((link.source, link))
-        self.pn[link.type].pop(link.name, None)
+        self.pn[link.network_type].pop(link.name, None)
         
     def find_edge_nodes(self, AS):
         AS.pAS["edge"].clear()

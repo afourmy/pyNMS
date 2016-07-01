@@ -40,9 +40,12 @@ class MainFrame(tk.Frame):
         
         for button_type, cmd in self.type_to_action.items():
             button = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=cmd)
-            if button_type in ("trunk", "route", "traffic", "draw", "stop"):
+            if button_type in ("route", "traffic", "draw", "stop"):
                 button.configure(text=button_type.capitalize(), 
                                             compound="top", font=self.font)
+            elif button_type in ("ethernet", "wdm"):
+                text = "Ethernet trunk" if button_type == "ethernet" else "WDM trunk"
+                button.configure(text=text, compound="top", font=self.font)
             self.type_to_button[button_type] = button
         
         # netdim mode: motion or creation
@@ -86,38 +89,38 @@ class MainFrame(tk.Frame):
         self.type_to_button["antenna"].grid(row=8, column=3, padx=2)
         self.type_to_button["regenerator"].grid(row=9, column=0, padx=2)
         self.type_to_button["splitter"].grid(row=9, column=1, padx=2)
-        self.type_to_button["trunk"].grid(row=9, column=2, columnspan=2, padx=2)
-        self.type_to_button["route"].grid(row=10, column=2, columnspan=2, 
+        self.type_to_button["ethernet"].grid(row=10, column=0, columnspan=2, 
                                                 pady=5, padx=5, sticky=tk.W)
-        self.type_to_button["traffic"].grid(row=10, column=0, columnspan=2, 
+        self.type_to_button["wdm"].grid(row=10, column=2, columnspan=2, 
+                                                pady=5, padx=5, sticky=tk.W)
+        self.type_to_button["route"].grid(row=11, column=2, columnspan=2, 
+                                                pady=5, padx=5, sticky=tk.W)
+        self.type_to_button["traffic"].grid(row=11, column=0, columnspan=2, 
                                                 pady=5, padx=5, sticky=tk.W)
                                                 
         sep = ttk.Separator(self, orient=tk.HORIZONTAL)
-        sep.grid(row=11, columnspan=4, sticky="ew")
+        sep.grid(row=12, columnspan=4, sticky="ew")
         
         # drawing options
         label_drawing_options = tk.Label(self, text="Force-directed layout", 
                                                 bg="#A1DBCD", font=self.font)
-        label_drawing_options.grid(row=12, columnspan=4, sticky="ew")
-        self.type_to_button["draw"].grid(row=13, column=0, columnspan=2, 
+        label_drawing_options.grid(row=13, columnspan=4, sticky="ew")
+        self.type_to_button["draw"].grid(row=14, column=0, columnspan=2, 
                                                 pady=5, padx=20, sticky="nsew")
-        self.type_to_button["stop"].grid(row=13, column=2, columnspan=2, 
+        self.type_to_button["stop"].grid(row=14, column=2, columnspan=2, 
                                                 pady=5, padx=20, sticky="nsew")
                                                 
         sep = ttk.Separator(self, orient=tk.HORIZONTAL)
-        sep.grid(row=14, columnspan=4, sticky="ew")
+        sep.grid(row=15, columnspan=4, sticky="ew")
         
         # graph generation
         label_graph_generation = tk.Label(self, text="Graph generation", 
                                             bg="#A1DBCD", font=self.font)
-        label_graph_generation.grid(row=15, columnspan=4, sticky="ew")
-        self.type_to_button["tree"].grid(row=16,column=0, sticky="w")
-        self.type_to_button["star"].grid(row=16,column=1, sticky="w")
-        self.type_to_button["full-mesh"].grid(row=16,column=2, sticky="w")
-        self.type_to_button["ring"].grid(row=16,column=3, sticky="w")
-        
-        sep = ttk.Separator(self, orient=tk.HORIZONTAL)
-        sep.grid(row=17, columnspan=4, sticky="ew")
+        label_graph_generation.grid(row=16, columnspan=4, sticky="ew")
+        self.type_to_button["tree"].grid(row=17,column=0, sticky="w")
+        self.type_to_button["star"].grid(row=17,column=1, sticky="w")
+        self.type_to_button["full-mesh"].grid(row=17,column=2, sticky="w")
+        self.type_to_button["ring"].grid(row=17,column=3, sticky="w")
 
     def change_selection(self, master, mode):
         master.cs.object_selection = mode

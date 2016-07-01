@@ -142,10 +142,9 @@ class Link(object):
 class Trunk(Link):
     
     type = "trunk"
-    network_type = type
-    color = "blue"
     layer = 0
     dash = ()
+    network_type = type
 
     def __init__(
                  self, 
@@ -174,6 +173,8 @@ class Trunk(Link):
         self.capacitySD, self.capacityDS = int(capacitySD), int(capacityDS)
         self.trafficSD = trafficSD
         self.trafficDS = trafficDS
+        self.wctrafficSD = 0
+        self.wctrafficDS = 0
         self.ipaddressS = ipaddressS
         self.subnetmaskS = subnetmaskS
         self.interfaceS = interfaceS
@@ -191,18 +192,20 @@ class Trunk(Link):
         
 class Ethernet(Trunk):
     
-    protocol = "ethernet"
+    color = "blue"
+    protocol = type = "ethernet"
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
 class WDMFiber(Trunk):
     
-    protocol = "wdm"
+    color = "orange"
+    protocol = type = "wdm"
     
-    def __init__(self, lambda_capacity=88, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.lambda_capacity = lambda_capacity
+        self.lambda_capacity = 88
         
 class Route(Link):
     type = "route"

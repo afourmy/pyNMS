@@ -57,7 +57,7 @@ class NetDim(tk.Tk):
         ("regenerator", node_properties),
         ("splitter", node_properties),
         
-        ("trunk", 
+        ("ethernet", 
         (
         "protocol",
         "interface",
@@ -89,6 +89,42 @@ class NetDim(tk.Tk):
         "ipaddressD", 
         "subnetmaskD", 
         "interfaceD",
+        "AS"
+        )),
+        
+        ("wdm", 
+        (
+        "protocol",
+        "interface",
+        "name", 
+        "source", 
+        "destination", 
+        "distance", 
+        "costSD", 
+        "costDS", 
+        "capacitySD", 
+        "capacityDS", 
+        # if there is no failure simulation, the traffic property tells us how
+        # much traffic is transiting on the trunk in a "no failure" situation
+        # if there is a link in failure, the traffic that is redirected will 
+        # also contribute to this "traffic parameter".
+        "trafficSD", 
+        "trafficDS",
+        # unlike the traffic property above, wctraffic is the worst case
+        # traffic. It is the traffic that we use for dimensioning purposes, and
+        # it considers the maximum traffic that the link must be able to 
+        # handle, considering all possible failure cases.
+        "wctrafficSD",
+        "wctrafficDS",
+        "flowSD", 
+        "flowDS",
+        "ipaddressS", 
+        "subnetmaskS", 
+        "interfaceS",
+        "ipaddressD", 
+        "subnetmaskD", 
+        "interfaceD",
+        "lambda_capacity",
         "AS"
         )),
         
@@ -191,6 +227,7 @@ class NetDim(tk.Tk):
         "ipaddressD", 
         "subnetmaskD", 
         "interfaceD",
+        "lambda_capacity",
         )),
         
         ("route", 
@@ -255,6 +292,7 @@ class NetDim(tk.Tk):
         "interfaceS": str,
         "interfaceD": str,
         "throughput": float,
+        "lambda_capacity": int,
         "source": convert_node, 
         "destination": convert_node, 
         "path_constraints": convert_nodes_list, 
@@ -263,6 +301,12 @@ class NetDim(tk.Tk):
         "path": convert_links_list, 
         "subnets": str, 
         "AS": convert_AS
+        }
+        
+        self.default = {
+        str: "",
+        int: 0,
+        float: 0.
         }
         
         ## ----- Menus : -----
@@ -372,7 +416,7 @@ class NetDim(tk.Tk):
         },
         
         "l_type": {
-        l_type: (85, 15) for l_type in self.cs.ntw.link_type
+        l_type: (85, 15) for l_type in ("ethernet", "wdm", "route", "traffic")
         },
         
         "ntw_topo": {
@@ -460,9 +504,9 @@ class NetDim(tk.Tk):
                         if obj_type == "node":
                             n, *param = self.str_to_object(other, "node")
                             self.cs.ntw.nf(*param, node_type="router", name=n)
-                        elif obj_type == "trunk":
+                        elif obj_type in ("ethernet", "wdm"):
                             p, i, n, s, d, *param = self.str_to_object(other, obj_type)
-                            self.cs.ntw.lf(*param, link_type=obj_type, 
+                            self.cs.ntw.lf(*param, link_type="trunk",
                                     interface=i, protocol=p, name=n, s=s, d=d)
                         else:
                             n, s, d, *param = self.str_to_object(other, obj_type)
@@ -484,7 +528,7 @@ class NetDim(tk.Tk):
                     elif obj_type == "trunk":
                         p, i, n, s, d, *param = self.str_to_object(
                                     xls_sheet.row_values(row_index), obj_type)
-                        self.cs.ntw.lf(*param, link_type=obj_type, 
+                        self.cs.ntw.lf(*param, link_type="trunk", 
                                     interface=i, protocol=p, name=n, s=s, d=d)
                     else:
                         n, s, d, *param = self.str_to_object(
@@ -583,9 +627,17 @@ class NetDim(tk.Tk):
             for obj_type, properties in self.object_ie.items():
                 graph_per_line.append(obj_type)
                 for obj in self.cs.ntw.pn[obj_type].values():
-                    param = ",".join(str(getattr(obj, property)) for property in properties)
+                    all_properties = []
+                    for property in properties:
+                        if hasattr(obj, property):
+                            all_properties.append(str(getattr(obj, property)))
+                        else:
+                            default = self.default[self.prop_to_type[property]]
+                            all_properties.append(str(default))
+                    param = ",".join(all_properties)
                     graph_per_line.append(",".join((obj_type, param)))
-            graph_writer = csv.writer(selected_file, delimiter=",", lineterminator="\n")
+            graph_writer = csv.writer(selected_file, delimiter=",", 
+                                                        lineterminator="\n")
             for line in graph_per_line:
                 graph_writer.writerow(line.split(","))
             
@@ -595,9 +647,15 @@ class NetDim(tk.Tk):
                 xls_sheet = excel_workbook.add_sheet(obj_type)
                 for id, property in enumerate(properties):
                     xls_sheet.write(0, id, property)
-                    for i, t in enumerate(self.cs.ntw.pn[obj_type].values(), 1):
-                        xls_sheet.write(i, id, str(getattr(t, property)))
+                    type = "trunk" if obj_type in ("ethernet", "wdm") else obj_type
+                    for i, t in enumerate(self.cs.ntw.pn[type].values(), 1):
+                        if hasattr(t, property):
+                            xls_sheet.write(i, id, str(getattr(t, property)))
+                        else:
+                            default = self.default[self.prop_to_type[property]]
+                            xls_sheet.write(i, id, default)
             AS_sheet = excel_workbook.add_sheet("AS")
+            
             for i, AS in enumerate(self.cs.ntw.pnAS.values(), 1):
                 AS_sheet.write(i, 0, str(AS.name))
                 AS_sheet.write(i, 1, str(AS.type))
