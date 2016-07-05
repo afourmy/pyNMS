@@ -95,6 +95,38 @@ Three methods were implemented in NetDim to solve the transportation problem:
 - Edmond-Karps algorithm
 - Linear programming with GLPK
 
+# A simple use case: OSPF domain creation and configuration (one area only)
+
+## Create a full-meshed graph with 6 routers
+Click on the full-mesh icon at the bottom of Netdim menu. A window pops up, asking for the number and the type of nodes.
+Choose "router" in the drop-down list, and set the number of nodes to 6.
+![Graph creation](https://github.com/mintoo/networks/raw/master/Readme/use_case_step1.PNG)
+
+## Visualize the graph
+When the graph is created, all nodes are colocated. Click on the selection button in the menu. Select all nodes by pressing the left-click button of the mouse. Click on the "Draw" button, and select "Random + Force-based drawing".
+Nodes will first be randomly spread accross the canvas, after what the force-directed layout is applied.
+![Graph visualization](https://github.com/mintoo/networks/raw/master/Readme/use_case_step2.PNG)
+You can use the mouse scroll wheel to center the display on the nodes.
+
+## Create the AS
+Select all 6 nodes and right-click on one of them. Select "Create AS".
+![AS creation](https://github.com/mintoo/networks/raw/master/Readme/use_case_step3.PNG)
+
+## Add the trunk to the AS
+The AS was created as a set of nodes: it has no trunk yet. Click on the "Find trunks" button.
+This will automatically add all trunks which both ends are part of the AS.
+Add a few edge nodes. Routes are only created between edge nodes.
+![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step4.PNG)
+This AS management panel also display the area topology. In this simple use case, all nodes and trunks are part of the backbone, there is no other area.
+
+## Assign IP address and look at the configuration panel
+Click on "Netdim" logo. This will trigger the assignment of IP addresses to all routers. It will also create "routes" between each pair of "edge nodes", and compute their path in accordance with the OSPF protocol (since there is only one area, it results in a simple shortest path).
+![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step5.PNG)
+
+## Multi-layer display
+Finally, you can trigger the multi-layer display to dissociate routes from trunks and better assess the situation.
+![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step6.PNG)
+Clicking on a route display its path in red. Since we created a full-mesh AS, the shortest path simply uses the trunk connecting each edge. You can delete a few trunks and see how that affects the routing.
 
 # To be done
 
@@ -127,8 +159,8 @@ Three methods were implemented in NetDim to solve the transportation problem:
 
 ## Links
 - [x] Possibility to change the cost of a link (UD-metric)
-- [ ] Interface. Metrics depends on the interface for OSPF, RSTP, etc
-- [ ] Different type of physical link: WDM Fiber, ETH, etc. Color per type of link.
+- [x] Interface. Metrics depends on the interface for OSPF, RSTP, etc
+- [x] Different type of physical link: WDM Fiber, ETH, etc. Color per type of link.
 
 ## Canvas-related tasks
 - [x] Multiple selection: all nodes/links contained in a rectangle

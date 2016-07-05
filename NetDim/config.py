@@ -49,8 +49,8 @@ class Configuration(tk.Toplevel):
                 self.entry_config.insert("insert", activate_rip)
                 
                 for _, adj_trunk in scenario.ntw.graph[node]["trunk"]:
+                    direction = "S"*(adj_trunk.source == node) or "D"
                     if adj_trunk in AS.pAS["trunk"]:
-                        direction = "S"*(adj_trunk.source == node) or "D"
                         ip = getattr(adj_trunk, "ipaddress" + direction)
                         
                         interface_ip = " {name}(config-router)# network {ip}\n"\
@@ -72,8 +72,8 @@ class Configuration(tk.Toplevel):
                 self.entry_config.insert("insert", activate_ospf)
                 
                 for _, adj_trunk in scenario.ntw.graph[node]["trunk"]:
+                    direction = "S"*(adj_trunk.source == node) or "D"
                     if adj_trunk in AS.pAS["trunk"]:
-                        direction = "S"*(adj_trunk.source == node) or "D"
                         ip = getattr(adj_trunk, "ipaddress" + direction)
                         trunk_area ,= adj_trunk.AS[AS]
                         interface_ip = (" {name}(config-router)# network" 
