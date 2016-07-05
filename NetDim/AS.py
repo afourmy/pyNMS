@@ -27,6 +27,7 @@ class AutonomousSystem(object):
         self.name = name
         self.type = type
         self.id = id
+        
         # pAS as in "pool AS": same as pool network
         self.pAS = {
         "trunk": trunks, 
@@ -34,19 +35,34 @@ class AutonomousSystem(object):
         "edge": edges,
         "route": routes
         }
+        
         # areas is a dict associating a name to an area
         self.areas = {}
+        
         # routes is a dict of dict such that routes[eA][eB] returns the route
         # object going from edge A (source) to edge B (destination).
         self.routes = defaultdict(dict)
         for obj in nodes | trunks:
             obj.AS[self] = set()
+            
         # management window of the AS 
         self.management = AS_management.ASManagement(scenario, self, imp)
+        
         # imp tells us if the AS is imported or created from scratch.
         if not imp:
             id = 2 if type == "ISIS" else 0
             self.area_factory("Backbone", id=id, trunks=trunks, nodes=nodes)
+            
+        # the metric used to compute the shortest path. By default, it is 
+        # a hop count for a RIP AS, and bandwidth-dependent for ISIS or OSPF.
+        # if the metric is bandwidth, it is calculated based on the interface
+        # of the trunk, and a user-defined reference bandwidth.
+        self.metric = {
+        "RIP": "hop count",
+        "ISIS": "bandwidth",
+        "OSPF": "bandwidth"
+        }[type]
+        self.ref_bw = 10**8
             
         # each type of algorithm will have a specific algorithm, that defines
         # how to compute a path in the AS
@@ -55,11 +71,13 @@ class AutonomousSystem(object):
         "ISIS": scenario.ntw.ISIS_routing,
         "OSPF": scenario.ntw.OSPF_routing
         }
+        
         self.algorithm = self.AS_type_to_class[type]
-        if type in ("ISIS", "OSPF"):
-            # for an IS-IS domain, this set contains all L1/L2 nodes.
-            # for an OSPF domain, it contains all ABRs (Area Border Router)
-            self.border_routers = set()
+        
+        # for an IS-IS domain, this set contains all L1/L2 nodes.
+        # for an OSPF domain, it contains all ABRs (Area Border Router)
+        # else it shouldn't be used.
+        self.border_routers = set()
         
     def __repr__(self):
         return self.name

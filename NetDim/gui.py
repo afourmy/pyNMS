@@ -7,7 +7,7 @@ import tkinter as tk
 import os
 from os.path import abspath, pardir, join
 from tkinter import ttk, filedialog
-from miscellaneous import FocusTopLevel
+from miscellaneous import CustomTopLevel
 import network
 import collections
 import object_management_window as omw
@@ -35,10 +35,27 @@ class NetDim(tk.Tk):
         netdim_icon = tk.PhotoImage(file=self.path_icon + "netdim_icon.gif")
         self.tk.call('wm', 'iconphoto', self._w, netdim_icon)
         
+        ## Netdim objects
+        
+        self.nd_obj = {
+        "router": "node",
+        "oxc": "node",
+        "host": "node",
+        "antenna": "node",
+        "regenerator": "node",
+        "splitter": "node",
+        "cloud": "node",
+        "switch": "node",
+        "ethernet": "trunk",
+        "wdm": "trunk",
+        "route": "route",
+        "traffic": "traffic"
+        }
+        
         ## User-defined properties and labels per type of object
         
-        # I used ordered dicts to have the same menu order 
-        node_properties = (
+        # ordered dicts are needed to have the same menu order 
+        node_common_properties = (
         "name", 
         "x", 
         "y", 
@@ -49,87 +66,79 @@ class NetDim(tk.Tk):
         "AS"
         )
         
+        # we exclude the AS from node_common_properties. We don't need to 
+        # import/export the AS of a node, because when the AS itself is imported, 
+        # we rebuild #its logical topology, and that includes 
+        # rebuilding the nodes AS dict
+        node_common_ie_properties = node_common_properties[:-1]
+        
+        link_common_properties = (
+        "protocol",
+        "interface",
+        "name", 
+        "source", 
+        "destination", 
+        "distance", 
+        "costSD", 
+        "costDS", 
+        "capacitySD", 
+        "capacityDS", 
+        # if there is no failure simulation, the traffic property tells us how
+        # much traffic is transiting on the trunk in a "no failure" situation
+        # if there is a link in failure, the traffic that is redirected will 
+        # also contribute to this "traffic parameter".
+        "trafficSD", 
+        "trafficDS",
+        # unlike the traffic property above, wctraffic is the worst case
+        # traffic. It is the traffic that we use for dimensioning purposes, and
+        # it considers the maximum traffic that the link must be able to 
+        # handle, considering all possible failure cases.
+        "wctrafficSD",
+        "wctrafficDS",
+        "flowSD", 
+        "flowDS",
+        "ipaddressS", 
+        "subnetmaskS", 
+        "interfaceS",
+        "ipaddressD", 
+        "subnetmaskD", 
+        "interfaceD",
+        "AS"
+        )
+        
+        link_common_ie_properties = (
+        "protocol",
+        "interface",
+        "name", 
+        "source", 
+        "destination", 
+        "distance", 
+        "costSD", 
+        "costDS", 
+        "capacitySD", 
+        "capacityDS", 
+        "ipaddressS", 
+        "subnetmaskS", 
+        "interfaceS",
+        "ipaddressD", 
+        "subnetmaskD", 
+        "interfaceD"
+        )
+        
         self.object_properties = collections.OrderedDict([
-        ("router", node_properties),
-        ("oxc", node_properties),
-        ("host", node_properties),
-        ("antenna", node_properties),
-        ("regenerator", node_properties),
-        ("splitter", node_properties),
+        ("router", node_common_properties),
+        ("oxc", node_common_properties),
+        ("host", node_common_properties),
+        ("antenna", node_common_properties),
+        ("regenerator", node_common_properties),
+        ("splitter", node_common_properties),
+        ("cloud", node_common_properties),
+        ("switch", node_common_properties),
         
-        ("ethernet", 
-        (
-        "protocol",
-        "interface",
-        "name", 
-        "source", 
-        "destination", 
-        "distance", 
-        "costSD", 
-        "costDS", 
-        "capacitySD", 
-        "capacityDS", 
-        # if there is no failure simulation, the traffic property tells us how
-        # much traffic is transiting on the trunk in a "no failure" situation
-        # if there is a link in failure, the traffic that is redirected will 
-        # also contribute to this "traffic parameter".
-        "trafficSD", 
-        "trafficDS",
-        # unlike the traffic property above, wctraffic is the worst case
-        # traffic. It is the traffic that we use for dimensioning purposes, and
-        # it considers the maximum traffic that the link must be able to 
-        # handle, considering all possible failure cases.
-        "wctrafficSD",
-        "wctrafficDS",
-        "flowSD", 
-        "flowDS",
-        "ipaddressS", 
-        "subnetmaskS", 
-        "interfaceS",
-        "ipaddressD", 
-        "subnetmaskD", 
-        "interfaceD",
-        "AS"
-        )),
+        ("ethernet", link_common_properties),
+        ("wdm", link_common_properties + ("lambda_capacity",)),
         
-        ("wdm", 
-        (
-        "protocol",
-        "interface",
-        "name", 
-        "source", 
-        "destination", 
-        "distance", 
-        "costSD", 
-        "costDS", 
-        "capacitySD", 
-        "capacityDS", 
-        # if there is no failure simulation, the traffic property tells us how
-        # much traffic is transiting on the trunk in a "no failure" situation
-        # if there is a link in failure, the traffic that is redirected will 
-        # also contribute to this "traffic parameter".
-        "trafficSD", 
-        "trafficDS",
-        # unlike the traffic property above, wctraffic is the worst case
-        # traffic. It is the traffic that we use for dimensioning purposes, and
-        # it considers the maximum traffic that the link must be able to 
-        # handle, considering all possible failure cases.
-        "wctrafficSD",
-        "wctrafficDS",
-        "flowSD", 
-        "flowDS",
-        "ipaddressS", 
-        "subnetmaskS", 
-        "interfaceS",
-        "ipaddressD", 
-        "subnetmaskD", 
-        "interfaceD",
-        "lambda_capacity",
-        "AS"
-        )),
-        
-        ("route", 
-        (
+        ("route", (
         "name",
         "source", 
         "destination", 
@@ -144,13 +153,12 @@ class NetDim(tk.Tk):
         "AS"
         )),
         
-        ("traffic", 
-        (
+        ("traffic", (
         "name", 
         "source", 
         "destination", 
         "distance", 
-        "throughput",
+        "throughput"
         ))])
         
         self.object_label = collections.OrderedDict([
@@ -199,39 +207,19 @@ class NetDim(tk.Tk):
         
         # object import export (properties)
         self.object_ie = collections.OrderedDict([
-        ("node", (
-        "name", 
-        "x", 
-        "y", 
-        "longitude", 
-        "latitude", 
-        "ipaddress", 
-        "subnetmask", 
-        )),
+        ("router", node_common_ie_properties),
+        ("oxc", node_common_ie_properties),
+        ("host", node_common_ie_properties),
+        ("antenna", node_common_ie_properties),
+        ("regenerator", node_common_ie_properties),
+        ("splitter", node_common_ie_properties),
+        ("cloud", node_common_properties),
+        ("switch", node_common_properties),
         
-        ("trunk", 
-        (
-        "protocol",
-        "interface",
-        "name", 
-        "source", 
-        "destination", 
-        "distance", 
-        "costSD", 
-        "costDS", 
-        "capacitySD", 
-        "capacityDS", 
-        "ipaddressS", 
-        "subnetmaskS", 
-        "interfaceS",
-        "ipaddressD", 
-        "subnetmaskD", 
-        "interfaceD",
-        "lambda_capacity",
-        )),
+        ("ethernet", link_common_ie_properties),
+        ("wdm", link_common_ie_properties + ("lambda_capacity",)),
         
-        ("route", 
-        (
+        ("route", (
         "name", 
         "source", 
         "destination", 
@@ -243,8 +231,7 @@ class NetDim(tk.Tk):
         "subnets", 
         )),
         
-        ("traffic", 
-        (
+        ("traffic", (
         "name", 
         "source", 
         "destination", 
@@ -283,6 +270,8 @@ class NetDim(tk.Tk):
         "traffic": float,
         "trafficSD": float,
         "trafficDS": float,
+        "wctrafficSD": float,
+        "wctrafficDS": float,
         "flowSD": int,
         "flowDS": int,
         "ipaddressS": str,
@@ -301,12 +290,6 @@ class NetDim(tk.Tk):
         "path": convert_links_list, 
         "subnets": str, 
         "AS": convert_AS
-        }
-        
-        self.default = {
-        str: "",
-        int: 0,
-        float: 0.
         }
         
         ## ----- Menus : -----
@@ -401,11 +384,13 @@ class NetDim(tk.Tk):
         
         self.node_size_image = {
         "router": (33, 25), 
+        "switch": (54, 36),
         "oxc": (35, 32), 
         "host": (35, 32), 
-        "antenna": (35, 35), 
         "regenerator": (64, 50), 
-        "splitter": (64, 50)
+        "splitter": (64, 50),
+        "antenna": (35, 35),
+        "cloud": (60, 35),
         }
         
         self.dict_size_image = {
@@ -473,7 +458,10 @@ class NetDim(tk.Tk):
         self.change_cs()
                 
     def str_to_object(self, obj_param, type):
-        return [self.prop_to_type[p](obj_param[id]) for id, p in enumerate(self.object_ie[type])]
+        object_list = []
+        for id, p in enumerate(self.object_ie[type]):
+            object_list.append(self.prop_to_type[p](obj_param[id]))
+        return object_list
                 
     def import_graph(self, filepath=None):
         # filepath is set for unittest
@@ -485,7 +473,6 @@ class NetDim(tk.Tk):
                             ("all files","*.*"), 
                             ("csv files","*.csv"), 
                             ("xls files","*.xls"), 
-                            ("txt files","*.txt")
                             ))
             
             # no error when closing the window
@@ -493,39 +480,17 @@ class NetDim(tk.Tk):
                 return
             else: 
                 filepath ,= filepath
-
-        if filepath.endswith(".csv"):
-            try:
-                file_to_import = open(filepath, "rt")
-                reader = csv.reader(file_to_import)
-                for row in filter(None, reader):
-                    obj_type, *other = row
-                    if other:
-                        if obj_type == "node":
-                            n, *param = self.str_to_object(other, "node")
-                            self.cs.ntw.nf(*param, node_type="router", name=n)
-                        elif obj_type in ("ethernet", "wdm"):
-                            p, i, n, s, d, *param = self.str_to_object(other, obj_type)
-                            self.cs.ntw.lf(*param, link_type="trunk",
-                                    interface=i, protocol=p, name=n, s=s, d=d)
-                        else:
-                            n, s, d, *param = self.str_to_object(other, obj_type)
-                            self.cs.ntw.lf(*param, link_type=obj_type, 
-                                                            name=n, s=s, d=d)
-                            
-            finally:
-                file_to_import.close()
                     
-        elif filepath.endswith(".xls"):
+        if filepath.endswith(".xls"):
             book = xlrd.open_workbook(filepath)
             for id, obj_type in enumerate(self.object_ie):
                 xls_sheet = book.sheets()[id]
                 for row_index in range(1, xls_sheet.nrows):
-                    if obj_type == "node":
+                    if obj_type in self.cs.ntw.node_type:
                         n, *param = self.str_to_object(
-                                    xls_sheet.row_values(row_index), "node")
+                                    xls_sheet.row_values(row_index), obj_type)
                         self.cs.ntw.nf(*param, node_type="router", name=n)
-                    elif obj_type == "trunk":
+                    elif obj_type in ("ethernet", "wdm"):
                         p, i, n, s, d, *param = self.str_to_object(
                                     xls_sheet.row_values(row_index), obj_type)
                         self.cs.ntw.lf(*param, link_type="trunk", 
@@ -536,7 +501,7 @@ class NetDim(tk.Tk):
                         self.cs.ntw.lf(*param, link_type=obj_type, 
                                                             name=n, s=s, d=d)
                         
-            AS_sheet, area_sheet = book.sheets()[4], book.sheets()[5]
+            AS_sheet, area_sheet = book.sheets()[12], book.sheets()[13]
         
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):
@@ -555,6 +520,28 @@ class NetDim(tk.Tk):
                 nodes = self.convert_nodes_set(nodes)
                 trunks = self.convert_links_set(trunks)
                 new_area = AS.area_factory(name, int(id), trunks, nodes)
+                
+        elif filepath.endswith(".csv"):
+            try:
+                file_to_import = open(filepath, "rt")
+                reader = csv.reader(file_to_import)
+                for row in filter(None, reader):
+                    obj_type, *other = row
+                    if other:
+                        if obj_type in self.cs.ntw.node_type:
+                            n, *param = self.str_to_object(other, obj_type)
+                            self.cs.ntw.nf(*param, node_type="router", name=n)
+                        elif obj_type in ("ethernet", "wdm"):
+                            p, i, n, s, d, *param = self.str_to_object(other, obj_type)
+                            self.cs.ntw.lf(*param, link_type="trunk",
+                                    interface=i, protocol=p, name=n, s=s, d=d)
+                        else:
+                            n, s, d, *param = self.str_to_object(other, obj_type)
+                            self.cs.ntw.lf(*param, link_type=obj_type, 
+                                                            name=n, s=s, d=d)
+                            
+            finally:
+                file_to_import.close()
             
                 
         # for the topology zoo network graphs
@@ -621,25 +608,6 @@ class NetDim(tk.Tk):
         else:
             filename, file_format = os.path.splitext(filepath)
             selected_file = open(filepath, "w")
-
-        if file_format == ".csv":
-            graph_per_line = []
-            for obj_type, properties in self.object_ie.items():
-                graph_per_line.append(obj_type)
-                for obj in self.cs.ntw.pn[obj_type].values():
-                    all_properties = []
-                    for property in properties:
-                        if hasattr(obj, property):
-                            all_properties.append(str(getattr(obj, property)))
-                        else:
-                            default = self.default[self.prop_to_type[property]]
-                            all_properties.append(str(default))
-                    param = ",".join(all_properties)
-                    graph_per_line.append(",".join((obj_type, param)))
-            graph_writer = csv.writer(selected_file, delimiter=",", 
-                                                        lineterminator="\n")
-            for line in graph_per_line:
-                graph_writer.writerow(line.split(","))
             
         if file_format == ".xls":
             excel_workbook = xlwt.Workbook()
@@ -647,22 +615,31 @@ class NetDim(tk.Tk):
                 xls_sheet = excel_workbook.add_sheet(obj_type)
                 for id, property in enumerate(properties):
                     xls_sheet.write(0, id, property)
-                    type = "trunk" if obj_type in ("ethernet", "wdm") else obj_type
-                    for i, t in enumerate(self.cs.ntw.pn[type].values(), 1):
-                        if hasattr(t, property):
-                            xls_sheet.write(i, id, str(getattr(t, property)))
-                        else:
-                            default = self.default[self.prop_to_type[property]]
-                            xls_sheet.write(i, id, default)
+                    # we have one excel sheet per subtype of object.
+                    # we filter the network pool based on the subtype to 
+                    # retrieve only the object of the corresponding subtype
+                    # this was done because objects have different properties
+                    # depending on the subtype, and we want to avoid using 
+                    # hasattr() all the time to check if a property exists.
+                    ftr = lambda o: o.type == obj_type
+                    if obj_type in ("route", "traffic"):
+                        pool_obj = self.cs.ntw.pn[obj_type].values()
+                    elif obj_type in ("ethernet", "wdm"):
+                        pool_obj = filter(ftr, self.cs.ntw.pn["trunk"].values())
+                    else:
+                        pool_obj = filter(ftr, self.cs.ntw.pn["node"].values())                    
+                    for i, t in enumerate(pool_obj, 1):
+                        xls_sheet.write(i, id, str(getattr(t, property)))
+                        
             AS_sheet = excel_workbook.add_sheet("AS")
-            
+            to_string = lambda s: str(list(map(str, s)))
             for i, AS in enumerate(self.cs.ntw.pnAS.values(), 1):
                 AS_sheet.write(i, 0, str(AS.name))
                 AS_sheet.write(i, 1, str(AS.type))
                 AS_sheet.write(i, 2, str(AS.id))
-                AS_sheet.write(i, 3, str(list(map(str, AS.pAS["node"]))))
-                AS_sheet.write(i, 4, str(list(map(str, AS.pAS["trunk"]))))
-                AS_sheet.write(i, 5, str(list(map(str, AS.pAS["edge"]))))
+                AS_sheet.write(i, 3, to_string(AS.pAS["node"]))
+                AS_sheet.write(i, 4, to_string(AS.pAS["trunk"]))
+                AS_sheet.write(i, 5, to_string(AS.pAS["edge"]))
                 AS_sheet.write(i, 6, str(list(AS.areas.keys())))
                 
             area_sheet = excel_workbook.add_sheet("area")
@@ -672,14 +649,36 @@ class NetDim(tk.Tk):
                     area_sheet.write(cpt, 0, str(area.name))
                     area_sheet.write(cpt, 1, str(area.AS))
                     area_sheet.write(cpt, 2, str(area.id))
-                    area_sheet.write(cpt, 3, str(list(map(str, area.pa["node"]))))
-                    area_sheet.write(cpt, 4, str(list(map(str, area.pa["trunk"]))))
+                    area_sheet.write(cpt, 3, to_string(area.pa["node"]))
+                    area_sheet.write(cpt, 4, to_string(area.pa["trunk"]))
                     cpt += 1
             excel_workbook.save(selected_file.name)
             
+        elif file_format == ".csv":
+            graph_per_line = []
+            for obj_type, properties in self.object_ie.items():
+                ftr = lambda o: o.type == obj_type
+                if obj_type in ("route", "traffic"):
+                    pool_obj = self.cs.ntw.pn[obj_type].values()
+                elif obj_type in ("ethernet", "wdm"):
+                    pool_obj = filter(ftr, self.cs.ntw.pn["trunk"].values())
+                else:
+                    pool_obj = filter(ftr, self.cs.ntw.pn["node"].values()) 
+                graph_per_line.append(obj_type)
+                for obj in pool_obj:
+                    all_properties = []
+                    for property in properties:
+                        all_properties.append(str(getattr(obj, property)))
+                    param = ",".join(all_properties)
+                    graph_per_line.append(",".join((obj_type, param)))
+            graph_writer = csv.writer(selected_file, delimiter=",", 
+                                                        lineterminator="\n")
+            for line in graph_per_line:
+                graph_writer.writerow(line.split(","))
+            
         selected_file.close()
         
-class NetworkTreeView(FocusTopLevel):
+class NetworkTreeView(CustomTopLevel):
 
     def __init__(self, master):
         super().__init__()
@@ -695,12 +694,14 @@ class NetworkTreeView(FocusTopLevel):
             
         self.ntv.bind('<ButtonRelease-1>', lambda e: self.select(e))
         
-        for obj_type, properties in master.object_ie.items():
-            self.ntv.insert("", "end", obj_type, text=obj_type.title(), 
+        for obj_subtype, properties in master.object_ie.items():
+            self.ntv.insert("", "end", obj_subtype, text=obj_subtype.title(), 
                                                             values=properties)
-            for obj in master.cs.ntw.pn[obj_type].values():
+            obj_type = master.nd_obj[obj_subtype]
+            flt = lambda o: o.type == obj_subtype
+            for obj in filter(flt, master.cs.ntw.pn[obj_type].values()):
                 values = tuple(map(lambda p: getattr(obj, p), properties))
-                self.ntv.insert(obj_type, "end", text=obj.name, values=values)
+                self.ntv.insert(obj_subtype, "end", text=obj.name, values=values)
         
         self.ntv.pack(expand=tk.YES, fill=tk.BOTH)
         
@@ -708,5 +709,6 @@ class NetworkTreeView(FocusTopLevel):
         
     def select(self, event):
         for item in self.ntv.selection():
-            item_text = self.ntv.item(item,"text")
-            print(item_text)
+            item = self.ntv.item(item)
+            print(item)
+            #item_text = self.ntv.item(item, "text")

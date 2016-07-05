@@ -107,7 +107,7 @@ class NetworkDrawing(CustomTopLevel):
         drawing_modes = (
         "Random drawing",
         "Force-based drawing",
-        "Random + Force-based drawing"
+        "Random + Force-based"
         )
         
         # List of drawing modes

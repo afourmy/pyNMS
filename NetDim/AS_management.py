@@ -37,6 +37,23 @@ class ASManagement(FocusTopLevel):
         self.AS_type_list["values"] = ("RIP", "ISIS", "OSPF", "MPLS", "RSTP")
         self.var_AS_type.set(AS.type)
         
+        # interface to cost dictionnary. This is used for OSPF and IS-IS, 
+        # because the cost of a trunk depends on the bandwidth.
+        # Trunk_cost = Ref_BW / BW
+        self.if_to_cost = {
+        "FE": 10**7,
+        "GE": 10**8,
+        "10GE": 10**9,
+        "40GE": 4*10**9,
+        "100GE":10**10
+        }
+        
+        
+        # find edge nodes of the AS
+        self.button_update_cost = ttk.Button(self, text="Update costs", 
+                                command=lambda: self.update_cost())
+        self.button_update_cost.grid(row=1, column=0, pady=5, padx=5, sticky="w")         
+        
         self.label_name.grid(row=0, column=2, pady=5, padx=5, sticky="e")
         self.label_id.grid(row=1, column=2, pady=5, padx=5, sticky="e")
         self.label_type.grid(row=2, column=2, pady=5, padx=5, sticky="e")
@@ -305,6 +322,15 @@ class ASManagement(FocusTopLevel):
             # finally, we update the border routes set with all border nodes
             if len(node.AS[self.AS]) > 2:
                 self.AS.border_routers.add(node)
+                
+    def update_cost(self):
+        for trunk in self.AS.pAS["trunk"]:
+            bw = self.if_to_cost[trunk.interface]
+            # the cost of a link cannot be less than 1. This also means that,
+            # by default, all interfaces from GE to 100GE will result in the
+            # same metric: 1.
+            cost = max(1, self.AS.ref_bw / bw)
+            trunk.costSD = trunk.costDS = cost
             
     def create_area(self, name, id):
         self.AS.area_factory(name, id)

@@ -8,7 +8,7 @@ import AS
 import random
 import numpy
 from math import cos, sin, asin, radians, sqrt
-from cvxopt import matrix, glpk
+#from cvxopt import matrix, glpk
 from collections import defaultdict, deque
 from heapq import heappop, heappush
 from operator import getitem, itemgetter
@@ -21,7 +21,9 @@ class Network(object):
     "host": objects.Host,
     "antenna": objects.Antenna,
     "regenerator": objects.Regenerator,
-    "splitter": objects.Splitter
+    "splitter": objects.Splitter,
+    "switch": objects.Switch,
+    "cloud": objects.Cloud
     }
     
     link_class = {
@@ -236,17 +238,20 @@ class Network(object):
         self.scenario.refresh_all_labels()
         
     def ip_allocation(self):
-        cpt_ip = 1
         address = "10.0.0."
         # we use a /30 subnet mask for all trunks
         mask = "255.255.255.252"
-        for trunk in self.pn["trunk"].values():
-            trunk.subnetmaskS = trunk.subnetmaskD = mask
-            trunk.ipaddressS = address + str(cpt_ip)
-            trunk.ipaddressD = address + str(cpt_ip + 1)
-            # with /30, there are two unused IP address for each subnetwork
-            # we could use /31 but this isn't a common practice
-            cpt_ip += 4
+        for id_AS, AS in enumerate(self.pnAS.values()):
+            for id_area, area in enumerate(AS.areas.values()):
+                address = "10.{AS}.{area}.".format(AS=id_AS, area=id_area)
+                cpt_ip = 1
+                for id_trunk, trunk in enumerate(area.pa["trunk"]):
+                    trunk.subnetmaskS = trunk.subnetmaskD = mask
+                    trunk.ipaddressS = address + str(cpt_ip)
+                    trunk.ipaddressD = address + str(cpt_ip + 1)
+                    # with /30, there are two unused IP address for each subnetwork
+                    # we could use /31 but this isn't a common practice
+                    cpt_ip += 4
             
     def interface_allocation(self):
         for node in self.graph:
@@ -789,64 +794,65 @@ class Network(object):
     
     ## 1) Single-source single-destination maximum flow
                
-    def LP_MF_formulation(self, s, t):
-        """
-        Solves the MILP: minimize c'*x
-                subject to G*x + s = h
-                            A*x = b
-                            s >= 0
-                            xi integer, forall i in I
-        """
-        
-        new_graph = {node: {} for node in self.graph}
-        for node in self.graph:
-            for neighbor, trunk in self.graph[node]["trunk"]:
-                sd = (node == trunk.source)*"SD" or "DS"
-                new_graph[node][neighbor] = getattr(trunk, "capacity" + sd)
+    # Commented for those who don't have GLPK library installed
+    # def LP_MF_formulation(self, s, t):
+    #     """
+    #     Solves the MILP: minimize c'*x
+    #             subject to G*x + s = h
+    #                         A*x = b
+    #                         s >= 0
+    #                         xi integer, forall i in I
+    #     """
+    #     
+    #     new_graph = {node: {} for node in self.graph}
+    #     for node in self.graph:
+    #         for neighbor, trunk in self.graph[node]["trunk"]:
+    #             sd = (node == trunk.source)*"SD" or "DS"
+    #             new_graph[node][neighbor] = getattr(trunk, "capacity" + sd)
 
-        n = 2*len(self.pn["trunk"])
-        v = len(new_graph)
-        c, h = [], []
-        for node in new_graph:
-            for neighbor, capacity in new_graph[node].items():
-                c.append(float(node == s))
-                h.append(float(capacity))
-                
-        # flow conservation: Ax = b
-        A = []
-        for node_r in new_graph:
-            row = []
-            if node_r not in (s, t):
-                for node in new_graph:
-                    for neighbor in new_graph[node]:
-                        row.append(
-                                   1. if neighbor == node_r 
-                             else -1. if node == node_r 
-                              else 0.
-                                   )
-                A.append(row)
-                
-        b, h, x = [0.]*(v-2), h+[0.]*n, numpy.eye(n, n)
-        H = numpy.concatenate((x, -1*x), axis=0).tolist()        
-        A, H, b, c, h = map(matrix, (A, H, b, c, h))
-        solsta, x = glpk.ilp(-c, H.T, h, A.T, b)
+   ##       n = 2*len(self.pn["trunk"])
+    #     v = len(new_graph)
+    #     c, h = [], []
+    #     for node in new_graph:
+    #         for neighbor, capacity in new_graph[node].items():
+    #             c.append(float(node == s))
+    #             h.append(float(capacity))
+    #             
+    #     # flow conservation: Ax = b
+    #     A = []
+    #     for node_r in new_graph:
+    #         row = []
+    #         if node_r not in (s, t):
+    #             for node in new_graph:
+    #                 for neighbor in new_graph[node]:
+    #                     row.append(
+    #                                1. if neighbor == node_r 
+    #                          else -1. if node == node_r 
+    #                           else 0.
+    #                                )
+    #             A.append(row)
+    #             
+    #     b, h, x = [0.]*(v-2), h+[0.]*n, numpy.eye(n, n)
+    #     H = numpy.concatenate((x, -1*x), axis=0).tolist()        
+    #     A, H, b, c, h = map(matrix, (A, H, b, c, h))
+    #     solsta, x = glpk.ilp(-c, H.T, h, A.T, b)
 
-        # update the resulting flow for each node
-        cpt = 0
-        for node in new_graph:
-            for neighbor in new_graph[node]:
-                new_graph[node][neighbor] = x[cpt]
-                cpt += 1
-        # update the network trunks with the new flow value
-        for trunk in self.pn["trunk"].values():
-            src, dest = trunk.source, trunk.destination
-            trunk.flowSD = new_graph[src][dest]
-            trunk.flowDS = new_graph[dest][src]
+   ##       # update the resulting flow for each node
+    #     cpt = 0
+    #     for node in new_graph:
+    #         for neighbor in new_graph[node]:
+    #             new_graph[node][neighbor] = x[cpt]
+    #             cpt += 1
+    #     # update the network trunks with the new flow value
+    #     for trunk in self.pn["trunk"].values():
+    #         src, dest = trunk.source, trunk.destination
+    #         trunk.flowSD = new_graph[src][dest]
+    #         trunk.flowDS = new_graph[dest][src]
 
-        return sum(
-                   getattr(adj, "flow" + ((s==adj.source)*"SD" or "DS")) 
-                   for _, adj in self.graph[s]["trunk"]
-                   )
+   ##       return sum(
+    #                getattr(adj, "flow" + ((s==adj.source)*"SD" or "DS")) 
+    #                for _, adj in self.graph[s]["trunk"]
+    #                )
             
     ## Distance functions
     

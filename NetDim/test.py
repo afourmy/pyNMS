@@ -57,8 +57,8 @@ class TestExportImport(unittest.TestCase):
     def test_object_import_xls(self):
         self.object_import("xls")
         
-    # def test_object_import_csv(self):
-    #     self.object_import("csv")
+    def test_object_import_csv(self):
+        self.object_import("csv")
 
 class TestFlow(unittest.TestCase):
  

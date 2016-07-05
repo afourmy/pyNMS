@@ -27,6 +27,9 @@ class Area(object):
         # add the area to the AS management panel area listbox
         self.AS.management.create_area(name, id)
         
+    def __repr__(self):
+        return self.name
+        
     def add_to_area(self, *objects):
         for obj in objects:
             self.pa[obj.network_type].add(obj)

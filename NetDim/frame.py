@@ -84,11 +84,14 @@ class MainFrame(tk.Frame):
                                             bg="#A1DBCD", font=self.font)
         label_creation_mode.grid(row=7, columnspan=4, sticky="ew")
         self.type_to_button["router"].grid(row=8, column=0, padx=2)
-        self.type_to_button["oxc"].grid(row=8, column=1, padx=2)
-        self.type_to_button["host"].grid(row=8, column=2, padx=2)
-        self.type_to_button["antenna"].grid(row=8, column=3, padx=2)
+        self.type_to_button["switch"].grid(row=8, column=1, padx=2)
+        self.type_to_button["oxc"].grid(row=8, column=2, padx=2)
+        self.type_to_button["host"].grid(row=8, column=3, padx=2)
         self.type_to_button["regenerator"].grid(row=9, column=0, padx=2)
         self.type_to_button["splitter"].grid(row=9, column=1, padx=2)
+        self.type_to_button["antenna"].grid(row=9, column=2, padx=2)
+        self.type_to_button["cloud"].grid(row=9, column=3, padx=2)
+        
         self.type_to_button["ethernet"].grid(row=10, column=0, columnspan=2, 
                                                 pady=5, padx=5, sticky=tk.W)
         self.type_to_button["wdm"].grid(row=10, column=2, columnspan=2, 

@@ -67,6 +67,15 @@ class Router(Node):
     def __init__(self, *args):
         super().__init__(*args)
         
+class Switch(Node):
+
+    color = "black"
+    type = "switch"
+    imagex, imagey = 54, 36
+    
+    def __init__(self, *args):
+        super().__init__(*args)
+        
 class OXC(Node):
 
     color = "pink"
@@ -85,15 +94,6 @@ class Host(Node):
     def __init__(self, *args):
         super().__init__(*args)
         
-class Antenna(Node):
-
-    color = "black"
-    type = "antenna"
-    imagex, imagey = 35, 32
-    
-    def __init__(self, *args):
-        super().__init__(*args)
-        
 class Regenerator(Node):
 
     color = "black"
@@ -107,7 +107,25 @@ class Splitter(Node):
 
     color = "black"
     type = "splitter"
-    imagex, imagey = 64, 48
+    imagex, imagey = 64, 50
+    
+    def __init__(self, *args):
+        super().__init__(*args)
+        
+class Antenna(Node):
+
+    color = "black"
+    type = "antenna"
+    imagex, imagey = 35, 32
+    
+    def __init__(self, *args):
+        super().__init__(*args)
+        
+class Cloud(Node):
+
+    color = "black"
+    type = "cloud"
+    imagex, imagey = 60, 35
     
     def __init__(self, *args):
         super().__init__(*args)
@@ -157,8 +175,6 @@ class Trunk(Link):
                  costDS = 1, 
                  capacitySD = 3, 
                  capacityDS = 3, 
-                 trafficSD = 0,
-                 trafficDS = 0,
                  ipaddressS = None, 
                  subnetmaskS = None,
                  interfaceS = None,
@@ -171,10 +187,6 @@ class Trunk(Link):
         self.interface = interface
         self.costSD, self.costDS = int(costSD), int(costDS)
         self.capacitySD, self.capacityDS = int(capacitySD), int(capacityDS)
-        self.trafficSD = trafficSD
-        self.trafficDS = trafficDS
-        self.wctrafficSD = 0
-        self.wctrafficDS = 0
         self.ipaddressS = ipaddressS
         self.subnetmaskS = subnetmaskS
         self.interfaceS = interfaceS
@@ -182,7 +194,9 @@ class Trunk(Link):
         self.subnetmaskD = subnetmaskD
         self.interfaceD = interfaceD
         
-        self.flowSD, self.flowDS = 0, 0
+        self.trafficSD = self.trafficDS = 0
+        self.wctrafficSD = self.wctrafficDS = 0
+        self.flowSD = self.flowDS = 0
         # list of AS to which the trunks belongs. AS is actually a dictionnary
         # associating an AS to a set of area the trunks belongs to
         self.AS = defaultdict(set)
