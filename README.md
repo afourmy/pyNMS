@@ -121,6 +121,7 @@ This AS management panel also display the area topology. In this simple use case
 
 ## Assign IP address and look at the configuration panel
 Click on "Netdim" logo. This will trigger the assignment of IP addresses to all routers. It will also create "routes" between each pair of "edge nodes", and compute their path in accordance with the OSPF protocol (since there is only one area, it results in a simple shortest path).
+You can access the configuration panel by right-clicking on a router, and click on "Configuration".
 ![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step5.PNG)
 
 ## Multi-layer display
