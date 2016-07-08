@@ -263,15 +263,12 @@ class ASManagement(FocusTopLevel):
         # finally, we must compute the worst case traffic, that is the 
         # maximum amount of traffic that can be sent on the link, 
         # considering all possible failure cases
-        # we consider all_traffic, a dict that will contains the list of 
-        # resulting traffic for all possible failure case
-        all_traffic = {trunk: {"SD": [], "DS": []} 
-                                        for trunk in self.AS.pAS["trunk"]}
-        # TODO refactor this part. I don't need to store all values in a list,
-        # TODO all I need is to compare and store just the maximum value.
-        # TODO in other words I can change all_traffic so that it keeps just one
-        # TODO trunk: {"SD": max value, "DS": max value}
-        # the initial value should be the normal traffic value !!!
+        # we initialize it to the normal case traffic which is a lower bound
+        # of the worst case traffic.
+        for trunk in self.AS.pAS["trunk"]:
+            trunk.wctrafficSD = trunk.trafficSD
+            trunk.wctrafficDS = trunk.trafficDS
+            
         for failed_trunk in self.AS.pAS["trunk"]:
             # we create a dict of trunk, that contains for all trunks the 
             # resulting traffic, considering that failed_trunk is in failure
@@ -293,16 +290,9 @@ class ASManagement(FocusTopLevel):
             # to all_traffic, which contains all such resulting traffic
             for trunk in trunk_traffic:
                 for sd in ("SD", "DS"):
-                    all_traffic[trunk][sd].append(trunk_traffic[trunk][sd])
-
-        # finally, now that we have, for all trunk, the maximum traffic for
-        # all possible failure case, we take the maximum between all failure
-        # case AND the normal case (which might be the worse)
-        for trunk in all_traffic:
-            for sd in ("SD", "DS"):
-                normal_traffic = getattr(trunk, "traffic" + sd)
-                max_traffic = max(normal_traffic, max(all_traffic[trunk][sd]))
-                setattr(trunk, "wctraffic" + sd, max_traffic)
+                    new_wctraffic = trunk_traffic[trunk][sd]
+                    if new_wctraffic > getattr(trunk, "wctraffic" + sd):
+                        setattr(trunk, "wctraffic" + sd, new_wctraffic)
                 
     def update_AS_topology(self):
         for node in self.AS.pAS["node"]:

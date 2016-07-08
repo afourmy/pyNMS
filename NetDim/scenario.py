@@ -90,6 +90,7 @@ class Scenario(tk.Canvas):
         # use the right-click to move the background
         self.bind("<ButtonPress-3>", self.scroll_start)
         self.bind("<B3-Motion>", self.scroll_move)
+        self.bind("<ButtonRelease-3>", self.general_menu)
         
         # initialize other bindings depending on the mode
         self.switch_binding()
@@ -277,7 +278,8 @@ class Scenario(tk.Canvas):
     def start_link(self, event):
         self.drag_item = self.find_closest(event.x, event.y)[0]
         start_node = self.object_id_to_object[self.drag_item]
-        self.temp_line = self.create_line(start_node.x, start_node.y, event.x, event.y, arrow=tk.LAST, arrowshape=(6,8,3))
+        self.temp_line = self.create_line(start_node.x, start_node.y, 
+                        event.x, event.y, arrow=tk.LAST, arrowshape=(6,8,3))
         
     @adapt_coordinates
     def line_creation(self, event):
@@ -319,10 +321,22 @@ class Scenario(tk.Canvas):
                 self.itemconfig(node.image[layer], state=tk.NORMAL if self.display_image else tk.HIDDEN)
 
     def scroll_start(self, event):
+        # we record the position of the mouse when right-click is pressed
+        # to check, when it is released, if the intent was to drag the canvas
+        # or to have access to the right-click menu
+        self._start_pos_main_node = event.x, event.y
         self.scan_mark(event.x, event.y)
 
     def scroll_move(self, event):
         self.scan_dragto(event.x, event.y, gain=1)
+        
+    def general_menu(self, event):
+        x, y = self._start_pos_main_node
+        # if the right-click button was pressed, but the position of the 
+        # canvas when the button is released hasn't changed, we create
+        # the general right-click menu
+        if (x, y) == (event.x, event.y):
+            menus.GeneralRightClickMenu(event, self)
 
     ## Zoom / unzoom on the canvas
     
@@ -713,7 +727,7 @@ class Scenario(tk.Canvas):
     
     def remove_failures(self):
         for AS in self.ntw.pnAS.values():
-            AS.failed_trunk = None
+            AS.management.failed_trunk = None
             self.delete(self.id_failure)
     
     def simulate_failure(self, trunk):

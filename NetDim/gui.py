@@ -213,8 +213,8 @@ class NetDim(tk.Tk):
         ("antenna", node_common_ie_properties),
         ("regenerator", node_common_ie_properties),
         ("splitter", node_common_ie_properties),
-        ("cloud", node_common_properties),
-        ("switch", node_common_properties),
+        ("cloud", node_common_ie_properties),
+        ("switch", node_common_ie_properties),
         
         ("ethernet", link_common_ie_properties),
         ("wdm", link_common_ie_properties + ("lambda_capacity",)),
@@ -489,7 +489,7 @@ class NetDim(tk.Tk):
                     if obj_type in self.cs.ntw.node_type:
                         n, *param = self.str_to_object(
                                     xls_sheet.row_values(row_index), obj_type)
-                        self.cs.ntw.nf(*param, node_type="router", name=n)
+                        self.cs.ntw.nf(*param, node_type=obj_type, name=n)
                     elif obj_type in ("ethernet", "wdm"):
                         p, i, n, s, d, *param = self.str_to_object(
                                     xls_sheet.row_values(row_index), obj_type)

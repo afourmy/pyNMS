@@ -8,7 +8,7 @@ import AS
 import random
 import numpy
 from math import cos, sin, asin, radians, sqrt
-#from cvxopt import matrix, glpk
+from cvxopt import matrix, glpk
 from collections import defaultdict, deque
 from heapq import heappop, heappush
 from operator import getitem, itemgetter
@@ -480,7 +480,10 @@ class Network(object):
             target_area = backbone
         else:
             target_area ,= target.AS[OSPF_AS]
-        
+            
+        #TODO case when the source is in the target area
+        #TODO si source + target ont une destination en commun qui n'est pas le 
+        #TODO BB, il faut l'utiliser et on est en step 2 direct
         # step indicates in which area we are, which tells us which links 
         # can/cannot be used. 
         # If step is 0, we are in the source area, heading to the backbone. 
@@ -742,7 +745,9 @@ class Network(object):
             for neighbor, adj_link in self.graph[curr_node]["trunk"]:
                 direction = curr_node == adj_link.source
                 sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
-                residual = getattr(adj_link, "capacity" + sd) - getattr(adj_link, "flow" + sd)
+                cap = getattr(adj_link, "capacity" + sd)
+                flow = getattr(adj_link, "flow" + sd)
+                residual = cap - flow
                 if residual and augmenting_path[neighbor] is None:
                     augmenting_path[neighbor] = curr_node
                     res_cap[neighbor] = min(res_cap[curr_node], residual)
@@ -794,70 +799,69 @@ class Network(object):
     
     ## 1) Single-source single-destination maximum flow
                
-    # Commented for those who don't have GLPK library installed
-    # def LP_MF_formulation(self, s, t):
-    #     """
-    #     Solves the MILP: minimize c'*x
-    #             subject to G*x + s = h
-    #                         A*x = b
-    #                         s >= 0
-    #                         xi integer, forall i in I
-    #     """
-    #     
-    #     new_graph = {node: {} for node in self.graph}
-    #     for node in self.graph:
-    #         for neighbor, trunk in self.graph[node]["trunk"]:
-    #             sd = (node == trunk.source)*"SD" or "DS"
-    #             new_graph[node][neighbor] = getattr(trunk, "capacity" + sd)
+    def LP_MF_formulation(self, s, t):
+        """
+        Solves the MILP: minimize c'*x
+                subject to G*x + s = h
+                            A*x = b
+                            s >= 0
+                            xi integer, forall i in I
+        """
+        
+        new_graph = {node: {} for node in self.graph}
+        for node in self.graph:
+            for neighbor, trunk in self.graph[node]["trunk"]:
+                sd = (node == trunk.source)*"SD" or "DS"
+                new_graph[node][neighbor] = getattr(trunk, "capacity" + sd)
 
-   ##       n = 2*len(self.pn["trunk"])
-    #     v = len(new_graph)
-    #     c, h = [], []
-    #     for node in new_graph:
-    #         for neighbor, capacity in new_graph[node].items():
-    #             c.append(float(node == s))
-    #             h.append(float(capacity))
-    #             
-    #     # flow conservation: Ax = b
-    #     A = []
-    #     for node_r in new_graph:
-    #         row = []
-    #         if node_r not in (s, t):
-    #             for node in new_graph:
-    #                 for neighbor in new_graph[node]:
-    #                     row.append(
-    #                                1. if neighbor == node_r 
-    #                          else -1. if node == node_r 
-    #                           else 0.
-    #                                )
-    #             A.append(row)
-    #             
-    #     b, h, x = [0.]*(v-2), h+[0.]*n, numpy.eye(n, n)
-    #     H = numpy.concatenate((x, -1*x), axis=0).tolist()        
-    #     A, H, b, c, h = map(matrix, (A, H, b, c, h))
-    #     solsta, x = glpk.ilp(-c, H.T, h, A.T, b)
+        n = 2*len(self.pn["trunk"])
+        v = len(new_graph)
+        c, h = [], []
+        for node in new_graph:
+            for neighbor, capacity in new_graph[node].items():
+                c.append(float(node == s))
+                h.append(float(capacity))
+                
+        # flow conservation: Ax = b
+        A = []
+        for node_r in new_graph:
+            row = []
+            if node_r not in (s, t):
+                for node in new_graph:
+                    for neighbor in new_graph[node]:
+                        row.append(
+                                   1. if neighbor == node_r 
+                             else -1. if node == node_r 
+                              else 0.
+                                   )
+                A.append(row)
+                
+        b, h, x = [0.]*(v-2), h+[0.]*n, numpy.eye(n, n)
+        H = numpy.concatenate((x, -1*x), axis=0).tolist()        
+        A, H, b, c, h = map(matrix, (A, H, b, c, h))
+        solsta, x = glpk.ilp(-c, H.T, h, A.T, b)
 
-   ##       # update the resulting flow for each node
-    #     cpt = 0
-    #     for node in new_graph:
-    #         for neighbor in new_graph[node]:
-    #             new_graph[node][neighbor] = x[cpt]
-    #             cpt += 1
-    #     # update the network trunks with the new flow value
-    #     for trunk in self.pn["trunk"].values():
-    #         src, dest = trunk.source, trunk.destination
-    #         trunk.flowSD = new_graph[src][dest]
-    #         trunk.flowDS = new_graph[dest][src]
+        # update the resulting flow for each node
+        cpt = 0
+        for node in new_graph:
+            for neighbor in new_graph[node]:
+                new_graph[node][neighbor] = x[cpt]
+                cpt += 1
+        # update the network trunks with the new flow value
+        for trunk in self.pn["trunk"].values():
+            src, dest = trunk.source, trunk.destination
+            trunk.flowSD = new_graph[src][dest]
+            trunk.flowDS = new_graph[dest][src]
 
-   ##       return sum(
-    #                getattr(adj, "flow" + ((s==adj.source)*"SD" or "DS")) 
-    #                for _, adj in self.graph[s]["trunk"]
-    #                )
+        return sum(
+                   getattr(adj, "flow" + ((s==adj.source)*"SD" or "DS")) 
+                   for _, adj in self.graph[s]["trunk"]
+                   )
             
     ## Distance functions
     
     def distance(self, p, q): 
-        return sqrt(p * p + q * q)
+        return sqrt(p*p + q*q)
         
     def haversine_distance(self, s, d):
         """ Earth distance between two nodes """
@@ -867,8 +871,8 @@ class Network(object):
     
         delta_lon = lon_d - lon_s 
         delta_lat = lat_d - lat_s 
-        a = sin(delta_lat / 2)**2 + cos(lat_s) * cos(lat_d) * sin(delta_lon / 2)**2
-        c = 2 * asin(sqrt(a)) 
+        a = sin(delta_lat/2)**2 + cos(lat_s)*cos(lat_d)*sin(delta_lon/2)**2
+        c = 2*asin(sqrt(a)) 
         # radius of earth (km)
         r = 6371 
         return c*r
@@ -878,12 +882,12 @@ class Network(object):
     ## 1) Eades algorithm 
     
     def coulomb_force(self, dx, dy, dist, beta):
-        c = dist and beta / dist**3
-        return (-c * dx, -c * dy)
+        c = dist and beta/dist**3
+        return (-c*dx, -c*dy)
         
     def hooke_force(self, dx, dy, dist, L0, k):
-        const = k * (dist - L0) / dist
-        return (const * dx, const * dy)
+        const = k*(dist - L0)/dist
+        return (const*dx, const*dy)
             
     def spring_layout(self, allowed_nodes, alpha, beta, k, eta, delta, L0):
         for nodeA in allowed_nodes:
@@ -902,8 +906,8 @@ class Network(object):
             nodeA.vy = (nodeA.vy + alpha * Fy) * eta
     
         for node in allowed_nodes:
-            node.x += round(node.vx * delta)
-            node.y += round(node.vy * delta)
+            node.x += round(node.vx*delta)
+            node.y += round(node.vy*delta)
             
     ## 2) Fruchterman-Reingold algorithms
     

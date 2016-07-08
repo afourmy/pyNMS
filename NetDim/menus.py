@@ -12,6 +12,7 @@ class RightClickMenu(tk.Menu):
         super().__init__(tearoff=0)
         
         x, y = scenario.canvasx(event.x), scenario.canvasy(event.y)
+
         closest_obj = scenario.find_closest(x, y)[0]
         selected_obj = scenario.object_id_to_object[closest_obj]
         # if the object from which the menu was started does not belong to
@@ -27,35 +28,31 @@ class RightClickMenu(tk.Menu):
         
         # highlight all to add the selected object to the highlight
         scenario.highlight_objects(*self.all_so)
-        
-        # at least one object: deletion or create AS
-        self.add_command(label="Delete", 
-                            command=lambda: self.remove_objects(scenario))
-        self.add_command(label="Create AS", 
-                            command=lambda: self.create_AS(scenario))  
+                            
+        # exactly one object: property window 
+        if len(scenario.so["node"]) == 1 or len(scenario.so["link"]) == 1:
+            self.add_command(label="Properties", 
+                        command=lambda: self.show_object_properties(scenario))
+                            
+        self.add_separator()
                             
         # only nodes: force-based layout
         if not scenario.so["link"]:
             self.add_command(label="Force-based layout", 
                     command=lambda: self.force_based_layout(scenario))
-        
-        # exactly one trunk: failure simulation menu
-        if not scenario.so["node"] and len(scenario.so["link"]) == 1:
-            trunk ,= scenario.so["link"]
-            if trunk.network_type == "trunk" and trunk.AS:
-                self.add_command(label="Simulate failure", 
-                        command=lambda: self.simulate_failure(trunk, scenario))
+                    
+        self.add_separator()
                 
         # exactly one node: configuration menu
         if not scenario.so["link"] and len(scenario.so["node"]) == 1:
             node ,= scenario.so["node"]
             self.add_command(label="Configuration", 
                         command=lambda: self.configure(node, scenario))
+                        
+        self.add_separator()
         
-        # exactly one object: property window 
-        if len(scenario.so["node"]) == 1 or len(scenario.so["link"]) == 1:
-            self.add_command(label="Properties", 
-                        command=lambda: self.show_object_properties(scenario))
+        self.add_command(label="Create AS", 
+                            command=lambda: self.create_AS(scenario)) 
       
         # at least one AS in the network: add to AS
         if scenario.ntw.pnAS:
@@ -76,6 +73,21 @@ class RightClickMenu(tk.Menu):
                         command=lambda: self.change_AS(scenario, "remove area"))
             self.add_command(label="Manage AS", 
                         command=lambda: self.change_AS(scenario, "manage"))
+                        
+        self.add_separator()
+        
+        # exactly one trunk: failure simulation menu
+        if not scenario.so["node"] and len(scenario.so["link"]) == 1:
+            trunk ,= scenario.so["link"]
+            if trunk.network_type == "trunk" and trunk.AS:
+                self.add_command(label="Simulate failure", 
+                        command=lambda: self.simulate_failure(trunk, scenario))
+                    
+        self.add_separator()
+                    
+        # at least one object: deletion or create AS
+        self.add_command(label="Delete", 
+                            command=lambda: self.remove_objects(scenario))
             
         # make the menu appear    
         self.tk_popup(event.x_root, event.y_root)
@@ -117,3 +129,19 @@ class RightClickMenu(tk.Menu):
         scenario.master.dict_obj_mgmt_window[so.type].current_obj = so
         scenario.master.dict_obj_mgmt_window[so.type].update()
         scenario.master.dict_obj_mgmt_window[so.type].deiconify()
+        
+class GeneralRightClickMenu(tk.Menu):
+    def __init__(self, event, scenario):
+        super().__init__(tearoff=0)
+        
+        # remove all failures if there is at least one
+        if any(AS.management.failed_trunk for AS in scenario.ntw.pnAS.values()):
+            self.add_command(label="Remove all failures", 
+                    command=lambda: self.remove_all_failures(scenario))
+                    
+        # make the menu appear    
+        self.tk_popup(event.x_root, event.y_root)
+
+    def remove_all_failures(self, scenario):
+        scenario.remove_failures()
+        self.destroy()
