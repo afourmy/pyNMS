@@ -27,8 +27,8 @@ class NetDim(tk.Tk):
     def __init__(self, path_app):
         tk.Tk.__init__(self)
         path_parent = abspath(join(path_app, pardir))
-        self.path_icon = path_parent + "\\Icons\\"
-        self.path_workspace = path_parent + "\\Workspace\\"
+        self.path_icon = join(path_parent, "Icons")
+        self.path_workspace = join(path_parent, "Workspace")
             
         ## ----- Main app : -----
         self.title("NetDim")
