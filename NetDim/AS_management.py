@@ -29,12 +29,8 @@ class ASManagement(FocusTopLevel):
         self.entry_id  = tk.Entry(self, textvariable=self.str_id, width=10)
         self.str_id.set(AS.id)
         
-        # combobox for the user to change the type of the AS
-        self.var_AS_type = tk.StringVar()
-        self.AS_type_list = ttk.Combobox(self, 
-                                    textvariable=self.var_AS_type, width=7)
-        self.AS_type_list["values"] = ("RIP", "ISIS", "OSPF", "MPLS", "RSTP")
-        self.var_AS_type.set(AS.type)
+        # the type of a domain cannot change after domain creation.
+        self.AS_type = ttk.Label(self, text=AS.type)
         
         # interface to cost dictionnary. This is used for OSPF and IS-IS, 
         # because the cost of a trunk depends on the bandwidth.
@@ -47,18 +43,21 @@ class ASManagement(FocusTopLevel):
         "100GE":10**10
         }
         
-        
         # find edge nodes of the AS
         self.button_update_cost = ttk.Button(self, text="Update costs", 
                                 command=lambda: self.update_cost())
-        self.button_update_cost.grid(row=1, column=0, pady=5, padx=5, sticky="w")         
+        self.button_update_cost.grid(row=1, column=0, pady=5, padx=5, sticky="w")    
+        
+        self.button_update_topo = ttk.Button(self, text="Update topology", 
+                                command=lambda: self.update_AS_topology())
+        self.button_update_topo.grid(row=2, column=0, pady=5, padx=5, sticky="w")       
         
         self.label_name.grid(row=0, column=2, pady=5, padx=5, sticky="e")
         self.label_id.grid(row=1, column=2, pady=5, padx=5, sticky="e")
         self.label_type.grid(row=2, column=2, pady=5, padx=5, sticky="e")
         self.entry_name.grid(row=0, column=4, pady=5, padx=5, sticky="w")
         self.entry_id.grid(row=1, column=4, pady=5, padx=5, sticky="w")
-        self.AS_type_list.grid(row=2, column=4, pady=5, padx=5, sticky="w")
+        self.AS_type.grid(row=2, column=4, pady=5, padx=5, sticky="w")
         
         # listbox of all AS objects
         self.dict_listbox = {}
@@ -126,6 +125,17 @@ class ASManagement(FocusTopLevel):
         # button to delete an area
         self.button_delete_area = ttk.Button(self, text="Delete area", 
                                 command=lambda: self.delete_area())
+                                
+        # combobox for the user to change the protection type
+        self.var_pct_type = tk.StringVar()
+        self.pct_type_list = ttk.Combobox(self, 
+                                    textvariable=self.var_pct_type, width=20)
+        self.pct_type_list["values"] = (
+                                       "IGP convergence", 
+                                       "FRR ECMP", 
+                                       "FRR LFA"
+                                       )
+        self.var_pct_type.set("IGP convergence")
         
         # buttons under the trunks column
         self.button_create_route.grid(row=5, column=0)
@@ -143,6 +153,9 @@ class ASManagement(FocusTopLevel):
         # button under the area column
         self.button_create_area.grid(row=8, column=0)
         self.button_delete_area.grid(row=9, column=0)
+        
+        # protection type drop-down list
+        self.pct_type_list.grid(row=1, column=6)
         
         # at first, the backbone is the only area: we insert it in the listbox
         self.dict_listbox["area names"].insert("Backbone")
@@ -248,9 +261,12 @@ class ASManagement(FocusTopLevel):
             for trunk in route.path:
                 # list of allowed trunks: all AS trunks but the failed one
                 a_t = self.AS.pAS["trunk"] - {trunk}
-                # apply the AS routing algorithm, ignoring the failed trunk
-                _, recovery_path = self.AS.algorithm(s, d, self.AS, a_t=a_t)
-                route.r_path[trunk] = recovery_path
+                if self.var_pct_type.get() == "IGP convergence":
+                    # apply the AS routing algorithm, ignoring the failed trunk
+                    _, recovery_path = self.AS.algorithm(s, d, self.AS, a_t=a_t)
+                    route.r_path[trunk] = recovery_path
+                elif self.var_pct_type.get() == "FRR ECMP":
+                    pass
 
         # we call failure traffic, knowing that link dimensioning is 
         # called during "calculate all", and all failed trunk have been
@@ -296,17 +312,17 @@ class ASManagement(FocusTopLevel):
     def update_AS_topology(self):
         for node in self.AS.pAS["node"]:
             
-            # in IS-IS, a router has only one area
+            # In IS-IS, a router has only one area
             if self.AS.type == "ISIS":
                 node_area ,= node.AS[self.AS]
             
             for neighbor, adj_trunk in self.scenario.ntw.graph[node]["trunk"]:
                 
-                # a multi-area IS-IS AS is defined by the status of its nodes.
+                # A multi-area IS-IS AS is defined by the status of its nodes.
                 # we automatically update the trunk area status, by considering 
                 # that a trunk belong to an area as soon as both of its ends do.
-                # this implies that a trunk between two L1/L2 routers that 
-                # belong to different areas will not belong to any area.
+                # A trunk between two L1/L2 routers that belong to different
+                # areas will be considered as being part of the backbone.
                 if self.AS.type == "ISIS":
                     # we check that the neighbor belongs to the AS
                     if self.AS in neighbor.AS:

@@ -24,7 +24,7 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         self.button_create_hypercube = ttk.Button(self, text='Create hypercube', command = lambda: self.add_nodes(master))
         self.button_create_square_tiling = ttk.Button(self, text='Create square tiling', command = lambda: master.cs.ntw.generate_square_tiling(100, "router"))
         self.button_highlight_connected_components = ttk.Button(self, text='Highlight connected components', command = lambda: self.highlight_connected_components(master))
-        self.button_LP = ttk.Button(self, text='LP', command = lambda: self.LP(master))
+        self.button_LP = ttk.Button(self, text='LP', command = lambda: self.LP_SP(master))
         self.button_fulkerson = ttk.Button(self, text='Fulkerson', command = lambda: self.fulkerson(master))
         self.button_kruskal = ttk.Button(self, text='Minimum spanning tree', command = lambda: self.kruskal(master))
         
@@ -52,10 +52,10 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
                 for adjacent_link in master.cs.ntw.graph[node]["trunk"]:
                     master.cs.itemconfig(adjacent_link.line, fill=master.cs.default_colors[idx])
                     
-    def LP(self, master):
+    def LP_SP(self, master):
         source = master.cs.ntw.nf(name=self.entry_source.get())
         destination = master.cs.ntw.nf(name=self.entry_destination.get())
-        flow = master.cs.ntw.LP_MF_formulation(source, destination)
+        flow = master.cs.ntw.LP_SP_formulation(source, destination)
         print(flow)
         
     def fulkerson(self, master):

@@ -9,7 +9,7 @@ import random
 import numpy
 from math import cos, sin, asin, radians, sqrt
 from cvxopt import matrix, glpk
-from collections import defaultdict, deque
+from collections import defaultdict, deque, OrderedDict
 from heapq import heappop, heappush
 from operator import getitem, itemgetter
 
@@ -577,6 +577,9 @@ class Network(object):
                     heappush(heap, (dist + dist_neighbor, neighbor, 
                                                     path + [adj_trunk], step))
         return [], []
+        
+    def protection_routing(self, normal_path, algorithm, failed_link):
+        pass
             
     ## 3) Traffic routing algorithm
     
@@ -848,7 +851,76 @@ class Network(object):
             if uf.union(u, v):
                 yield t
                 
-    ## Linear programming algorithm
+    ## Linear programming algorithms
+    
+    ## Shortest path
+    
+    def LP_SP_formulation(self, s, t):
+        """
+        Solves the MILP: minimize c'*x
+                subject to G*x + s = h
+                            A*x = b
+                            s >= 0
+                            xi integer, forall i in I
+        """
+        
+        self.reset_flow()
+        
+        new_graph = {node: {} for node in self.graph}
+        for node in self.graph:
+            for neighbor, trunk in self.graph[node]["trunk"]:
+                sd = (node == trunk.source)*"SD" or "DS"
+                new_graph[node][neighbor] = getattr(trunk, "cost" + sd)
+
+        n = 2*len(self.pn["trunk"])
+        v = len(new_graph)
+        c = []
+
+        for node in new_graph:
+            for neighbor, cost in new_graph[node].items():
+                # the float conversion is ESSENTIAL !
+                # I first forgot it, then spent hours trying to understand 
+                # what was wrong. If "c" is not made of float, no explicit 
+                # error is raised, but the result is sort of random !
+                c.append(float(cost))
+                
+        # for the condition 0 < x_ij < 1
+        h = numpy.concatenate([numpy.ones(n), numpy.zeros(n)])
+        id = numpy.eye(n, n)
+        G = numpy.concatenate((id, -1*id), axis=0).tolist()  
+        
+        # flow conservation: Ax = b
+        A, b = [], []
+        for node_r in new_graph:
+            if node_r != t:
+                b.append(float(node_r == s))
+                row = []
+                for node in new_graph:
+                    for neighbor in new_graph[node]:
+                        row.append(
+                                   -1. if neighbor == node_r 
+                              else  1. if node == node_r 
+                              else  0.
+                                   )
+                A.append(row)
+        
+        A, G, b, c, h = map(matrix, (A, G, b, c, h))
+        solsta, x = glpk.ilp(c, G.T, h, A.T, b)
+        
+        # update the resulting flow for each node
+        cpt = 0
+        for node in new_graph:
+            for neighbor in new_graph[node]:
+                new_graph[node][neighbor] = x[cpt]
+                cpt += 1
+                
+        # update the network trunks with the new flow value
+        for trunk in self.pn["trunk"].values():
+            src, dest = trunk.source, trunk.destination
+            trunk.flowSD = new_graph[src][dest]
+            trunk.flowDS = new_graph[dest][src]
+            
+        return sum(x)
     
     ## 1) Single-source single-destination maximum flow
                
@@ -869,6 +941,7 @@ class Network(object):
 
         n = 2*len(self.pn["trunk"])
         v = len(new_graph)
+
         c, h = [], []
         for node in new_graph:
             for neighbor, capacity in new_graph[node].items():
@@ -890,9 +963,9 @@ class Network(object):
                 A.append(row)
                 
         b, h, x = [0.]*(v-2), h+[0.]*n, numpy.eye(n, n)
-        H = numpy.concatenate((x, -1*x), axis=0).tolist()        
-        A, H, b, c, h = map(matrix, (A, H, b, c, h))
-        solsta, x = glpk.ilp(-c, H.T, h, A.T, b)
+        G = numpy.concatenate((x, -1*x), axis=0).tolist()        
+        A, G, b, c, h = map(matrix, (A, G, b, c, h))
+        solsta, x = glpk.ilp(-c, G.T, h, A.T, b)
 
         # update the resulting flow for each node
         cpt = 0
@@ -900,6 +973,7 @@ class Network(object):
             for neighbor in new_graph[node]:
                 new_graph[node][neighbor] = x[cpt]
                 cpt += 1
+                
         # update the network trunks with the new flow value
         for trunk in self.pn["trunk"].values():
             src, dest = trunk.source, trunk.destination
