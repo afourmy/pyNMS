@@ -22,22 +22,6 @@ class ObjectManagementWindow(FocusTopLevel):
     def __init__(self, master, type):
         super().__init__()
         n = len(master.object_properties[type])
-        size_per_type = {
-        "router": "180x250", 
-        "oxc": "180x250", 
-        "host":"180x250", 
-        "antenna":"180x250", 
-        "regenerator": "180x250", 
-        "splitter": "180x250", 
-        "cloud": "180x250", 
-        "switch": "180x250", 
-        "ethernet": "200x480", 
-        "wdm": "200x480", 
-        "route": "220x400", 
-        "traffic": "250x400"
-        }
-        
-        self.geometry(size_per_type[type])
         self.title("Manage {} properties".format(type))
 
         # current node which properties are displayed

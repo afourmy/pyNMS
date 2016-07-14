@@ -7,6 +7,25 @@ import AS
 import config
 import drawing_options_window
 
+class DrawingMenu(tk.Menu):
+    
+    def __init__(self, scenario, nodes):
+        super().__init__(tearoff=0)
+        
+        cmds = {
+        "Random": lambda: scenario.draw_objects(nodes, True),
+        "FBA": lambda: scenario.spring_based_drawing(scenario.master, nodes),
+        "Both": lambda: self.both(scenario, nodes)
+        }
+    
+        self.add_command(label="Random layout", command=cmds["Random"])
+        self.add_command(label="Force-based layout", command=cmds["FBA"])
+        self.add_command(label="Both", command=cmds["Both"])
+                                            
+    def both(self, scenario, nodes):
+        scenario.draw_objects(nodes, True)
+        scenario.spring_based_drawing(scenario.master, nodes)
+                                
 class RightClickMenu(tk.Menu):
     def __init__(self, event, scenario):
         super().__init__(tearoff=0)
@@ -34,14 +53,13 @@ class RightClickMenu(tk.Menu):
             self.add_command(label="Properties", 
                         command=lambda: self.show_object_properties(scenario))
                             
-        self.add_separator()
+            self.add_separator()
                             
-        # only nodes: force-based layout
+        # only nodes: drawing submenu
         if not scenario.so["link"]:
-            self.add_command(label="Force-based layout", 
-                    command=lambda: self.force_based_layout(scenario))
-                    
-        self.add_separator()
+            self.add_cascade(label="Drawing", 
+                            menu=DrawingMenu(scenario, scenario.so["node"]))
+            self.add_separator()
                 
         # exactly one node: configuration menu
         if not scenario.so["link"] and len(scenario.so["node"]) == 1:
@@ -49,7 +67,7 @@ class RightClickMenu(tk.Menu):
             self.add_command(label="Configuration", 
                         command=lambda: self.configure(node, scenario))
                         
-        self.add_separator()
+            self.add_separator()
         
         self.add_command(label="Create AS", 
                             command=lambda: self.create_AS(scenario)) 
@@ -83,7 +101,7 @@ class RightClickMenu(tk.Menu):
                 self.add_command(label="Simulate failure", 
                         command=lambda: self.simulate_failure(trunk, scenario))
                     
-        self.add_separator()
+            self.add_separator()
                     
         # at least one object: deletion or create AS
         self.add_command(label="Delete", 
@@ -118,24 +136,28 @@ class RightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def configure(self, node, scenario):
         config.Configuration(node, scenario)
-        
-    @empty_selection_and_destroy_menu
-    def force_based_layout(self, scenario):
-        drawing_options_window.NetworkDrawing(scenario, scenario.so["node"])
     
     @empty_selection_and_destroy_menu
     def show_object_properties(self, scenario):
         so ,= self.all_so
-        scenario.master.dict_obj_mgmt_window[so.type].current_obj = so
-        scenario.master.dict_obj_mgmt_window[so.type].update()
-        scenario.master.dict_obj_mgmt_window[so.type].deiconify()
+        scenario.master.dict_obj_mgmt_window[so.subtype].current_obj = so
+        scenario.master.dict_obj_mgmt_window[so.subtype].update()
+        scenario.master.dict_obj_mgmt_window[so.subtype].deiconify()
         
 class GeneralRightClickMenu(tk.Menu):
     def __init__(self, event, scenario):
         super().__init__(tearoff=0)
         
+        # drawing mode selection
+        nodes = scenario.ntw.pn["node"].values()
+        self.add_cascade(label="Drawing", menu=DrawingMenu(scenario, nodes))
+        
+        # stop drawing entry
+        self.add_command(label="Stop drawing", command=lambda: scenario._cancel())
+        
         # remove all failures if there is at least one
         if any(AS.management.failed_trunk for AS in scenario.ntw.pnAS.values()):
+            self.add_separator()
             self.add_command(label="Remove all failures", 
                     command=lambda: self.remove_all_failures(scenario))
                     

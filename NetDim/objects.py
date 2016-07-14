@@ -7,8 +7,7 @@ from collections import defaultdict
 ## Nodes
 class Node(object):
     
-    class_type = "node"
-    network_type = class_type
+    class_type = network_type = type = "node"
     
     def __init__(
                  self, 
@@ -61,7 +60,7 @@ class Node(object):
 class Router(Node):
     
     color = "magenta"
-    type = "router"
+    subtype = "router"
     imagex, imagey = 33, 25
     
     def __init__(self, *args):
@@ -70,7 +69,7 @@ class Router(Node):
 class Switch(Node):
 
     color = "black"
-    type = "switch"
+    subtype = "switch"
     imagex, imagey = 54, 36
     
     def __init__(self, *args):
@@ -79,7 +78,7 @@ class Switch(Node):
 class OXC(Node):
 
     color = "pink"
-    type = "oxc"
+    subtype = "oxc"
     imagex, imagey = 35, 32
     
     def __init__(self, *args):
@@ -88,7 +87,7 @@ class OXC(Node):
 class Host(Node):
 
     color = "blue"
-    type = "host"
+    subtype = "host"
     imagex, imagey = 35, 32
     
     def __init__(self, *args):
@@ -97,7 +96,7 @@ class Host(Node):
 class Regenerator(Node):
 
     color = "black"
-    type = "regenerator"
+    subtype = "regenerator"
     imagex, imagey = 64, 48
     
     def __init__(self, *args):
@@ -106,7 +105,7 @@ class Regenerator(Node):
 class Splitter(Node):
 
     color = "black"
-    type = "splitter"
+    subtype = "splitter"
     imagex, imagey = 64, 50
     
     def __init__(self, *args):
@@ -115,7 +114,7 @@ class Splitter(Node):
 class Antenna(Node):
 
     color = "black"
-    type = "antenna"
+    subtype = "antenna"
     imagex, imagey = 35, 32
     
     def __init__(self, *args):
@@ -124,7 +123,7 @@ class Antenna(Node):
 class Cloud(Node):
 
     color = "black"
-    type = "cloud"
+    subtype = "cloud"
     imagex, imagey = 60, 35
     
     def __init__(self, *args):
@@ -207,7 +206,7 @@ class Trunk(Link):
 class Ethernet(Trunk):
     
     color = "blue"
-    protocol = type = "ethernet"
+    protocol = subtype = "ethernet"
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -215,7 +214,7 @@ class Ethernet(Trunk):
 class WDMFiber(Trunk):
     
     color = "orange"
-    protocol = type = "wdm"
+    protocol = subtype = "wdm"
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -223,7 +222,7 @@ class WDMFiber(Trunk):
         
 class Route(Link):
     type = "route"
-    network_type = type
+    network_type = subtype = type
     dash = (3,5)
     color = "green"
     layer = 1
@@ -260,7 +259,7 @@ class Route(Link):
         
 class Traffic(Link):
     type = "traffic"
-    network_type = type
+    network_type = subtype = type
     dash = (7,1,1,1)
     color = "purple"
     layer = 2

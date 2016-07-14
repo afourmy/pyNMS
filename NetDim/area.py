@@ -11,7 +11,7 @@ class Area(object):
     
     def __init__(self, name, id, AS, trunks, nodes):
         self.name = name
-        self.id = id
+        self.id = int(id)
         self.AS = AS
         if not trunks:
             trunks = set()
@@ -42,8 +42,7 @@ class Area(object):
             
 class CreateArea(CustomTopLevel):
     def __init__(self, asm):
-        super().__init__()
-        self.geometry("70x100")        
+        super().__init__()      
         self.title("Create area")   
         
         self.label_name = ttk.Label(self, text="Area name")

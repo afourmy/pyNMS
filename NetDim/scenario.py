@@ -11,7 +11,7 @@ from math import cos, sin, atan2, sqrt, radians
 class Scenario(tk.Canvas):
     
     def __init__(self, master, name):
-        super().__init__(width=1100, height=600, background="bisque")
+        super().__init__(width=1300, height=800, background="bisque")
         self.name = name
         self.ntw = network.Network(self)
         self.object_id_to_object = {}
@@ -205,8 +205,8 @@ class Scenario(tk.Canvas):
         self.closest_object_id = self.find_closest(event.x, event.y)[0]
         object_selected = self.object_id_to_object[self.closest_object_id]
         # update the object management window if it is opened
-        self.master.dict_obj_mgmt_window[object_selected.type].current_obj = object_selected
-        self.master.dict_obj_mgmt_window[object_selected.type].update()
+        self.master.dict_obj_mgmt_window[object_selected.subtype].current_obj = object_selected
+        self.master.dict_obj_mgmt_window[object_selected.subtype].update()
 
     @adapt_coordinates
     def node_motion(self, event):
@@ -403,7 +403,7 @@ class Scenario(tk.Canvas):
         for obj in objects:
             if obj.class_type == "node":
                 self.itemconfig(obj.oval, fill=color)
-                self.itemconfig(obj.image[0], image=self.master.dict_image["red"][obj.type])
+                self.itemconfig(obj.image[0], image=self.master.dict_image["red"][obj.subtype])
             elif obj.class_type == "link":
                 dash = (3, 5) if dash else ()
                 self.itemconfig(obj.line, fill=color, width=5, dash=dash)
@@ -412,7 +412,7 @@ class Scenario(tk.Canvas):
         for obj in objects:
             if obj.class_type == "node":
                 self.itemconfig(obj.oval, fill=obj.color)
-                self.itemconfig(obj.image[0], image=self.master.dict_image["default"][obj.type])
+                self.itemconfig(obj.image[0], image=self.master.dict_image["default"][obj.subtype])
             elif obj.class_type == "link":
                 self.itemconfig(obj.line, fill=obj.color, width=self.LINK_WIDTH, dash=obj.dash)  
                 
@@ -437,6 +437,7 @@ class Scenario(tk.Canvas):
         self._refresh_object_label(link)
         
     # refresh the label for one object with the current object label
+    # TODO to be refactored with a dict
     def _refresh_object_label(self, current_object, label_type=None):
         if not label_type:
             label_type = self._current_object_label[current_object.network_type]
@@ -455,13 +456,19 @@ class Scenario(tk.Canvas):
         elif label_type == "position":
             text = "({}, {})".format(current_object.x, current_object.y)
             self.itemconfig(label_id, text=text)
-        elif label_type == "ipaddress":
+        elif label_type == "coordinates":
+            text = "({}, {})".format(current_object.longitude, current_object.latitude)
+            self.itemconfig(label_id, text=text)
+        elif label_type == "ipaddress" and current_object.type == "trunk":
             valueS = getattr(current_object, label_type + "S")
             valueD = getattr(current_object, label_type + "D")
             s = getattr(current_object, "source")
             d = getattr(current_object, "destination")
             text = "{}: {}\n{}: {}".format(s, valueS, d, valueD)
             self.itemconfig(label_id, text=text)
+        elif label_type == "ipaddress" and current_object.subtype == "router":
+            value = getattr(current_object, label_type)
+            self.itemconfig(label_id, text=value)
         else:
             self.itemconfig(label_id, text=getattr(current_object, label_type))
         self.itemconfig(label_id, font="bold")
@@ -484,7 +491,7 @@ class Scenario(tk.Canvas):
         menu.entryconfigure(index, label=" ".join((new_label, type)))
         new_state = tk.NORMAL if self.display_per_type[type] else tk.HIDDEN
         if type in self.ntw.node_class:
-            for node in filter(lambda o: o.type == type, self.ntw.pn["node"].values()):
+            for node in filter(lambda o: o.subtype == type, self.ntw.pn["node"].values()):
                 self.itemconfig(node.image[0] if self.display_image else node.oval, state=new_state)
                 self.itemconfig(node.lid, state=new_state)
         else:
@@ -560,9 +567,9 @@ class Scenario(tk.Canvas):
             
     def create_node(self, node, layer=0):
         s = self.NODE_SIZE
-        curr_image = self.master.dict_image["default"][node.type]
+        curr_image = self.master.dict_image["default"][node.subtype]
         y = node.y - layer * self.diff_y
-        tags = () if layer else (node.type, node.class_type, "object")
+        tags = () if layer else (node.subtype, node.class_type, "object")
         node.image[layer] = self.create_image(node.x - (node.imagex)/2, 
                 y - (node.imagey)/2, image=curr_image, anchor=tk.NW, tags=tags)
         node.oval[layer] = self.create_oval(node.x-s, y-s, node.x+s, y+s, 
@@ -616,7 +623,7 @@ class Scenario(tk.Canvas):
         for link in link_to_coords:
             coords = link_to_coords[link]
             if not link.line:
-                link.line = self.create_line(*coords, tags=(link.type, link.class_type, "object"), fill=link.color, width=self.LINK_WIDTH, dash=link.dash, smooth=True)
+                link.line = self.create_line(*coords, tags=(link.subtype, link.class_type, "object"), fill=link.color, width=self.LINK_WIDTH, dash=link.dash, smooth=True)
             else:
                 self.coords(link.line, *coords)
         self.tag_lower(new_link.line)

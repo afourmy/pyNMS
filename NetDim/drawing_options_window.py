@@ -9,7 +9,6 @@ from miscellaneous import FocusTopLevel, CustomTopLevel
 class DrawingOptions(FocusTopLevel):
     def __init__(self, master):
         super().__init__()
-        self.geometry("600x300")
         self.title("Graph drawing with force-directed algorithms")
         self.ender_variables = []
     
@@ -101,13 +100,12 @@ class DrawingOptions(FocusTopLevel):
 class NetworkDrawing(CustomTopLevel):    
     def __init__(self, scenario, nodes):
         super().__init__()
-        self.geometry("160x100")
         self.title("Network drawing")
         
         drawing_modes = (
-        "Random drawing",
-        "Force-based drawing",
-        "Random + Force-based"
+        "Random",
+        "Force-based",
+        "Both"
         )
         
         # List of drawing modes
@@ -128,11 +126,11 @@ class NetworkDrawing(CustomTopLevel):
         
     def draw_graph(self, scenario, nodes):
         mode = self.var_mode.get()
-        if mode == "Random drawing":
+        if mode == "Random":
             scenario.draw_objects(nodes, True)
-        elif mode == "Force-based drawing":
+        elif mode == "Force-based":
             scenario.spring_based_drawing(scenario.master, nodes)
-        elif mode == "Random + Force-based":
+        elif mode == "Both":
             scenario.draw_objects(nodes, True)
             scenario.spring_based_drawing(scenario.master, nodes)
         self.destroy()

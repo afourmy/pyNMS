@@ -50,6 +50,7 @@ class AutonomousSystem(object):
         
         # imp tells us if the AS is imported or created from scratch.
         if not imp:
+            print("test")
             id = 2 if type == "ISIS" else 0
             self.area_factory("Backbone", id=id, trunks=trunks, nodes=nodes)
             
@@ -212,7 +213,6 @@ class ModifyAS(CustomTopLevel):
 class ASCreation(CustomTopLevel):
     def __init__(self, scenario, so):
         super().__init__()
-        self.geometry("120x130")
         self.title("Create AS")
         
         # List of AS type

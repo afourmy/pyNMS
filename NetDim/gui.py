@@ -32,7 +32,7 @@ class NetDim(tk.Tk):
             
         ## ----- Main app : -----
         self.title("NetDim")
-        netdim_icon = tk.PhotoImage(file=self.path_icon + "netdim_icon.gif")
+        netdim_icon = tk.PhotoImage(file=join(self.path_icon, "netdim_icon.gif"))
         self.tk.call('wm', 'iconphoto', self._w, netdim_icon)
         
         ## Netdim objects
@@ -350,7 +350,6 @@ class NetDim(tk.Tk):
         self.cs = scenario.Scenario(self, "scenario 0")
         self.cpt_scenario = 0
         self.scenario_notebook.add(self.cs, text=self.cs.name, compound=tk.TOP)
-        self.scenario_notebook.pack(fill=tk.BOTH, side=tk.RIGHT)
         self.dict_scenario["scenario 0"] = self.cs
         
         # object management windows
@@ -376,8 +375,8 @@ class NetDim(tk.Tk):
         
         # create a frame
         self.main_frame = frame.MainFrame(self)
-        self.main_frame.pack(fill=tk.BOTH, side=tk.RIGHT)
-        self.main_frame.pack_propagate(False)
+        self.main_frame.pack(fill=tk.BOTH, side=tk.LEFT)
+        self.scenario_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
         
         # dict of nodes image for node creation
         self.dict_image = collections.defaultdict(dict)
@@ -409,16 +408,11 @@ class NetDim(tk.Tk):
         "tree": (35, 21), 
         "star": (36, 35), 
         "full-mesh": (40, 36)
-        },
-        
-        "drawing": {
-        "draw": (50, 50), 
-        "stop": (50, 50)
         }}
         
         for color in ["default", "red"]:
             for node_type in self.cs.ntw.node_type:
-                img_path = "".join((self.path_icon, color, "_", node_type, ".gif"))
+                img_path = join(self.path_icon, "".join((color, "_", node_type, ".gif")))
                 img_pil = ImageTk.Image.open(img_path).resize(self.node_size_image[node_type])
                 img = ImageTk.PhotoImage(img_pil)
                 # set the default image for the button of the frame
@@ -430,7 +424,7 @@ class NetDim(tk.Tk):
         for category_type, dict_size in self.dict_size_image.items():
             for image_type, image_size in dict_size.items():
                 x, y = image_size
-                img_path = "".join((self.path_icon, image_type, ".png"))
+                img_path = join(self.path_icon, image_type + ".png")
                 img_pil = ImageTk.Image.open(img_path).resize(image_size)
                 img = ImageTk.PhotoImage(img_pil)
                 self.dict_image[category_type][image_type] = img
@@ -438,7 +432,7 @@ class NetDim(tk.Tk):
                                                         width=x, height=y+10)
                 
         # image for a link failure
-        img_pil = ImageTk.Image.open(self.path_icon + "failure.png").resize((25,25))
+        img_pil = ImageTk.Image.open(join(self.path_icon, "failure.png")).resize((25,25))
         self.img_failure = ImageTk.PhotoImage(img_pil)
             
     def change_cs(self, event=None):
@@ -621,7 +615,7 @@ class NetDim(tk.Tk):
                     # this was done because objects have different properties
                     # depending on the subtype, and we want to avoid using 
                     # hasattr() all the time to check if a property exists.
-                    ftr = lambda o: o.type == obj_type
+                    ftr = lambda o: o.subtype == obj_type
                     if obj_type in ("route", "traffic"):
                         pool_obj = self.cs.ntw.pn[obj_type].values()
                     elif obj_type in ("ethernet", "wdm"):
@@ -657,7 +651,7 @@ class NetDim(tk.Tk):
         elif file_format == ".csv":
             graph_per_line = []
             for obj_type, properties in self.object_ie.items():
-                ftr = lambda o: o.type == obj_type
+                ftr = lambda o: o.subtype == obj_type
                 if obj_type in ("route", "traffic"):
                     pool_obj = self.cs.ntw.pn[obj_type].values()
                 elif obj_type in ("ethernet", "wdm"):
@@ -698,7 +692,7 @@ class NetworkTreeView(CustomTopLevel):
             self.ntv.insert("", "end", obj_subtype, text=obj_subtype.title(), 
                                                             values=properties)
             obj_type = master.nd_obj[obj_subtype]
-            flt = lambda o: o.type == obj_subtype
+            flt = lambda o: o.subtype == obj_subtype
             for obj in filter(flt, master.cs.ntw.pn[obj_type].values()):
                 values = tuple(map(lambda p: getattr(obj, p), properties))
                 self.ntv.insert(obj_subtype, "end", text=obj.name, values=values)
@@ -711,4 +705,5 @@ class NetworkTreeView(CustomTopLevel):
         for item in self.ntv.selection():
             item = self.ntv.item(item)
             print(item)
+            
             #item_text = self.ntv.item(item, "text")

@@ -14,7 +14,6 @@ class ASManagement(FocusTopLevel):
         self.scenario = scenario
         self.AS = AS
         self.failed_trunk = None
-        self.geometry("345x450")
         self.title("Manage AS")
         self.obj_type = ("trunk", "node", "edge") 
         self.area_listbox = ("area names", "area trunks", "area nodes")
@@ -296,22 +295,47 @@ class ASManagement(FocusTopLevel):
                 
     def update_AS_topology(self):
         for node in self.AS.pAS["node"]:
+            
+            # in IS-IS, a router has only one area
+            if self.AS.type == "ISIS":
+                node_area ,= node.AS[self.AS]
+            
             for neighbor, adj_trunk in self.scenario.ntw.graph[node]["trunk"]:
-                # a multi-area IS-IS AS is defined by the status of its nodes (L1/L2)
-                # we automatically update the trunk area status, by considering that a 
-                # trunk belong to an area as soon as both of its ends do.
+                
+                # a multi-area IS-IS AS is defined by the status of its nodes.
+                # we automatically update the trunk area status, by considering 
+                # that a trunk belong to an area as soon as both of its ends do.
+                # this implies that a trunk between two L1/L2 routers that 
+                # belong to different areas will not belong to any area.
                 if self.AS.type == "ISIS":
-                    for area in node.AS[self.AS] & neighbor.AS[self.AS]:
-                        area.add_to_area(adj_trunk)
+                    # we check that the neighbor belongs to the AS
+                    if self.AS in neighbor.AS:
+                        # we retrieve the neighbor's area
+                        neighbor_area ,= neighbor.AS[self.AS]
+                        # if they are the same, we add the trunk to the area
+                        if node_area == neighbor_area:
+                            node_area.add_to_area(adj_trunk)
+                        # if not, it is at the edge of two areas
+                        # a router is considered L1/L2 if it has at least
+                        # one neighbor which is in a different area.
+                        else:
+                            # we consider that the trunk belongs to the backbone,
+                            # for interfaces to have IP addresses.
+                            self.AS.areas["Backbone"].add_to_area(adj_trunk)
+                            self.AS.border_routers.add(node)
+
                 # OTOH, a multi-area OSPF AS is defined by the area of its trunk.
                 # we automatically update the node area status, by considering that a 
                 # node belongs to an area as soon as one of its adjacent trunk does.
                 elif self.AS.type == "OSPF":
                     for area in adj_trunk.AS[self.AS]:
                         area.add_to_area(node)
-            # finally, we update the border routes set with all border nodes
-            if len(node.AS[self.AS]) > 2:
-                self.AS.border_routers.add(node)
+                    # in OSPF, a router is considered ABR if it has attached
+                    # trunks that are in different area. Since we just updated 
+                    # the router's areas, all we need to check is that it has
+                    # at least 2 distinct areas.
+                    if len(node.AS[self.AS]) > 2:
+                        self.AS.border_routers.add(node)
                 
     def update_cost(self):
         for trunk in self.AS.pAS["trunk"]:

@@ -25,9 +25,6 @@ class MainFrame(tk.Frame):
         self.type_to_action = {
         "netdim": lambda: master.cs.ntw.calculate_all(),
         "motion": lambda: self.switch_to(master, "motion"),
-        "draw": lambda: drawing_options_window.NetworkDrawing(
-                                master.cs, master.cs.ntw.pn["node"].values()),
-        "stop": lambda: master.cs._cancel(),
         "multi-layer": lambda: master.cs.switch_display_mode(),
         }
         
@@ -40,7 +37,7 @@ class MainFrame(tk.Frame):
         
         for button_type, cmd in self.type_to_action.items():
             button = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=cmd)
-            if button_type in ("route", "traffic", "draw", "stop"):
+            if button_type in ("route", "traffic"):
                 button.configure(text=button_type.capitalize(), 
                                             compound="top", font=self.font)
             elif button_type in ("ethernet", "wdm"):
@@ -93,28 +90,16 @@ class MainFrame(tk.Frame):
         self.type_to_button["cloud"].grid(row=9, column=3, padx=2)
         
         self.type_to_button["ethernet"].grid(row=10, column=0, columnspan=2, 
-                                                pady=5, padx=5, sticky=tk.W)
+                                                pady=5, padx=5, sticky="nsew")
         self.type_to_button["wdm"].grid(row=10, column=2, columnspan=2, 
-                                                pady=5, padx=5, sticky=tk.W)
+                                                pady=5, padx=5, sticky="nsew")
         self.type_to_button["route"].grid(row=11, column=2, columnspan=2, 
-                                                pady=5, padx=5, sticky=tk.W)
+                                                pady=5, padx=5, sticky="nsew")
         self.type_to_button["traffic"].grid(row=11, column=0, columnspan=2, 
-                                                pady=5, padx=5, sticky=tk.W)
+                                                pady=5, padx=5, sticky="nsew")
                                                 
         sep = ttk.Separator(self, orient=tk.HORIZONTAL)
         sep.grid(row=12, columnspan=4, sticky="ew")
-        
-        # drawing options
-        label_drawing_options = tk.Label(self, text="Force-directed layout", 
-                                                bg="#A1DBCD", font=self.font)
-        label_drawing_options.grid(row=13, columnspan=4, sticky="ew")
-        self.type_to_button["draw"].grid(row=14, column=0, columnspan=2, 
-                                                pady=5, padx=20, sticky="nsew")
-        self.type_to_button["stop"].grid(row=14, column=2, columnspan=2, 
-                                                pady=5, padx=20, sticky="nsew")
-                                                
-        sep = ttk.Separator(self, orient=tk.HORIZONTAL)
-        sep.grid(row=15, columnspan=4, sticky="ew")
         
         # graph generation
         label_graph_generation = tk.Label(self, text="Graph generation", 
@@ -152,7 +137,6 @@ class MainFrame(tk.Frame):
 class NetworkDimension(CustomTopLevel):    
     def __init__(self, scenario, type):
         super().__init__()
-        self.geometry("170x100")
         self.title("Dimension")
         
         self.dict_type_to_function = {
