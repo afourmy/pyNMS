@@ -133,7 +133,6 @@ class AutonomousSystem(object):
 class ModifyAS(CustomTopLevel):
     def __init__(self, scenario, mode, obj, AS=set()):
         super().__init__()
-        self.geometry("30x90")
         # TODO put that in the dict
         titles = {
         "add": "Add to AS/area", 

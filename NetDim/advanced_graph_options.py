@@ -9,7 +9,6 @@ from miscellaneous import FocusTopLevel
 class AdvancedGraphOptionsWindow(FocusTopLevel):
     def __init__(self, master):
         super().__init__()
-        self.geometry("600x300")
         self.title("Advanced graph options")
         
         # Label for the name/type of the AS

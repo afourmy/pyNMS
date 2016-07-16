@@ -179,6 +179,58 @@ class TestOSPF(unittest.TestCase):
             route = self.netdim.cs.ntw.pn["route"][route]
             # we check that the path is conform to OSPF protocol
             self.assertEqual(list(map(str, route.path)), path)
+            
+class TestCSPF(unittest.TestCase):
+    
+    results = (
+    ["trunk13", "trunk3", "trunk5", "trunk8", "trunk9", "trunk11"],
+    ["trunk14", "trunk15", "trunk15", "trunk14", "trunk13", "trunk3", "trunk5", 
+    "trunk8", "trunk9", "trunk11"],
+    ["trunk13", "trunk3", "trunk3", "trunk13", "trunk14", "trunk15", "trunk15", 
+    "trunk14", "trunk13", "trunk3", "trunk5", "trunk8", "trunk9", "trunk11"],
+    ["trunk14", "trunk15", "trunk1", "trunk4", "trunk3", "trunk5", "trunk8", 
+    "trunk9", "trunk11"],
+    ["trunk14", "trunk15", "trunk2", "trunk5", "trunk8", "trunk9", "trunk11"],
+    []
+    )
+ 
+    @start_and_import("test_cspf.xls")
+    def setUp(self):
+        pass
+ 
+    def tearDown(self):
+        self.netdim.destroy()
+ 
+    def test_CSPF(self):
+        
+        node1 = self.netdim.cs.ntw.nf(name="node1")
+        node2 = self.netdim.cs.ntw.nf(name="node2")
+        node3 = self.netdim.cs.ntw.nf(name="node3")
+        node4 = self.netdim.cs.ntw.nf(name="node4")
+        node6 = self.netdim.cs.ntw.nf(name="node6")
+        node7 = self.netdim.cs.ntw.nf(name="node7")
+        # trunk between node4 and node6
+        trunk13 = self.netdim.cs.ntw.lf(name="trunk13")
+        # trunk between node2 and node5
+        trunk15 = self.netdim.cs.ntw.lf(name="trunk15")
+        
+        _, path = self.netdim.cs.ntw.dijkstra(node6, node7)
+        self.assertEqual(list(map(str, path)), self.results[0])
+        _, path = self.netdim.cs.ntw.dijkstra(node6, node7, 
+                                                    path_constraints=[node2])
+        self.assertEqual(list(map(str, path)), self.results[1])
+        _, path = self.netdim.cs.ntw.dijkstra(node6, node7, 
+                                            path_constraints=[node3, node2])
+        self.assertEqual(list(map(str, path)), self.results[2])                  
+        _, path = self.netdim.cs.ntw.dijkstra(node6, node7, 
+                                                    excluded_trunks={trunk13})
+        self.assertEqual(list(map(str, path)), self.results[3])
+        _, path = self.netdim.cs.ntw.dijkstra(node6, node7, 
+                            excluded_trunks={trunk13}, excluded_nodes={node1})
+        self.assertEqual(list(map(str, path)), self.results[4])
+        _, path = self.netdim.cs.ntw.dijkstra(node6, node7, 
+                            excluded_trunks={trunk15}, excluded_nodes={node4})
+        self.assertEqual(list(map(str, path)), self.results[5])
         
 if __name__ == '__main__':
     unittest.main(warnings='ignore')  

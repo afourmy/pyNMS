@@ -25,7 +25,8 @@ class ObjectManagementWindow(FocusTopLevel):
                 
     def __init__(self, master, type):
         super().__init__()
-        n = len(master.object_properties[type])
+        self.ms = master
+        n = len(self.ms.object_properties[type])
         self.title("Manage {} properties".format(type))
 
         # current node which properties are displayed
@@ -35,10 +36,10 @@ class ObjectManagementWindow(FocusTopLevel):
 
         # create the property window
         self.dict_var = {}
-        for index, property in enumerate(master.object_properties[type]):
+        for index, property in enumerate(self.ms.object_properties[type]):
             
             # creation of the label associated to the property
-            text = master.prop_to_nice_name[property]
+            text = self.ms.prop_to_nice_name[property]
             label = tk.Label(self, text=text, bg="#A1DBCD")
             label.grid(row=index+1, pady=1, padx=5, column=0, sticky=tk.W)
             str_var = tk.StringVar()
@@ -57,64 +58,58 @@ class ObjectManagementWindow(FocusTopLevel):
         # route finding possibilities for a route 
         if type == "route":
             self.button_compute_path = ttk.Button(self, text="Compute path", 
-                                    command=lambda: self.find_path(master))
+                                    command=lambda: self.find_path())
             self.button_compute_path.grid(row=n+1, column=0, columnspan=2, 
                                                                 pady=5, padx=5)
                                                                 
         self.button_save_obj = ttk.Button(self, text="Save", 
-                                    command=lambda: self.save_obj(master))
+                                    command=lambda: self.save_obj())
         self.button_save_obj.grid(row=0,column=1, columnspan=2, pady=5, padx=5)
         
         # when the window is closed, save all parameters in case the user
         # made a change, then withdraw the window.
-        self.protocol("WM_DELETE_WINDOW", lambda: self.save_and_withdraw(master))
+        self.protocol("WM_DELETE_WINDOW", lambda: self.save_and_withdraw())
         self.withdraw()
-    
-    def get_user_input(self, master):
-        name = self.dict_var["name"].get()
-        source = master.cs.ntw.nf(name=self.dict_var["source"].get())
-        destination = master.cs.ntw.nf(name=self.dict_var["destination"].get())
-        ex_trunks = self.dict_var["excluded_trunks"].get().strip().split(",")
-        excluded_trunks = filter(None, ex_trunks)
-        ex_nodes = self.dict_var["excluded_nodes"].get().strip().split(",")
-        excluded_nodes = filter(None, ex_nodes)
-        pc = self.dict_var["path_constraints"].get().replace(" ","").split(",")
-        pc = list(filter(None, pc))
-        print(pc, type(pc), bool(pc))
-        if pc:
-            path_constraints = [master.cs.ntw.nf(name=n) for n in pc]
+        
+    def conv(self, property):
+        value = self.dict_var[property].get().replace(" ","").split(",")
+        if property == "excluded_trunks":
+            return {self.ms.cs.ntw.lf(name=t) for t in filter(None, value)}
+        elif property == "excluded_nodes":
+            return {self.ms.cs.ntw.nf(name=n) for n in filter(None, value)}
         else:
-            path_constraints = list()
-        if excluded_trunks:
-            l_excluded_trunks = {master.cs.ntw.lf(name=t) for t in excluded_trunks}
-        if excluded_nodes:
-            l_excluded_nodes = {master.cs.ntw.nf(name=n) for n in excluded_nodes}
+            return [self.ms.cs.ntw.nf(name=n) for n in filter(None, value)]
+    
+    def get_user_input(self):
+        name = self.dict_var["name"].get()
+        source = self.ms.cs.ntw.nf(name=self.dict_var["source"].get())
+        destination = self.ms.cs.ntw.nf(name=self.dict_var["destination"].get())
         return (
                 name, 
                 source, 
                 destination, 
-                l_excluded_trunks, 
-                l_excluded_nodes, 
-                path_constraints
+                self.conv("excluded_trunks"), 
+                self.conv("excluded_nodes"), 
+                self.conv("path_constraints")
                 )
         
-    def find_path(self, master):
-        name, *parameters = self.get_user_input(master)
-        route_path_nodes, route_path_links = master.cs.ntw.dijkstra(*parameters)
+    def find_path(self):
+        name, *parameters = self.get_user_input()
+        route_path_nodes, route_path_links = self.ms.cs.ntw.dijkstra(*parameters)
         
         if route_path_links:
-            master.cs.unhighlight_all()
+            self.ms.cs.unhighlight_all()
             self.current_path = route_path_links
             self.dict_var["path"].set(route_path_links)
-            master.cs.highlight_objects(*route_path_links)
+            self.ms.cs.highlight_objects(*route_path_links)
         else:
-            master.cs.unhighlight_all()
+            self.ms.cs.unhighlight_all()
             # activate focus to prevent the messagebox from removing the window
             self.var_focus.set(1)
             self.change_focus()
             messagebox.showinfo("Warning", "No path found")
         
-    def save_obj(self, master):
+    def save_obj(self):
         for property, str_var in self.dict_var.items():
             # update dict when the object is renamed
             # if it is a node, we need to remove and read the entry in the graph dict
@@ -123,27 +118,30 @@ class ObjectManagementWindow(FocusTopLevel):
                 name = getattr(self.current_obj, property)
                 if name != str_var.get():
                     if self.current_obj.network_type == "node":
-                        adj_links = master.cs.ntw.graph.pop(self.current_obj, None)
+                        adj_links = self.ms.cs.ntw.graph.pop(self.current_obj, None)
                     old_name = name
-                    del master.cs.ntw.pn[self.current_obj.network_type][old_name]
+                    del self.ms.cs.ntw.pn[self.current_obj.network_type][old_name]
                     setattr(self.current_obj, property, str_var.get())
-                    master.cs.ntw.pn[self.current_obj.network_type][str_var.get()] = self.current_obj
+                    self.ms.cs.ntw.pn[self.current_obj.network_type][str_var.get()] = self.current_obj
                     if self.current_obj.network_type == "node":
-                        master.cs.ntw.graph[self.current_obj] = adj_links
+                        self.ms.cs.ntw.graph[self.current_obj] = adj_links
             elif property == "path":
                 setattr(self.current_obj, property, self.current_path)
             else:
-                if property not in ("AS",):
-                    value = master.prop_to_type[property](str_var.get())
+                if property not in self.read_only:
+                    if property in ("path_constraints", "excluded_nodes", "excluded_trunks"): 
+                        value = self.conv(property)
+                    else:
+                        value = self.ms.prop_to_type[property](str_var.get())
                     setattr(self.current_obj, property, value)
             # refresh the label if it was changed
-            master.cs._refresh_object_label(self.current_obj)
+            self.ms.cs._refresh_object_label(self.current_obj)
             # move the node on the canvas in case it's coordinates were updated
             if self.current_obj.class_type == "node":
-                self.master.cs.move_node(self.current_obj)
+                self.ms.cs.move_node(self.current_obj)
                 
-    def save_and_withdraw(self, master):
-        self.save_obj(master)
+    def save_and_withdraw(self):
+        self.save_obj()
         self.withdraw()
             
     def update(self):
