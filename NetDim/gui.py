@@ -249,7 +249,6 @@ class NetDim(tk.Tk):
         convert_links_list = lambda ll: list(map(convert_link, eval(ll)))
         
         # dict property to conversion methods: used at import
-        #TODO string to type and type to string needed to refactor
         # the code for AS export
         self.prop_to_type = {
         "name": str, 
@@ -290,6 +289,47 @@ class NetDim(tk.Tk):
         "path": convert_links_list, 
         "subnets": str, 
         "AS": convert_AS
+        }
+        
+        self.prop_to_nice_name = {
+        "name": "Name",
+        "protocol": "Protocol",
+        "interface": "Interface",
+        "ipaddress": "IP address",
+        "subnetmask": "Subnet mask",
+        "x": "X coordinate", 
+        "y": "Y coordinate", 
+        "longitude": "Longitude", 
+        "latitude": "Latitude",
+        "distance": "Distance", 
+        "costSD": "Cost S -> D", 
+        "costDS": "Cost D -> S", 
+        "cost": "Cost",
+        "capacitySD": "Capacity S -> D", 
+        "capacityDS": "Capacity -> S", 
+        "traffic": "Traffic",
+        "trafficSD": "Traffic S -> D", 
+        "trafficDS": "Traffic D -> S", 
+        "wctrafficSD": "Worst case traffic S -> D", 
+        "wctrafficDS": "Worst case traffic D -> S", 
+        "flowSD": "Flow S -> D", 
+        "flowDS": "Flow D -> S", 
+        "ipaddressS": "IP address (source)",
+        "subnetmaskS": "Subnet mask (source)",
+        "ipaddressD": "IP address (destination)",
+        "subnetmaskD": "Subnet mask (destination)",
+        "interfaceS": "Interface (source)",
+        "interfaceD": "Interface (destination)",
+        "throughput": "Throughput",
+        "lambda_capacity": "Lambda capacity",
+        "source": "Source",
+        "destination": "Destination",
+        "path_constraints": "Path constraints",
+        "excluded_nodes": "Excluded nodes",
+        "excluded_trunks": "Excluded trunks",
+        "path": "Path",
+        "subnets": "Subnets", 
+        "AS": "Autonomous system"
         }
         
         ## ----- Menus : -----

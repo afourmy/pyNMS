@@ -19,6 +19,10 @@ class ObjectManagementWindow(FocusTopLevel):
                  "AS"
                 )
                 
+    property_list = {
+    "interface": ("FE", "GE", "10GE", "40GE", "100GE")
+    }
+                
     def __init__(self, master, type):
         super().__init__()
         n = len(master.object_properties[type])
@@ -32,13 +36,23 @@ class ObjectManagementWindow(FocusTopLevel):
         # create the property window
         self.dict_var = {}
         for index, property in enumerate(master.object_properties[type]):
-            str_var = tk.StringVar()
-            self.dict_var[property] = str_var
-            label = tk.Label(self, text=property.title(), bg="#A1DBCD")
+            
+            # creation of the label associated to the property
+            text = master.prop_to_nice_name[property]
+            label = tk.Label(self, text=text, bg="#A1DBCD")
             label.grid(row=index+1, pady=1, padx=5, column=0, sticky=tk.W)
-            s = "readonly" if property in self.read_only else tk.NORMAL
-            entry = tk.Entry(self, textvariable=str_var, width=15, state=s)
-            entry.grid(row=index+1, pady=1, padx=5, column=1, sticky=tk.W)
+            str_var = tk.StringVar()
+            
+            # value of the property: drop-down list or entry
+            if property in self.property_list:
+                pvalue = ttk.Combobox(self, textvariable=str_var, width=12)
+                pvalue["values"] = self.property_list[property]
+            else:
+                s = "readonly" if property in self.read_only else tk.NORMAL
+                pvalue = tk.Entry(self, textvariable=str_var, width=15, state=s)
+                
+            pvalue.grid(row=index+1, pady=1, padx=5, column=1, sticky=tk.W)
+            self.dict_var[property] = str_var
     
         # route finding possibilities for a route 
         if type == "route":
@@ -46,13 +60,14 @@ class ObjectManagementWindow(FocusTopLevel):
                                     command=lambda: self.find_path(master))
             self.button_compute_path.grid(row=n+1, column=0, columnspan=2, 
                                                                 pady=5, padx=5)
-        
+                                                                
         self.button_save_obj = ttk.Button(self, text="Save", 
                                     command=lambda: self.save_obj(master))
         self.button_save_obj.grid(row=0,column=1, columnspan=2, pady=5, padx=5)
         
-        # hide the window when closed
-        self.protocol("WM_DELETE_WINDOW", self.withdraw)
+        # when the window is closed, save all parameters in case the user
+        # made a change, then withdraw the window.
+        self.protocol("WM_DELETE_WINDOW", lambda: self.save_and_withdraw(master))
         self.withdraw()
     
     def get_user_input(self, master):
@@ -63,8 +78,13 @@ class ObjectManagementWindow(FocusTopLevel):
         excluded_trunks = filter(None, ex_trunks)
         ex_nodes = self.dict_var["excluded_nodes"].get().strip().split(",")
         excluded_nodes = filter(None, ex_nodes)
-        pc = self.dict_var["path_constraints"].get()
-        path_constraints = master.prop_to_type["path_constraints"](pc)
+        pc = self.dict_var["path_constraints"].get().replace(" ","").split(",")
+        pc = list(filter(None, pc))
+        print(pc, type(pc), bool(pc))
+        if pc:
+            path_constraints = [master.cs.ntw.nf(name=n) for n in pc]
+        else:
+            path_constraints = list()
         if excluded_trunks:
             l_excluded_trunks = {master.cs.ntw.lf(name=t) for t in excluded_trunks}
         if excluded_nodes:
@@ -81,14 +101,6 @@ class ObjectManagementWindow(FocusTopLevel):
     def find_path(self, master):
         name, *parameters = self.get_user_input(master)
         route_path_nodes, route_path_links = master.cs.ntw.dijkstra(*parameters)
-        
-        # name, source, target, *e = self.get_user_input(master)
-        # route_path_nodes, route_path_links = master.cs.ntw.bellman_ford(source, target)
-        
-        # _, source, *e = self.get_user_input(master)
-        # print(source)
-        # for p in master.cs.ntw.all_paths(source):
-        #     print(p)
         
         if route_path_links:
             master.cs.unhighlight_all()
@@ -129,12 +141,16 @@ class ObjectManagementWindow(FocusTopLevel):
             # move the node on the canvas in case it's coordinates were updated
             if self.current_obj.class_type == "node":
                 self.master.cs.move_node(self.current_obj)
+                
+    def save_and_withdraw(self, master):
+        self.save_obj(master)
+        self.withdraw()
             
     def update(self):
         for property, str_var in self.dict_var.items():
             obj_prop = getattr(self.current_obj, property)
-            if type(obj_prop) == list:
-                str_var.set("[" + ",".join(map(str, obj_prop)) + "]")
+            if type(obj_prop) in (list, set):
+                str_var.set(",".join(map(str, obj_prop)))
             else:
                 str_var.set(obj_prop)
             # if there is a path, we set current_path in case the object is saved

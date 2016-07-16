@@ -92,7 +92,7 @@ class RightClickMenu(tk.Menu):
             self.add_command(label="Manage AS", 
                         command=lambda: self.change_AS(scenario, "manage"))
                         
-        self.add_separator()
+            self.add_separator()
         
         # exactly one trunk: failure simulation menu
         if not scenario.so["node"] and len(scenario.so["link"]) == 1:

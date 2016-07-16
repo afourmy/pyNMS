@@ -155,7 +155,7 @@ class ASManagement(FocusTopLevel):
         self.button_delete_area.grid(row=9, column=0)
         
         # protection type drop-down list
-        self.pct_type_list.grid(row=1, column=6)
+        # self.pct_type_list.grid(row=1, column=6)
         
         # at first, the backbone is the only area: we insert it in the listbox
         self.dict_listbox["area names"].insert("Backbone")
@@ -213,6 +213,9 @@ class ASManagement(FocusTopLevel):
         self.add_to_AS("Backbone", *trunks_between_domain_nodes)
         
     def create_routes(self):
+        
+        self.update_AS_topology()
+        
         for eA in self.AS.pAS["edge"]:
             for eB in self.AS.pAS["edge"]:
                 if eA != eB and eB not in self.AS.routes[eA]:

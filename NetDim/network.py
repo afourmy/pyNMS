@@ -403,20 +403,8 @@ class Network(object):
         
         source_area, target_area = None, None
         backbone = ISIS_AS.areas["Backbone"]
-        
-        # if source has more than one area, it is a L1/L2 node
-        # which means it is in the backbone
-        if len(source.AS[ISIS_AS]) > 1:
-            source_area = backbone
-        # else, it has only one area, which we retrieve
-        else:
-            source_area ,= source.AS[ISIS_AS]
-            
-        # same for target
-        if len(target.AS[ISIS_AS]) > 1:
-            target_area = backbone
-        else:
-            target_area ,= target.AS[ISIS_AS]
+        source_area ,= source.AS[ISIS_AS]
+        target_area ,= target.AS[ISIS_AS]
         
         # step indicates what we have to do:
         # if step is False, it means we are in the source area, heading 
@@ -430,19 +418,15 @@ class Network(object):
         # that belong to the backbone or to the destination area
         allowed = backbone.pa["node"] | target_area.pa["node"]
         
-        prec_node = {i: None for i in a_n}
-        prec_link = {i: None for i in a_n}
-        visited = {i: False for i in a_n}
-        dist = {i: float("inf") for i in a_n}
-        dist[source] = 0
-        heap = [(0, source)]
+        visited = set()
+        heap = [(0, source, [])]
         while heap:
-            dist_node, node = heappop(heap)  
-            if not visited[node]:
-                visited[node] = True
+            dist, node, path = heappop(heap)  
+            if node not in visited:
+                visited.add(node)
                 if node == target:
-                    break
-                if not step and backbone in node.AS[ISIS_AS]:
+                    return [], path
+                if not step and node in ISIS_AS.border_routers:
                     step = True
                     heap.clear()
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
@@ -458,23 +442,10 @@ class Network(object):
                     # that belong to the destination area
                     if step and neighbor not in allowed: 
                         continue
-                    dist_neighbor = dist_node + getattr(adj_trunk, "cost" + sd)
-                    if dist_neighbor < dist[neighbor]:
-                        dist[neighbor] = dist_neighbor
-                        prec_node[neighbor] = node
-                        prec_link[neighbor] = adj_trunk
-                        heappush(heap, (dist_neighbor, neighbor))
-        
-        # traceback the path from target to source
-        if visited[target]:
-            curr, path_node, path_link = target, [target], [prec_link[target]]
-            while curr != source:
-                curr = prec_node[curr]
-                path_link.append(prec_link[curr])
-                path_node.append(curr)
-            return path_node[::-1], path_link[:-1][::-1]
-        else:
-            return [], []
+                    cost = getattr(adj_trunk, "cost" + sd)
+                    heappush(heap, (dist + cost, neighbor, path + [adj_trunk]))
+                    
+        return [], []
             
     ## OSPF routing algorithm
     
@@ -488,55 +459,20 @@ class Network(object):
         source_area = target_area = None
         backbone = OSPF_AS.areas["Backbone"]
         
-        # if source and target have areas in common, then:
-            # if one of them is the backbone, we use the backbone as target area
-            # else, we choose one to be the target area
-        common_areas = source.AS[OSPF_AS] & target.AS[OSPF_AS]
-        if common_areas:
-            step = 2
-            if backbone in common_areas:
-                target_area = backbone
-            else:
-                target_area = next(iter(common_areas))
+        # if source has more than one area, it is a L1/L2 node
+        # which means it is in the backbone
+        if len(source.AS[OSPF_AS]) > 1:
+            source_area = backbone
+        # else, it has only one area, which we retrieve
         else:
-        # else if source and target are in different areas, then:
-            # if the source is connected to the backbone, we use the backbone
-            # as a source area and head to the destination area
-            if backbone in source.AS[OSPF_AS]:
-                step = 1
-                source_area = backbone
-                target_area = next(iter(target.AS[OSPF_AS]))
-            # if the target is in the backbone, we set the backbone as a 
-            # target area
-            elif backbone in target.AS[OSPF_AS]:
-                step = 0
-                source_area = next(iter(source.AS[OSPF_AS]))
-                target_area = backbone
-            # else, source and target are in different areas, none of which 
-            # being the backbone.
-            else:
-                step = 0
-                source_area = next(iter(source.AS[OSPF_AS]))
-                target_area = next(iter(target.AS[OSPF_AS]))
+            source_area ,= source.AS[OSPF_AS]
             
-        
-        # # if source has more than one area, it is a L1/L2 node
-        # # which means it is in the backbone
-        # if len(source.AS[OSPF_AS]) > 1:
-        #     source_area = backbone
-        # # else, it has only one area, which we retrieve
-        # else:
-        #     source_area ,= source.AS[OSPF_AS]
-        #     
-        # # same for target
-        # if len(target.AS[OSPF_AS]) > 1:
-        #     target_area = backbone
-        # else:
-        #     target_area ,= target.AS[OSPF_AS]
+        # same for target
+        if len(target.AS[OSPF_AS]) > 1:
+            target_area = backbone
+        else:
+            target_area ,= target.AS[OSPF_AS]
             
-        #TODO case when the source is in the target area
-        #TODO si source + target ont une destination en commun qui n'est pas le 
-        #TODO BB, il faut l'utiliser et on est en step 2 direct
         # step indicates in which area we are, which tells us which links 
         # can/cannot be used. 
         # If step is 0, we are in the source area, heading to the backbone. 
@@ -546,7 +482,7 @@ class Network(object):
         # to the source area once we've reached the backbone, and we cannot 
         # use links from the backbone once we've reached the destination
         # area.
-        # step = 2*(source_area == target_area) or source_area == backbone
+        step = 2*(source_area == target_area) or source_area == backbone
 
         visited = set()
         heap = [(0, source, [], step)]
@@ -573,9 +509,13 @@ class Network(object):
                     # else if step is 2, we can only use links of the target area
                     if step == 2 and adj_trunk not in target_area.pa["trunk"]: 
                         continue
-                    dist_neighbor = dist + getattr(adj_trunk, "cost" + sd)
-                    heappush(heap, (dist + dist_neighbor, neighbor, 
-                                                    path + [adj_trunk], step))
+                    # here, it is very important not to reuse an existing 
+                    # variable like dist or path (for instance by appending
+                    # adj_trunk to path before pushing it to the binary heap)
+                    # as it would mess the whole thing up.
+                    cost = getattr(adj_trunk, "cost" + sd)
+                    heappush(heap, (dist + cost, neighbor, path + [adj_trunk], step))
+                                                    
         return [], []
         
     def protection_routing(self, normal_path, algorithm, failed_link):
@@ -586,52 +526,33 @@ class Network(object):
     def traffic_routing(self, traffic_link):
         
         source, target = traffic_link.source, traffic_link.destination
-        prec_node = {i: None for i in self.pn["node"].values()}
-        prec_link = {i: None for i in self.pn["node"].values()}
-        visited = {i: False for i in self.pn["node"].values()}
-        dist = {i: float("inf") for i in self.pn["node"].values()}
-        dist[source] = 0
-        heap = [(0, source)]
+        visited = set()
+        heap = [(0, source, [])]
         # we count how many AS we cross in case of ECMP AS path, to keep the 
         # shortest in terms of AS
         while heap:
-            dist_node, node = heappop(heap)  
-            if not visited[node]:
-                visited[node] = True
+            dist, node, path = heappop(heap)  
+            if node not in visited:
+                visited.add(node)
                 if node == target:
-                    break
+                    return [], path
                 adj_links = self.graph[node]["trunk"] | self.graph[node]["route"]
                 for neighbor, adj_link in adj_links:
                     sd = (node == adj_link.source)*"SD" or "DS"
                     # if the link is a trunk and belongs to an AS,  
                     # we ignore it because we use only AS's routes
-                    if adj_link.network_type == "trunk" and adj_link.AS: 
+                    if adj_link.type == "trunk" and adj_link.AS: 
                         continue
                     # if the link is a route, we make sure the current node is 
                     # the source of the route, because routes are unidirectionnal
-                    if adj_link.network_type == "route" and adj_link.source != node: 
+                    if adj_link.type == "route" and adj_link.source != node: 
                         continue
                     # if the link is a route, it is unidirectional and the
                     # property is simply cost, but if it is a trunk, there are
                     # one cost per direction and we retrieve the right one
-                    cost = "cost"*(adj_link.network_type == "route") or "cost" + sd 
-                    dist_neighbor = dist_node + getattr(adj_link, cost)
-                    if dist_neighbor < dist[neighbor]:
-                        dist[neighbor] = dist_neighbor
-                        prec_node[neighbor] = node
-                        prec_link[neighbor] = adj_link
-                        heappush(heap, (dist_neighbor, neighbor))
-        
-        # traceback the path from target to source
-        if visited[target]:
-            curr, path_node, path_link = target, [target], [prec_link[target]]
-            while curr != source:
-                curr = prec_node[curr]
-                path_link.append(prec_link[curr])
-                path_node.append(curr)
-            return path_node[::-1], path_link[:-1][::-1]
-        else:
-            return [], []
+                    cost = "cost"*(adj_link.type == "route") or "cost" + sd 
+                    dist += getattr(adj_link, cost)
+                    heappush(heap, (dist, neighbor, path + [adj_link]))
             
     ## 4) Bellman-Ford algorithm
         
