@@ -66,11 +66,14 @@ class ObjectManagementWindow(FocusTopLevel):
                                     command=lambda: self.save_obj())
         self.button_save_obj.grid(row=0,column=1, columnspan=2, pady=5, padx=5)
         
-        # when the window is closed, save all parameters in case the user
-        # made a change, then withdraw the window.
+        # when the window is closed, save all parameters (in case the user
+        # made a change), then withdraw the window.
         self.protocol("WM_DELETE_WINDOW", lambda: self.save_and_withdraw())
         self.withdraw()
         
+    # this function converts the user-defined constraints to python objects.
+    # it is used both when reading the user inputs, and when saving the 
+    # route properties.
     def conv(self, property):
         value = self.dict_var[property].get().replace(" ","").split(",")
         if property == "excluded_trunks":
@@ -95,7 +98,7 @@ class ObjectManagementWindow(FocusTopLevel):
         
     def find_path(self):
         name, *parameters = self.get_user_input()
-        route_path_nodes, route_path_links = self.ms.cs.ntw.dijkstra(*parameters)
+        route_path_nodes, route_path_links = self.ms.cs.ntw.A_star(*parameters)
         
         if route_path_links:
             self.ms.cs.unhighlight_all()

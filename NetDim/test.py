@@ -114,7 +114,7 @@ class TestSP(unittest.TestCase):
     def tearDown(self):
         self.netdim.destroy()
  
-    def test_dijkstra(self):
+    def test_A_star(self):
         for i, r in enumerate((self.route9, self.route10, self.route11)):
             self.assertEqual(list(map(str, r.path)), self.results[i])
         
@@ -214,21 +214,21 @@ class TestCSPF(unittest.TestCase):
         # trunk between node2 and node5
         trunk15 = self.netdim.cs.ntw.lf(name="trunk15")
         
-        _, path = self.netdim.cs.ntw.dijkstra(node6, node7)
+        _, path = self.netdim.cs.ntw.A_star(node6, node7)
         self.assertEqual(list(map(str, path)), self.results[0])
-        _, path = self.netdim.cs.ntw.dijkstra(node6, node7, 
+        _, path = self.netdim.cs.ntw.A_star(node6, node7, 
                                                     path_constraints=[node2])
         self.assertEqual(list(map(str, path)), self.results[1])
-        _, path = self.netdim.cs.ntw.dijkstra(node6, node7, 
+        _, path = self.netdim.cs.ntw.A_star(node6, node7, 
                                             path_constraints=[node3, node2])
         self.assertEqual(list(map(str, path)), self.results[2])                  
-        _, path = self.netdim.cs.ntw.dijkstra(node6, node7, 
+        _, path = self.netdim.cs.ntw.A_star(node6, node7, 
                                                     excluded_trunks={trunk13})
         self.assertEqual(list(map(str, path)), self.results[3])
-        _, path = self.netdim.cs.ntw.dijkstra(node6, node7, 
+        _, path = self.netdim.cs.ntw.A_star(node6, node7, 
                             excluded_trunks={trunk13}, excluded_nodes={node1})
         self.assertEqual(list(map(str, path)), self.results[4])
-        _, path = self.netdim.cs.ntw.dijkstra(node6, node7, 
+        _, path = self.netdim.cs.ntw.A_star(node6, node7, 
                             excluded_trunks={trunk15}, excluded_nodes={node4})
         self.assertEqual(list(map(str, path)), self.results[5])
         

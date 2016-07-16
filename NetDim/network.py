@@ -202,7 +202,7 @@ class Network(object):
                                route.excluded_nodes, 
                                route.path_constraints
                                )
-                _, route_path = self.dijkstra(*route_param)
+                _, route_path = self.A_star(*route_param)
                 route.path = route_path
 
         # for traffic link, we use a BGP-like routing to restraint the routing
@@ -306,18 +306,18 @@ class Network(object):
                 
     ## Shortest path(s) algorithms
         
-    ## 1) Dijkstra algorithm
+    ## 1) A* algorithm for CSPF modelization
             
-    def dijkstra(
-                 self, 
-                 source, 
-                 target, 
-                 excluded_trunks = None, 
-                 excluded_nodes = None, 
-                 path_constraints = None, 
-                 allowed_trunks = None, 
-                 allowed_nodes = None
-                 ):
+    def A_star(
+               self, 
+               source, 
+               target, 
+               excluded_trunks = None, 
+               excluded_nodes = None, 
+               path_constraints = None, 
+               allowed_trunks = None, 
+               allowed_nodes = None
+               ):
                 
         # initialize parameters
         if excluded_nodes is None:
@@ -331,50 +331,31 @@ class Network(object):
         if allowed_nodes is None:
             allowed_nodes = set(self.pn["node"].values())
             
-        full_path_node, full_path_link = [], []
-        constraints = [source] + path_constraints + [target]
-        for s, t in zip(constraints, constraints[1:]):
-            # find the SP from s to t
-            prec_node = {i: None for i in allowed_nodes}
-            prec_link = {i: None for i in allowed_nodes}
-            visited = {i: False for i in allowed_nodes}
-            dist = {i: float("inf") for i in allowed_nodes}
-            dist[s] = 0
-            heap = [(0, s)]
-            while heap:
-                dist_node, node = heappop(heap)  
-                if not visited[node]:
-                    visited[node] = True
-                    if node == t:
-                        break
-                    for neighbor, adj_trunk in self.graph[node]["trunk"]:
-                        sd = (node == adj_trunk.source)*"SD" or "DS"
-                        # excluded and allowed nodes
-                        if neighbor not in allowed_nodes-excluded_nodes: 
-                            continue
-                        # excluded and allowed trunks
-                        if adj_trunk not in allowed_trunks-excluded_trunks: 
-                            continue
-                        dist_neighbor = dist_node + getattr(adj_trunk, "cost" + sd)
-                        if dist_neighbor < dist[neighbor]:
-                            dist[neighbor] = dist_neighbor
-                            prec_node[neighbor] = node
-                            prec_link[neighbor] = adj_trunk
-                            heappush(heap, (dist_neighbor, neighbor))
-            
-            # traceback the path from t to s, for each (s,t) from source to target
-            if visited[t]:
-                curr, path_node, path_link = t, [t], [prec_link[t]]
-                while curr != s:
-                    curr = prec_node[curr]
-                    path_link.append(prec_link[curr])
-                    path_node.append(curr)
-                full_path_node += [path_node[:-1][::-1]]
-                full_path_link += [path_link[:-1][::-1]]
-            else:
-                return [], []
-                
-        return sum(full_path_node, [source]), sum(full_path_link, [])
+        # find the SP from s to t
+        pc = [target] + path_constraints[::-1]
+        visited = set()
+        heap = [(0, source, [], pc)]
+        while heap:
+            dist, node, path, pc = heappop(heap)  
+            if node not in visited:
+                visited.add(node)
+                if node == pc[-1]:
+                    visited.clear()
+                    heap.clear()
+                    pc.pop()
+                    if not pc:
+                        return [], path
+                for neighbor, adj_trunk in self.graph[node]["trunk"]:
+                    sd = (node == adj_trunk.source)*"SD" or "DS"
+                    # excluded and allowed nodes
+                    if neighbor not in allowed_nodes-excluded_nodes: 
+                        continue
+                    # excluded and allowed trunks
+                    if adj_trunk not in allowed_trunks-excluded_trunks: 
+                        continue
+                    cost = getattr(adj_trunk, "cost" + sd)
+                    heappush(heap, (dist + cost, neighbor, path + [adj_trunk], pc))
+        return [], []
         
     ## 2) RIP routing algorithm
     
@@ -385,7 +366,7 @@ class Network(object):
         if a_t is None:
             a_t = RIP_AS.pAS["trunk"]
                     
-        return self.dijkstra(
+        return self.A_star(
                              source, 
                              target, 
                              allowed_nodes = a_n,
@@ -444,7 +425,6 @@ class Network(object):
                         continue
                     cost = getattr(adj_trunk, "cost" + sd)
                     heappush(heap, (dist + cost, neighbor, path + [adj_trunk]))
-                    
         return [], []
             
     ## OSPF routing algorithm
@@ -515,7 +495,6 @@ class Network(object):
                     # as it would mess the whole thing up.
                     cost = getattr(adj_trunk, "cost" + sd)
                     heappush(heap, (dist + cost, neighbor, path + [adj_trunk], step))
-                                                    
         return [], []
         
     def protection_routing(self, normal_path, algorithm, failed_link):
