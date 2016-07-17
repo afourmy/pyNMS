@@ -306,7 +306,7 @@ class NetDim(tk.Tk):
         "costDS": "Cost D -> S", 
         "cost": "Cost",
         "capacitySD": "Capacity S -> D", 
-        "capacityDS": "Capacity -> S", 
+        "capacityDS": "Capacity S -> S", 
         "traffic": "Traffic",
         "trafficSD": "Traffic S -> D", 
         "trafficDS": "Traffic D -> S", 

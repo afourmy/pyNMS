@@ -16,8 +16,12 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         self.label_destination = tk.Label(self, bg="#A1DBCD", text="Destination")
         
         # Entry box for the name of the AS
-        self.entry_source = tk.Entry(self, textvariable="", width=10)
-        self.entry_destination = tk.Entry(self, textvariable="", width=10)
+        self.entry_source = tk.Entry(self, textvariable="node1", width=10)
+        self.entry_destination = tk.Entry(self, textvariable="node4", width=10)
+        
+        # flow for minimum cost flow
+        self.label_flow = tk.Label(self, bg="#A1DBCD", text="Flow")
+        self.entry_flow = tk.Entry(self, textvariable="12", width=10)
         
         # selection des paths par l'utilisateur
         self.button_create_hypercube = ttk.Button(self, text='Create hypercube', command = lambda: self.add_nodes(master))
@@ -26,6 +30,7 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         self.button_LP = ttk.Button(self, text='LP', command = lambda: self.LP_SP(master))
         self.button_fulkerson = ttk.Button(self, text='Fulkerson', command = lambda: self.fulkerson(master))
         self.button_kruskal = ttk.Button(self, text='Minimum spanning tree', command = lambda: self.kruskal(master))
+        self.button_mcf = ttk.Button(self, text='Minimum cost flow', command = lambda: self.LP_MCF(master))
         
         # affichage des buttons / label dans la grille
         self.button_create_hypercube.grid(row=1,column=0, pady=5, padx=5, sticky=tk.W)
@@ -34,11 +39,15 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         self.button_LP.grid(row=2,column=0, pady=5, padx=5, sticky=tk.W)
         self.button_fulkerson.grid(row=2,column=1, pady=5, padx=5, sticky=tk.W)
         self.button_kruskal.grid(row=5,column=1, pady=5, padx=5, sticky=tk.W)
+        self.button_mcf.grid(row=7,column=1, pady=5, padx=5, sticky=tk.W)
         
         self.label_source.grid(row=3,column=0, pady=5, padx=5, sticky=tk.W)
         self.label_destination.grid(row=4,column=0, pady=5, padx=5, sticky=tk.W)
         self.entry_source.grid(row=3,column=1, pady=5, padx=5, sticky=tk.W)
         self.entry_destination.grid(row=4,column=1, pady=5, padx=5, sticky=tk.W)
+        
+        self.label_flow.grid(row=6, column=0, pady=5, padx=5, sticky=tk.W)
+        self.entry_flow.grid(row=6, column=1, pady=5, padx=5, sticky=tk.W)
         
         # hide the window when closed
         self.protocol("WM_DELETE_WINDOW", self.withdraw)
@@ -56,6 +65,13 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         destination = master.cs.ntw.nf(name=self.entry_destination.get())
         flow = master.cs.ntw.LP_SP_formulation(source, destination)
         print(flow)
+        
+    def LP_MCF(self, master):
+        source = master.cs.ntw.nf(name=self.entry_source.get())
+        destination = master.cs.ntw.nf(name=self.entry_destination.get())
+        flow = float(self.entry_flow.get())
+        cost = master.cs.ntw.LP_MCF_formulation(source, destination, flow)
+        print(cost)
         
     def fulkerson(self, master):
         source = master.cs.ntw.nf(name=self.entry_source.get())

@@ -466,13 +466,18 @@ class Network(object):
         visited = set()
         heap = [(0, source, [], step)]
         while heap:
-            dist, node, path, step = heappop(heap)  
+            dist, node, path, step = heappop(heap)
             if (node, step) not in visited:
                 visited.add((node, step))
                 if node == target:
                     return [], path
-                if (not step and backbone in node.AS[OSPF_AS] or
-                    step == 1 and target_area in node.AS[OSPF_AS]):
+                # in case an ABR is connected to both the source and the target 
+                # area, step will be incremented straigth from 0 to 2 since the
+                # ABR also belongs to the backbone.
+                # that's why we need to break the condition into 2 conditions
+                if not step and backbone in node.AS[OSPF_AS]:
+                    step += 1
+                if step == 1 and target_area in node.AS[OSPF_AS]:
                     step += 1
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     sd = (node == adj_trunk.source)*"SD" or "DS"
@@ -795,7 +800,7 @@ class Network(object):
                 
     ## Linear programming algorithms
     
-    ## Shortest path
+    ## 1) Shortest path
     
     def LP_SP_formulation(self, s, t):
         """
@@ -864,7 +869,7 @@ class Network(object):
             
         return sum(x)
     
-    ## 1) Single-source single-destination maximum flow
+    ## 2) Single-source single-destination maximum flow
                
     def LP_MF_formulation(self, s, t):
         """
@@ -908,6 +913,71 @@ class Network(object):
         G = numpy.concatenate((x, -1*x), axis=0).tolist()        
         A, G, b, c, h = map(matrix, (A, G, b, c, h))
         solsta, x = glpk.ilp(-c, G.T, h, A.T, b)
+
+        # update the resulting flow for each node
+        cpt = 0
+        for node in new_graph:
+            for neighbor in new_graph[node]:
+                new_graph[node][neighbor] = x[cpt]
+                cpt += 1
+                
+        # update the network trunks with the new flow value
+        for trunk in self.pn["trunk"].values():
+            src, dest = trunk.source, trunk.destination
+            trunk.flowSD = new_graph[src][dest]
+            trunk.flowDS = new_graph[dest][src]
+
+        return sum(
+                   getattr(adj, "flow" + ((s==adj.source)*"SD" or "DS")) 
+                   for _, adj in self.graph[s]["trunk"]
+                   )
+                   
+    ## 3) Single-source single-destination minimum-cost flow
+               
+    def LP_MCF_formulation(self, s, t, flow):
+        """
+        Solves the MILP: minimize c'*x
+                subject to G*x + s = h
+                            A*x = b
+                            s >= 0
+                            xi integer, forall i in I
+        """
+        
+        new_graph = {node: {} for node in self.graph}
+        for node in self.graph:
+            for neighbor, trunk in self.graph[node]["trunk"]:
+                sd = (node == trunk.source)*"SD" or "DS"
+                new_graph[node][neighbor] = (getattr(trunk, "capacity" + sd),
+                                             getattr(trunk, "cost" + sd))
+
+        n = 2*len(self.pn["trunk"])
+        v = len(new_graph)
+
+        c, h = [], []
+        for node in new_graph:
+            for neighbor, (capacity, cost) in new_graph[node].items():
+                c.append(float(cost))
+                h.append(float(capacity))
+                
+        # flow conservation: Ax = b
+        A, b = [], []
+        for node_r in new_graph:
+            if node_r != t:
+                b.append(flow * float(node_r == s))
+                row = []
+                for node in new_graph:
+                    for neighbor in new_graph[node]:
+                        row.append(
+                                   -1. if neighbor == node_r 
+                              else  1. if node == node_r 
+                              else  0.
+                                   )
+                A.append(row)
+                
+        h, x = h+[0.]*n, numpy.eye(n, n)
+        G = numpy.concatenate((x, -1*x), axis=0).tolist()        
+        A, G, b, c, h = map(matrix, (A, G, b, c, h))
+        solsta, x = glpk.ilp(c, G.T, h, A.T, b)
 
         # update the resulting flow for each node
         cpt = 0

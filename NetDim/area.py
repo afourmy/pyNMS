@@ -13,11 +13,10 @@ class Area(object):
         self.name = name
         self.id = int(id)
         self.AS = AS
-        if not trunks:
-            trunks = set()
-        if not nodes:
-            nodes = set()
-        self.pa = {"node": nodes, "trunk": trunks}
+        # it is important to write set(nodes) and not just nodes so that
+        # both set are distinct in memory, and when we remove a node
+        # (or trunk) from an area, it is not removed from the AS as well.
+        self.pa = {"node": set(nodes), "trunk": set(trunks)}
         # update the AS dict for all objects, so that they are aware they
         # belong to this new area
         for obj in nodes | trunks:
@@ -37,7 +36,7 @@ class Area(object):
             
     def remove_from_area(self, *objects):
         for obj in objects:
-            self.pa[obj.network_type].discard(obj)
+            self.pa[obj.type].discard(obj)
             obj.AS[self.AS].discard(self)
             
 class CreateArea(CustomTopLevel):

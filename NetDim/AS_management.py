@@ -313,11 +313,29 @@ class ASManagement(FocusTopLevel):
                         setattr(trunk, "wctraffic" + sd, new_wctraffic)
                 
     def update_AS_topology(self):
+        
+        self.AS.border_routers.clear()
+        # for OSPF, we reset all area nodes, for IS-IS, all area trunks
+        if self.AS.type == "ISIS":
+            self.AS.areas["Backbone"].pa["trunk"].clear()
+        elif self.AS.type == "OSPF":
+            self.AS.areas["Backbone"].pa["node"].clear()
+        
         for node in self.AS.pAS["node"]:
             
             # In IS-IS, a router has only one area
             if self.AS.type == "ISIS":
                 node_area ,= node.AS[self.AS]
+                
+            # in OSPF, a router is considered ABR if it has attached
+            # trunks that are in different area. Since we just updated 
+            # the router's areas, all we need to check is that it has
+            # at least 2 distinct areas.
+            # an ABR is automatically part of the backbone area.
+            elif self.AS.type == "OSPF":
+                if len(node.AS[self.AS]) > 1:
+                    self.AS.border_routers.add(node)
+                    self.AS.areas["Backbone"].add_to_area(node)
             
             for neighbor, adj_trunk in self.scenario.ntw.graph[node]["trunk"]:
                 
@@ -349,12 +367,8 @@ class ASManagement(FocusTopLevel):
                 elif self.AS.type == "OSPF":
                     for area in adj_trunk.AS[self.AS]:
                         area.add_to_area(node)
-                    # in OSPF, a router is considered ABR if it has attached
-                    # trunks that are in different area. Since we just updated 
-                    # the router's areas, all we need to check is that it has
-                    # at least 2 distinct areas.
-                    if len(node.AS[self.AS]) > 2:
-                        self.AS.border_routers.add(node)
+                        
+
                 
     def update_cost(self):
         for trunk in self.AS.pAS["trunk"]:
