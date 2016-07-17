@@ -140,20 +140,23 @@ Clicking on a route display its path in red. Since we created a full-mesh AS, th
 - [x] Bellman-Ford to find the shortest path
 - [x] BFS to find all loop-free paths
 - [x] Floyd Warshall to find all SP length
+- [x] Fruchterman-Reingold: make it work.
+- [x] Graph drawing on the right-click for a selection of nodes
+- [x] Shortest path with linear programming
+- [ ] Minimum-cost flow with linear programming
+- [ ] Shortest pair with A*
+- [ ] Bhandari algorithm to compare with Suurbale
+- [ ] Improved Suurbale/Bhandari to find the K (maximally) edge/edge&nodes disjoint paths
 - [ ] Prim algorithm to find the minimum spanning tree
 - [ ] Minimum cut. Useful to find the bottleneck of the network, and partition the graph before visualisation.
 - [ ] K-means before graph drawing if the graph is too big.
 - [ ] Dinic algorithm to find the maximum flow
 - [ ] Loop detection algorithm with BFS
 - [ ] K equal-cost links/links&amp;nodes-disjoint shortest paths with BFS
-- [ ] Suurbale algorithm to find the shortest links/links&amp;nodes-disjoint loop
-- [ ] Bhandari algorithm to compare with Suurbale
-- [ ] Improved Suurbale/Bhandari to find the K (maximally) edge/edge&nodes disjoint paths
-- [ ] Fruchterman-Reingold: make it work. (velocity divergence to infinity so far)
+- [ ] Suurbale algorithm to find the shortest links/links&amp;nodes-disjoint pair
 - [ ] Use LP to solve RWA simple version
 - [ ] Use a genetic algorithm to find the maximum flow, compare with LP
 - [ ] Use a genetic algorithm to solve RWA, compare with LP
-- [ ] Graph drawing on the right-click for a selection of nodes
 - [ ] Degree centrality. number of neighbor of each node (graph + make node size depend on it)
 - [ ] Algorithm to determine link weight in order to optimize load sharing (is-is/ospf optimization)
 - [ ] Protection-based link dimensioning: IGP reconvergence, FRR, etc
@@ -191,7 +194,6 @@ Clicking on a route display its path in red. Since we created a full-mesh AS, th
 - [ ] Highlight recovery path with dash
 - [ ] Highlight routes / traffic methods should depend on whether there is or not a link in failure.
 
-
 ## Routing
 - [x] ISIS routing
 - [x] OSPF routing. 
@@ -218,6 +220,7 @@ Clicking on a route display its path in red. Since we created a full-mesh AS, th
 - [ ] Use the K-shortest paths for load-balancing at the edge of an AS
 - [ ] Delete AS button. Rename AS. Delete area. Rename area.
 - [ ] Interaction between rename an object and the AS management. 
+- [ ] Find a way to make the network tree view work, by retrieving the name of the category
 - [ ] Add AS properties in the model, NTV and ASm panel
 
 ## Tests
@@ -237,8 +240,10 @@ Clicking on a route display its path in red. Since we created a full-mesh AS, th
 - [x] Add new devices: splitter, regenerator/amplifier
 - [x] Graph generation: select the type of nodes
 - [x] Remove AS from pn
-- [ ] Replace splitter with switch
-- [ ] Dict reset from keys
+- [x] Add switch
+- [x] Dict reset from keys
+- [x] IP address management on interface.
+- [ ] Menu for graph drawing: save all parameters
 - [ ] Selection dict should include all type of link: trunk, route, traffic
 - [ ] Check box in the frame to hide/show nodes
 - [ ] Filter route display depending on whether a traffic link is using them
@@ -252,29 +257,24 @@ Clicking on a route display its path in red. Since we created a full-mesh AS, th
 - [ ] Network links/nodes statistics with plotlib: number of links per type, etc
 - [ ] Save the default drawing parameters when modified. Update the window.
 - [ ] compute the optimal pairwise distance for the spring length
-- [ ] IP address management on interface.
 - [ ] Help menu for links, nodes input
 - [ ] Common top-level window for object property display to avoid having several windows at once
 - [ ] Keyboard shortcut: Ctrl, Suppr, Ctrl Z/Y, etc
-- [ ] Interface: could be a little oval at the end of a physical links
 - [ ] Treeview to display the list of object of the network
 - [ ] when clicking on a link, window displaying all routes / traffic link mapped on it
 - [ ] Right-click of the tree view equivalent to a right-click on the canvas
 - [ ] Menu to generate complex graph: hypercube, square tiling in a special window
-- [ ] Remove all keyword argument (type e.g)
-- [ ] Complex graph generation: https://www.youtube.com/watch?v=nJEfq8qduKA
 - [ ] Make a clear distinction between class variable and init
 - [ ] __bool__ for link: means bw > 0
 - [ ] Rename objects bugs
 - [ ] Property decorator to summarize routes param
 - [ ] Vertical bars in RC menu to separate methods
 
-
 ## Config generation
 - [x] Generate OSPF config
 - [x] Generate RIP config
 - [x] Have an "AS number" and an "area" number.
-- [ ] Generate IS-IS config
+- [x] Generate IS-IS config
 - [ ] Generate MPLS config
 - [ ] Generate RSTP config 
 

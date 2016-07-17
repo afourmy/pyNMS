@@ -724,7 +724,7 @@ class Scenario(tk.Canvas):
         else:
             self._cancel()
         self.drawing_iteration += 1
-        self.ntw.spring_layout(nodes, *self.master.drawing_param)
+        self.ntw.spring_layout(nodes, *self.master.drawing_param["Spring layout"])
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)
@@ -739,7 +739,7 @@ class Scenario(tk.Canvas):
         else:
             self._cancel()
         self.drawing_iteration += 1
-        self.ntw.fruchterman_reingold_layout(nodes, master.opd)
+        self.ntw.fruchterman_reingold_layout(nodes, *self.master.drawing_param["F-R layout"])
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)

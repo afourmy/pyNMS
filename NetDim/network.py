@@ -950,6 +950,10 @@ class Network(object):
     
     ## 1) Eades algorithm 
     
+    # We use the following constants:
+    # - k is the spring constant (stiffness of the spring)
+    # - L0 is the equilibrium length
+    
     def coulomb_force(self, dx, dy, dist, beta):
         c = dist and beta/dist**3
         return (-c*dx, -c*dy)
@@ -958,10 +962,10 @@ class Network(object):
         const = k*(dist - L0)/dist
         return (const*dx, const*dy)
             
-    def spring_layout(self, allowed_nodes, alpha, beta, k, eta, delta, L0):
-        for nodeA in allowed_nodes:
+    def spring_layout(self, nodes, alpha, beta, k, eta, delta, L0):
+        for nodeA in nodes:
             Fx = Fy = 0
-            for nodeB in allowed_nodes:
+            for nodeB in nodes:
                 if nodeA != nodeB:
                     dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
                     dist = self.distance(dx, dy)
@@ -974,7 +978,7 @@ class Network(object):
             nodeA.vx = (nodeA.vx + alpha * Fx) * eta
             nodeA.vy = (nodeA.vy + alpha * Fy) * eta
     
-        for node in allowed_nodes:
+        for node in nodes:
             node.x += round(node.vx*delta)
             node.y += round(node.vy*delta)
             
@@ -986,9 +990,11 @@ class Network(object):
     def fr(self, d, k):
         return -(k**2)/d
         
-    def fruchterman_reingold_layout(self, nodes, k):
+    def fruchterman_reingold_layout(self, nodes, opd, limit):
         t = 1
-        k /= 3
+        if not opd:
+            opd = sqrt(1200*700/len(self.pn["trunk"]))
+        opd /= 3
         for nA in nodes:
             nA.vx, nA.vy = 0, 0
             for nB in nodes:
@@ -997,25 +1003,26 @@ class Network(object):
                     deltay = nA.y - nB.y
                     dist = self.distance(deltax, deltay)
                     if dist:
-                        nA.vx += deltax*(k**2)/dist**2
-                        nA.vy += deltay*(k**2)/dist**2                        
+                        nA.vx += deltax*(opd**2)/dist**2
+                        nA.vy += deltay*(opd**2)/dist**2                        
                     
         for l in self.pn["trunk"].values():
             deltax = l.source.x - l.destination.x
             deltay = l.source.y - l.destination.y
             dist = self.distance(deltax, deltay)
             if dist:
-                l.source.vx -= dist*deltax/k
-                l.source.vy -= dist*deltay/k
-                l.destination.vx += dist*deltax/k
-                l.destination.vy += dist*deltay/k
+                l.source.vx -= dist*deltax/opd
+                l.source.vy -= dist*deltay/opd
+                l.destination.vx += dist*deltax/opd
+                l.destination.vy += dist*deltay/opd
             
         for n in nodes:
             d = self.distance(n.vx, n.vy)
             n.x += (n.vx)/(sqrt(d))
             n.y += (n.vy)/(sqrt(d))
-            # n.x = min(800, max(0, n.x))
-            # n.y = min(800, max(0, n.y))
+            if limit:
+                n.x = min(800, max(0, n.x))
+                n.y = min(800, max(0, n.y))
             
         t *= 0.90
         
@@ -1044,66 +1051,66 @@ class Network(object):
             
     ## 2) Square tiling generation
             
-    def generate_square_tiling(self, n, _type):
+    def generate_square_tiling(self, n, subtype):
         for i in range(n**2):
             n1, n2, n3 = str(i), str(i-1), str(i+n)
             if i-1 > -1 and i%n:
                 self.lf(
-                        s=self.nf(name=n1, node_type=_type), 
-                        d=self.nf(name=n2, node_type=_type)
+                        s=self.nf(name=n1, node_type=subtype), 
+                        d=self.nf(name=n2, node_type=subtype)
                         )
             if i+n < n**2:
                 self.lf(
-                        s=self.nf(name=n1, node_type=_type), 
-                        d=self.nf(name=n3, node_type=_type)
+                        s=self.nf(name=n1, node_type=subtype), 
+                        d=self.nf(name=n3, node_type=subtype)
                         )
                 
     ## 3) Tree generation
                 
-    def generate_tree(self, n, _type):
+    def generate_tree(self, n, subtype):
         for i in range(2**n-1):
             n1, n2, n3 = str(i), str(2*i+1), str(2*i+2)
             self.lf(
-                    s=self.nf(name=n1, node_type=_type), 
-                    d=self.nf(name=n2, node_type=_type)
+                    s=self.nf(name=n1, node_type=subtype), 
+                    d=self.nf(name=n2, node_type=subtype)
                     )
             self.lf(
-                    s=self.nf(name=n1, node_type=_type), 
-                    d=self.nf(name=n3, node_type=_type)
+                    s=self.nf(name=n1, node_type=subtype), 
+                    d=self.nf(name=n3, node_type=subtype)
                     )
             
     ## 4) Star generation
             
-    def generate_star(self, n, _type):
+    def generate_star(self, n, subtype):
         nb_node = len(self.pn["node"])
         for i in range(n):
             n1, n2 = str(nb_node), str(nb_node+1+i)
             self.lf(
-                    s=self.nf(name=n1, node_type=_type), 
-                    d=self.nf(name=n2, node_type=_type)
+                    s=self.nf(name=n1, node_type=subtype), 
+                    d=self.nf(name=n2, node_type=subtype)
                     )
             
     ## 5) Full-meshed network generation
             
-    def generate_full_mesh(self, n, _type):
+    def generate_full_mesh(self, n, subtype):
         nb_node = len(self.pn["node"])
         for i in range(n):
             for j in range(i):
                 n1, n2 = str(nb_node+j), str(nb_node+i)
                 self.lf(
-                        s=self.nf(name=n1, node_type=_type), 
-                        d=self.nf(name=n2, node_type=_type)
+                        s=self.nf(name=n1, node_type=subtype), 
+                        d=self.nf(name=n2, node_type=subtype)
                         )
                 
     ## 6) Ring generation
                 
-    def generate_ring(self, n, _type):
+    def generate_ring(self, n, subtype):
         nb_node = len(self.pn["node"])
         for i in range(n):
             n1, n2 = str(nb_node+i), str(nb_node+(1+i)%n)
             self.lf(
-                    s=self.nf(name=n1, node_type=_type), 
-                    d=self.nf(name=n2, node_type=_type)
+                    s=self.nf(name=n1, node_type=subtype), 
+                    d=self.nf(name=n2, node_type=subtype)
                     )
             
             

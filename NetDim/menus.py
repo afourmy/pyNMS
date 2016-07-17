@@ -6,25 +6,6 @@ import tkinter as tk
 import AS
 import config
 import drawing_options_window
-
-class DrawingMenu(tk.Menu):
-    
-    def __init__(self, scenario, nodes):
-        super().__init__(tearoff=0)
-        
-        cmds = {
-        "Random": lambda: scenario.draw_objects(nodes, True),
-        "FBA": lambda: scenario.FR_drawing(scenario.master, nodes),
-        "Both": lambda: self.both(scenario, nodes)
-        }
-    
-        self.add_command(label="Random layout", command=cmds["Random"])
-        self.add_command(label="Force-based layout", command=cmds["FBA"])
-        self.add_command(label="Both", command=cmds["Both"])
-                                            
-    def both(self, scenario, nodes):
-        scenario.draw_objects(nodes, True)
-        scenario.FR_drawing(scenario.master, nodes)
                                 
 class RightClickMenu(tk.Menu):
     def __init__(self, event, scenario):
@@ -167,3 +148,23 @@ class GeneralRightClickMenu(tk.Menu):
     def remove_all_failures(self, scenario):
         scenario.remove_failures()
         self.destroy()
+        
+class DrawingMenu(tk.Menu):
+    
+    def __init__(self, scenario, nodes):
+        super().__init__(tearoff=0)
+        
+        cmds = {
+        "Random": lambda: scenario.draw_objects(nodes, True),
+        "FBA": lambda: scenario.master.drawing_algorithm(scenario.master, nodes),
+        "Both": lambda: self.both(scenario, nodes)
+        }
+    
+        self.add_command(label="Random layout", command=cmds["Random"])
+        self.add_command(label="Force-based layout", command=cmds["FBA"])
+        self.add_command(label="Both", command=cmds["Both"])
+                                            
+    def both(self, scenario, nodes):
+        scenario.draw_objects(nodes, True)
+        print(scenario.master.drawing_algorithm)
+        scenario.master.drawing_algorithm(scenario.master, nodes)

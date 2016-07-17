@@ -349,7 +349,7 @@ class NetDim(tk.Tk):
         menubar.add_cascade(label="Main",menu=main_menu)
         menu_drawing = tk.Menu(menubar, tearoff=0)
         menu_drawing.add_command(label="Default drawing parameters", 
-                        command=lambda: self.drawing_option_window.deiconify())
+                        command=lambda: dow.DrawingOptions(self))
         menubar.add_cascade(label="Network drawing",menu=menu_drawing)
         menu_routing = tk.Menu(menubar, tearoff=0)
         menu_routing.add_command(label="Advanced graph options", 
@@ -398,18 +398,20 @@ class NetDim(tk.Tk):
             self.dict_obj_mgmt_window[obj] = omw.ObjectManagementWindow(self, obj)
         
         # parameters for spring-based drawing: per project
+        self.drawing_algorithm = self.cs.spring_based_drawing
         self.alpha = 0.5
         self.beta = 10000
         self.k = 0.5
         self.eta = 0.5
         self.delta = 0.35
-        self.L0 = 8
-        self.opd = 0
-        self.drawing_param = (self.alpha, self.beta, self.k, self.eta,
-                                                        self.delta, self.L0)
+        self.L0 = 8.
+        self.opd = 0.
+        self.limit = True
+        self.drawing_param = {
+        "Spring layout": (self.alpha, self.beta, self.k, self.eta, self.delta, self.L0),
+        "F-R layout": (self.opd, self.limit)
+        }
         
-        # drawing options window
-        self.drawing_option_window = dow.DrawingOptions(self)
         # advanced graph options
         self.advanced_graph_options = ago.AdvancedGraphOptionsWindow(self)
         

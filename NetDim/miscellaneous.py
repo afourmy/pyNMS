@@ -45,7 +45,9 @@ class CustomTopLevel(tk.Toplevel):
         ttk.Style().configure("TButton", background="#A1DBCD")
         ttk.Style().configure("TLabel", background="#A1DBCD")
         ttk.Style().configure("Treeview", background="#A1DBCD", foreground="black")
-        ttk.Style().configure("TLabelFrame", background="#A1DBCD")
+        ttk.Style().configure('TLabelframe', background="#A1DBCD")
+        ttk.Style().configure('TLabelframe.Label', background="#A1DBCD")
+        ttk.Style().configure('TCheckbutton', background="#A1DBCD")
         
 class FocusTopLevel(CustomTopLevel):
     def __init__(self):
