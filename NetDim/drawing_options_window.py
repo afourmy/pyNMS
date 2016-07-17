@@ -11,6 +11,13 @@ class DrawingOptions(FocusTopLevel):
         super().__init__()
         self.title("Graph drawing with force-directed algorithms")
         self.ender_variables = []
+        
+        s = ttk.Style()
+        s.configure('TLabelframe', background="#A1DBCD", relief=tk.GROOVE, borderwidth=10)
+        s.configure('TLabelframe.Label', background="#A1DBCD", relief=tk.GROOVE, borderwidth=10)
+        self.lf_spring = ttk.Labelframe(self, padding=(6, 6, 12, 12),
+                text='Spring layout', style='TLabelframe', relief=tk.GROOVE, borderwidth=10)
+        self.lf_spring.grid(column=0, columnspan=2, row=1, sticky='nsew')
     
         # Variables de masse
         # Alpha
@@ -69,18 +76,18 @@ class DrawingOptions(FocusTopLevel):
         self.bouton_stop = ttk.Button(self, text="Stop drawing", command = lambda: self._cancel())
         
         # affichage des boutons / label dans la grille
-        self.label_alpha.grid(row=1, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_alpha.grid(row=1, column=1, sticky=tk.W)
-        self.label_beta.grid(row=1, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_beta.grid(row=1, column=1, sticky=tk.W)
-        self.label_k.grid(row=2, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_k.grid(row=2, column=1, sticky=tk.W)
-        self.label_eta.grid(row=3, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_eta.grid(row=3, column=1, sticky=tk.W)
-        self.label_delta.grid(row=4, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_delta.grid(row=4, column=1, sticky=tk.W)
-        self.label_L0.grid(row=5, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_L0.grid(row=5, column=1, sticky=tk.W)
+        self.label_alpha.grid(in_=self.lf_spring, row=1, column=0, pady=5, padx=5, sticky=tk.W)
+        self.entry_alpha.grid(in_=self.lf_spring, row=1, column=1, sticky=tk.W)
+        self.label_beta.grid(in_=self.lf_spring, row=1, column=0, pady=5, padx=5, sticky=tk.W)
+        self.entry_beta.grid(in_=self.lf_spring, row=1, column=1, sticky=tk.W)
+        self.label_k.grid(in_=self.lf_spring, row=2, column=0, pady=5, padx=5, sticky=tk.W)
+        self.entry_k.grid(in_=self.lf_spring, row=2, column=1, sticky=tk.W)
+        self.label_eta.grid(in_=self.lf_spring, row=3, column=0, pady=5, padx=5, sticky=tk.W)
+        self.entry_eta.grid(in_=self.lf_spring, row=3, column=1, sticky=tk.W)
+        self.label_delta.grid(in_=self.lf_spring, row=4, column=0, pady=5, padx=5, sticky=tk.W)
+        self.entry_delta.grid(in_=self.lf_spring, row=4, column=1, sticky=tk.W)
+        self.label_L0.grid(in_=self.lf_spring, row=5, column=0, pady=5, padx=5, sticky=tk.W)
+        self.entry_L0.grid(in_=self.lf_spring, row=5, column=1, sticky=tk.W)
         self.label_opd.grid(row=0, column=2, pady=5, padx=5, sticky=tk.W)
         self.entry_opd.grid(row=0, column=3, sticky=tk.W)
 
@@ -96,43 +103,5 @@ class DrawingOptions(FocusTopLevel):
     def save_value(self, master):
         # retrieve variables values
         master.alpha, master.beta, master.k, master.eta, master.delta, master.L0 = [v.get() for v in self.ender_variables]
-        
-class NetworkDrawing(CustomTopLevel):    
-    def __init__(self, scenario, nodes):
-        super().__init__()
-        self.title("Network drawing")
-        
-        drawing_modes = (
-        "Random",
-        "Force-based",
-        "Both"
-        )
-        
-        # List of drawing modes
-        self.drawing_label = ttk.Label(self, text="Drawing mode :")
-        self.var_mode = tk.StringVar()
-        self.drawing_mode = ttk.Combobox(self, textvariable=self.var_mode, width=20)
-        self.drawing_mode["values"] = drawing_modes
-        self.drawing_mode.current(0)
-    
-        # confirmation button
-        self.OK_button = ttk.Button(self, text="OK",
-                            command=lambda: self.draw_graph(scenario, nodes))
-        
-        # position in the grid
-        self.drawing_label.grid(row=0, column=0, pady=5, padx=5)
-        self.drawing_mode.grid(row=1, column=0, pady=5, padx=5, sticky="nsew")
-        self.OK_button.grid(row=2, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
-        
-    def draw_graph(self, scenario, nodes):
-        mode = self.var_mode.get()
-        if mode == "Random":
-            scenario.draw_objects(nodes, True)
-        elif mode == "Force-based":
-            scenario.spring_based_drawing(scenario.master, nodes)
-        elif mode == "Both":
-            scenario.draw_objects(nodes, True)
-            scenario.spring_based_drawing(scenario.master, nodes)
-        self.destroy()
         
         

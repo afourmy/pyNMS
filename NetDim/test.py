@@ -202,7 +202,6 @@ class TestCSPF(unittest.TestCase):
         self.netdim.destroy()
  
     def test_CSPF(self):
-        
         node1 = self.netdim.cs.ntw.nf(name="node1")
         node2 = self.netdim.cs.ntw.nf(name="node2")
         node3 = self.netdim.cs.ntw.nf(name="node3")

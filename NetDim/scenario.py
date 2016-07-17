@@ -729,6 +729,21 @@ class Scenario(tk.Canvas):
             for node in nodes:
                 self.move_node(node)
         self._job = self.after(1, lambda: self.spring_based_drawing(master, nodes))
+        
+    def FR_drawing(self, master, nodes):
+        if not self._job:
+            # update the optimal pairwise distance
+            master.opd = sqrt(500*500/len(self.ntw.pn["node"].values()))
+            # reset the number of iterations
+            self.drawing_iteration = 0
+        else:
+            self._cancel()
+        self.drawing_iteration += 1
+        self.ntw.fruchterman_reingold_layout(nodes, master.opd)
+        if not self.drawing_iteration % 5:   
+            for node in nodes:
+                self.move_node(node)
+        self._job = self.after(1, lambda: self.FR_drawing(master, nodes))
             
     ## Failure simulation
     

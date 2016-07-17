@@ -9,7 +9,7 @@ import random
 import numpy
 from math import cos, sin, asin, radians, sqrt
 from cvxopt import matrix, glpk
-from collections import defaultdict, deque, OrderedDict
+from collections import defaultdict, deque
 from heapq import heappop, heappush
 from operator import getitem, itemgetter
 
@@ -331,7 +331,6 @@ class Network(object):
         if allowed_nodes is None:
             allowed_nodes = set(self.pn["node"].values())
             
-        # find the SP from s to t
         pc = [target] + path_constraints[::-1]
         visited = set()
         heap = [(0, source, [], pc)]
@@ -646,6 +645,49 @@ class Network(object):
                 yield list(path)
         yield from find_all_paths()
         
+    ## Link-disjoint / link-and-node-disjoint shortest pair algorithms
+    
+    ## 1) A* link-disjoint pair search
+    
+    def A_star_shortest_pair(self, source, target, a_n=None, a_t=None):
+        # To find the shortest pair from the source to the target, we look
+        # for the shortest path going from the source to the source, with 
+        # the target as a "path constraint".
+        # Each path is stored with sets of allowed nodes and trunks that will 
+        # contains what belongs to the first path, once we've reached the target.
+        
+        # if a_n is None:
+        #     a_n = AS.pAS["node"]
+        # if a_t is None:
+        #     a_t = AS.pAS["trunk"]
+        
+        if a_t is None:
+            a_t = set(self.pn["trunk"].values())
+        if a_n is None:
+            a_n = set(self.pn["node"].values())
+
+        visited = set()
+        # in the heap, we store e_o, the list of excluded objects, which is
+        # empty until we reach the target.
+        heap = [(0, source, [], set())]
+        while heap:
+            dist, node, path_trunk, e_o = heappop(heap)  
+            if (node, tuple(path_trunk)) not in visited:
+                visited.add((node, tuple(path_trunk)))
+                if node == target:
+                    e_o = set(path_trunk)
+                if node == source and e_o:
+                    return [], path_trunk
+                for neighbor, adj_trunk in self.graph[node]["trunk"]:
+                    sd = (node == adj_trunk.source)*"SD" or "DS"
+                    # we ignore what's not allowed (not in the AS or in failure
+                    # or in the path we've used to reach the target)
+                    if neighbor not in a_n or adj_trunk not in a_t-e_o:
+                        continue
+                    cost = getattr(adj_trunk, "cost" + sd)
+                    heappush(heap, (dist + cost, neighbor, path_trunk + [adj_trunk], e_o))
+        return [], []
+        
     ## Flow algorithms
     
     def reset_flow(self):
@@ -944,37 +986,38 @@ class Network(object):
     def fr(self, d, k):
         return -(k**2)/d
         
-    def fruchterman(self, k):
+    def fruchterman_reingold_layout(self, nodes, k):
         t = 1
-        for nA in self.pn["node"].values():
+        k /= 3
+        for nA in nodes:
             nA.vx, nA.vy = 0, 0
-            for nB in self.pn["node"].values():
+            for nB in nodes:
                 if nA != nB:
                     deltax = nA.x - nB.x
                     deltay = nA.y - nB.y
                     dist = self.distance(deltax, deltay)
                     if dist:
-                        nA.vx += (deltay*(k**2))/dist**3
-                        nA.vy += (deltay*(k**2))/dist**3                        
+                        nA.vx += deltax*(k**2)/dist**2
+                        nA.vy += deltay*(k**2)/dist**2                        
                     
-        for l in filter(None,self.pn["trunk"].values()):
+        for l in self.pn["trunk"].values():
             deltax = l.source.x - l.destination.x
             deltay = l.source.y - l.destination.y
             dist = self.distance(deltax, deltay)
             if dist:
-                l.source.vx -= (dist*deltax)/k
-                l.source.vy -= (dist*deltay)/k
-                l.destination.vx += (dist*deltax)/k
-                l.destination.vy += (dist*deltay)/k
+                l.source.vx -= dist*deltax/k
+                l.source.vy -= dist*deltay/k
+                l.destination.vx += dist*deltax/k
+                l.destination.vy += dist*deltay/k
             
-        for n in self.pn["node"].values():
+        for n in nodes:
             d = self.distance(n.vx, n.vy)
-            n.x += ((n.vx)/(sqrt(d)+0.1))
-            n.y += ((n.vy)/(sqrt(d)+0.1))
-            # n.x = min(700, max(0, n.x))
-            # n.y = min(700, max(0, n.y))
+            n.x += (n.vx)/(sqrt(d))
+            n.y += (n.vy)/(sqrt(d))
+            # n.x = min(800, max(0, n.x))
+            # n.y = min(800, max(0, n.y))
             
-        t *= 0.99
+        t *= 0.90
         
     ## Graph generation functions
     

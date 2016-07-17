@@ -14,7 +14,7 @@ class DrawingMenu(tk.Menu):
         
         cmds = {
         "Random": lambda: scenario.draw_objects(nodes, True),
-        "FBA": lambda: scenario.spring_based_drawing(scenario.master, nodes),
+        "FBA": lambda: scenario.FR_drawing(scenario.master, nodes),
         "Both": lambda: self.both(scenario, nodes)
         }
     
@@ -24,7 +24,7 @@ class DrawingMenu(tk.Menu):
                                             
     def both(self, scenario, nodes):
         scenario.draw_objects(nodes, True)
-        scenario.spring_based_drawing(scenario.master, nodes)
+        scenario.FR_drawing(scenario.master, nodes)
                                 
 class RightClickMenu(tk.Menu):
     def __init__(self, event, scenario):
