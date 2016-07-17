@@ -13,20 +13,33 @@ class DrawingOptions(FocusTopLevel):
         self.ms = master
         super().__init__()
         
+        # convert the user choice to the corresponding drawing algorithm
         self.drawing_algorithms = {
         "Spring layout": self.ms.cs.spring_based_drawing,
         "F-R layout": self.ms.cs.FR_drawing
         }
         
+        # this dictionnary allows to initialize the value of the 
+        # drop-down list to the current algorithm at window creation
+        alg_to_index = {
+        self.ms.cs.spring_based_drawing: 0,
+        self.ms.cs.FR_drawing: 1
+        }
+        
         self.title("Graph drawing with force-directed algorithms")
         self.vars = {"Spring layout": list(), "F-R layout": list()}
     
+        # label frame for the spring layout parameters
         self.lf_spring = ttk.Labelframe(self, padding=(6, 6, 12, 12), 
-                                        text='Spring layout')
-        self.lf_spring.grid(column=0, columnspan=2, pady=5, padx=5, row=1, sticky='nsew')
+                                                        text='Spring layout')
+        self.lf_spring.grid(column=0, columnspan=2, pady=5, padx=5, 
+                                                        row=1, sticky='nsew')
+                                                        
+        # label frame for the Fruchterman-Reingold layout parameters
         self.lf_fr = ttk.Labelframe(self, padding=(6, 6, 12, 12), 
-                                        text='F-R layout')
-        self.lf_fr.grid(column=2, columnspan=2, pady=5, padx=5, row=1, sticky='nsew')
+                                                        text='F-R layout')
+        self.lf_fr.grid(column=2, columnspan=2, pady=5, padx=5, 
+                                                        row=1, sticky='nsew')
         
         # combobox for the user to change the drawing algorithm
         self.var_drawing_type = tk.StringVar()
@@ -36,11 +49,12 @@ class DrawingOptions(FocusTopLevel):
                                        "Spring layout", 
                                        "F-R layout"
                                        )
-        self.drawing_type_list.current(0)
+        self.drawing_type_list.current(alg_to_index[self.ms.drawing_algorithm])
         self.drawing_type_list.grid(row=0, column=2, pady=5, padx=5, sticky=tk.W)
         
-        self.alpha, self.beta, self.k, self.eta, self.delta, self.L0 = self.ms.drawing_param["Spring layout"]
+        self.beta, self.k, self.delta, self.L0 = self.ms.drawing_param["Spring layout"]
         self.opd, self.limit = self.ms.drawing_param["F-R layout"]
+        print(self.limit)
         
         # Variables de masse
         # Alpha
@@ -97,11 +111,11 @@ class DrawingOptions(FocusTopLevel):
                                         command=lambda: self.save())
                                         
         # check button for nodes to stay in the screen 
-        self.limit = tk.IntVar()
+        self.var_limit = tk.BooleanVar()
         self.button_limit = ttk.Checkbutton(self, text="Screen limit", 
-                                                            variable=self.limit)
-        self.limit.set(True)
-        self.vars["F-R layout"].append(self.limit)
+                                                        variable=self.var_limit)
+        self.var_limit.set(bool(self.limit))
+        self.vars["F-R layout"].append(self.var_limit)
         
         # affichage des boutons / label dans la grille
         self.label_alpha.grid(in_=self.lf_spring, row=1, column=0, pady=5, padx=5, sticky=tk.W)
@@ -124,7 +138,7 @@ class DrawingOptions(FocusTopLevel):
     def save(self):
         # retrieve variables values
         self.ms.drawing_algorithm = self.drawing_algorithms[self.var_drawing_type.get()]
-        for algo in ("Spring layout", "F-R layout"):
-            self.ms.drawing_param[algo] = tuple(float(v.get()) for v in self.vars[algo])
+        for alg in ("Spring layout", "F-R layout"):
+            self.ms.drawing_param[alg] = tuple(float(v.get()) for v in self.vars[alg])
         
         

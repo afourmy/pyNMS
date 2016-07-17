@@ -217,8 +217,11 @@ class WDMFiber(Trunk):
     protocol = subtype = "wdm"
     
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.lambda_capacity = 88
+        # we separate the parameters common to all trunks from the 
+        # WDM fiber specific ones for import
+        *trunk_args, lambda_capacity = args
+        super().__init__(*trunk_args, **kwargs)
+        self.lambda_capacity = lambda_capacity
         
 class Route(Link):
     type = "route"

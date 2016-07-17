@@ -399,16 +399,14 @@ class NetDim(tk.Tk):
         
         # parameters for spring-based drawing: per project
         self.drawing_algorithm = self.cs.spring_based_drawing
-        self.alpha = 0.5
         self.beta = 10000
         self.k = 0.5
-        self.eta = 0.5
         self.delta = 0.35
         self.L0 = 8.
         self.opd = 0.
         self.limit = True
         self.drawing_param = {
-        "Spring layout": (self.alpha, self.beta, self.k, self.eta, self.delta, self.L0),
+        "Spring layout": (self.beta, self.k, self.delta, self.L0),
         "F-R layout": (self.opd, self.limit)
         }
         
@@ -500,15 +498,18 @@ class NetDim(tk.Tk):
         return object_list
                 
     def import_graph(self, filepath=None):
+        
+        unstar = lambda s: s.replace("*", ",")
+        
         # filepath is set for unittest
         if not filepath:
             filepath = filedialog.askopenfilenames(
                             initialdir=self.path_workspace, 
                             title="Import graph", 
                             filetypes=(
-                            ("all files","*.*"), 
-                            ("csv files","*.csv"), 
-                            ("xls files","*.xls"), 
+                            ("all files","*.*"),
+                            ("csv files","*.csv"),
+                            ("xls files","*.xls"),
                             ))
             
             # no error when closing the window
@@ -541,7 +542,7 @@ class NetDim(tk.Tk):
         
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):
-                AS_name, AS_type, AS_id, AS_nodes, AS_trunks, AS_edges, *o = AS_sheet.row_values(row_index)
+                AS_name, AS_type, AS_id, AS_nodes, AS_trunks, AS_edges = AS_sheet.row_values(row_index)
                 AS_id = int(AS_id)
                 AS_nodes = self.convert_nodes_set(AS_nodes)
                 AS_trunks = self.convert_links_set(AS_trunks)
@@ -563,19 +564,33 @@ class NetDim(tk.Tk):
                 reader = csv.reader(file_to_import)
                 for row in filter(None, reader):
                     obj_type, *other = row
-                    if other:
-                        if obj_type in self.cs.ntw.node_type:
-                            n, *param = self.str_to_object(other, obj_type)
-                            self.cs.ntw.nf(*param, node_type="router", name=n)
-                        elif obj_type in ("ethernet", "wdm"):
-                            p, i, n, s, d, *param = self.str_to_object(other, obj_type)
-                            self.cs.ntw.lf(*param, link_type="trunk",
-                                    interface=i, protocol=p, name=n, s=s, d=d)
-                        else:
-                            n, s, d, *param = self.str_to_object(other, obj_type)
-                            self.cs.ntw.lf(*param, link_type=obj_type, 
-                                                            name=n, s=s, d=d)
-                            
+                    if obj_type in self.cs.ntw.node_type:
+                        n, *param = self.str_to_object(other, obj_type)
+                        self.cs.ntw.nf(*param, node_type="router", name=n)
+                    elif obj_type in ("ethernet", "wdm"):
+                        p, i, n, s, d, *param = self.str_to_object(other, obj_type)
+                        self.cs.ntw.lf(*param, link_type="trunk",
+                                interface=i, protocol=p, name=n, s=s, d=d)
+                    elif obj_type in ("route", "traffic"):
+                        n, s, d, *param = self.str_to_object(other, obj_type)
+                        self.cs.ntw.lf(*param, link_type=obj_type, 
+                                                        name=n, s=s, d=d)
+                    elif obj_type == "AS":
+                        AS_name, AS_type, AS_id, AS_nodes, AS_trunks, AS_edges = other
+                        AS_id = int(AS_id)
+                        AS_nodes = self.convert_nodes_set(unstar(AS_nodes))
+                        AS_trunks = self.convert_links_set(unstar(AS_trunks))
+                        AS_edges = self.convert_nodes_set(unstar(AS_edges))
+                        self.cs.ntw.AS_factory(AS_name, AS_type, AS_id, AS_trunks, AS_nodes, 
+                                                                AS_edges, set(), True)
+                                                                
+                    elif obj_type == "area":
+                        name, AS, id, nodes, trunks = other
+                        AS = self.cs.ntw.AS_factory(name=AS)
+                        nodes = self.convert_nodes_set(unstar(nodes))
+                        trunks = self.convert_links_set(unstar(trunks))
+                        new_area = AS.area_factory(name, int(id), trunks, nodes)
+                        
             finally:
                 file_to_import.close()
             
@@ -628,14 +643,26 @@ class NetDim(tk.Tk):
                             new_link = self.cs.ntw.lf(s=src, d=dest)
                             new_link.distance = distance
         
-        self.cs.draw_all(False)
-        self.cs._refresh_object_labels("trunk", "distance")
-        
+        self.cs.draw_all(False)        
         
     def export_graph(self, filepath=None):
+        
+        # to convert a list of object into a string of a list of strings
+        # useful for AS nodes, edges, trunks as well as area nodes and trunks
+        to_string = lambda s: str(list(map(str, s)))
+        # csv use the comma as a delimiter between parameters: for a list of 
+        # string object, we replace comma with star to not interfere
+        # at import, we replace star back with comma before object conversion
+        star = lambda s: s.replace(",", "*")
+        
         # filepath is set for unittest
         if not filepath:
-            selected_file = filedialog.asksaveasfile(initialdir=self.path_workspace, title="Export graph", mode='w', defaultextension=".xls")
+            selected_file = filedialog.asksaveasfile(
+                                    initialdir=self.path_workspace, 
+                                    title="Export graph", 
+                                    mode='w', 
+                                    defaultextension=".xls"
+                                    )
             
             if not selected_file: 
                 return 
@@ -668,7 +695,7 @@ class NetDim(tk.Tk):
                         xls_sheet.write(i, id, str(getattr(t, property)))
                         
             AS_sheet = excel_workbook.add_sheet("AS")
-            to_string = lambda s: str(list(map(str, s)))
+            
             for i, AS in enumerate(self.cs.ntw.pnAS.values(), 1):
                 AS_sheet.write(i, 0, str(AS.name))
                 AS_sheet.write(i, 1, str(AS.type))
@@ -676,7 +703,6 @@ class NetDim(tk.Tk):
                 AS_sheet.write(i, 3, to_string(AS.pAS["node"]))
                 AS_sheet.write(i, 4, to_string(AS.pAS["trunk"]))
                 AS_sheet.write(i, 5, to_string(AS.pAS["edge"]))
-                AS_sheet.write(i, 6, str(list(AS.areas.keys())))
                 
             area_sheet = excel_workbook.add_sheet("area")
             cpt = 1
@@ -700,13 +726,35 @@ class NetDim(tk.Tk):
                     pool_obj = filter(ftr, self.cs.ntw.pn["trunk"].values())
                 else:
                     pool_obj = filter(ftr, self.cs.ntw.pn["node"].values()) 
-                graph_per_line.append(obj_type)
                 for obj in pool_obj:
                     all_properties = []
                     for property in properties:
                         all_properties.append(str(getattr(obj, property)))
                     param = ",".join(all_properties)
                     graph_per_line.append(",".join((obj_type, param)))
+                    
+            for AS in self.cs.ntw.pnAS.values():
+                graph_per_line.append(",".join((
+                                            "AS",
+                                            str(AS.name),
+                                            str(AS.type),
+                                            str(AS.id),
+                                            star(to_string(AS.pAS["node"])),
+                                            star(to_string(AS.pAS["trunk"])),
+                                            star(to_string(AS.pAS["edge"]))
+                                            )))
+                                                
+            for AS in self.cs.ntw.pnAS.values():
+                for area in AS.areas.values():   
+                    graph_per_line.append(",".join((
+                                            "area",
+                                            str(area.name),
+                                            str(area.AS),
+                                            str(area.id),
+                                            star(to_string(area.pa["node"])),
+                                            star(to_string(area.pa["trunk"]))
+                                            )))
+                
             graph_writer = csv.writer(selected_file, delimiter=",", 
                                                         lineterminator="\n")
             for line in graph_per_line:

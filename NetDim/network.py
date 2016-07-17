@@ -9,33 +9,35 @@ import random
 import numpy
 from math import cos, sin, asin, radians, sqrt
 from cvxopt import matrix, glpk
-from collections import defaultdict, deque
+from collections import defaultdict, deque, OrderedDict
 from heapq import heappop, heappush
 from operator import getitem, itemgetter
 
 class Network(object):
     
-    node_class = {
-    "router": objects.Router,
-    "oxc": objects.OXC,
-    "host": objects.Host,
-    "antenna": objects.Antenna,
-    "regenerator": objects.Regenerator,
-    "splitter": objects.Splitter,
-    "switch": objects.Switch,
-    "cloud": objects.Cloud
-    }
+    # Ordered to keep the order when using the keys 
+    node_class = OrderedDict([
+    ("router", objects.Router),
+    ("oxc", objects.OXC),
+    ("host", objects.Host),
+    ("antenna", objects.Antenna),
+    ("regenerator", objects.Regenerator),
+    ("splitter", objects.Splitter),
+    ("switch", objects.Switch),
+    ("cloud", objects.Cloud)
+    ])
     
-    link_class = {
-    "trunk": {
-    "ethernet": objects.Ethernet,
-    "wdm": objects.WDMFiber
-    },
-    "route": objects.Route,
-    "traffic": objects.Traffic
-    }
+    link_class = OrderedDict([
+    ("trunk", OrderedDict([
+    ("ethernet", objects.Ethernet),
+    ("wdm", objects.WDMFiber)
+    ])),
+    ("route", objects.Route),
+    ("traffic", objects.Traffic)
+    ])
     
     link_type = tuple(link_class.keys())
+    print(link_type)
     node_type = tuple(node_class.keys())
     all_type = link_type + node_type
     
@@ -1023,16 +1025,18 @@ class Network(object):
     # We use the following constants:
     # - k is the spring constant (stiffness of the spring)
     # - L0 is the equilibrium length
+    # - cf is the Coulomb factor (repulsive force factor)
+    # - sf is the speed factor
     
-    def coulomb_force(self, dx, dy, dist, beta):
-        c = dist and beta/dist**3
+    def coulomb_force(self, dx, dy, dist, cf):
+        c = dist and cf/dist**3
         return (-c*dx, -c*dy)
         
     def hooke_force(self, dx, dy, dist, L0, k):
         const = k*(dist - L0)/dist
         return (const*dx, const*dy)
             
-    def spring_layout(self, nodes, alpha, beta, k, eta, delta, L0):
+    def spring_layout(self, nodes, cf, k, sf, L0):
         for nodeA in nodes:
             Fx = Fy = 0
             for nodeB in nodes:
@@ -1042,15 +1046,15 @@ class Network(object):
                     F_hooke = (0,)*2
                     if self.is_connected(nodeA, nodeB, "trunk"):
                         F_hooke = self.hooke_force(dx, dy, dist, L0, k) 
-                    F_coulomb = self.coulomb_force(dx, dy, dist, beta)
+                    F_coulomb = self.coulomb_force(dx, dy, dist, cf)
                     Fx += F_hooke[0] + F_coulomb[0]
                     Fy += F_hooke[1] + F_coulomb[1]
-            nodeA.vx = (nodeA.vx + alpha * Fx) * eta
-            nodeA.vy = (nodeA.vy + alpha * Fy) * eta
+            nodeA.vx = 0.5 * nodeA.vx + 0.2 * Fx
+            nodeA.vy = 0.5 * nodeA.vy + 0.2 * Fy
     
         for node in nodes:
-            node.x += round(node.vx*delta)
-            node.y += round(node.vy*delta)
+            node.x += round(node.vx * sf)
+            node.y += round(node.vy * sf)
             
     ## 2) Fruchterman-Reingold algorithms
     
