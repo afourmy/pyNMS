@@ -15,7 +15,7 @@ class Scenario(tk.Canvas):
         self.name = name
         self.ntw = network.Network(self)
         self.object_id_to_object = {}
-        self.master = master
+        self.ms = master
         
         # job running or not (e.g drawing)
         self._job = None
@@ -71,7 +71,7 @@ class Scenario(tk.Canvas):
         # initialization of all bindings for nodes creation
         self.switch_binding()
         
-        ## bindings that remain available in all modes
+        ## bindings that remain available in both modes
         # highlight the path of a route/traffic link with left-click
         self.tag_bind("route", "<ButtonPress-1>", self.closest_route_path)
         self.tag_bind("traffic", "<ButtonPress-1>", self.closest_traffic_path)
@@ -205,8 +205,8 @@ class Scenario(tk.Canvas):
         self.closest_object_id = self.find_closest(event.x, event.y)[0]
         object_selected = self.object_id_to_object[self.closest_object_id]
         # update the object management window if it is opened
-        self.master.dict_obj_mgmt_window[object_selected.subtype].current_obj = object_selected
-        self.master.dict_obj_mgmt_window[object_selected.subtype].update()
+        self.ms.dict_obj_mgmt_window[object_selected.subtype].current_obj = object_selected
+        self.ms.dict_obj_mgmt_window[object_selected.subtype].update()
 
     @adapt_coordinates
     def node_motion(self, event):
@@ -403,7 +403,7 @@ class Scenario(tk.Canvas):
         for obj in objects:
             if obj.class_type == "node":
                 self.itemconfig(obj.oval, fill=color)
-                self.itemconfig(obj.image[0], image=self.master.dict_image["red"][obj.subtype])
+                self.itemconfig(obj.image[0], image=self.ms.dict_image["red"][obj.subtype])
             elif obj.class_type == "link":
                 dash = (3, 5) if dash else ()
                 self.itemconfig(obj.line, fill=color, width=5, dash=dash)
@@ -412,7 +412,7 @@ class Scenario(tk.Canvas):
         for obj in objects:
             if obj.class_type == "node":
                 self.itemconfig(obj.oval, fill=obj.color)
-                self.itemconfig(obj.image[0], image=self.master.dict_image["default"][obj.subtype])
+                self.itemconfig(obj.image[0], image=self.ms.dict_image["default"][obj.subtype])
             elif obj.class_type == "link":
                 self.itemconfig(obj.line, fill=obj.color, width=self.LINK_WIDTH, dash=obj.dash)  
                 
@@ -425,16 +425,6 @@ class Scenario(tk.Canvas):
         self.itemconfig(node.lid, fill="blue", tags="label")
         # set the text of the label with refresh label
         self._refresh_object_label(node)
-    
-    def _create_link_label(self, link):
-        try:
-            coeff = (link.destination.y - link.source.y) / (link.destination.x - link.source.x)
-        except ZeroDivisionError:
-            coeff = 0
-        middle_x = link.lpos[0] + 4*(1+(coeff>0))
-        middle_y = link.lpos[1] - 12*(coeff>0)
-        link.lid = self.create_text(middle_x, middle_y, anchor="nw", fill="red", tags="label")
-        self._refresh_object_label(link)
         
     # refresh the label for one object with the current object label
     # TODO to be refactored with a dict
@@ -442,6 +432,8 @@ class Scenario(tk.Canvas):
         if not label_type:
             label_type = self._current_object_label[current_object.network_type]
         label_id = current_object.lid
+        if current_object.class_type == "link":
+            if_label_id = current_object.ilid
         if label_type == "none":
             self.itemconfig(label_id, text="")
         elif label_type in ("capacity", "flow", "cost", "traffic", "wctraffic"):
@@ -450,9 +442,10 @@ class Scenario(tk.Canvas):
             valueDS = getattr(current_object, label_type + "DS")
             if label_type == "traffic":
                 text = str(valueSD + valueDS)
+                self.itemconfig(label_id, text=text)
             else:
-                text = "SD:{} | DS:{}".format(valueSD, valueDS)
-            self.itemconfig(label_id, text=text)
+                self.itemconfig(if_label_id[0], text=valueSD)
+                self.itemconfig(if_label_id[1], text=valueDS)
         elif label_type == "position":
             text = "({}, {})".format(current_object.x, current_object.y)
             self.itemconfig(label_id, text=text)
@@ -462,10 +455,8 @@ class Scenario(tk.Canvas):
         elif label_type == "ipaddress" and current_object.type == "trunk":
             valueS = getattr(current_object, label_type + "S")
             valueD = getattr(current_object, label_type + "D")
-            s = getattr(current_object, "source")
-            d = getattr(current_object, "destination")
-            text = "{}: {}\n{}: {}".format(s, valueS, d, valueD)
-            self.itemconfig(label_id, text=text)
+            self.itemconfig(if_label_id[0], text=valueS)
+            self.itemconfig(if_label_id[1], text=valueD)
         elif label_type == "ipaddress" and current_object.subtype == "router":
             value = getattr(current_object, label_type)
             self.itemconfig(label_id, text=value)
@@ -536,15 +527,56 @@ class Scenario(tk.Canvas):
                     if link == self.ntw.failed_trunk:
                         mid_x, mid_y = link_to_coords[link][2:4]
                         self.coords(self.id_failure, mid_x, mid_y)
+                        
+    def _create_link_label(self, link):
+        coeff = self.compute_coeff(link)
+        link.lid = self.create_text(*self.offcenter(coeff, *link.lpos), 
+                                        anchor="nw", fill="red", tags="label")
+        # we also create the interface labels, which position is at 1/4
+        # of the line between the end point and the middle point
+        # source interface label coordinates:
+        s = self.offcenter(coeff, *self.if_label(link))
+        link.ilid[0] = self.create_text(*s, anchor="nw", fill="red", tags="label")
+        # destination interface label coordinates:                                                        
+        d = self.offcenter(coeff, *self.if_label(link, "d"))
+        link.ilid[1] = self.create_text(*d, anchor="nw", fill="red", tags="label")
+        self._refresh_object_label(link)
+                        
+    def offcenter(self, coeff, x, y):
+        # move the label off-center, so that its position depends on the 
+        # slope of the link, and it can be read easily
+        return x, y - 30 * (coeff > 0)
+        
+    def compute_coeff(self, link):
+        # compute the slope of the link's line
+        try:
+            coeff = (link.destination.y - link.source.y) / (link.destination.x - link.source.x)
+        except ZeroDivisionError:
+            coeff = 0
+        return coeff
+        
+    def if_label(self, link, end="s"):
+        # compute the position of the interface label. Instead of placing the 
+        # interface label in the middle of the line between the middle point lpos
+        # and the end of the link, we set it at 1/4 (middle of the middle) so 
+        # that its placed closer to the link's end.
+        mx, my = link.lpos
+        if end == "s":
+            if_label_x = (mx + link.source.x) / 4 + link.source.x / 2
+            if_label_y = (my + link.source.y) / 4 + link.source.y / 2
+        else:
+            if_label_x = (mx + link.destination.x) / 4 + link.destination.x / 2
+            if_label_y = (my + link.destination.y) / 4 + link.destination.y / 2
+        return if_label_x, if_label_y
                     
     def update_link_label_coordinates(self, link):
         try:
             coeff = (link.destination.y - link.source.y) / (link.destination.x - link.source.x)
         except ZeroDivisionError:
             coeff = 0
-        middle_x = link.lpos[0] + 4*(1+(coeff>0))
-        middle_y = link.lpos[1] - 12*(coeff>0)
-        self.coords(link.lid, middle_x, middle_y)
+        self.coords(link.lid, *self.offcenter(coeff, *link.lpos))
+        self.coords(link.ilid[0], *self.offcenter(coeff, *self.if_label(link)))
+        self.coords(link.ilid[1], *self.offcenter(coeff, *self.if_label(link, "d")))
         
     def frucht(self):
         # update the optimal pairwise distance
@@ -567,7 +599,7 @@ class Scenario(tk.Canvas):
             
     def create_node(self, node, layer=0):
         s = self.NODE_SIZE
-        curr_image = self.master.dict_image["default"][node.subtype]
+        curr_image = self.ms.dict_image["default"][node.subtype]
         y = node.y - layer * self.diff_y
         tags = () if layer else (node.subtype, node.class_type, "object")
         node.image[layer] = self.create_image(node.x - (node.imagex)/2, 
@@ -623,7 +655,9 @@ class Scenario(tk.Canvas):
         for link in link_to_coords:
             coords = link_to_coords[link]
             if not link.line:
-                link.line = self.create_line(*coords, tags=(link.subtype, link.class_type, "object"), fill=link.color, width=self.LINK_WIDTH, dash=link.dash, smooth=True)
+                link.line = self.create_line(*coords, tags=(link.subtype, 
+                        link.class_type, "object"), fill=link.color, 
+                        width=self.LINK_WIDTH, dash=link.dash, smooth=True)
             else:
                 self.coords(link.line, *coords)
         self.tag_lower(new_link.line)
@@ -635,6 +669,7 @@ class Scenario(tk.Canvas):
         self.delete("all")
         
         for node in self.ntw.pn["node"].values():
+            #TODO dict from keys
             node.oval = {layer: None for layer in range(3)}
             node.image = {layer: None for layer in range(3)}
             node.layer_line = {layer: None for layer in range(1,3)}
@@ -724,7 +759,8 @@ class Scenario(tk.Canvas):
         else:
             self._cancel()
         self.drawing_iteration += 1
-        self.ntw.spring_layout(nodes, *self.master.drawing_param["Spring layout"])
+        params = self.ms.drawing_params["Spring layout"].values()
+        self.ntw.spring_layout(nodes, *params)
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)
@@ -739,7 +775,8 @@ class Scenario(tk.Canvas):
         else:
             self._cancel()
         self.drawing_iteration += 1
-        self.ntw.fruchterman_reingold_layout(nodes, *self.master.drawing_param["F-R layout"])
+        params = self.ms.drawing_params["F-R layout"].values()
+        self.ntw.fruchterman_reingold_layout(nodes, *params)
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)
@@ -762,5 +799,5 @@ class Scenario(tk.Canvas):
         self.id_failure = self.create_image(
                                             (xA+xB)/2, 
                                             (yA+yB)/2, 
-                                            image = self.master.img_failure
+                                            image = self.ms.img_failure
                                             )

@@ -13,10 +13,11 @@ class Configuration(tk.Toplevel):
         self.entry_config.insert("insert", enable_mode)
         self.entry_config.insert("insert", conf_t)
         
+        # TODO the loopback address configuration messes up everything so far
         # configuration of the loopback interface
-        lo = " {name}(config)# interface Loopback0\n".format(name=node.name)
-        lo_ip = " {name}(config-if)# ip address {ip} {mask}\n"\
-                .format(name=node.name, ip=node.ipaddress, mask=node.subnetmask)
+        # lo = " {name}(config)# interface Loopback0\n".format(name=node.name)
+        # lo_ip = " {name}(config-if)# ip address {ip} {mask}\n"\
+        #         .format(name=node.name, ip=node.ipaddress, mask=node.subnetmask)
                 
         self.entry_config.insert("insert", lo)
         self.entry_config.insert("insert", lo_ip)

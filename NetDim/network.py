@@ -37,7 +37,6 @@ class Network(object):
     ])
     
     link_type = tuple(link_class.keys())
-    print(link_type)
     node_type = tuple(node_class.keys())
     all_type = link_type + node_type
     
@@ -57,6 +56,7 @@ class Network(object):
     def lf(
            self, 
            *param, 
+           lc = 88,
            protocol = "ethernet", 
            interface = "10GE", 
            link_type = "trunk", 
@@ -69,8 +69,12 @@ class Network(object):
         # creation link in the s-d direction if no link at all yet
         if not name in self.pn[link_type]:
             if link_type == "trunk":
-                new_link = self.link_class[link_type][protocol](interface, name, 
-                                                                s, d, *param)
+                if protocol == "wdm":
+                    new_link = self.link_class[link_type][protocol](lc, interface, 
+                                                                name, s, d, *param)
+                elif protocol == "ethernet":
+                    new_link = self.link_class[link_type][protocol](interface, 
+                                                                name, s, d, *param)                                             
             else:
                 new_link = self.link_class[link_type](name, s, d, *param)
             self.cpt_link += 1
@@ -1077,28 +1081,28 @@ class Network(object):
                     deltay = nA.y - nB.y
                     dist = self.distance(deltax, deltay)
                     if dist:
-                        nA.vx += deltax*(opd**2)/dist**2
-                        nA.vy += deltay*(opd**2)/dist**2                        
+                        nA.vx += deltax * opd**2 / dist**2
+                        nA.vy += deltay * opd**2 / dist**2                        
                     
         for l in self.pn["trunk"].values():
             deltax = l.source.x - l.destination.x
             deltay = l.source.y - l.destination.y
             dist = self.distance(deltax, deltay)
             if dist:
-                l.source.vx -= dist*deltax/opd
-                l.source.vy -= dist*deltay/opd
-                l.destination.vx += dist*deltax/opd
-                l.destination.vy += dist*deltay/opd
+                l.source.vx -= dist * deltax / opd
+                l.source.vy -= dist * deltay / opd
+                l.destination.vx += dist * deltax / opd
+                l.destination.vy += dist * deltay / opd
             
         for n in nodes:
             d = self.distance(n.vx, n.vy)
-            n.x += (n.vx)/(sqrt(d))
-            n.y += (n.vy)/(sqrt(d))
+            n.x += n.vx / sqrt(d)
+            n.y += n.vy / sqrt(d)
             if limit:
                 n.x = min(800, max(0, n.x))
                 n.y = min(800, max(0, n.y))
             
-        t *= 0.90
+        t *= 0.95
         
     ## Graph generation functions
     

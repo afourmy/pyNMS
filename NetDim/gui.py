@@ -399,16 +399,18 @@ class NetDim(tk.Tk):
         
         # parameters for spring-based drawing: per project
         self.drawing_algorithm = self.cs.spring_based_drawing
-        self.beta = 10000
-        self.k = 0.5
-        self.delta = 0.35
-        self.L0 = 8.
-        self.opd = 0.
-        self.limit = True
-        self.drawing_param = {
-        "Spring layout": (self.beta, self.k, self.delta, self.L0),
-        "F-R layout": (self.opd, self.limit)
-        }
+
+        self.drawing_params = {
+        "Spring layout": collections.OrderedDict([
+        ("Coulomb factor", 10000),
+        ("Spring stiffness", 0.5),
+        ("Speed factor", 0.35),
+        ("Equilibrium length", 8.)
+        ]),
+        "F-R layout": collections.OrderedDict([
+        ("OPD", 0.),
+        ("limit", True)
+        ])}
         
         # advanced graph options
         self.advanced_graph_options = ago.AdvancedGraphOptionsWindow(self)
@@ -527,10 +529,16 @@ class NetDim(tk.Tk):
                         n, *param = self.str_to_object(
                                     xls_sheet.row_values(row_index), obj_type)
                         self.cs.ntw.nf(*param, node_type=obj_type, name=n)
-                    elif obj_type in ("ethernet", "wdm"):
+                    elif obj_type == "ethernet":
                         p, i, n, s, d, *param = self.str_to_object(
                                     xls_sheet.row_values(row_index), obj_type)
                         self.cs.ntw.lf(*param, link_type="trunk", 
+                                    interface=i, protocol=p, name=n, s=s, d=d)
+                    elif obj_type == "wdm":
+                        p, i, n, s, d, *param = self.str_to_object(
+                                    xls_sheet.row_values(row_index), obj_type)
+                        *trunk_param, lc = param
+                        self.cs.ntw.lf(*trunk_param, lc=lc, link_type="trunk", 
                                     interface=i, protocol=p, name=n, s=s, d=d)
                     else:
                         n, s, d, *param = self.str_to_object(
@@ -567,10 +575,15 @@ class NetDim(tk.Tk):
                     if obj_type in self.cs.ntw.node_type:
                         n, *param = self.str_to_object(other, obj_type)
                         self.cs.ntw.nf(*param, node_type="router", name=n)
-                    elif obj_type in ("ethernet", "wdm"):
+                    elif obj_type == "ethernet":
                         p, i, n, s, d, *param = self.str_to_object(other, obj_type)
                         self.cs.ntw.lf(*param, link_type="trunk",
                                 interface=i, protocol=p, name=n, s=s, d=d)
+                    elif obj_type == "wdm":
+                        p, i, n, s, d, *param = self.str_to_object(other, obj_type)
+                        *trunk_param, lc = param
+                        self.cs.ntw.lf(*trunk_param, lc=lc, link_type="trunk", 
+                                    interface=i, protocol=p, name=n, s=s, d=d)
                     elif obj_type in ("route", "traffic"):
                         n, s, d, *param = self.str_to_object(other, obj_type)
                         self.cs.ntw.lf(*param, link_type=obj_type, 

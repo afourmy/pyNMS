@@ -143,6 +143,10 @@ class Link(object):
         # self id and id of the corresponding label on the canvas
         self.line = None
         self.lid = None
+        # self.iid is the id of the interface labels, used to display
+        # interfaces specific properties (ip addresses, names, etc) as well
+        # as trunk asymmetric (directional) properties (capacity, flow, etc)
+        self.ilid = [None]*2
         
     def __repr__(self):
         return self.name
@@ -216,11 +220,8 @@ class WDMFiber(Trunk):
     color = "orange"
     protocol = subtype = "wdm"
     
-    def __init__(self, *args, **kwargs):
-        # we separate the parameters common to all trunks from the 
-        # WDM fiber specific ones for import
-        *trunk_args, lambda_capacity = args
-        super().__init__(*trunk_args, **kwargs)
+    def __init__(self, lambda_capacity, *args):
+        super().__init__(*args)
         self.lambda_capacity = lambda_capacity
         
 class Route(Link):

@@ -19,6 +19,7 @@ class DrawingOptions(FocusTopLevel):
         "F-R layout": self.ms.cs.FR_drawing
         }
         
+        # TODO I can do without just as well
         # this dictionnary allows to initialize the value of the 
         # drop-down list to the current algorithm at window creation
         alg_to_index = {
@@ -27,6 +28,9 @@ class DrawingOptions(FocusTopLevel):
         }
         
         self.title("Graph drawing with force-directed algorithms")
+        # contains all labels and associated entries
+        self.widgets = {"Spring layout": list(), "F-R layout": list()}
+        # contains all variables
         self.vars = {"Spring layout": list(), "F-R layout": list()}
     
         # label frame for the spring layout parameters
@@ -52,84 +56,38 @@ class DrawingOptions(FocusTopLevel):
         self.drawing_type_list.current(alg_to_index[self.ms.drawing_algorithm])
         self.drawing_type_list.grid(row=0, column=2, pady=5, padx=5, sticky=tk.W)
         
-        self.beta, self.k, self.delta, self.L0 = self.ms.drawing_param["Spring layout"]
-        self.opd, self.limit = self.ms.drawing_param["F-R layout"]
-        print(self.limit)
-        
-        # Variables de masse
-        # Alpha
-        self.label_alpha = ttk.Label(self, text="Alpha")
-        self.var_alpha = tk.DoubleVar()
-        self.var_alpha.set(self.alpha)
-        self.vars["Spring layout"].append(self.var_alpha)
-        self.entry_alpha = tk.Entry(self, textvariable=self.var_alpha, width=6)
-        
-        # Beta
-        self.label_beta = ttk.Label(self, text = "Beta")
-        self.var_beta = tk.IntVar()
-        self.var_beta.set(self.beta)
-        self.vars["Spring layout"].append(self.var_beta)
-        self.entry_beta = tk.Entry(self, textvariable=self.var_beta, width=6)
-        
-        # k
-        self.label_k = ttk.Label(self, text = "k")
-        self.var_k = tk.DoubleVar()
-        self.var_k.set(self.k)
-        self.vars["Spring layout"].append(self.var_k)
-        self.entry_k = tk.Entry(self, textvariable=self.var_k, width=6)
-        
-        # Variables de dumping
-        # Eta
-        self.label_eta = ttk.Label(self, text = "Eta")
-        self.var_eta = tk.DoubleVar()
-        self.var_eta.set(self.eta)
-        self.vars["Spring layout"].append(self.var_eta)
-        self.entry_eta = tk.Entry(self, textvariable=self.var_eta, width=6)
-        
-        # Delta
-        self.label_delta = ttk.Label(self, text = "Delta")
-        self.var_delta = tk.DoubleVar()
-        self.var_delta.set(self.delta)
-        self.vars["Spring layout"].append(self.var_delta)
-        self.entry_delta = tk.Entry(self, textvariable=self.var_delta, width=6)
-        
-        # Raideur du ressort d
-        self.label_L0 = ttk.Label(self, text = "Raideur")
-        self.var_L0 = tk.DoubleVar()
-        self.var_L0.set(self.L0)
-        self.vars["Spring layout"].append(self.var_L0)
-        self.entry_L0 = tk.Entry(self, textvariable=self.var_L0, width=6)
+        # parameters labels and entries
+        for param, value in self.ms.drawing_params["Spring layout"].items():
+            var = tk.DoubleVar()
+            label = ttk.Label(self, text=param)
+            var.set(value)
+            entry = tk.Entry(self, textvariable=var, width=6)
+            self.widgets["Spring layout"].append((label, entry))
+            self.vars["Spring layout"].append(var)
+            
+        for id, (lbl, etr) in enumerate(self.widgets["Spring layout"]):
+            lbl.grid(in_=self.lf_spring, row=id, column=0, pady=5, padx=5, sticky=tk.W)
+            etr.grid(in_=self.lf_spring, row=id, column=1, sticky=tk.W)
+
         
         # optimal pairwise distance for fruchterman-reingold
         self.label_opd = ttk.Label(self, text = "OPD")
         self.var_opd = tk.DoubleVar()
-        self.var_opd.set(self.opd)
+        self.var_opd.set(self.ms.drawing_params["F-R layout"]["OPD"])
         self.entry_opd = tk.Entry(self, textvariable=self.var_opd, width=6)
         self.vars["F-R layout"].append(self.var_opd)
-        
-        self.button_save = ttk.Button(self, text="Save", 
-                                        command=lambda: self.save())
                                         
         # check button for nodes to stay in the screen 
         self.var_limit = tk.BooleanVar()
         self.button_limit = ttk.Checkbutton(self, text="Screen limit", 
                                                         variable=self.var_limit)
-        self.var_limit.set(bool(self.limit))
+        self.var_limit.set(bool(self.ms.drawing_params["F-R layout"]["limit"]))
         self.vars["F-R layout"].append(self.var_limit)
         
+        self.button_save = ttk.Button(self, text="Save", 
+                                        command=lambda: self.save())
+        
         # affichage des boutons / label dans la grille
-        self.label_alpha.grid(in_=self.lf_spring, row=1, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_alpha.grid(in_=self.lf_spring, row=1, column=1, sticky=tk.W)
-        self.label_beta.grid(in_=self.lf_spring, row=1, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_beta.grid(in_=self.lf_spring, row=1, column=1, sticky=tk.W)
-        self.label_k.grid(in_=self.lf_spring, row=2, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_k.grid(in_=self.lf_spring, row=2, column=1, sticky=tk.W)
-        self.label_eta.grid(in_=self.lf_spring, row=3, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_eta.grid(in_=self.lf_spring, row=3, column=1, sticky=tk.W)
-        self.label_delta.grid(in_=self.lf_spring, row=4, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_delta.grid(in_=self.lf_spring, row=4, column=1, sticky=tk.W)
-        self.label_L0.grid(in_=self.lf_spring, row=5, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_L0.grid(in_=self.lf_spring, row=5, column=1, sticky=tk.W)
         self.label_opd.grid(in_=self.lf_fr, row=0, column=0, pady=5, padx=5, sticky=tk.W)
         self.entry_opd.grid(in_=self.lf_fr, row=0, column=1, sticky=tk.W)
         self.button_limit.grid(in_=self.lf_fr, row=1, column=0, sticky=tk.W)
@@ -139,6 +97,7 @@ class DrawingOptions(FocusTopLevel):
         # retrieve variables values
         self.ms.drawing_algorithm = self.drawing_algorithms[self.var_drawing_type.get()]
         for alg in ("Spring layout", "F-R layout"):
-            self.ms.drawing_param[alg] = tuple(float(v.get()) for v in self.vars[alg])
-        
+            keys = self.ms.drawing_params[alg].keys()
+            vars = (v.get() for v in self.vars[alg])
+            self.ms.drawing_params[alg] = dict(zip(keys, vars))
         
