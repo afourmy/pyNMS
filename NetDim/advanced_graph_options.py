@@ -31,6 +31,7 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         self.button_fulkerson = ttk.Button(self, text='Fulkerson', command = lambda: self.fulkerson(master))
         self.button_kruskal = ttk.Button(self, text='Minimum spanning tree', command = lambda: self.kruskal(master))
         self.button_mcf = ttk.Button(self, text='Minimum cost flow', command = lambda: self.LP_MCF(master))
+        self.button_bhanari = ttk.Button(self, text='Bhandari', command = lambda: self.bhandari(master))
         
         # affichage des buttons / label dans la grille
         self.button_create_hypercube.grid(row=1,column=0, pady=5, padx=5, sticky=tk.W)
@@ -40,6 +41,7 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         self.button_fulkerson.grid(row=2,column=1, pady=5, padx=5, sticky=tk.W)
         self.button_kruskal.grid(row=5,column=1, pady=5, padx=5, sticky=tk.W)
         self.button_mcf.grid(row=7,column=1, pady=5, padx=5, sticky=tk.W)
+        self.button_bhanari.grid(row=7,column=2, pady=5, padx=5, sticky=tk.W)
         
         self.label_source.grid(row=3,column=0, pady=5, padx=5, sticky=tk.W)
         self.label_destination.grid(row=4,column=0, pady=5, padx=5, sticky=tk.W)
@@ -82,6 +84,12 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
     def kruskal(self, master):
         links_mst = master.cs.ntw.kruskal(master.cs.ntw.pn["node"].values())
         master.cs.highlight_objects(*links_mst)
+        
+    def bhandari(self, master):
+        source = master.cs.ntw.nf(name=self.entry_source.get())
+        destination = master.cs.ntw.nf(name=self.entry_destination.get())
+        spair = master.cs.ntw.bhandari(source, destination)
+        master.cs.highlight_objects(*spair)
         
     # def generate_square_tiling(self, scenario):
     #     self.erase_graph(scenario)

@@ -529,16 +529,10 @@ class NetDim(tk.Tk):
                         n, *param = self.str_to_object(
                                     xls_sheet.row_values(row_index), obj_type)
                         self.cs.ntw.nf(*param, node_type=obj_type, name=n)
-                    elif obj_type == "ethernet":
+                    elif obj_type in ("ethernet", "wdm"):
                         p, i, n, s, d, *param = self.str_to_object(
                                     xls_sheet.row_values(row_index), obj_type)
                         self.cs.ntw.lf(*param, link_type="trunk", 
-                                    interface=i, protocol=p, name=n, s=s, d=d)
-                    elif obj_type == "wdm":
-                        p, i, n, s, d, *param = self.str_to_object(
-                                    xls_sheet.row_values(row_index), obj_type)
-                        *trunk_param, lc = param
-                        self.cs.ntw.lf(*trunk_param, lc=lc, link_type="trunk", 
                                     interface=i, protocol=p, name=n, s=s, d=d)
                     else:
                         n, s, d, *param = self.str_to_object(
@@ -575,15 +569,10 @@ class NetDim(tk.Tk):
                     if obj_type in self.cs.ntw.node_type:
                         n, *param = self.str_to_object(other, obj_type)
                         self.cs.ntw.nf(*param, node_type="router", name=n)
-                    elif obj_type == "ethernet":
+                    elif obj_type in ("ethernet", "wdm"):
                         p, i, n, s, d, *param = self.str_to_object(other, obj_type)
                         self.cs.ntw.lf(*param, link_type="trunk",
                                 interface=i, protocol=p, name=n, s=s, d=d)
-                    elif obj_type == "wdm":
-                        p, i, n, s, d, *param = self.str_to_object(other, obj_type)
-                        *trunk_param, lc = param
-                        self.cs.ntw.lf(*trunk_param, lc=lc, link_type="trunk", 
-                                    interface=i, protocol=p, name=n, s=s, d=d)
                     elif obj_type in ("route", "traffic"):
                         n, s, d, *param = self.str_to_object(other, obj_type)
                         self.cs.ntw.lf(*param, link_type=obj_type, 

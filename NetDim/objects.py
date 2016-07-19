@@ -220,9 +220,13 @@ class WDMFiber(Trunk):
     color = "orange"
     protocol = subtype = "wdm"
     
-    def __init__(self, lambda_capacity, *args):
+    def __init__(self, *args):
+        args = list(args)
+        if len(args) > 4:
+            self.lambda_capacity = args.pop()
+        else:
+            self.lambda_capacity = 88
         super().__init__(*args)
-        self.lambda_capacity = lambda_capacity
         
 class Route(Link):
     type = "route"

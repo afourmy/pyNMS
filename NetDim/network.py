@@ -56,7 +56,6 @@ class Network(object):
     def lf(
            self, 
            *param, 
-           lc = 88,
            protocol = "ethernet", 
            interface = "10GE", 
            link_type = "trunk", 
@@ -69,12 +68,8 @@ class Network(object):
         # creation link in the s-d direction if no link at all yet
         if not name in self.pn[link_type]:
             if link_type == "trunk":
-                if protocol == "wdm":
-                    new_link = self.link_class[link_type][protocol](lc, interface, 
-                                                                name, s, d, *param)
-                elif protocol == "ethernet":
-                    new_link = self.link_class[link_type][protocol](interface, 
-                                                                name, s, d, *param)                                             
+                new_link = self.link_class[link_type][protocol](interface, 
+                                                            name, s, d, *param)                                             
             else:
                 new_link = self.link_class[link_type](name, s, d, *param)
             self.cpt_link += 1
@@ -699,6 +694,56 @@ class Network(object):
                     heappush(heap, (dist + cost, neighbor, path_trunk + [adj_trunk], e_o))
         return [], []
         
+    ## 2) Bhandari algorithm for link-disjoint shortest pair
+        
+    def bhandari(self, source, target, a_n=None, a_t=None):
+    # - we find the shortest path from source to target using Dijkstra
+    # - we replace bidirectionnal links of the shortest path by unidirectional 
+    # links with a negative cost
+    # - we run Bellman-Ford algorithm to find the new 
+    # shortest path from source to target
+    # - we remove all overlapping links
+    # 
+        
+        if a_t is None:
+            a_t = set(self.pn["trunk"].values())
+        if a_n is None:
+            a_n = set(self.pn["node"].values())
+            
+        for trunk in a_t:
+            trunk.flowSD = trunk.costSD
+            trunk.flowDS = trunk.costDS
+            
+        _, first_path = self.A_star(
+                              source, 
+                              target, 
+                              allowed_trunks = a_t, 
+                              allowed_nodes = a_n
+                              ) 
+        
+        print(first_path)
+                           
+        current_node = source
+        for trunk in first_path:
+            dir = "SD" * (current_node == trunk.source) or "DS"
+            reverse_dir = "SD" if dir == "DS" else "DS"
+            setattr(trunk, "cost" + dir, float("inf"))
+            setattr(trunk, "cost" + reverse_dir, -1)
+            current_node = trunk.destination if dir == "SD" else trunk.source
+            
+        _, second_path = self.bellman_ford(
+                                           source, 
+                                           target, 
+                                           allowed_trunks = a_t, 
+                                           allowed_nodes = a_n
+                                           )
+        
+        for trunk in a_t:
+            trunk.costSD = trunk.flowSD
+            trunk.costDS = trunk.flowDS
+
+        return set(first_path) ^ set(second_path)
+        
     ## Flow algorithms
     
     def reset_flow(self):
@@ -1002,6 +1047,8 @@ class Network(object):
                    getattr(adj, "flow" + ((s==adj.source)*"SD" or "DS")) 
                    for _, adj in self.graph[s]["trunk"]
                    )
+                   
+    ## 4) 
             
     ## Distance functions
     
