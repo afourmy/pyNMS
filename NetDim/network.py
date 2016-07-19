@@ -306,8 +306,48 @@ class Network(object):
                 yield new_comp
                 
     ## Shortest path(s) algorithms
+    
+    ## 1) Dijkstra algorithm
         
-    ## 1) A* algorithm for CSPF modelization
+    def dijkstra(
+                 self, 
+                 source, 
+                 allowed_trunks = None, 
+                 allowed_nodes = None
+                 ):
+        
+        if allowed_trunks is None:
+            allowed_trunks = set(self.pn["trunk"].values())
+        if allowed_nodes is None:
+            allowed_nodes = set(self.pn["node"].values())
+        
+        prec_node = {i: None for i in allowed_nodes}
+        prec_link = {i: None for i in allowed_nodes}
+        visited = {i: False for i in allowed_nodes}
+        dist = {i: float("inf") for i in allowed_nodes}
+        dist[source] = 0
+        heap = [(0, source)]
+        while heap:
+            dist_node, node = heappop(heap) 
+            print(node) 
+            if not visited[node]:
+                visited[node] = True
+                for neighbor, adj_trunk in self.graph[node]["trunk"]:
+                    sd = (node == adj_trunk.source)*"SD" or "DS"
+                    # we ignore what's not allowed (not in the AS or in failure)
+                    if neighbor not in allowed_nodes:
+                        continue
+                    if adj_trunk not in allowed_trunks:
+                        continue
+                    dist_neighbor = dist_node + getattr(adj_trunk, "cost" + sd)
+                    if dist_neighbor < dist[neighbor]:
+                        dist[neighbor] = dist_neighbor
+                        prec_node[neighbor] = node
+                        prec_link[neighbor] = adj_trunk
+                        heappush(heap, (dist_neighbor, neighbor))
+        return filter(None, prec_link.values())
+        
+    ## 2) A* algorithm for CSPF modelization
             
     def A_star(
                self, 
@@ -357,7 +397,7 @@ class Network(object):
                     heappush(heap, (dist + cost, neighbor, path + [adj_trunk], pc))
         return [], []
         
-    ## 2) RIP routing algorithm
+    ## 3) RIP routing algorithm
     
     def RIP_routing(self, source, target, RIP_AS, a_n=None, a_t=None):
         
@@ -367,11 +407,11 @@ class Network(object):
             a_t = RIP_AS.pAS["trunk"]
                     
         return self.A_star(
-                             source, 
-                             target, 
-                             allowed_nodes = a_n,
-                             allowed_trunks = a_t
-                             )
+                           source, 
+                           target, 
+                           allowed_nodes = a_n,
+                           allowed_trunks = a_t
+                           )
         
     ## 2) IS-IS routing algorithm 
         
