@@ -106,16 +106,19 @@ Three methods were implemented to solve the transportation problem:
 ## Create a full-meshed graph with 4 routers
 Click on the ring icon at the bottom of Netdim menu. A window pops up, asking for the number and the type of nodes.
 Leave the default parameters and click on "OK".
+
 ![Graph creation](https://github.com/mintoo/networks/raw/master/Readme/use_case_step1.PNG)
 
 ## Visualize the graph
 When the graph is created, all nodes are colocated. Right-click on the canvas, and select the "Drawing > Both" entry. 
 Nodes will first be randomly spread accross the canvas, after what the force-directed layout is applied.
 You can use the mouse scroll wheel to center the display on the nodes.
+
 ![Graph visualization](https://github.com/mintoo/networks/raw/master/Readme/use_case_step2.PNG)
 
 ## Create the AS
 Select all 4 nodes and right-click on one of them. Choose "OSPF" in the "Type" list, and click on "Create AS". The "Manage AS" panel pops up.
+
 ![AS creation](https://github.com/mintoo/networks/raw/master/Readme/use_case_step3.PNG)
 
 ## Add trunks to the AS
@@ -123,6 +126,7 @@ The AS was created as a set of nodes: it has no trunk yet. Click on the "Find tr
 This will automatically add all trunks which both ends belong the AS.
 Add a few edge nodes (routes are only created between edge nodes).
 This AS management panel also display the area topology. In our case, all nodes and trunks are part of the backbone, there is no other area.
+
 ![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step4.PNG)
 
 ## Assign IP address and look at the configuration panel
@@ -131,11 +135,12 @@ From this point on, you can:
 - Choose which label to display from the "Options" menu (IP address, interface, etc)
 - Click on a route to see how the traffic is routed through the AS
 - Access the configuration panel by right-clicking on a router, and select the "Configuration" entry.
-![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step5.PNG)
+![Routing](https://github.com/mintoo/networks/raw/master/Readme/use_case_step5.PNG)
 
 ## Multi-layer display
 Finally, you can trigger the multi-layer display to dissociate routes from trunks and better assess the situation.
-![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step6.PNG)
+
+![Multi-layer display](https://github.com/mintoo/networks/raw/master/Readme/use_case_step6.PNG)
 
 # To be done
 
