@@ -19,10 +19,10 @@ class Configuration(tk.Toplevel):
         # lo_ip = " {name}(config-if)# ip address {ip} {mask}\n"\
         #         .format(name=node.name, ip=node.ipaddress, mask=node.subnetmask)
                 
-        self.entry_config.insert("insert", lo)
-        self.entry_config.insert("insert", lo_ip)
-        exit = " {name}(config-if)# exit\n".format(name=node.name)
-        self.entry_config.insert("insert", exit)
+        # self.entry_config.insert("insert", lo)
+        # self.entry_config.insert("insert", lo_ip)
+        # exit = " {name}(config-if)# exit\n".format(name=node.name)
+        # self.entry_config.insert("insert", exit)
         
         for _, adj_trunk in scenario.ntw.graph[node]["trunk"]:
             direction = "S"*(adj_trunk.source == node) or "D"

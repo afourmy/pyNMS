@@ -427,7 +427,6 @@ class Scenario(tk.Canvas):
         self._refresh_object_label(node)
         
     # refresh the label for one object with the current object label
-    # TODO to be refactored with a dict
     def _refresh_object_label(self, current_object, label_type=None):
         if not label_type:
             label_type = self._current_object_label[current_object.network_type]
@@ -446,6 +445,9 @@ class Scenario(tk.Canvas):
             else:
                 self.itemconfig(if_label_id[0], text=valueSD)
                 self.itemconfig(if_label_id[1], text=valueDS)
+        elif label_type == "interface name":
+            self.itemconfig(if_label_id[0], text=current_object.interfaceS)
+            self.itemconfig(if_label_id[1], text=current_object.interfaceD)
         elif label_type == "position":
             text = "({}, {})".format(current_object.x, current_object.y)
             self.itemconfig(label_id, text=text)

@@ -183,7 +183,8 @@ class NetDim(tk.Tk):
         "Flow", 
         "Traffic", 
         "WCTraffic",
-        "IPaddress"
+        "IPaddress",
+        "Interface name"
         )),
         
         ("Route", 
