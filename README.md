@@ -19,7 +19,9 @@ in the AS.
 ## Graph visualization
 
 The first step to network modelization is graph visualization. One way to visualize a network is to locate all devices on a map. However, this can only be done if we have all GPS coordinates: it is rarely the case. Instead, NetDim relies on graph visualization algorithms to display the network.
-Two spring-layout algorithms are implemented: Eades and Fructherman-Reingold.
+Two spring-layout algorithms are implemented: 
+- Eades algorithm
+- Fructherman-Reingold algorithm
 
 On a 5-layer deep tree which nodes are initially drawn at a random position on the canvas, the algorithm converges within a few seconds to a visually pleasing tree shape.
 
@@ -27,7 +29,7 @@ On a 5-layer deep tree which nodes are initially drawn at a random position on t
 
 ## Saving and import/export
 
-Projects can be saved to an excel or a csv format. This is also a way to import an existing network into NetDim.
+Projects can be saved to an excel or a csv format. This can also be used to import an existing network into NetDim.
 
 ![Excel project](https://github.com/mintoo/networks/raw/master/Readme/xls_import.PNG)
 
@@ -36,97 +38,103 @@ As an example, this is the topology of the BENESTRA network in Slovakia:
 
 ![Graphml Impport](https://github.com/mintoo/networks/raw/master/Readme/BenestraBB.PNG)
 
-## Routing algorithms
-
-Three shortest path algorithms are implemented to modelize network routing:
-- Dijkstra algorithm
-- Bellman-Ford algorithm
-- Floyd-Warshall algorithm
-
-Dijkstra algorithm (quasi-linear complexity) is used by default. Variations of Dijkstra algorithm were implemented to find the traffic path in an AS depending on the protocol.
-The reason for using a specific algorithm is that multi-area configuration can lead to suboptimal routing:
-- In IS-IS, an L1 router sends all traffic to the closest L1/L2 router, even though there could be a shorter path in terms of metric if there are multiple L1/L2 routers in the starting area.
-- In OSPF, intra-area routes are always favored over inter-area routes, even when inter-area routes happen to be the shortest.
-
-Clicking on a route or a traffic link highlights its path through the network:
-
-![Route highlight](https://github.com/mintoo/networks/raw/master/Readme/routing.PNG)
-
 ## AS Management
 
-Nodes and trunks can be added to the network by selecting them on the canvas, from the right-click menu. The AS topology is display in a specific window. The "AS Management" panel is also used to create and manage areas.
-Routes are created between everry couple of "edge nodes".
+Nodes and trunks can be added to an AS by selecting them on the canvas, with the right-click menu. The AS topology is displayed in the "AS Management" panel. This window is also used to create and manage areas.
+Routes are created between every couple of "edge nodes", in order to prevent the creation of too many routes.
 
 ![AS Management](https://github.com/mintoo/networks/raw/master/Readme/AS_management.PNG)
 
+## Routing algorithms
+
+Four algorithms have been implemented to find the shortest path between two devices:
+- Dijkstra algorithm
+- Bellman-Ford algorithm
+- Floyd-Warshall algorithm
+- Shortest path with linear programming (GLPK)
+
+Dijkstra algorithm (quasi-linear complexity) is used by default. Variations of Dijkstra algorithm (A*) were implemented to find the traffic path in an AS depending on the protocol.
+The reason for using specific algorithms is that multi-area topologies can lead to suboptimal routing:
+- In IS-IS, an L1 router sends all traffic to the closest L1/L2 router, even though there could be a shorter path (in terms of metric) if there are multiple L1/L2 routers in the starting area.
+- In OSPF, intra-area routes are always favored over inter-area routes, even when inter-area routes happen to be the shortest.
+
+Clicking on a route or a traffic link highlights its path through the network. In both IS-IS and OSPF AS, the aforementioned constraints may cause asymmetrical routing. This is one of the reasons why routes are unidirectional.
+Consequently, two routes are created between each pair of edge nodes.
+
+![Route highlight](https://github.com/mintoo/networks/raw/master/Readme/routing.PNG)
+
 ## 3D display
 
-There are 3 layers in NetDim: the physical layers (trunks), the logical layer (routes), and the traffic layer (traffic link).
-In order to improve the network visualization, it is possible to have a per-layer view of the network.
-Nodes are draw at all 3 layers, and connected with a dashed line to further improve the display.
+There are 3 layers in NetDim: the physical layer (Ethernet and WDM fiber trunks), the logical layer (routes), and the traffic layer (traffic links).
+In order to enhance network visualization, it is possible to have a per-layer view of the network.
+Nodes are drawn at all 3 layers, and connected with a dashed line to further improve the display.
 
 ![AS Management](https://github.com/mintoo/networks/raw/master/Readme/3D-display.PNG)
 
 ## Capacity planning
 
-Once traffic links are created, they are routed on the trunks outside an AS, and the routes to cross an AS. The resulting traffic flow is computed for each trunks. This is then used for trunk dimensioning and capacity planning.
+Once traffic links are created, they are routed on the trunks outside an AS, and the routes to cross an AS. The resulting traffic flow is computed for all trunks. This leads to trunk dimensioning and capacity planning.
 
 ![Capacity planning](https://github.com/mintoo/networks/raw/master/Readme/capacity_planning.PNG)
 
 ## Failure simulation
 
-It is also possible to simulate the failure of a device and see how it impacts the network routing and dimensioning.
-When highlighting a route's path, the recovery path is display.
+It is possible to simulate the failure of a device and see how it impacts the network routing and dimensioning.
+When highlighting a route's path, the "recovery path" is displayed: it shows how the traffic is being rerouted after the failure has occured.
 
 ![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/failure_simulation.PNG)
 
 ## Automatic device configuration
 
-Netdim automatically assigns IP addresses and interfaces to all devices. After an AS is created, Netdim shows all Cisco commands required to configure the protocol on the device.
+Netdim automatically assigns IP addresses and interfaces to all routers. After an AS is created, Netdim shows all Cisco commands required to properly configure the protocol on the device. 
+This information can in turn be used along with network simulator like GNS3 to learn how to configure a network.
 
 ![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/config.PNG)
 
 ## Transportation problem
 
-The transportation problem consists in finding the maximum flow that can transit through the network: it is a multi-source multi-destination maximum flow problem.
-Three methods were implemented in NetDim to solve the transportation problem:
+The transportation problem consists in finding the maximum flow that can transit through the network.
+It has a number of variations (maximum flow, minimum-cost flow, traffic-demand constrained flow, etc).
+Three methods were implemented to solve the transportation problem:
 
 - Ford-Fulkerson algorithm
 - Edmond-Karps algorithm
 - Linear programming with GLPK
 
-# A simple use case: OSPF domain creation and configuration (one area only)
+# A simple use case: OSPF single-area AS creation and configuration
 
-## Create a full-meshed graph with 6 routers
-Click on the full-mesh icon at the bottom of Netdim menu. A window pops up, asking for the number and the type of nodes.
-Choose "router" in the drop-down list, and set the number of nodes to 6.
+## Create a full-meshed graph with 4 routers
+Click on the ring icon at the bottom of Netdim menu. A window pops up, asking for the number and the type of nodes.
+Leave the default parameters and click on "OK".
 ![Graph creation](https://github.com/mintoo/networks/raw/master/Readme/use_case_step1.PNG)
 
 ## Visualize the graph
-When the graph is created, all nodes are colocated. Click on the selection button in the menu. Select all nodes by pressing the left-click button of the mouse. Right-click on the selected nodes, choose "Force-based layout" in the right-click menu. A window pops up: select "Random + Force-based drawing".
+When the graph is created, all nodes are colocated. Right-click on the canvas, and select the "Drawing > Both" entry. 
 Nodes will first be randomly spread accross the canvas, after what the force-directed layout is applied.
 You can use the mouse scroll wheel to center the display on the nodes.
 ![Graph visualization](https://github.com/mintoo/networks/raw/master/Readme/use_case_step2.PNG)
 
 ## Create the AS
-Select all 6 nodes and right-click on one of them. Select "Create AS". The "Manage AS" panel pops up.
+Select all 4 nodes and right-click on one of them. Choose "OSPF" in the "Type" list, and click on "Create AS". The "Manage AS" panel pops up.
 ![AS creation](https://github.com/mintoo/networks/raw/master/Readme/use_case_step3.PNG)
 
-## Add the trunk to the AS
+## Add trunks to the AS
 The AS was created as a set of nodes: it has no trunk yet. Click on the "Find trunks" button.
-This will automatically add all trunks which both ends are part of the AS.
-Add a few edge nodes. Routes are only created between edge nodes.
-This AS management panel also display the area topology. In this simple use case, all nodes and trunks are part of the backbone, there is no other area.
+This will automatically add all trunks which both ends belong the AS.
+Add a few edge nodes (routes are only created between edge nodes).
+This AS management panel also display the area topology. In our case, all nodes and trunks are part of the backbone, there is no other area.
 ![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step4.PNG)
 
 ## Assign IP address and look at the configuration panel
 Click on "Netdim" logo. This will trigger the assignment of IP addresses to all routers. It will also create "routes" between each pair of "edge nodes", and compute their path in accordance with the OSPF protocol (since there is only one area, it results in a simple shortest path).
-You can access the configuration panel by right-clicking on a router, and click on "Configuration".
+From this point on, you can:
+- Choose which label to display from the "Options" menu (IP address, interface, etc)
+- Click on a route to see how the traffic is routed through the AS
+- Access the configuration panel by right-clicking on a router, and select the "Configuration" entry.
 ![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step5.PNG)
 
 ## Multi-layer display
 Finally, you can trigger the multi-layer display to dissociate routes from trunks and better assess the situation.
-Clicking on a route display its path in red. Since we created a full-mesh AS, the shortest path simply uses the trunk connecting each edge. You can delete a few trunks (use "link selection" instead of "node selection" in the menu, select a set of trunks and use the right-click menu to delete them) and see how that affects the routing.
 ![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step6.PNG)
 
 # To be done
@@ -143,9 +151,9 @@ Clicking on a route display its path in red. Since we created a full-mesh AS, th
 - [x] Fruchterman-Reingold: make it work.
 - [x] Graph drawing on the right-click for a selection of nodes
 - [x] Shortest path with linear programming
-- [ ] Minimum-cost flow with linear programming
-- [ ] Shortest pair with A*
-- [ ] Bhandari algorithm to compare with Suurbale
+- [x] Minimum-cost flow with linear programming
+- [x] Shortest pair with A*
+- [x] Bhandari algorithm
 - [ ] Improved Suurbale/Bhandari to find the K (maximally) edge/edge&nodes disjoint paths
 - [ ] Prim algorithm to find the minimum spanning tree
 - [ ] Minimum cut. Useful to find the bottleneck of the network, and partition the graph before visualisation.

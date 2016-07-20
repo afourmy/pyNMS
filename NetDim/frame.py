@@ -141,7 +141,7 @@ class NetworkDimension(CustomTopLevel):
         
         self.dict_type_to_function = {
         "star": lambda n, _type: scenario.ntw.generate_star(n - 1, _type),
-        "ring": lambda n, _type: scenario.ntw.generate_ring(n - 1, _type),
+        "ring": lambda n, _type: scenario.ntw.generate_ring(n, _type),
         "full-mesh": lambda n, _type: scenario.ntw.generate_full_mesh(n, _type),
         "tree": lambda n, _type: scenario.ntw.generate_tree(n, _type)
         }
