@@ -32,6 +32,7 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         self.button_kruskal = ttk.Button(self, text='Minimum spanning tree', command = lambda: self.kruskal(master))
         self.button_mcf = ttk.Button(self, text='Minimum cost flow', command = lambda: self.LP_MCF(master))
         self.button_bhandari = ttk.Button(self, text='Bhandari', command = lambda: self.bhandari(master))
+        self.button_suurbale = ttk.Button(self, text='Suurbale', command = lambda: self.suurbale(master))
         self.button_spt = ttk.Button(self, text='SPT', command = lambda: self.dijkstra_tree(master))
         
         # affichage des buttons / label dans la grille
@@ -43,7 +44,8 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         self.button_kruskal.grid(row=5,column=1, pady=5, padx=5, sticky=tk.W)
         self.button_mcf.grid(row=7,column=1, pady=5, padx=5, sticky=tk.W)
         self.button_bhandari.grid(row=7,column=2, pady=5, padx=5, sticky=tk.W)
-        self.button_spt.grid(row=8,column=2, pady=5, padx=5, sticky=tk.W)
+        self.button_suurbale.grid(row=8,column=2, pady=5, padx=5, sticky=tk.W)
+        self.button_spt.grid(row=9,column=2, pady=5, padx=5, sticky=tk.W)
         
         self.label_source.grid(row=3,column=0, pady=5, padx=5, sticky=tk.W)
         self.label_destination.grid(row=4,column=0, pady=5, padx=5, sticky=tk.W)
@@ -93,9 +95,16 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         spair = master.cs.ntw.bhandari(source, destination)
         master.cs.highlight_objects(*spair)
         
+    def suurbale(self, master):
+        source = master.cs.ntw.nf(name=self.entry_source.get())
+        destination = master.cs.ntw.nf(name=self.entry_destination.get())
+        spair = master.cs.ntw.suurbale(source, destination)
+        master.cs.highlight_objects(*spair)
+        
     def dijkstra_tree(self, master):
         source = master.cs.ntw.nf(name=self.entry_source.get())
-        spt = master.cs.ntw.dijkstra(source)
+        destination = master.cs.ntw.nf(name=self.entry_destination.get())
+        _, _, spt = master.cs.ntw.dijkstra(source, destination)
         master.cs.highlight_objects(*spt)
         
     # def generate_square_tiling(self, scenario):

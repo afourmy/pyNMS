@@ -312,6 +312,7 @@ class Network(object):
     def dijkstra(
                  self, 
                  source, 
+                 target,
                  allowed_trunks = None, 
                  allowed_nodes = None
                  ):
@@ -323,15 +324,14 @@ class Network(object):
         
         prec_node = {i: None for i in allowed_nodes}
         prec_link = {i: None for i in allowed_nodes}
-        visited = {i: False for i in allowed_nodes}
+        visited = set()
         dist = {i: float("inf") for i in allowed_nodes}
         dist[source] = 0
         heap = [(0, source)]
         while heap:
             dist_node, node = heappop(heap) 
-            print(node) 
-            if not visited[node]:
-                visited[node] = True
+            if node not in visited:
+                visited.add(node)
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     sd = (node == adj_trunk.source)*"SD" or "DS"
                     # we ignore what's not allowed (not in the AS or in failure)
@@ -345,7 +345,20 @@ class Network(object):
                         prec_node[neighbor] = node
                         prec_link[neighbor] = adj_trunk
                         heappush(heap, (dist_neighbor, neighbor))
-        return filter(None, prec_link.values())
+                        
+        # traceback the path from target to source
+        curr, path_link = target, [prec_link[target]]
+        while curr != source:
+            curr = prec_node[curr]
+            path_link.append(prec_link[curr])
+                        
+        # we return:
+        # - the dist dictionnary, that contains the distance from the source
+        # to any other node in the tree 
+        # - the shortest path from source to target
+        # - all edges that belong to the Shortest Path Tree
+        # we need all three variables for Suurbale algorithm below
+        return dist, path_link[:-1][::-1], filter(None, prec_link.values())
         
     ## 2) A* algorithm for CSPF modelization
             
@@ -413,7 +426,7 @@ class Network(object):
                            allowed_trunks = a_t
                            )
         
-    ## 2) IS-IS routing algorithm 
+    ## 4) IS-IS routing algorithm 
         
     def ISIS_routing(self, source, target, ISIS_AS, a_n=None, a_t=None):
         
@@ -467,7 +480,7 @@ class Network(object):
                     heappush(heap, (dist + cost, neighbor, path + [adj_trunk]))
         return [], []
             
-    ## OSPF routing algorithm
+    ## 5) OSPF routing algorithm
     
     def OSPF_routing(self, source, target, OSPF_AS, a_n=None, a_t=None):
         
@@ -545,7 +558,7 @@ class Network(object):
     def protection_routing(self, normal_path, algorithm, failed_link):
         pass
             
-    ## 3) Traffic routing algorithm
+    ## 6) Traffic routing algorithm
     
     def traffic_routing(self, traffic_link):
         
@@ -578,7 +591,7 @@ class Network(object):
                     dist += getattr(adj_link, cost)
                     heappush(heap, (dist, neighbor, path + [adj_link]))
             
-    ## 4) Bellman-Ford algorithm
+    ## 7) Bellman-Ford algorithm
         
     def bellman_ford(
                      self, 
@@ -635,7 +648,7 @@ class Network(object):
         else:
             return [], []
             
-    ## 5) Floyd-Warshall algorithm
+    ## 8) Floyd-Warshall algorithm
             
     def floyd_warshall(self):
         nodes = list(self.pn["node"].values())
@@ -667,7 +680,7 @@ class Network(object):
                     
         return all_length  
         
-    ## 6) DFS (all loop-free paths)
+    ## 9) DFS (all loop-free paths)
         
     def all_paths(self, source, target=None):
         # generates all loop-free paths from source to optional target
@@ -737,19 +750,22 @@ class Network(object):
     ## 2) Bhandari algorithm for link-disjoint shortest pair
         
     def bhandari(self, source, target, a_n=None, a_t=None):
-    # - we find the shortest path from source to target using Dijkstra
+    # - we find the shortest path from source to target using A* algorithm
     # - we replace bidirectionnal links of the shortest path by unidirectional 
     # links with a negative cost
     # - we run Bellman-Ford algorithm to find the new 
     # shortest path from source to target
     # - we remove all overlapping links
-    # 
         
         if a_t is None:
             a_t = set(self.pn["trunk"].values())
         if a_n is None:
             a_n = set(self.pn["node"].values())
             
+        # we store the cost value in the flow parameters, since bhandari 
+        # algorithm relies on graph transformation, and the costs of the edges
+        # will be modified.
+        # at the end, we will revert the cost to their original value
         for trunk in a_t:
             trunk.flowSD = trunk.costSD
             trunk.flowDS = trunk.costDS
@@ -760,9 +776,10 @@ class Network(object):
                               allowed_trunks = a_t, 
                               allowed_nodes = a_n
                               ) 
-        
-        print(first_path)
-                           
+                   
+        # we set the cost of the shortest path links to float("inf"), which 
+        # is equivalent to just removing them. In the reverse direction, 
+        # we set the cost to -1.
         current_node = source
         for trunk in first_path:
             dir = "SD" * (current_node == trunk.source) or "DS"
@@ -783,6 +800,60 @@ class Network(object):
             trunk.costDS = trunk.flowDS
 
         return set(first_path) ^ set(second_path)
+        
+    def suurbale(self, source, target, a_n=None, a_t=None):
+    # - we find the shortest path tree from the source using dijkstra algorithm
+    # - we change the cost of all edges (a,b) such that
+    # c(a, b) = c(a, b) - d(s, b) + d(s, a) (all tree edge will have a 
+    # resulting cost of 0 with that formula, since c(a, b) = d(s, a) - d(s, b)
+    # - we run A* algorithm to find the new 
+    # shortest path from source to target
+    # - we remove all overlapping links
+        
+        if a_t is None:
+            a_t = set(self.pn["trunk"].values())
+        if a_n is None:
+            a_n = set(self.pn["node"].values())
+            
+        # we store the cost value in the flow parameters, since bhandari 
+        # algorithm relies on graph transformation, and the costs of the edges
+        # will be modified.
+        # at the end, we will revert the cost to their original value
+        for trunk in a_t:
+            trunk.flowSD = trunk.costSD
+            trunk.flowDS = trunk.costDS
+            
+        dist, first_path, tree = self.dijkstra(
+                              source, 
+                              target, 
+                              allowed_trunks = a_t, 
+                              allowed_nodes = a_n
+                              ) 
+                              
+        # we change the links cost with the formula described above
+        for link in tree:
+            # new_c(a, b) = c(a, b) - D(b) + D(a) where D(x) is the 
+            # distance from the source to x.
+            src, dest = link.source, link.destination
+            link.costSD += dist[src] - dist[dest]
+            link.costDS += dist[dest] - dist[src]
+            
+        # we exclude the edge of the shortest path (infinite cost)
+        current_node = source
+        for trunk in first_path:
+            dir = "SD" * (current_node == trunk.source) or "DS"
+            setattr(trunk, "cost" + dir, float("inf"))
+            current_node = trunk.destination if dir == "SD" else trunk.source
+            
+        _, second_path = self.A_star(
+                              source, 
+                              target, 
+                              allowed_trunks = a_t, 
+                              allowed_nodes = a_n
+                              )
+                              
+        return set(first_path) ^ set(second_path)
+
         
     ## Flow algorithms
     
