@@ -357,6 +357,13 @@ class NetDim(tk.Tk):
                         command=lambda: self.advanced_graph_options.deiconify())
         menu_routing.add_command(label="Network Tree View", 
                                         command=lambda: NetworkTreeView(self))
+        menu_routing.add_command(label="RWA", 
+                                        command=lambda: self.cs.ntw.RWA_graph_transformation())
+        menu_routing.add_command(label="LP_RWA_formulation", 
+                                        command=lambda: self.cs.ntw.LP_RWA_formulation())
+                                        
+                                        
+                                        
         menubar.add_cascade(label="Network routing",menu=menu_routing)
 
         # choose which label to display per type of object
@@ -488,6 +495,7 @@ class NetDim(tk.Tk):
         new_scenario = scenario.Scenario(self, new_scenario_name)
         self.scenario_notebook.add(new_scenario, text=new_scenario_name, compound=tk.TOP)
         self.dict_scenario[new_scenario_name] = new_scenario
+        return new_scenario
         
     def delete_scenario(self):
         del self.dict_scenario[self.cs.name]

@@ -44,7 +44,7 @@ class Network(object):
         # pn for "pool network"
         self.pn = {"trunk": {}, "node": {}, "route": {}, "traffic": {}}
         self.pnAS = {}
-        self.scenario = scenario
+        self.sco = scenario
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link = self.cpt_node = self.cpt_AS = 1
         
@@ -103,7 +103,7 @@ class Network(object):
         if name not in self.pnAS:
             # creation of the AS
             self.pnAS[name] = AS.AutonomousSystem(
-                                                  self.scenario, 
+                                                  self.sco, 
                                                   _type, 
                                                   name, 
                                                   id,
@@ -183,7 +183,7 @@ class Network(object):
         # remove all link in failure, so that when we call "link dimensioning",
         # which in turns calls "failure traffic", the traffic is computed in
         # normal mode, without considering any existing failure
-        self.scenario.remove_failures()
+        self.sco.remove_failures()
         
         for AS in self.pnAS.values():
             # for all OSPF and IS-IS AS, fill the ABR/L1L2 sets
@@ -236,7 +236,7 @@ class Network(object):
             AS.management.link_dimensioning()
         self.ip_allocation()
         self.interface_allocation()
-        self.scenario.refresh_all_labels()
+        self.sco.refresh_all_labels()
         
     def ip_allocation(self):
         # we use 10.0.0.0/8 to allocate IP addresses for all interfaces in
@@ -1190,7 +1190,6 @@ class Network(object):
                 
         # for the condition 0 < x_ij < 1
         h = numpy.concatenate([numpy.ones(K * n), numpy.zeros(K * n), numpy.ones(K * (K - 1) * n)])
-        id = numpy.eye(K * n, K * n)
         
         G2 = []
         for i in range(K):
@@ -1207,7 +1206,8 @@ class Network(object):
                                                     neighborA == neighborB
                                                    ))
                             G2.append(row)
-        
+                            
+        id = numpy.eye(K * n, K * n)
         G = numpy.concatenate((id, -1*id, G2), axis=0).tolist()
         
         # flow conservation: Ax = b
@@ -1249,6 +1249,132 @@ class Network(object):
             trunk.flowDS = max(graph_K[dest][src] for graph_K in all_graph)
             
         return sum(x)
+        
+    ## Optical networks: routing and wavelength assignment
+    
+    def RWA_graph_transformation(self):
+        
+        # we compute the path of all traffic links
+        self.calculate_all()
+        graph_sco = self.sco.ms.add_scenario()
+        
+        # in the new graph, each node corresponds to a traffic path
+        # we create one node per traffic link in the new scenario
+        for traffic_link in self.pn["traffic"]:
+            graph_sco.ntw.nf(name=traffic_link, node_type="oxc")
+            
+        visited = set()
+        # tl stands for traffic link
+        for tlA in self.pn["traffic"].values():
+            for tlB in self.pn["traffic"].values():
+                if tlB not in visited and tlA != tlB:
+                    if set(tlA.path) & set(tlB.path):
+                        nA, nB = tlA.name, tlB.name
+                        name = "{} - {}".format(nA, nB)
+                        graph_sco.ntw.lf(
+                                        s=graph_sco.ntw.nf(name=nA),
+                                        d=graph_sco.ntw.nf(name=nB), 
+                                        name=name
+                                        )
+            visited.add(tlA)
+                    
+        graph_sco.draw_all(False)
+        
+    def LP_RWA_formulation(self, K=10):
+        """
+        Solves the MILP: minimize c'*x
+                subject to G*x + s = h
+                            A*x = b
+                            s >= 0
+                            xi integer, forall i in I
+        """
+        # we note x_v_wl the variable that defines whether wl is used for 
+        # the path v (x_v_wl = 1) or not (x_v_wl = 0)
+        # we construct the vector of variable the following way:
+        # x = [x_1_0, x_2_0, ..., x_V_0, x_1_1, ... x_V-1_K-1, x_V_K-1]
+        # that is, [(x_v_0) for v in V, ..., (x_v_K) for wl in K]
+        
+        # V is the total number of path (i.e the total number of trunks
+        # in the transformed graph)
+        V, T = len(self.pn["node"]), len(self.pn["trunk"])
+        
+        # for the objective function, which must minimize the sum of y_wl, 
+        # that is, the number of wavelength used
+        c = numpy.concatenate([numpy.zeros(V * K), numpy.ones(K)])
+        
+        # for a given path v, we must have sum(x_v_wl for wl in K) = 1
+        # which ensures that each optical path uses only one wavelength
+        # for each path v, we must create a vector with all x_v_wl set to 1
+        # for the path v, and the rest of it set to 0.
+        A = []
+        for path in range(V):
+            row = [float(K * path <= i < K * (path + 1)) for i in range(V * K)] 
+            row += [0.] * K
+            A.append(row)
+            
+        b = numpy.ones(V)
+        
+        G2 = []
+        for i in range(K):
+            for trunk in self.pn["trunk"].values():
+                p_src, p_dest = trunk.source, trunk.destination
+                # we want to ensure that paths that have at least one link in 
+                # common are not assigned the same wavelength.
+                # this means that x_v_src_i + x_v_dest_i <= y_i
+                row = []
+                # vector of x_v_wl: we set x_v_src_i and x_v_dest_i to 1
+                for path in self.pn["node"].values():
+                    for j in range(K):
+                        row.append(float(
+                                         (path == p_src or path == p_dest)
+                                                        and
+                                                       i == j
+                                         )
+                                   )
+                # we continue filling the vector with the y_wl
+                # we want to have x_v_src_i + x_v_dest_i - y_i <= 0
+                # hence the "minus" sign instead of float
+                for j in range(K):
+                    row.append(-float(i == j))
+                G2.append(row)
+        # G2 size should be K * T (rows) x K * (V + 1) (columns)
+
+        # finally, we want to ensure that wavelength are used in 
+        # ascending order, meaning that y_wl >= y_(wl + 1) for wl 
+        # in [0, K-1]. We can rewrite it y_(wl + 1) - y_wl <= 0
+        G3 = []
+        for i in range(1, K):
+            row_wl = [float(
+                            (i == wl)
+                                or 
+                            -(i == wl + 1)
+                            )
+                        for wl in range(K)
+                      ]
+            final_row = numpy.concatenate([numpy.zeros(V * K), row_wl])
+            G3.append(final_row)
+        # G3 size should be K - 1 (rows) x K * (V + 1) (columns)
+
+        # 0 <= x_v_wl <= 1 and 0 <= y_wl <= 1
+        h = numpy.concatenate([
+                               # 0 <= x_v_wl <= 1 
+                               numpy.ones(K * (V + 1)), 
+                               numpy.zeros(K * (V + 1)),
+                               # 0 <= y_wl <= 1
+                               numpy.ones(K * (V + 1)), 
+                               numpy.zeros(K * (V + 1)),
+                               # x_v_src_i + x_v_dest_i - y_i <= 0
+                               numpy.zeros(K * T),
+                               # y_(wl + 1) - y_wl <= 0
+                               numpy.zeros(K - 1)
+                               ])
+        id = numpy.eye(K * (V + 1), K * (V + 1))
+        G = numpy.concatenate((id, -1*id, id, -1*id, G2, G3), axis=0).tolist()
+        A, G, b, c, h = map(matrix, (A, G, b, c, h))
+    
+        binvar = set(range(K * (V + 1)))
+        solsta, x = glpk.ilp(c, G.T, h, A.T, b, B=binvar)
+        print(x)
         
     ## Distance functions
     
