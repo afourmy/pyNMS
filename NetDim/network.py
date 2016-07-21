@@ -982,9 +982,8 @@ class Network(object):
                 new_graph[node][neighbor] = getattr(trunk, "cost" + sd)
 
         n = 2*len(self.pn["trunk"])
-        v = len(new_graph)
+        
         c = []
-
         for node in new_graph:
             for neighbor, cost in new_graph[node].items():
                 # the float conversion is ESSENTIAL !
@@ -1159,8 +1158,98 @@ class Network(object):
                    for _, adj in self.graph[s]["trunk"]
                    )
                    
-    ## 4) 
+    ## 4) K Link-disjoint shortest pair 
+    
+    def LP_LDSP_formulation(self, s, t, K):
+        """
+        Solves the MILP: minimize c'*x
+                subject to G*x + s = h
+                            A*x = b
+                            s >= 0
+                            xi integer, forall i in I
+        """
+        
+        self.reset_flow()
+        
+        all_graph = []
+        for i in range(K):
+            graph_K = {node: {} for node in self.graph}
+            for node in graph_K:
+                for neighbor, trunk in self.graph[node]["trunk"]:
+                    sd = (node == trunk.source)*"SD" or "DS"
+                    graph_K[node][neighbor] = getattr(trunk, "cost" + sd)
+            all_graph.append(graph_K)
+
+        n = 2*len(self.pn["trunk"])
+        
+        c = []
+        for graph_K in all_graph:
+            for node in graph_K:
+                for neighbor, cost in graph_K[node].items():
+                    c.append(float(cost))
+                
+        # for the condition 0 < x_ij < 1
+        h = numpy.concatenate([numpy.ones(K * n), numpy.zeros(K * n), numpy.ones(K * (K - 1) * n)])
+        id = numpy.eye(K * n, K * n)
+        
+        G2 = []
+        for i in range(K):
+            for j in range(K):
+                if i != j:
+                    for nodeA in all_graph[j]:
+                        for neighborA in all_graph[j][nodeA]:
+                            row = []
+                            for k in range(K):
+                                for nodeB in all_graph[k]:
+                                    for neighborB in all_graph[k][nodeB]:
+                                        row.append(float(k in (i, j) and 
+                                                    nodeA == nodeB and
+                                                    neighborA == neighborB
+                                                   ))
+                            G2.append(row)
+        
+        G = numpy.concatenate((id, -1*id, G2), axis=0).tolist()
+        
+        # flow conservation: Ax = b
+        
+        A, b = [], []
+        for i in range(K):
+            for node_r in self.graph:
+                if node_r != t:
+                    row = []
+                    b.append(float(node_r == s))
+                    for j in range(K):
+                        for node in all_graph[j]:
+                            for neighbor in all_graph[j][node]:
+                                row.append(
+                                            -1. if neighbor == node_r and i == j 
+                                    else     1. if node == node_r and i == j
+                                    else     0.
+                                        )
+                    A.append(row)
+        
+        A, G, b, c, h = map(matrix, (A, G, b, c, h))
+        
+        binvar = set(range(n))
+        solsta, x = glpk.ilp(c, G.T, h, A.T, b, B=binvar)
+        print(x)
+        
+        # update the resulting flow for each node
+        cpt = 0
+        for graph_K in all_graph:
+            for node in graph_K:
+                for neighbor in graph_K[node]:
+                    graph_K[node][neighbor] = x[cpt]
+                    cpt += 1
+
+        # update the network trunks with the new flow value
+        for trunk in self.pn["trunk"].values():
+            src, dest = trunk.source, trunk.destination
+            trunk.flowSD = max(graph_K[src][dest] for graph_K in all_graph)
+            trunk.flowDS = max(graph_K[dest][src] for graph_K in all_graph)
             
+        return sum(x)
+        
     ## Distance functions
     
     def distance(self, p, q): 

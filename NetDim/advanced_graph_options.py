@@ -28,9 +28,11 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         self.button_create_square_tiling = ttk.Button(self, text='Create square tiling', command = lambda: master.cs.ntw.generate_square_tiling(100, "router"))
         self.button_highlight_connected_components = ttk.Button(self, text='Highlight connected components', command = lambda: self.highlight_connected_components(master))
         self.button_LP = ttk.Button(self, text='LP', command = lambda: self.LP_SP(master))
+        self.button_LP_MF = ttk.Button(self, text='LP MF', command = lambda: self.LP_MF(master))
         self.button_fulkerson = ttk.Button(self, text='Fulkerson', command = lambda: self.fulkerson(master))
         self.button_kruskal = ttk.Button(self, text='Minimum spanning tree', command = lambda: self.kruskal(master))
         self.button_mcf = ttk.Button(self, text='Minimum cost flow', command = lambda: self.LP_MCF(master))
+        self.button_lpldsp = ttk.Button(self, text='LP LDSP', command = lambda: self.LP_LDSP(master))
         self.button_bhandari = ttk.Button(self, text='Bhandari', command = lambda: self.bhandari(master))
         self.button_suurbale = ttk.Button(self, text='Suurbale', command = lambda: self.suurbale(master))
         self.button_spt = ttk.Button(self, text='SPT', command = lambda: self.dijkstra_tree(master))
@@ -46,6 +48,8 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         self.button_bhandari.grid(row=7,column=2, pady=5, padx=5, sticky=tk.W)
         self.button_suurbale.grid(row=8,column=2, pady=5, padx=5, sticky=tk.W)
         self.button_spt.grid(row=9,column=2, pady=5, padx=5, sticky=tk.W)
+        self.button_lpldsp.grid(row=10,column=2, pady=5, padx=5, sticky=tk.W)
+        self.button_LP_MF.grid(row=11,column=2, pady=5, padx=5, sticky=tk.W)
         
         self.label_source.grid(row=3,column=0, pady=5, padx=5, sticky=tk.W)
         self.label_destination.grid(row=4,column=0, pady=5, padx=5, sticky=tk.W)
@@ -70,6 +74,12 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         source = master.cs.ntw.nf(name=self.entry_source.get())
         destination = master.cs.ntw.nf(name=self.entry_destination.get())
         flow = master.cs.ntw.LP_SP_formulation(source, destination)
+        print(flow)
+        
+    def LP_MF(self, master):
+        source = master.cs.ntw.nf(name=self.entry_source.get())
+        destination = master.cs.ntw.nf(name=self.entry_destination.get())
+        flow = master.cs.ntw.LP_MF_formulation(source, destination)
         print(flow)
         
     def LP_MCF(self, master):
@@ -106,6 +116,13 @@ class AdvancedGraphOptionsWindow(FocusTopLevel):
         destination = master.cs.ntw.nf(name=self.entry_destination.get())
         _, _, spt = master.cs.ntw.dijkstra(source, destination)
         master.cs.highlight_objects(*spt)
+        
+    def LP_LDSP(self, master):
+        source = master.cs.ntw.nf(name=self.entry_source.get())
+        destination = master.cs.ntw.nf(name=self.entry_destination.get())
+        K = int(self.entry_flow.get())
+        somme = master.cs.ntw.LP_LDSP_formulation(source, destination, K)
+        print(somme)
         
     # def generate_square_tiling(self, scenario):
     #     self.erase_graph(scenario)
