@@ -5,6 +5,7 @@
 import sys
 import tkinter as tk
 import os
+import copy
 from os.path import abspath, pardir, join
 from tkinter import ttk, filedialog
 from miscellaneous import CustomTopLevel
@@ -340,6 +341,8 @@ class NetDim(tk.Tk):
                                         command=lambda: self.add_scenario())
         main_menu.add_command(label="Delete scenario", 
                                         command=lambda: self.delete_scenario())
+        main_menu.add_command(label="Duplicate scenario", 
+                                    command=lambda: self.duplicate_scenario())
         main_menu.add_separator()
         main_menu.add_command(label="Import graph", 
                                         command=lambda: self.import_graph())
@@ -405,8 +408,8 @@ class NetDim(tk.Tk):
         for obj in self.object_properties:
             self.dict_obj_mgmt_window[obj] = omw.ObjectManagementWindow(self, obj)
         
-        # parameters for spring-based drawing: per project
-        self.drawing_algorithm = self.cs.spring_based_drawing
+        # drawing algorithm and parameters: per project
+        self.drawing_algorithm = "Spring layout"
 
         self.drawing_params = {
         "Spring layout": collections.OrderedDict([
@@ -496,6 +499,9 @@ class NetDim(tk.Tk):
         self.scenario_notebook.add(new_scenario, text=new_scenario_name, compound=tk.TOP)
         self.dict_scenario[new_scenario_name] = new_scenario
         return new_scenario
+        
+    def duplicate_scenario(self):
+        pass
         
     def delete_scenario(self):
         del self.dict_scenario[self.cs.name]

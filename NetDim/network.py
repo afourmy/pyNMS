@@ -1312,10 +1312,7 @@ class Network(object):
         graph_sco = self.sco.ms.add_scenario()
         
         # in the new graph, each node corresponds to a traffic path
-        # we create one node per traffic link in the new scenario
-        for traffic_link in self.pn["traffic"]:
-            graph_sco.ntw.nf(name=traffic_link, node_type="oxc")
-            
+        # we create one node per traffic link in the new scenario            
         visited = set()
         # tl stands for traffic link
         for tlA in self.pn["traffic"].values():
@@ -1324,13 +1321,14 @@ class Network(object):
                     if set(tlA.path) & set(tlB.path):
                         nA, nB = tlA.name, tlB.name
                         name = "{} - {}".format(nA, nB)
+                        print(tlA, tlB)
                         graph_sco.ntw.lf(
-                                        s=graph_sco.ntw.nf(name=nA),
-                                        d=graph_sco.ntw.nf(name=nB), 
-                                        name=name
+                                        s = graph_sco.ntw.nf(name=nA),
+                                        d = graph_sco.ntw.nf(name=nB),
+                                        name = name
                                         )
             visited.add(tlA)
-                    
+                            
         graph_sco.draw_all(False)
         
     def LP_RWA_formulation(self, K=10):

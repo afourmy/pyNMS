@@ -13,12 +13,6 @@ class DrawingOptions(FocusTopLevel):
         self.ms = master
         super().__init__()
         
-        # convert the user choice to the corresponding drawing algorithm
-        self.drawing_algorithms = {
-        "Spring layout": self.ms.cs.spring_based_drawing,
-        "F-R layout": self.ms.cs.FR_drawing
-        }
-        
         # TODO I can do without just as well
         # this dictionnary allows to initialize the value of the 
         # drop-down list to the current algorithm at window creation
@@ -95,7 +89,7 @@ class DrawingOptions(FocusTopLevel):
     
     def save(self):
         # retrieve variables values
-        self.ms.drawing_algorithm = self.drawing_algorithms[self.var_drawing_type.get()]
+        self.ms.drawing_algorithm = self.var_drawing_type.get()
         for alg in ("Spring layout", "F-R layout"):
             keys = self.ms.drawing_params[alg].keys()
             vars = (v.get() for v in self.vars[alg])

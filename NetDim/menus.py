@@ -139,7 +139,7 @@ class GeneralRightClickMenu(tk.Menu):
         # remove all failures if there is at least one
         if any(AS.management.failed_trunk for AS in scenario.ntw.pnAS.values()):
             self.add_separator()
-            self.add_command(label="Remove all failures", 
+            self.add_command(label="Remove all failures",
                     command=lambda: self.remove_all_failures(scenario))
                     
         # make the menu appear    
@@ -156,7 +156,7 @@ class DrawingMenu(tk.Menu):
         
         cmds = {
         "Random": lambda: scenario.draw_objects(nodes, True),
-        "FBA": lambda: scenario.master.drawing_algorithm(scenario.master, nodes),
+        "FBA": lambda: scenario.automatic_drawing(nodes),
         "Both": lambda: self.both(scenario, nodes)
         }
     
@@ -166,5 +166,4 @@ class DrawingMenu(tk.Menu):
                                             
     def both(self, scenario, nodes):
         scenario.draw_objects(nodes, True)
-        print(scenario.master.drawing_algorithm)
-        scenario.master.drawing_algorithm(scenario.master, nodes)
+        scenario.automatic_drawing(nodes)

@@ -501,7 +501,6 @@ class Scenario(tk.Canvas):
     def move_node(self, n):
         newx, newy = float(n.x), float(n.y)
         s = self.NODE_SIZE
-
         for layer in self.layers[self.layered_display]:
             if n.image[layer]:
                 y =  newy - layer*self.diff_y
@@ -654,14 +653,19 @@ class Scenario(tk.Canvas):
                         self.tag_lower(node.layer_line[new_link.layer])
         current_layer = "all" if not self.layered_display else new_link.layer
         link_to_coords = self.link_coordinates(*edges, layer=current_layer)
+        print(link_to_coords)
         for link in link_to_coords:
             coords = link_to_coords[link]
+            print(link.line, bool(link.line))
             if not link.line:
+                print("test")
                 link.line = self.create_line(*coords, tags=(link.subtype, 
                         link.class_type, "object"), fill=link.color, 
                         width=self.LINK_WIDTH, dash=link.dash, smooth=True)
+                print(link.line)
             else:
                 self.coords(link.line, *coords)
+        print(new_link.line)
         self.tag_lower(new_link.line)
         self.object_id_to_object[new_link.line] = new_link
         self._create_link_label(new_link)
@@ -754,7 +758,13 @@ class Scenario(tk.Canvas):
         for type in self.ntw.pn:
             self.draw_objects(self.ntw.pn[type].values(), random)
             
-    def spring_based_drawing(self, master, nodes):
+    def automatic_drawing(self, nodes):
+        if self.ms.drawing_algorithm == "Spring layout":
+            self.spring_based_drawing(nodes)
+        else:
+            self.FR_drawing(nodes)
+            
+    def spring_based_drawing(self, nodes):
         if not self._job:
             # reset the number of iterations
             self.drawing_iteration = 0
@@ -766,12 +776,12 @@ class Scenario(tk.Canvas):
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)
-        self._job = self.after(1, lambda: self.spring_based_drawing(master, nodes))
+        self._job = self.after(1, lambda: self.spring_based_drawing(nodes))
         
-    def FR_drawing(self, master, nodes):
+    def FR_drawing(self, nodes):
         if not self._job:
             # update the optimal pairwise distance
-            master.opd = sqrt(500*500/len(self.ntw.pn["node"].values()))
+            self.ms.opd = sqrt(500*500/len(self.ntw.pn["node"].values()))
             # reset the number of iterations
             self.drawing_iteration = 0
         else:
@@ -782,7 +792,7 @@ class Scenario(tk.Canvas):
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)
-        self._job = self.after(1, lambda: self.FR_drawing(master, nodes))
+        self._job = self.after(1, lambda: self.FR_drawing(master,nodes))
             
     ## Failure simulation
     
