@@ -20,7 +20,7 @@ class MainFrame(tk.Frame):
         
         self.bg_color = "#E6E6FA"
         self.font = ("Helvetica", 8, "bold")
-        self.type_to_button = dict()
+        self.type_to_button = {}
         
         self.type_to_action = {
         "netdim": lambda: master.cs.ntw.calculate_all(),

@@ -29,9 +29,9 @@ class DrawingOptions(FocusTopLevel):
         
         self.title("Graph drawing with force-directed algorithms")
         # contains all labels and associated entries
-        self.widgets = {"Spring layout": list(), "F-R layout": list()}
+        self.widgets = {"Spring layout": [], "F-R layout": []}
         # contains all variables
-        self.vars = {"Spring layout": list(), "F-R layout": list()}
+        self.vars = {"Spring layout": [], "F-R layout": []}
     
         # label frame for the spring layout parameters
         self.lf_spring = ttk.Labelframe(self, padding=(6, 6, 12, 12), 

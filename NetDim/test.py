@@ -76,7 +76,11 @@ class TestFlow(unittest.TestCase):
         
     def test_edmonds_karp(self):
         ek_flow = self.netdim.cs.ntw.edmonds_karp(self.source, self.target)
-        self.assertEqual(ek_flow, 19)   
+        self.assertEqual(ek_flow, 19)  
+        
+    def test_dinic(self):
+        _, dinic_flow = self.netdim.cs.ntw.dinic(self.source, self.target)
+        self.assertEqual(dinic_flow, 19)  
     
     def test_LP_flow(self):
         LP_flow = self.netdim.cs.ntw.LP_MF_formulation(self.source, self.target)

@@ -379,7 +379,7 @@ class Network(object):
         if excluded_trunks is None:
             excluded_trunks = set()
         if path_constraints is None:
-            path_constraints = list()
+            path_constraints = []
         if allowed_trunks is None:
             allowed_trunks = set(self.pn["trunk"].values())
         if allowed_nodes is None:
@@ -907,11 +907,11 @@ class Network(object):
         res_cap[source] = float("inf")
         while Q:
             curr_node = Q.popleft()
-            for neighbor, adj_link in self.graph[curr_node]["trunk"]:
-                direction = curr_node == adj_link.source
+            for neighbor, adj_trunk in self.graph[curr_node]["trunk"]:
+                direction = curr_node == adj_trunk.source
                 sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
-                cap = getattr(adj_link, "capacity" + sd)
-                flow = getattr(adj_link, "flow" + sd)
+                cap = getattr(adj_trunk, "capacity" + sd)
+                flow = getattr(adj_trunk, "flow" + sd)
                 residual = cap - flow
                 if residual and augmenting_path[neighbor] is None:
                     augmenting_path[neighbor] = curr_node
@@ -944,6 +944,59 @@ class Network(object):
                    getattr(adj, "flow" + ((source==adj.source)*"SD" or "DS")) 
                    for _, adj in self.graph[source]["trunk"]
                   )
+                  
+    ## 2) Dinic algorithm
+    
+    def augment_di(self, level, flow, curr_node, dest, limit):
+        if limit <= 0:
+            return 0
+        if curr_node == dest:
+            return limit
+        val = 0
+        for neighbor, adj_trunk in self.graph[curr_node]["trunk"]:
+            direction = curr_node == adj_trunk.source
+            sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
+            cap = getattr(adj_trunk, "capacity" + sd)
+            flow = getattr(adj_trunk, "flow" + sd)
+            residual = cap - flow
+            if level[neighbor] == level[curr_node] + 1 and residual > 0:
+                z = min(limit, residual)
+                aug = self.augment_di(level, flow, neighbor, dest, z)
+                adj_trunk.__dict__["flow" + sd] += aug
+                adj_trunk.__dict__["flow" + ds] -= aug
+                val += aug
+                limit -= aug
+        if not val:
+            level[curr_node] = None
+        return val
+        
+    def dinic(self, source, destination):
+        self.reset_flow()
+        Q = deque()
+        total = 0
+        while True:
+            Q.appendleft(source)
+            level = {node: None for node in self.pn["node"].values()}
+            level[source] = 0
+            while Q:
+                curr_node = Q.pop()
+                for neighbor, adj_trunk in self.graph[curr_node]["trunk"]:
+                    direction = curr_node == adj_trunk.source
+                    sd = direction*"SD" or "DS"
+                    cap = getattr(adj_trunk, "capacity" + sd)
+                    flow = getattr(adj_trunk, "flow" + sd)
+                    if level[neighbor] is None and cap > flow:
+                        level[neighbor] = level[curr_node] + 1
+                        Q.appendleft(neighbor)
+                        
+            if level[destination] is None:
+                return flow, total
+            limit = sum(
+                        getattr(adj_trunk, "capacity" + 
+                        ((source == adj_trunk.source)*"SD" or "DS"))
+                        for _, adj_trunk in self.graph[source]["trunk"]
+                        )
+            total += self.augment_di(level, flow, source, destination, limit)
         
     ## Minimum spanning tree algorithms 
     
