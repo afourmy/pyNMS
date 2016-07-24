@@ -12,6 +12,7 @@ from cvxopt import matrix, glpk
 from collections import defaultdict, deque, OrderedDict
 from heapq import heappop, heappush
 from operator import getitem, itemgetter
+from itertools import combinations
 
 class Network(object):
     
@@ -1532,7 +1533,7 @@ class Network(object):
     
     ## 1) Hypercube generation
             
-    def generate_hypercube(self, n, _type):
+    def hypercube(self, n, _type):
         # we create a n-dim hypercube by connecting two (n-1)-dim hypercubes
         i = 0
         graph_nodes = [self.nf(name=str(0), node_type=_type)]
@@ -1540,79 +1541,111 @@ class Network(object):
         while i < n+1:
             for k in range(len(graph_nodes)):
                 # creation of the nodes of the second hypercube
-                graph_nodes.append(self.nf(name=str(k+2**i), node_type=_type))
+                graph_nodes.append(
+                                   self.nf(
+                                           name = str(k+2**i), 
+                                           node_type = _type
+                                           )
+                                   )
             for trunk in graph_links[:]:
                 # connection of the two hypercubes
                 source, destination = trunk.source, trunk.destination
-                n1, n2 = str(int(source.name)+2**i), str(int(destination.name)+2**i)
-                graph_links.append(self.lf(s=self.nf(n1), d=self.nf(n2)))
+                n1 = str(int(source.name) + 2**i)
+                n2 = str(int(destination.name) + 2**i)
+                graph_links.append(
+                                   self.lf(
+                                           s = self.nf(n1), 
+                                           d = self.nf(n2)
+                                           )
+                                   )
             for k in range(len(graph_nodes)//2):
                 # creation of the links of the second hypercube
-                graph_links.append(self.lf(s=graph_nodes[k], d=graph_nodes[k+2**i]))
+                graph_links.append(
+                                   self.lf(
+                                           s = graph_nodes[k], 
+                                           d = graph_nodes[k+2**i]
+                                           )
+                                   )
             i += 1
             
     ## 2) Square tiling generation
             
-    def generate_square_tiling(self, n, subtype):
+    def square_tiling(self, n, subtype):
         for i in range(n**2):
             n1, n2, n3 = str(i), str(i-1), str(i+n)
             if i-1 > -1 and i%n:
                 self.lf(
-                        s=self.nf(name=n1, node_type=subtype), 
-                        d=self.nf(name=n2, node_type=subtype)
+                        s = self.nf(name = n1, node_type = subtype), 
+                        d = self.nf(name = n2, node_type = subtype)
                         )
             if i+n < n**2:
                 self.lf(
-                        s=self.nf(name=n1, node_type=subtype), 
-                        d=self.nf(name=n3, node_type=subtype)
+                        s = self.nf(name = n1, node_type = subtype), 
+                        d = self.nf(name = n3, node_type = subtype)
                         )
                 
     ## 3) Tree generation
                 
-    def generate_tree(self, n, subtype):
+    def tree(self, n, subtype):
         for i in range(2**n-1):
             n1, n2, n3 = str(i), str(2*i+1), str(2*i+2)
             self.lf(
-                    s=self.nf(name=n1, node_type=subtype), 
-                    d=self.nf(name=n2, node_type=subtype)
+                    s = self.nf(name = n1, node_type = subtype), 
+                    d = self.nf(name = n2, node_type = subtype)
                     )
             self.lf(
-                    s=self.nf(name=n1, node_type=subtype), 
-                    d=self.nf(name=n3, node_type=subtype)
+                    s = self.nf(name = n1, node_type = subtype), 
+                    d = self.nf(name = n3, node_type = subtype)
                     )
             
     ## 4) Star generation
             
-    def generate_star(self, n, subtype):
+    def ring(self, n, subtype):
         nb_node = len(self.pn["node"])
         for i in range(n):
             n1, n2 = str(nb_node), str(nb_node+1+i)
             self.lf(
-                    s=self.nf(name=n1, node_type=subtype), 
-                    d=self.nf(name=n2, node_type=subtype)
+                    s = self.nf(name = n1, node_type = subtype), 
+                    d = self.nf(name = n2, node_type = subtype)
                     )
             
     ## 5) Full-meshed network generation
             
-    def generate_full_mesh(self, n, subtype):
+    def full_mesh(self, n, subtype):
         nb_node = len(self.pn["node"])
         for i in range(n):
             for j in range(i):
                 n1, n2 = str(nb_node+j), str(nb_node+i)
                 self.lf(
-                        s=self.nf(name=n1, node_type=subtype), 
-                        d=self.nf(name=n2, node_type=subtype)
+                        s = self.nf(name = n1, node_type = subtype), 
+                        d = self.nf(name = n2, node_type = subtype)
                         )
                 
     ## 6) Ring generation
                 
-    def generate_ring(self, n, subtype):
+    def ring(self, n, subtype):
         nb_node = len(self.pn["node"])
         for i in range(n):
             n1, n2 = str(nb_node+i), str(nb_node+(1+i)%n)
             self.lf(
-                    s=self.nf(name=n1, node_type=subtype), 
-                    d=self.nf(name=n2, node_type=subtype)
+                    s = self.nf(name = n1, node_type = subtype), 
+                    d = self.nf(name = n2, node_type = subtype)
                     )
+                    
+    ## 7) Generalized Kneser graph
+    
+    def kneser(self, n, k, subtype):
+        # we need to keep track of what set we've seen to avoid having
+        # duplicated edges in the graph
+        already_done = set()
+        for setA in map(set, combinations(range(1, n), k)):
+            already_done.add(frozenset(setA))
+            for setB in map(set, combinations(range(1, n), k)):
+                if setB not in already_done and not setA & setB:
+                    self.lf(
+                            s = self.nf(name = str(setA), node_type = subtype), 
+                            d = self.nf(name = str(setB), node_type = subtype)
+                            )
+                    
             
             

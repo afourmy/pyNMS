@@ -159,12 +159,6 @@ class Link(object):
         
     def __hash__(self):
         return hash(self.name)
-    
-    def reset_id(self):
-        self.line = None
-        self.lid = None
-        self.ilid = [None]*2
-        return self
 
 class Trunk(Link):
     

@@ -5,6 +5,7 @@
 import tkinter as tk
 from tkinter import ttk
 from miscellaneous import FocusTopLevel, CustomTopLevel
+import collections
 
 class DrawingOptions(FocusTopLevel):
     
@@ -12,14 +13,6 @@ class DrawingOptions(FocusTopLevel):
         
         self.ms = master
         super().__init__()
-        
-        # TODO I can do without just as well
-        # this dictionnary allows to initialize the value of the 
-        # drop-down list to the current algorithm at window creation
-        alg_to_index = {
-        self.ms.cs.spring_based_drawing: 0,
-        self.ms.cs.FR_drawing: 1
-        }
         
         self.title("Graph drawing with force-directed algorithms")
         # contains all labels and associated entries
@@ -47,7 +40,7 @@ class DrawingOptions(FocusTopLevel):
                                        "Spring layout", 
                                        "F-R layout"
                                        )
-        self.drawing_type_list.current(alg_to_index[self.ms.drawing_algorithm])
+        self.drawing_type_list.set("Spring layout")
         self.drawing_type_list.grid(row=0, column=2, pady=5, padx=5, sticky=tk.W)
         
         # parameters labels and entries
@@ -91,7 +84,8 @@ class DrawingOptions(FocusTopLevel):
         # retrieve variables values
         self.ms.drawing_algorithm = self.var_drawing_type.get()
         for alg in ("Spring layout", "F-R layout"):
-            keys = self.ms.drawing_params[alg].keys()
+            keys = list(self.ms.drawing_params[alg].keys())
             vars = (v.get() for v in self.vars[alg])
-            self.ms.drawing_params[alg] = dict(zip(keys, vars))
-        
+            param = list(zip(keys, vars))
+            self.ms.drawing_params[alg] = collections.OrderedDict(param)
+

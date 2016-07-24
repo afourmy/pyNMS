@@ -4,7 +4,7 @@
 
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous import CustomTopLevel
+from graph_generation import NetworkDimension
 import drawing_options_window
 
 class MainFrame(tk.Frame):
@@ -133,53 +133,4 @@ class MainFrame(tk.Frame):
     def erase_graph(self, scenario):
         scenario.erase_graph()
         scenario.ntw.erase_network()
-        
-class NetworkDimension(CustomTopLevel):    
-    def __init__(self, scenario, type):
-        super().__init__()
-        self.title("Dimension")
-        
-        self.dict_type_to_function = {
-        "star": lambda n, _type: scenario.ntw.generate_star(n - 1, _type),
-        "ring": lambda n, _type: scenario.ntw.generate_ring(n, _type),
-        "full-mesh": lambda n, _type: scenario.ntw.generate_full_mesh(n, _type),
-        "tree": lambda n, _type: scenario.ntw.generate_tree(n, _type)
-        }
-    
-        # Network dimension
-        if type != "tree":
-            self.dimension = ttk.Label(self, text="Number of nodes")
-        else:
-            self.dimension = ttk.Label(self, text="Depth of the tree")
-        self.var_dimension = tk.IntVar()
-        self.var_dimension.set(4)
-        self.entry_dimension = tk.Entry(self, textvariable=self.var_dimension, width=4)
-        
-        # List of node type
-        self.node_type = ttk.Label(self, text="Type of node")
-        self.var_node_type = tk.StringVar()
-        self.node_type_list = ttk.Combobox(self, textvariable=self.var_node_type, width=7)
-        self.node_type_list["values"] = scenario.ntw.node_type
-        self.node_type_list.current(0)
-    
-        # confirmation button
-        self.button_confirmation = ttk.Button(self, text="OK", command=
-            lambda: self.create_graph(scenario, type, self.var_node_type.get()))
-        
-        # position in the grid
-        self.dimension.grid(row=0, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_dimension.grid(row=0, column=1, sticky=tk.W)
-        self.node_type.grid(row=1, column=0, pady=5, padx=5, sticky=tk.W)
-        self.node_type_list.grid(row=1,column=1, pady=5, padx=5, sticky=tk.W)
-        self.button_confirmation.grid(row=2, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
-        
-    def create_graph(self, scenario, type, node_type):
-        self.dict_type_to_function[type](
-                                         int(self.var_dimension.get()), 
-                                         self.var_node_type.get()
-                                        )
-        # todo: force-based drawing only on the newly created node with
-        # convergence
-        scenario.draw_all(random=False)
-        self.destroy()
         

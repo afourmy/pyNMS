@@ -277,6 +277,8 @@ class Scenario(tk.Canvas):
     @adapt_coordinates
     def start_link(self, event):
         self.drag_item = self.find_closest(event.x, event.y)[0]
+        print(self.drag_item)
+        print(self.object_id_to_object)
         start_node = self.object_id_to_object[self.drag_item]
         self.temp_line = self.create_line(start_node.x, start_node.y, 
                         event.x, event.y, arrow=tk.LAST, arrowshape=(6,8,3))
@@ -653,21 +655,20 @@ class Scenario(tk.Canvas):
                         self.tag_lower(node.layer_line[new_link.layer])
         current_layer = "all" if not self.layered_display else new_link.layer
         link_to_coords = self.link_coordinates(*edges, layer=current_layer)
-        print(link_to_coords)
+        print(new_link)
         for link in link_to_coords:
             coords = link_to_coords[link]
-            print(link.line, bool(link.line))
             if not link.line:
-                print("test")
                 link.line = self.create_line(*coords, tags=(link.subtype, 
                         link.class_type, "object"), fill=link.color, 
                         width=self.LINK_WIDTH, dash=link.dash, smooth=True)
-                print(link.line)
+                print(new_link.line)
             else:
                 self.coords(link.line, *coords)
-        print(new_link.line)
         self.tag_lower(new_link.line)
+        print(new_link.line)
         self.object_id_to_object[new_link.line] = new_link
+        print(self.object_id_to_object)
         self._create_link_label(new_link)
         self._refresh_object_label(new_link)
         
@@ -710,6 +711,8 @@ class Scenario(tk.Canvas):
                 for AS in list(obj.AS):
                     AS.management.remove_from_AS(obj)
             if obj.class_type == "node":
+                del self.object_id_to_object[obj.oval[0]]
+                del self.object_id_to_object[obj.image[0]]
                 self.delete(obj.oval[0], obj.image[0], obj.lid)
                 self.remove_objects(*self.ntw.remove_node(obj))
                 if self.layered_display:
@@ -720,8 +723,12 @@ class Scenario(tk.Canvas):
                                     obj.layer_line[layer]
                                     )
             if obj.class_type == "link":
+                # we remove the label of the attached interfaces
+                self.delete(obj.ilid[0], obj.ilid[1])
                 # we remove the line as well as the label on the canvas
                 self.delete(obj.line, obj.lid)
+                # we remove the id in the "id to object" dictionnary
+                del self.object_id_to_object[obj.line]
                 # we remove the associated link in the network model
                 self.ntw.remove_link(obj)
                 # if the layered display is activate and the link 
@@ -792,7 +799,7 @@ class Scenario(tk.Canvas):
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)
-        self._job = self.after(1, lambda: self.FR_drawing(master,nodes))
+        self._job = self.after(1, lambda: self.FR_drawing(nodes))
             
     ## Failure simulation
     

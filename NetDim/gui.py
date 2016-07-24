@@ -14,6 +14,7 @@ import collections
 import object_management_window as omw
 import advanced_graph_options as ago
 import drawing_options_window as dow
+import graph_generation as gg
 import frame
 import scenario
 import csv
@@ -356,6 +357,8 @@ class NetDim(tk.Tk):
                         command=lambda: dow.DrawingOptions(self))
         menubar.add_cascade(label="Network drawing",menu=menu_drawing)
         menu_routing = tk.Menu(menubar, tearoff=0)
+        menu_routing.add_command(label="Graph generation", 
+                        command=lambda: self.graph_generation.deiconify())
         menu_routing.add_command(label="Advanced graph options", 
                         command=lambda: self.advanced_graph_options.deiconify())
         menu_routing.add_command(label="Network Tree View", 
@@ -425,6 +428,9 @@ class NetDim(tk.Tk):
         
         # advanced graph options
         self.advanced_graph_options = ago.AdvancedGraphOptionsWindow(self)
+        
+        # graph generation window
+        self.graph_generation = gg.GraphGeneration(self)
         
         # create a frame
         self.main_frame = frame.MainFrame(self)
