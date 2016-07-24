@@ -277,8 +277,6 @@ class Scenario(tk.Canvas):
     @adapt_coordinates
     def start_link(self, event):
         self.drag_item = self.find_closest(event.x, event.y)[0]
-        print(self.drag_item)
-        print(self.object_id_to_object)
         start_node = self.object_id_to_object[self.drag_item]
         self.temp_line = self.create_line(start_node.x, start_node.y, 
                         event.x, event.y, arrow=tk.LAST, arrowshape=(6,8,3))
@@ -655,20 +653,16 @@ class Scenario(tk.Canvas):
                         self.tag_lower(node.layer_line[new_link.layer])
         current_layer = "all" if not self.layered_display else new_link.layer
         link_to_coords = self.link_coordinates(*edges, layer=current_layer)
-        print(new_link)
         for link in link_to_coords:
             coords = link_to_coords[link]
             if not link.line:
                 link.line = self.create_line(*coords, tags=(link.subtype, 
                         link.class_type, "object"), fill=link.color, 
                         width=self.LINK_WIDTH, dash=link.dash, smooth=True)
-                print(new_link.line)
             else:
                 self.coords(link.line, *coords)
         self.tag_lower(new_link.line)
-        print(new_link.line)
         self.object_id_to_object[new_link.line] = new_link
-        print(self.object_id_to_object)
         self._create_link_label(new_link)
         self._refresh_object_label(new_link)
         

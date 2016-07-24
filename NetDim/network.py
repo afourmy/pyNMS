@@ -1322,7 +1322,6 @@ class Network(object):
                     if set(tlA.path) & set(tlB.path):
                         nA, nB = tlA.name, tlB.name
                         name = "{} - {}".format(nA, nB)
-                        print(tlA, tlB)
                         graph_sco.ntw.lf(
                                         s = graph_sco.ntw.nf(name=nA),
                                         d = graph_sco.ntw.nf(name=nB),
@@ -1426,7 +1425,8 @@ class Network(object):
     
         binvar = set(range(K * (V + 1)))
         solsta, x = glpk.ilp(c, G.T, h, A.T, b, B=binvar)
-        print(x)
+        print("wavelength needed")
+        print(sum(x[-K:]))
         
     ## Distance functions
     

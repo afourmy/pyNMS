@@ -93,13 +93,31 @@ This information can in turn be used along with network simulator like GNS3 to l
 
 ## Transportation problem
 
-The transportation problem consists in finding the maximum flow that can transit through the network.
+The transportation problem consists in finding the best way to carry traffic flows through the network.
 It has a number of variations (maximum flow, minimum-cost flow, traffic-demand constrained flow, etc).
-Three methods were implemented to solve the transportation problem:
+Four methods were implemented to solve the transportation problem:
 
 - Ford-Fulkerson algorithm
 - Edmond-Karps algorithm
+- Dinic algorithm
 - Linear programming with GLPK
+
+## Wavelength allocation problem
+
+In an optical-bypass enabled network, a wavelength can cross an optical switch without Optical-Electrical-Optical (OEO) conversion. While this is a step forward towards cheaper and "greener" networks, a trade-off is that there has to be an end-to-end "wavelength continuity": a wavelength stays the same from the source edge to the destination edge, and it cannot be used by different lightpaths on the same optical fiber.
+
+![WA topology](https://github.com/mintoo/networks/raw/master/Readme/WA_problem.PNG)
+
+In the following example, there are 3 lightpaths. If there is a transponder at "node2" to take care of the wavelength conversion, we need only two wavelengths overall: we can assign a wavelength l1 to traffic3, l2 to traffic4, and traffic5 will first use l2 from node1 to node2, then l1 from node2 to node3.
+However, in an optical-bypass enabled network, there can be no OEO conversion at node2, and we need three wavelengths in total.
+
+The wavelength allocation problem consists in finding the minimum number of wavelengths that are required, and how to allocate them to lightpaths. This problem is solved in NetDim with linear programming.
+Create the optical network topology (with WDM trunks and traffic link), then click on "Network routing > RWA".
+This will create, in another scenario, a transformed graph, which we use for the LP model.
+
+![WA solution](https://github.com/mintoo/networks/raw/master/Readme/WA_problem.PNG)
+
+Go to this new scenario, then click on "Network routing > LP RWA formulation".
 
 # A simple use case: OSPF single-area AS creation and configuration
 
@@ -158,17 +176,14 @@ Finally, you can trigger the multi-layer display to dissociate routes from trunk
 - [x] Shortest path with linear programming
 - [x] Minimum-cost flow with linear programming
 - [x] Shortest pair with A*
-- [x] Bhandari algorithm
+- [x] Bhandari algorithm to find the shortest edge-disjoint pair
+- [x] Dinic algorithm to find the maximum flow
+- [x] Suurbale algorithm to find the shortest edge-disjoint pair
+- [x] Use LP to solve RWA simple version
 - [ ] Improved Suurbale/Bhandari to find the K (maximally) edge/edge&nodes disjoint paths
 - [ ] Prim algorithm to find the minimum spanning tree
-- [ ] Minimum cut. Useful to find the bottleneck of the network, and partition the graph before visualisation.
-- [ ] K-means before graph drawing if the graph is too big.
-- [ ] Dinic algorithm to find the maximum flow
+- [ ] Minimum cut.
 - [ ] Loop detection algorithm with BFS
-- [ ] K equal-cost links/links&amp;nodes-disjoint shortest paths with BFS
-- [ ] Suurbale algorithm to find the shortest links/links&amp;nodes-disjoint pair
-- [ ] Use LP to solve RWA simple version
-- [ ] Use a genetic algorithm to find the maximum flow, compare with LP
 - [ ] Use a genetic algorithm to solve RWA, compare with LP
 - [ ] Degree centrality. number of neighbor of each node (graph + make node size depend on it)
 - [ ] Algorithm to determine link weight in order to optimize load sharing (is-is/ospf optimization)
@@ -192,6 +207,7 @@ Finally, you can trigger the multi-layer display to dissociate routes from trunk
 - [x] When switching to simple oval display, keep track of the size of the object so that it is always the same.
 - [x] Remove switch to creation button
 - [x] Click on a node should select only the node (erase previous selection). Ctrl to add to selection
+- [x] Radio button for nodes and link selection. Add to menu
 - [ ] Add arrows on trunks for route highlight
 - [ ] Change the mouse pointeur when going over an object
 - [ ] Modified Dijkstra to find the longest path/widest path
@@ -200,10 +216,7 @@ Finally, you can trigger the multi-layer display to dissociate routes from trunk
 - [ ] Label position issue + label deletion for routes after calculate all
 - [ ] Highlight should include the nodes too
 - [ ] Upload icon with all possible colors and have a special folder for them
-- [ ] Radio button for nodes and link selection. Add to menu
-- [ ] Center on view for one node and multiple node
 - [ ] Highlight the LL when highlighting the path
-- [ ] Drawing: choose between "random drawing, random + spring layout, draw at position, spring layout (warning if colocated nodes)
 - [ ] Highlight recovery path with dash
 - [ ] Highlight routes / traffic methods should depend on whether there is or not a link in failure.
 
@@ -237,10 +250,12 @@ Finally, you can trigger the multi-layer display to dissociate routes from trunk
 - [ ] Add AS properties in the model, NTV and ASm panel
 
 ## Tests
+- [x] Add test for the maximum flow problem
 - [x] Add tests for SP (Dijkstra, BF, all-paths BFS)
 - [x] Add test for import export
-- [x] Add test for AS creation, modification, renaming, deletion, etc + area management
 - [x] Add test for IS-IS
+- [x] Add test for OSPF
+- [ ] Add test for AS creation, modification, renaming, deletion, etc + area management
 
 ## Other
 - [x] Convert tk drop-down list into ttk combo box
@@ -265,7 +280,6 @@ Finally, you can trigger the multi-layer display to dissociate routes from trunk
 - [ ] Scenario duplication
 - [ ] Drawing for a selection of nodes only
 - [ ] Message window (display log) + error window: catch error
-- [ ] Dockable frame system
 - [ ] Add regex for sanity checks in all user input entry boxes
 - [ ] Network links/nodes statistics with plotlib: number of links per type, etc
 - [ ] Save the default drawing parameters when modified. Update the window.
@@ -278,7 +292,6 @@ Finally, you can trigger the multi-layer display to dissociate routes from trunk
 - [ ] Right-click of the tree view equivalent to a right-click on the canvas
 - [ ] Menu to generate complex graph: hypercube, square tiling in a special window
 - [ ] Make a clear distinction between class variable and init
-- [ ] __bool__ for link: means bw > 0
 - [ ] Rename objects bugs
 - [ ] Property decorator to summarize routes param
 - [ ] Vertical bars in RC menu to separate methods
