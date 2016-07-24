@@ -115,7 +115,7 @@ The wavelength allocation problem consists in finding the minimum number of wave
 Create the optical network topology (with WDM trunks and traffic link), then click on "Network routing > RWA".
 This will create, in another scenario, a transformed graph, which we use for the LP model.
 
-![WA solution](https://github.com/mintoo/networks/raw/master/Readme/WA_problem.png)
+![WA solution](https://github.com/mintoo/networks/raw/master/Readme/WA_problem_2.png)
 
 Go to this new scenario, then click on "Network routing > LP RWA formulation".
 
