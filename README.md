@@ -106,7 +106,7 @@ Four methods were implemented to solve the transportation problem:
 
 In an optical-bypass enabled network, a wavelength can cross an optical switch without Optical-Electrical-Optical (OEO) conversion. While this is a step forward towards cheaper and "greener" networks, a trade-off is that there has to be an end-to-end "wavelength continuity": a wavelength stays the same from the source edge to the destination edge, and it cannot be used by different lightpaths on the same optical fiber.
 
-![WA topology](https://github.com/mintoo/networks/raw/master/Readme/WA_problem.PNG)
+![WA topology](https://github.com/mintoo/networks/raw/master/Readme/WA_problem.png)
 
 In the following example, there are 3 lightpaths. If there is a transponder at "node2" to take care of the wavelength conversion, we need only two wavelengths overall: we can assign a wavelength l1 to traffic3, l2 to traffic4, and traffic5 will first use l2 from node1 to node2, then l1 from node2 to node3.
 However, in an optical-bypass enabled network, there can be no OEO conversion at node2, and we need three wavelengths in total.
@@ -115,7 +115,7 @@ The wavelength allocation problem consists in finding the minimum number of wave
 Create the optical network topology (with WDM trunks and traffic link), then click on "Network routing > RWA".
 This will create, in another scenario, a transformed graph, which we use for the LP model.
 
-![WA solution](https://github.com/mintoo/networks/raw/master/Readme/WA_problem.PNG)
+![WA solution](https://github.com/mintoo/networks/raw/master/Readme/WA_problem.png)
 
 Go to this new scenario, then click on "Network routing > LP RWA formulation".
 
