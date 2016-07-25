@@ -1600,7 +1600,7 @@ class Network(object):
             
     ## 4) Star generation
             
-    def ring(self, n, subtype):
+    def star(self, n, subtype):
         nb_node = len(self.pn["node"])
         for i in range(n):
             n1, n2 = str(nb_node), str(nb_node+1+i)
@@ -1646,6 +1646,25 @@ class Network(object):
                             s = self.nf(name = str(setA), node_type = subtype), 
                             d = self.nf(name = str(setB), node_type = subtype)
                             )
-                    
+                            
+    ## 8) Generalized Petersen graph
+    
+    def petersen(self, n, k, subtype):
+        # the petersen graph is made of the vertices (u_i) and (v_i) for 
+        # i in [0, n-1] and the edges (u_i, u_i+1), (u_i, v_i) and (v_i, v_i+k).
+        # to build it, we consider that v_i = u_(i+n).
+        for i in range(n):
+            self.lf(
+                    s = self.nf(name = str(i), node_type = subtype), 
+                    d = self.nf(name = str((i + 1)%n), node_type = subtype)
+                    )
+            self.lf(
+                    s = self.nf(name = str(i), node_type = subtype), 
+                    d = self.nf(name = str(i + n), node_type = subtype)
+                    )
+            self.lf(
+                    s = self.nf(name = str(i + n), node_type = subtype), 
+                    d = self.nf(name = str((i + n + k)%n + n), node_type = subtype)
+                    )
             
             

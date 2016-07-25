@@ -10,28 +10,30 @@ class NetworkDimension(CustomTopLevel):
         self.scenario = scenario
         
         self.dict_type_to_function = {
-        "star": lambda n, subtype: scenario.ntw.ring(n - 1, subtype),
+        "star": lambda n, subtype: scenario.ntw.star(n - 1, subtype),
         "ring": lambda n, subtype: scenario.ntw.ring(n, subtype),
         "full-mesh": lambda n, subtype: scenario.ntw.full_mesh(n, subtype),
         "tree": lambda n, subtype: scenario.ntw.tree(n, subtype),
-        "kneser": lambda n, k, subtype: scenario.ntw.kneser(n, k, subtype)
+        "kneser": lambda n, k, subtype: scenario.ntw.kneser(n+1, k, subtype),
+        "petersen": lambda n, k, subtype: scenario.ntw.petersen(n, k, subtype)
         }
+        
+        # offset used to add the addition "k" parameter in the gui
+        self.offset = type in ("kneser", "petersen")
     
         # Network dimension
         if type == "tree":
             self.dimension = ttk.Label(self, text="Depth of the tree")
-        elif type == "kneser":
+        elif self.offset:
             self.dimension = ttk.Label(self, text="N")
         else:
             self.dimension = ttk.Label(self, text="Number of nodes")
             
-        if type == "kneser":
+        if self.offset:
             self.k = ttk.Label(self, text="K")
             self.entry_k = tk.Entry(self, width=4)
             self.k.grid(row=1, column=0, sticky=tk.W)
             self.entry_k.grid(row=1, column=1, sticky=tk.W)
-            
-        offset = int(type == "kneser")
             
         self.var_dimension = tk.IntVar()
         self.var_dimension.set(4)
@@ -51,14 +53,14 @@ class NetworkDimension(CustomTopLevel):
         # position in the grid
         self.dimension.grid(row=0, column=0, pady=5, padx=5, sticky=tk.W)
         self.entry_dimension.grid(row=0, column=1, sticky=tk.W)
-        self.node_type.grid(row=1+offset, column=0, pady=5, padx=5, sticky=tk.W)
-        self.node_type_list.grid(row=1+offset,column=1, pady=5, padx=5, sticky=tk.W)
+        self.node_type.grid(row=1+self.offset, column=0, pady=5, padx=5, sticky=tk.W)
+        self.node_type_list.grid(row=1+self.offset,column=1, pady=5, padx=5, sticky=tk.W)
         self.button_confirmation.grid(row=2, column=0, columnspan=2, pady=5, padx=5, sticky="nsew")
         
     def create_graph(self):
-        if self.type == "kneser":
+        if self.offset:
             params = (
-                      int(self.var_dimension.get()) + 1,
+                      int(self.var_dimension.get()),
                       int(self.entry_k.get()),
                       self.var_node_type.get()
                       )
@@ -81,9 +83,14 @@ class GraphGeneration(CustomTopLevel):
         self.ms = master
         super().__init__()
         
-        self.bt_gkneser = ttk.Button(self, text="Generalized Kneser graph", 
+        self.bt_kneser = ttk.Button(self, text="Generalized Kneser graph", 
                         command=lambda: NetworkDimension(self.ms.cs, "kneser"))
                         
-        self.bt_gkneser.grid(row=0, column=0, pady=5, padx=5, sticky=tk.W)
+        self.bt_kneser.grid(row=0, column=0, pady=5, padx=5, sticky=tk.W)
+        
+        self.bt_petersen = ttk.Button(self, text="Generalized Petersen graph", 
+                        command=lambda: NetworkDimension(self.ms.cs, "petersen"))
+                        
+        self.bt_petersen.grid(row=1, column=0, pady=5, padx=5, sticky=tk.W)
         
         self.withdraw()
