@@ -13,7 +13,6 @@ class Configuration(tk.Toplevel):
         self.entry_config.insert("insert", enable_mode)
         self.entry_config.insert("insert", conf_t)
         
-        # TODO the loopback address configuration messes up everything so far
         # configuration of the loopback interface
         # lo = " {name}(config)# interface Loopback0\n".format(name=node.name)
         # lo_ip = " {name}(config-if)# ip address {ip} {mask}\n"\
@@ -101,9 +100,6 @@ class Configuration(tk.Toplevel):
                         pi = " {name}(config-router)# passive-interface {i}\n"\
                                 .format(name=node.name, i=interface)
                         self.entry_config.insert("insert", pi)
-                        
-                    exit = " {name}(config-if)# exit\n".format(name=node.name)
-                    self.entry_config.insert("insert", exit)
                         
                 end = " {name}(config-router)# end\n"\
                                     .format(name=node.name, ip=ip)

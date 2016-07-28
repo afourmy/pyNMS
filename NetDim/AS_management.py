@@ -197,7 +197,7 @@ class ASManagement(FocusTopLevel):
     def add_to_AS(self, area, *objects):
         self.AS.add_to_AS(self.AS.areas[area], *objects)
         for obj in objects:
-            self.dict_listbox[obj.network_type].insert(obj)
+            self.dict_listbox[obj.type].insert(obj)
             
     def find_edge_nodes(self):
         self.dict_listbox["edge"].clear()
@@ -411,9 +411,9 @@ class ASManagement(FocusTopLevel):
     def remove_from_AS(self, *objects):
         self.AS.remove_from_AS(*objects)
         for obj in objects:
-            if obj.network_type == "node":
+            if obj.type == "node":
                 # remove the node from nodes/edges listbox
                 self.dict_listbox["node"].pop(obj)
                 self.dict_listbox["edge"].pop(obj)
-            elif obj.network_type == "trunk":
+            elif obj.type == "trunk":
                 self.dict_listbox["trunk"].pop(obj)

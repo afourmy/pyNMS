@@ -128,17 +128,40 @@ class TestSP(unittest.TestCase):
             self.assertEqual(list(map(str, path)), self.results[i])
         
     def test_floyd_warshall(self):
-        cost_trunk = lambda trunk: getattr(trunk, "costSD")
+        cost_trunk = lambda trunk: trunk.costSD
         all_length = self.netdim.cs.ntw.floyd_warshall()
         for r in (self.route9, self.route10, self.route11):
             path_length = all_length[r.source][r.destination]
             self.assertEqual(sum(map(cost_trunk, r.path)), path_length)
             
     def test_LP(self):
-        source = self.netdim.cs.ntw.nf(name="node0")
-        destination = self.netdim.cs.ntw.nf(name="node3")
-        path_sum = self.netdim.cs.ntw.LP_SP_formulation(source, destination)
-        self.assertEqual(path_sum, 2)
+        for i, r in enumerate((self.route9, self.route10, self.route11)):
+            path = self.netdim.cs.ntw.LP_SP_formulation(r.source, r.destination)
+            self.assertEqual(list(map(str, path)), self.results[i])
+            
+class TestMCF(unittest.TestCase):
+    
+    results = (
+    ("trunk1", 5),
+    ("trunk2", 7),
+    ("trunk3", 3),
+    ("trunk4", 10),
+    ("trunk5", 2)
+    )
+    
+    @start_and_import("test_mcf.xls")
+    def setUp(self):
+        source = self.netdim.cs.ntw.pn["node"]["node1"]
+        target = self.netdim.cs.ntw.pn["node"]["node4"]
+        self.netdim.cs.ntw.LP_MCF_formulation(source, target, 12)
+ 
+    def tearDown(self):
+        self.netdim.destroy()
+ 
+    def test_MCF(self):
+        for trunk_name, flow in self.results:
+            trunk = self.netdim.cs.ntw.pn["trunk"][trunk_name]
+            self.assertEqual(trunk.flowSD, flow)
         
 class TestISIS(unittest.TestCase):
     
@@ -234,6 +257,19 @@ class TestCSPF(unittest.TestCase):
         _, path = self.netdim.cs.ntw.A_star(node6, node7, 
                             excluded_trunks={trunk15}, excluded_nodes={node4})
         self.assertEqual(list(map(str, path)), self.results[5])
+        
+class TestRWA(unittest.TestCase):
+     
+    @start_and_import("test_RWA.xls")
+    def setUp(self):
+        pass
+ 
+    def tearDown(self):
+        self.netdim.destroy()
+        
+    def test_RWA(self):
+        sco_new_graph = self.netdim.cs.ntw.RWA_graph_transformation()
+        self.assertEqual(sco_new_graph.ntw.LP_RWA_formulation(), 3)
         
 if __name__ == '__main__':
     unittest.main(warnings='ignore')  

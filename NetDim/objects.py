@@ -7,7 +7,7 @@ from collections import defaultdict
 ## Nodes
 class Node(object):
     
-    class_type = network_type = type = "node"
+    class_type = type = "node"
     
     def __init__(
                  self, 
@@ -64,6 +64,11 @@ class Router(Node):
     imagex, imagey = 33, 25
     
     def __init__(self, *args):
+        args = list(args)
+        if len(args) > 3:
+            self.routing_table = args.pop()
+        else:
+            self.routing_table = None
         super().__init__(*args)
         
 class Switch(Node):
@@ -165,7 +170,6 @@ class Trunk(Link):
     type = "trunk"
     layer = 0
     dash = ()
-    network_type = type
 
     def __init__(
                  self, 
@@ -173,9 +177,9 @@ class Trunk(Link):
                  name, 
                  source, 
                  destination, 
-                 distance = 0, 
-                 costSD = 1, 
-                 costDS = 1, 
+                 distance = 0., 
+                 costSD = 1., 
+                 costDS = 1., 
                  capacitySD = 3, 
                  capacityDS = 3, 
                  ipaddressS = None, 
@@ -197,15 +201,21 @@ class Trunk(Link):
         self.subnetmaskD = subnetmaskD
         self.interfaceD = interfaceD
         
-        self.trafficSD = self.trafficDS = 0
-        self.wctrafficSD = self.wctrafficDS = 0
-        self.flowSD = self.flowDS = 0
+        self.trafficSD = self.trafficDS = 0.
+        self.wctrafficSD = self.wctrafficDS = 0.
+        self.flowSD = self.flowDS = 0.
         # list of AS to which the trunks belongs. AS is actually a dictionnary
         # associating an AS to a set of area the trunks belongs to
         self.AS = defaultdict(set)
         
     def __lt__(self, other):
         return hash(self.name)
+        
+    def __call__(self, property, node):
+        dir = (node == self.source)*"SD" or "DS"
+        if property in ("subnetmask", "interface", "ipaddress"):
+            dir = dir[:-1]
+        return getattr(self, property + dir)
         
 class Ethernet(Trunk):
     
@@ -230,7 +240,7 @@ class WDMFiber(Trunk):
         
 class Route(Link):
     type = "route"
-    network_type = subtype = type
+    subtype = type
     dash = (3,5)
     color = "green"
     layer = 1
@@ -246,7 +256,7 @@ class Route(Link):
                  excluded_nodes = set(), 
                  path = [], 
                  subnets = set(), 
-                 cost = 1,
+                 cost = 1.,
                  traffic = 0,
                  AS = None
                  ):
@@ -267,7 +277,7 @@ class Route(Link):
         
 class Traffic(Link):
     type = "traffic"
-    network_type = subtype = type
+    subtype = type
     dash = (7,1,1,1)
     color = "purple"
     layer = 2

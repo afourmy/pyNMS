@@ -6,7 +6,7 @@ import miscellaneous
 import objects
 import AS
 import random
-import numpy
+import numpy as np
 from math import cos, sin, asin, radians, sqrt
 from cvxopt import matrix, glpk
 from collections import defaultdict, deque, OrderedDict
@@ -28,18 +28,21 @@ class Network(object):
     ("cloud", objects.Cloud)
     ])
     
-    link_class = OrderedDict([
-    ("trunk", OrderedDict([
+    trunk_class = OrderedDict([
     ("ethernet", objects.Ethernet),
     ("wdm", objects.WDMFiber)
-    ])),
+    ])
+    
+    link_class = OrderedDict([
+    ("trunk", trunk_class),
     ("route", objects.Route),
     ("traffic", objects.Traffic)
     ])
     
-    link_type = tuple(link_class.keys())
     node_type = tuple(node_class.keys())
-    all_type = link_type + node_type
+    link_type = tuple(link_class.keys())
+    trunk_type = tuple(trunk_class.keys())
+    all_type = node_type + link_type + trunk_type
     
     def __init__(self, scenario):
         # pn for "pool network"
@@ -52,6 +55,11 @@ class Network(object):
         # this parameter is used for failure simulation, to display the 
         # recovery path of a route considering the failed trunk
         self.failed_trunk = None
+        
+    # function filtering pn to retrieve all objects of a given subtype
+    def ftr(self, type, subtype):
+        keep = lambda r: r.subtype == subtype
+        return filter(keep, self.pn[type].values())
           
     # "lf" is the link factory. Creates or retrieves any type of link
     def lf(
@@ -140,9 +148,9 @@ class Network(object):
                 yield self.pn[type_link].pop(adj_link.name, None)
             
     def remove_link(self, link):
-        self.graph[link.source][link.network_type].discard((link.destination, link))
-        self.graph[link.destination][link.network_type].discard((link.source, link))
-        self.pn[link.network_type].pop(link.name, None)
+        self.graph[link.source][link.type].discard((link.destination, link))
+        self.graph[link.destination][link.type].discard((link.source, link))
+        self.pn[link.type].pop(link.name, None)
         
     def find_edge_nodes(self, AS):
         AS.pAS["edge"].clear()
@@ -174,6 +182,14 @@ class Network(object):
             for neighbor, trunk in self.graph[nodeA][_type]:
                 if neighbor == nodeB:
                     yield trunk
+                    
+    # find the ip addresses of all subnetworks attached to a router.
+    # we use it to built the routing table after computing the SPT
+    def attached_subnetworks(self, node):
+        for _, trunk in self.graph[node]["trunk"]:
+            ip, mask = trunk("ipaddress", node), trunk("subnetmask", node)
+            # TODO compute the subnetwork with ip addresses library
+            yield subnetwork
             
     def calculate_all(self):
         # reset the traffic for all trunks
@@ -225,7 +241,7 @@ class Network(object):
                 # direction given that routes are unidirectional.
                 # the trunks on which the route is mapped will be dimensioned
                 # in the AS dimensioning step that follows
-                if link.network_type == "trunk":
+                if link.type == "trunk":
                     link.__dict__["traffic" + sd] += traffic_link.throughput
                 else:
                     link.__dict__["traffic"] += traffic_link.throughput
@@ -256,13 +272,12 @@ class Network(object):
                     trunk.subnetmaskS = trunk.subnetmaskD = mask
                     trunk.ipaddressS = address + str(cpt_ip)
                     trunk.ipaddressD = address + str(cpt_ip + 1)
-                    # with /30, there are two unused IP address for each subnetwork
+                    # with /30, there are two unused IP address per subnetwork
                     # we could use /31 but this isn't a common practice
                     cpt_ip += 4
         
         # we use 192.168.0.0/16 to allocate loopback addresses to all routers
-        ftr_router = lambda r: r.subtype == "router"
-        for id, router in enumerate(filter(ftr_router, self.pn["node"].values()), 1):
+        for id, router in enumerate(self.ftr("node", "router"), 1):
             router.ipaddress = "192.168." + str(id // 255) + "." + str(id % 255)
             
         # finally, we use 172.16.0.0/16 for all trunks that do not belong
@@ -334,13 +349,12 @@ class Network(object):
             if node not in visited:
                 visited.add(node)
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
-                    sd = (node == adj_trunk.source)*"SD" or "DS"
                     # we ignore what's not allowed (not in the AS or in failure)
                     if neighbor not in allowed_nodes:
                         continue
                     if adj_trunk not in allowed_trunks:
                         continue
-                    dist_neighbor = dist_node + getattr(adj_trunk, "cost" + sd)
+                    dist_neighbor = dist_node + adj_trunk("cost", node)
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
                         prec_node[neighbor] = node
@@ -400,15 +414,14 @@ class Network(object):
                     if not pc:
                         return [], path
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
-                    sd = (node == adj_trunk.source)*"SD" or "DS"
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes-excluded_nodes: 
                         continue
                     # excluded and allowed trunks
                     if adj_trunk not in allowed_trunks-excluded_trunks: 
                         continue
-                    cost = getattr(adj_trunk, "cost" + sd)
-                    heappush(heap, (dist + cost, neighbor, path + [adj_trunk], pc))
+                    heappush(heap, (dist + adj_trunk("cost", node), 
+                                            neighbor, path + [adj_trunk], pc))
         return [], []
         
     ## 3) RIP routing algorithm
@@ -465,7 +478,6 @@ class Network(object):
                     step = True
                     heap.clear()
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
-                    sd = (node == adj_trunk.source)*"SD" or "DS"
                     # we ignore what's not allowed (not in the AS or in failure)
                     if neighbor not in a_n or adj_trunk not in a_t:
                         continue
@@ -477,8 +489,8 @@ class Network(object):
                     # that belong to the destination area
                     if step and neighbor not in allowed: 
                         continue
-                    cost = getattr(adj_trunk, "cost" + sd)
-                    heappush(heap, (dist + cost, neighbor, path + [adj_trunk]))
+                    heappush(heap, (dist + adj_trunk("cost", node), 
+                                                neighbor, path + [adj_trunk]))
         return [], []
             
     ## 5) OSPF routing algorithm
@@ -553,7 +565,8 @@ class Network(object):
                     # adj_trunk to path before pushing it to the binary heap)
                     # as it would mess the whole thing up.
                     cost = getattr(adj_trunk, "cost" + sd)
-                    heappush(heap, (dist + cost, neighbor, path + [adj_trunk], step))
+                    heappush(heap, (dist + cost, neighbor, 
+                                                    path + [adj_trunk], step))
         return [], []
         
     def protection_routing(self, normal_path, algorithm, failed_link):
@@ -582,7 +595,7 @@ class Network(object):
                     if adj_link.type == "trunk" and adj_link.AS: 
                         continue
                     # if the link is a route, we make sure the current node is 
-                    # the source of the route, because routes are unidirectionnal
+                    # the source of the route because routes are unidirectionnal
                     if adj_link.type == "route" and adj_link.source != node: 
                         continue
                     # if the link is a route, it is unidirectional and the
@@ -705,6 +718,123 @@ class Network(object):
                 yield list(path)
         yield from find_all_paths()
         
+    ## Model 2:
+    
+    ## 1) RFT builder for LB-free networks: subnetworks / interfaces mapping
+    
+    def RFT_SP_tree_builder(
+               self, 
+               source, 
+               allowed_trunks = None, 
+               allowed_nodes = None
+               ):
+                
+        if allowed_trunks is None:
+            allowed_trunks = set(self.pn["trunk"].values())
+        if allowed_nodes is None:
+            allowed_nodes = set(self.pn["node"].values())
+            
+        visited = set()
+        # we keep track of all already yielded subnetworks so that we 
+        # don't yield them more than once.
+        visited_subnetworks = set()
+        heap = [(0, source, None)]
+        # dictionnary that binds IP addresses to an exit interface of the source
+        mapping = defaultdict(set)
+        
+        while heap:
+            dist, node, exit_if = heappop(heap)
+            if node not in visited:
+                visited.add(node)
+                # if node hadn't been visited yet, it means that the
+                # current path is the shortest to reach this node.
+                # we associate all subnetwork addresses attached to the node 
+                # to the exit interface, which is the interface of the neighbor
+                # of the source node.
+                if node != source:
+                    for subntw in self.attached_subnetworks(node):
+                        if subntw not in visited_subnetworks:
+                            visited_subnetworks.add(subntw)
+                            mapping[exit_if] |= {subnetwork}
+                for neighbor, adj_trunk in self.graph[node]["trunk"]:
+                    if node == source:
+                        # it is the IP of the Next-Hop interface which is 
+                        # mentioned in the routing table, not the IP of the 
+                        # interface directly attached to the source node.
+                        exit_if = adj_trunk("ipaddress", neighbor)
+                    # excluded and allowed nodes
+                    if neighbor not in allowed_nodes:
+                        continue
+                    # excluded and allowed trunks
+                    if adj_trunk not in allowed_trunks: 
+                        continue
+                    heappush(heap, (dist + adj_trunk("cost", node), neighbor, 
+                                                                    exit_if))
+        return mapping
+        
+    
+    ## 2) RFT builder for LB-enabled networks: ECMP tree from source node
+    
+    # the reason why we keep all ECMPs and not just the SP is to handle 
+    # load-balancing-enabled network (mapping of the traffic flow with the
+    # appropriate % on each ECMP).
+    # the K parameter defines how many ECMP we will look for (4 by default).
+    # in order to build the routing and forwarding table, we need to build an
+    # Equal-Cost Multi-Paths Tree that allows us to bind exit ("next-hop")
+    # interfaces from the source node to the list of ECMPs for all other
+    # distant nodes.
+    # complexity is exponential.
+    
+    def RFT_ECMP_tree_builder(
+               self, 
+               source, 
+               K = 4,
+               allowed_trunks = None, 
+               allowed_nodes = None
+               ):
+                
+        if allowed_trunks is None:
+            allowed_trunks = set(self.pn["trunk"].values())
+        if allowed_nodes is None:
+            allowed_nodes = set(self.pn["node"].values())
+            
+        visited = set()
+        heap = [(0, source, [])]
+        # dictionnary that binds a node to all the ECMP that can be used
+        # to reach it
+        node_to_ECMP = defaultdict(list)
+        # dictionnary that associates a node to its SP distance from the source
+        SP_dist = {}
+        
+        while heap:
+            dist, node, path_trunk = heappop(heap)  
+            if (node, tuple(path_trunk)) not in visited:
+                visited.add((node, tuple(path_trunk)))
+                # if node is not yet in the dist dictionnary, it means we reach
+                # it for the first time: we found the (first) shortest path
+                if node not in SP_dist:
+                    SP_dist[node] = dist
+                    node_to_ECMP[node].append(path_trunk)
+                elif dist == SP_dist[node] and K > len(node_to_ECMP[node]):
+                    # if it isn't, but the path we're assessing has the same 
+                    # length, and we haven't found K ECMP yet, the path is valid
+                    node_to_ECMP[node].append(path_trunk)
+                for neighbor, adj_trunk in self.graph[node]["trunk"]:
+                    # we check whether we've used the trunk already, for
+                    # we consider only loop-free paths
+                    if adj_trunk in path_trunk:
+                        continue
+                    # excluded and allowed nodes
+                    if neighbor not in allowed_nodes: 
+                        continue
+                    # excluded and allowed trunks
+                    if adj_trunk not in allowed_trunks: 
+                        continue
+                    heappush(heap, (dist + adj_trunk("cost", node), neighbor, 
+                                                    path_trunk + [adj_trunk]))
+        return SP_dist, node_to_ECMP
+            
+        
     ## Link-disjoint / link-and-node-disjoint shortest pair algorithms
     
     ## 1) A* link-disjoint pair search
@@ -745,7 +875,8 @@ class Network(object):
                     if neighbor not in a_n or adj_trunk not in a_t-e_o:
                         continue
                     cost = getattr(adj_trunk, "cost" + sd)
-                    heappush(heap, (dist + cost, neighbor, path_trunk + [adj_trunk], e_o))
+                    heappush(heap, (dist + cost, neighbor, 
+                                                path_trunk + [adj_trunk], e_o))
         return [], []
         
     ## 2) Bhandari algorithm for link-disjoint shortest pair
@@ -1019,13 +1150,13 @@ class Network(object):
     ## 1) Shortest path
     
     def LP_SP_formulation(self, s, t):
-        """
-        Solves the MILP: minimize c'*x
-                subject to G*x + s = h
-                            A*x = b
-                            s >= 0
-                            xi integer, forall i in I
-        """
+
+        # Solves the MILP: minimize c'*x
+        #         subject to G*x + s = h
+        #                     A*x = b
+        #                     s >= 0
+        #                     xi integer, forall i in I
+
         
         self.reset_flow()
         
@@ -1047,9 +1178,9 @@ class Network(object):
                 c.append(float(cost))
                 
         # for the condition 0 < x_ij < 1
-        h = numpy.concatenate([numpy.ones(n), numpy.zeros(n)])
-        id = numpy.eye(n, n)
-        G = numpy.concatenate((id, -1*id), axis=0).tolist()  
+        h = np.concatenate([np.ones(n), np.zeros(n)])
+        id = np.eye(n, n)
+        G = np.concatenate((id, -1*id), axis=0).tolist()  
         
         # flow conservation: Ax = b
         A, b = [], []
@@ -1082,18 +1213,28 @@ class Network(object):
             trunk.flowSD = new_graph[src][dest]
             trunk.flowDS = new_graph[dest][src]
             
-        return sum(x)
+        # traceback the shortest path with the flow
+        curr_node, path_trunk = s, []
+        while curr_node != t:
+            for neighbor, adj_trunk in self.graph[curr_node]["trunk"]:
+                # if the flow leaving the current node is 1, we move
+                # forward and replace the current node with its neighbor
+                if adj_trunk("flow", curr_node) == 1:
+                    path_trunk.append(adj_trunk)
+                    curr_node = neighbor
+                    
+        return path_trunk
     
     ## 2) Single-source single-destination maximum flow
                
     def LP_MF_formulation(self, s, t):
-        """
-        Solves the MILP: minimize c'*x
-                subject to G*x + s = h
-                            A*x = b
-                            s >= 0
-                            xi integer, forall i in I
-        """
+
+        # Solves the MILP: minimize c'*x
+        #         subject to G*x + s = h
+        #                     A*x = b
+        #                     s >= 0
+        #                     xi integer, forall i in I
+
         
         new_graph = {node: {} for node in self.graph}
         for node in self.graph:
@@ -1124,8 +1265,11 @@ class Network(object):
                                    )
                 A.append(row)
                 
-        b, h, x = [0.]*(v-2), h+[0.]*n, numpy.eye(n, n)
-        G = numpy.concatenate((x, -1*x), axis=0).tolist()        
+        b = np.zeros(v - 2)
+        h = np.concatenate([h, np.zeros(n)])
+        x = np.eye(n, n)
+        G = np.concatenate((x, -1*x), axis=0).tolist()   
+             
         A, G, b, c, h = map(matrix, (A, G, b, c, h))
         solsta, x = glpk.ilp(-c, G.T, h, A.T, b)
 
@@ -1150,20 +1294,19 @@ class Network(object):
     ## 3) Single-source single-destination minimum-cost flow
                
     def LP_MCF_formulation(self, s, t, flow):
-        """
-        Solves the MILP: minimize c'*x
-                subject to G*x + s = h
-                            A*x = b
-                            s >= 0
-                            xi integer, forall i in I
-        """
+
+        # Solves the MILP: minimize c'*x
+        #         subject to G*x + s = h
+        #                     A*x = b
+        #                     s >= 0
+        #                     xi integer, forall i in I
+
         
         new_graph = {node: {} for node in self.graph}
         for node in self.graph:
             for neighbor, trunk in self.graph[node]["trunk"]:
-                sd = (node == trunk.source)*"SD" or "DS"
-                new_graph[node][neighbor] = (getattr(trunk, "capacity" + sd),
-                                             getattr(trunk, "cost" + sd))
+                new_graph[node][neighbor] = (trunk("capacity", node),
+                                             trunk("cost", node))
 
         n = 2*len(self.pn["trunk"])
         v = len(new_graph)
@@ -1189,8 +1332,10 @@ class Network(object):
                                    )
                 A.append(row)
                 
-        h, x = h+[0.]*n, numpy.eye(n, n)
-        G = numpy.concatenate((x, -1*x), axis=0).tolist()        
+        h = np.concatenate([h, np.zeros(n)])
+        x = np.eye(n, n)
+        G = np.concatenate((x, -1*x), axis=0).tolist() 
+               
         A, G, b, c, h = map(matrix, (A, G, b, c, h))
         solsta, x = glpk.ilp(c, G.T, h, A.T, b)
 
@@ -1215,13 +1360,13 @@ class Network(object):
     ## 4) K Link-disjoint shortest pair 
     
     def LP_LDSP_formulation(self, s, t, K):
-        """
-        Solves the MILP: minimize c'*x
-                subject to G*x + s = h
-                            A*x = b
-                            s >= 0
-                            xi integer, forall i in I
-        """
+
+        # Solves the MILP: minimize c'*x
+        #         subject to G*x + s = h
+        #                     A*x = b
+        #                     s >= 0
+        #                     xi integer, forall i in I
+
         
         self.reset_flow()
         
@@ -1243,7 +1388,7 @@ class Network(object):
                     c.append(float(cost))
                 
         # for the condition 0 < x_ij < 1
-        h = numpy.concatenate([numpy.ones(K * n), numpy.zeros(K * n), numpy.ones(K * (K - 1) * n)])
+        h = np.concatenate([np.ones(K * n), np.zeros(K * n), np.ones(K * (K - 1) * n)])
         
         G2 = []
         for i in range(K):
@@ -1261,8 +1406,8 @@ class Network(object):
                                                    ))
                             G2.append(row)
                             
-        id = numpy.eye(K * n, K * n)
-        G = numpy.concatenate((id, -1*id, G2), axis=0).tolist()
+        id = np.eye(K * n, K * n)
+        G = np.concatenate((id, -1*id, G2), axis=0).tolist()
         
         # flow conservation: Ax = b
         
@@ -1330,15 +1475,16 @@ class Network(object):
             visited.add(tlA)
                             
         graph_sco.draw_all(False)
+        return graph_sco
         
     def LP_RWA_formulation(self, K=10):
-        """
-        Solves the MILP: minimize c'*x
-                subject to G*x + s = h
-                            A*x = b
-                            s >= 0
-                            xi integer, forall i in I
-        """
+
+        # Solves the MILP: minimize c'*x
+        #         subject to G*x + s = h
+        #                     A*x = b
+        #                     s >= 0
+        #                     xi integer, forall i in I
+
         # we note x_v_wl the variable that defines whether wl is used for 
         # the path v (x_v_wl = 1) or not (x_v_wl = 0)
         # we construct the vector of variable the following way:
@@ -1351,7 +1497,7 @@ class Network(object):
         
         # for the objective function, which must minimize the sum of y_wl, 
         # that is, the number of wavelength used
-        c = numpy.concatenate([numpy.zeros(V * K), numpy.ones(K)])
+        c = np.concatenate([np.zeros(V * K), np.ones(K)])
         
         # for a given path v, we must have sum(x_v_wl for wl in K) = 1
         # which ensures that each optical path uses only one wavelength
@@ -1363,7 +1509,7 @@ class Network(object):
             row += [0.] * K
             A.append(row)
             
-        b = numpy.ones(V)
+        b = np.ones(V)
         
         G2 = []
         for i in range(K):
@@ -1402,31 +1548,24 @@ class Network(object):
                             )
                         for wl in range(K)
                       ]
-            final_row = numpy.concatenate([numpy.zeros(V * K), row_wl])
+            final_row = np.concatenate([np.zeros(V * K), row_wl])
             G3.append(final_row)
         # G3 size should be K - 1 (rows) x K * (V + 1) (columns)
 
-        # 0 <= x_v_wl <= 1 and 0 <= y_wl <= 1
-        h = numpy.concatenate([
-                               # 0 <= x_v_wl <= 1 
-                               numpy.ones(K * (V + 1)), 
-                               numpy.zeros(K * (V + 1)),
-                               # 0 <= y_wl <= 1
-                               numpy.ones(K * (V + 1)), 
-                               numpy.zeros(K * (V + 1)),
-                               # x_v_src_i + x_v_dest_i - y_i <= 0
-                               numpy.zeros(K * T),
-                               # y_(wl + 1) - y_wl <= 0
-                               numpy.zeros(K - 1)
-                               ])
-        id = numpy.eye(K * (V + 1), K * (V + 1))
-        G = numpy.concatenate((id, -1*id, id, -1*id, G2, G3), axis=0).tolist()
+        h = np.concatenate([
+                            # x_v_src_i + x_v_dest_i - y_i <= 0
+                            np.zeros(K * T),
+                            # y_(wl + 1) - y_wl <= 0
+                            np.zeros(K - 1)
+                            ])
+
+        G = np.concatenate((G2, G3), axis=0).tolist()
         A, G, b, c, h = map(matrix, (A, G, b, c, h))
     
         binvar = set(range(K * (V + 1)))
         solsta, x = glpk.ilp(c, G.T, h, A.T, b, B=binvar)
-        print("wavelength needed")
-        print(sum(x[-K:]))
+
+        return int(sum(x[-K:]))
         
     ## Distance functions
     
@@ -1530,45 +1669,56 @@ class Network(object):
         t *= 0.95
         
     ## Graph generation functions
-    
-    ## 1) Hypercube generation
+                
+    ## 1) Tree generation
+                
+    def tree(self, n, subtype):
+        for i in range(2**n-1):
+            n1, n2, n3 = str(i), str(2*i+1), str(2*i+2)
+            self.lf(
+                    s = self.nf(name = n1, node_type = subtype), 
+                    d = self.nf(name = n2, node_type = subtype)
+                    )
+            self.lf(
+                    s = self.nf(name = n1, node_type = subtype), 
+                    d = self.nf(name = n3, node_type = subtype)
+                    )
             
-    def hypercube(self, n, _type):
-        # we create a n-dim hypercube by connecting two (n-1)-dim hypercubes
-        i = 0
-        graph_nodes = [self.nf(name=str(0), node_type=_type)]
-        graph_links = []
-        while i < n+1:
-            for k in range(len(graph_nodes)):
-                # creation of the nodes of the second hypercube
-                graph_nodes.append(
-                                   self.nf(
-                                           name = str(k+2**i), 
-                                           node_type = _type
-                                           )
-                                   )
-            for trunk in graph_links[:]:
-                # connection of the two hypercubes
-                source, destination = trunk.source, trunk.destination
-                n1 = str(int(source.name) + 2**i)
-                n2 = str(int(destination.name) + 2**i)
-                graph_links.append(
-                                   self.lf(
-                                           s = self.nf(n1), 
-                                           d = self.nf(n2)
-                                           )
-                                   )
-            for k in range(len(graph_nodes)//2):
-                # creation of the links of the second hypercube
-                graph_links.append(
-                                   self.lf(
-                                           s = graph_nodes[k], 
-                                           d = graph_nodes[k+2**i]
-                                           )
-                                   )
-            i += 1
+    ## 2) Star generation
             
-    ## 2) Square tiling generation
+    def star(self, n, subtype):
+        nb_node = len(self.pn["node"])
+        for i in range(n):
+            n1, n2 = str(nb_node), str(nb_node+1+i)
+            self.lf(
+                    s = self.nf(name = n1, node_type = subtype), 
+                    d = self.nf(name = n2, node_type = subtype)
+                    )
+            
+    ## 3) Full-meshed network generation
+            
+    def full_mesh(self, n, subtype):
+        nb_node = len(self.pn["node"])
+        for i in range(n):
+            for j in range(i):
+                n1, n2 = str(nb_node+j), str(nb_node+i)
+                self.lf(
+                        s = self.nf(name = n1, node_type = subtype), 
+                        d = self.nf(name = n2, node_type = subtype)
+                        )
+                
+    ## 4) Ring generation
+                
+    def ring(self, n, subtype):
+        nb_node = len(self.pn["node"])
+        for i in range(n):
+            n1, n2 = str(nb_node+i), str(nb_node+(1+i)%n)
+            self.lf(
+                    s = self.nf(name = n1, node_type = subtype), 
+                    d = self.nf(name = n2, node_type = subtype)
+                    )
+                    
+    ## 5) Square tiling generation
             
     def square_tiling(self, n, subtype):
         for i in range(n**2):
@@ -1583,60 +1733,49 @@ class Network(object):
                         s = self.nf(name = n1, node_type = subtype), 
                         d = self.nf(name = n3, node_type = subtype)
                         )
-                
-    ## 3) Tree generation
-                
-    def tree(self, n, subtype):
-        for i in range(2**n-1):
-            n1, n2, n3 = str(i), str(2*i+1), str(2*i+2)
-            self.lf(
-                    s = self.nf(name = n1, node_type = subtype), 
-                    d = self.nf(name = n2, node_type = subtype)
-                    )
-            self.lf(
-                    s = self.nf(name = n1, node_type = subtype), 
-                    d = self.nf(name = n3, node_type = subtype)
-                    )
+                    
+    ## 6) Hypercube generation
             
-    ## 4) Star generation
-            
-    def star(self, n, subtype):
-        nb_node = len(self.pn["node"])
-        for i in range(n):
-            n1, n2 = str(nb_node), str(nb_node+1+i)
-            self.lf(
-                    s = self.nf(name = n1, node_type = subtype), 
-                    d = self.nf(name = n2, node_type = subtype)
-                    )
-            
-    ## 5) Full-meshed network generation
-            
-    def full_mesh(self, n, subtype):
-        nb_node = len(self.pn["node"])
-        for i in range(n):
-            for j in range(i):
-                n1, n2 = str(nb_node+j), str(nb_node+i)
-                self.lf(
-                        s = self.nf(name = n1, node_type = subtype), 
-                        d = self.nf(name = n2, node_type = subtype)
-                        )
-                
-    ## 6) Ring generation
-                
-    def ring(self, n, subtype):
-        nb_node = len(self.pn["node"])
-        for i in range(n):
-            n1, n2 = str(nb_node+i), str(nb_node+(1+i)%n)
-            self.lf(
-                    s = self.nf(name = n1, node_type = subtype), 
-                    d = self.nf(name = n2, node_type = subtype)
-                    )
+    def hypercube(self, n, subtype):
+        # we create a n-dim hypercube by connecting two (n-1)-dim hypercubes
+        i = 0
+        graph_nodes = [self.nf(name=str(0), node_type=subtype)]
+        graph_links = []
+        while i < n+1:
+            for k in range(len(graph_nodes)):
+                # creation of the nodes of the second hypercube
+                graph_nodes.append(
+                                   self.nf(
+                                           name = str(k+2**i), 
+                                           node_type = subtype
+                                           )
+                                   )
+            for trunk in graph_links[:]:
+                # connection of the two hypercubes
+                source, destination = trunk.source, trunk.destination
+                n1 = str(int(source.name) + 2**i)
+                n2 = str(int(destination.name) + 2**i)
+                graph_links.append(
+                                   self.lf(
+                                           s = self.nf(name = n1), 
+                                           d = self.nf(name = n2)
+                                           )
+                                   )
+            for k in range(len(graph_nodes)//2):
+                # creation of the links of the second hypercube
+                graph_links.append(
+                                   self.lf(
+                                           s = graph_nodes[k], 
+                                           d = graph_nodes[k+2**i]
+                                           )
+                                   )
+            i += 1
                     
     ## 7) Generalized Kneser graph
     
     def kneser(self, n, k, subtype):
-        # we need to keep track of what set we've seen to avoid having
-        # duplicated edges in the graph
+        # we keep track of what set we've seen to avoid having
+        # duplicated edges in the graph, with the "already_done" set
         already_done = set()
         for setA in map(set, combinations(range(1, n), k)):
             already_done.add(frozenset(setA))
@@ -1654,14 +1793,17 @@ class Network(object):
         # i in [0, n-1] and the edges (u_i, u_i+1), (u_i, v_i) and (v_i, v_i+k).
         # to build it, we consider that v_i = u_(i+n).
         for i in range(n):
+            # (u_i, u_i+1) edges
             self.lf(
                     s = self.nf(name = str(i), node_type = subtype), 
                     d = self.nf(name = str((i + 1)%n), node_type = subtype)
                     )
+            # (u_i, v_i) edges
             self.lf(
                     s = self.nf(name = str(i), node_type = subtype), 
                     d = self.nf(name = str(i + n), node_type = subtype)
                     )
+            # (v_i, v_i+k) edges
             self.lf(
                     s = self.nf(name = str(i + n), node_type = subtype), 
                     d = self.nf(name = str((i + n + k)%n + n), node_type = subtype)

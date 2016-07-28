@@ -47,6 +47,8 @@ class RightClickMenu(tk.Menu):
             node ,= scenario.so["node"]
             self.add_command(label="Configuration", 
                         command=lambda: self.configure(node, scenario))
+            self.add_command(label="RFT builder", 
+                        command=lambda: scenario.ntw.RFT_SP_tree_builder(node))
                         
             self.add_separator()
         
@@ -60,7 +62,7 @@ class RightClickMenu(tk.Menu):
         
         # we compute the set of common AS among all selected objects
         self.common_AS = set(scenario.ntw.pnAS.values())  
-        cmd = lambda o: o.network_type in ("node", "trunk")      
+        cmd = lambda o: o.type in ("node", "trunk")      
         for obj in filter(cmd, self.all_so):
             self.common_AS &= obj.AS.keys()
             
@@ -78,7 +80,7 @@ class RightClickMenu(tk.Menu):
         # exactly one trunk: failure simulation menu
         if not scenario.so["node"] and len(scenario.so["link"]) == 1:
             trunk ,= scenario.so["link"]
-            if trunk.network_type == "trunk" and trunk.AS:
+            if trunk.type == "trunk" and trunk.AS:
                 self.add_command(label="Simulate failure", 
                         command=lambda: self.simulate_failure(trunk, scenario))
                     

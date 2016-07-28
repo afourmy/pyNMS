@@ -100,12 +100,12 @@ class AutonomousSystem(object):
         area.add_to_area(*objects)
         for obj in objects:
             # add objects in the AS corresponding pool
-            self.pAS[obj.network_type].add(obj)
+            self.pAS[obj.type].add(obj)
         
     def remove_from_AS(self, *objects):
         for obj in objects:
             # we remove the object from its pool in the AS
-            self.pAS[obj.network_type].discard(obj)
+            self.pAS[obj.type].discard(obj)
             # we pop the AS from the dict of object AS, and retrieve the list
             # of area it belongs to in this AS
             obj_areas = obj.AS.pop(self, set())

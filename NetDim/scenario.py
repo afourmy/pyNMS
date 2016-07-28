@@ -5,7 +5,7 @@
 import tkinter as tk
 import network
 import menus
-import random
+from random import randint
 from math import cos, sin, atan2, sqrt, radians
 
 class Scenario(tk.Canvas):
@@ -30,7 +30,7 @@ class Scenario(tk.Canvas):
         self.NODE_SIZE = 8
         
         # default label display
-        self._current_object_label = dict.fromkeys(self.ntw.pn, "none")
+        self.current_label = dict.fromkeys(self.ms.object_label, "none")
         
         # creation mode, object type, and associated bindings
         self._start_position = [None]*2
@@ -39,7 +39,7 @@ class Scenario(tk.Canvas):
         self.temp_line = None
         
         # object selected for rectangle selection
-        self.object_selection = "node"
+        self.obj_selection = "node"
         
         # used to move several node at once
         self._start_pos_main_node = [None]*2
@@ -147,7 +147,9 @@ class Scenario(tk.Canvas):
                 # add bindings to create a link between two nodes
                 self.tag_bind("node", "<Button-1>", self.start_link)
                 self.tag_bind("node", "<B1-Motion>", self.line_creation)
-                self.tag_bind("node", "<ButtonRelease-1>", lambda event, type=type: self.link_creation(event, self._creation_mode))
+                release = lambda event, type=type: self.link_creation(
+                                                    event, self._creation_mode)
+                self.tag_bind("node", "<ButtonRelease-1>", release)
                 
     def adapt_coordinates(function):
         def wrapper(self, event, *others):
@@ -166,7 +168,7 @@ class Scenario(tk.Canvas):
         self.unhighlight_all()
         traffic = self.object_id_to_object[self.find_closest(event.x, event.y)[0]]
         self.highlight_objects(*traffic.path)
-        for route in filter(lambda l: l.network_type == "route", traffic.path):
+        for route in filter(lambda l: l.type == "route", traffic.path):
             self.highlight_route(route)
             
     def highlight_route(self, route):
@@ -203,10 +205,10 @@ class Scenario(tk.Canvas):
     @adapt_coordinates
     def find_closest_object(self, event):
         self.closest_object_id = self.find_closest(event.x, event.y)[0]
-        object_selected = self.object_id_to_object[self.closest_object_id]
+        so = self.object_id_to_object[self.closest_object_id]
         # update the object management window if it is opened
-        self.ms.dict_obj_mgmt_window[object_selected.subtype].current_obj = object_selected
-        self.ms.dict_obj_mgmt_window[object_selected.subtype].update()
+        self.ms.dict_obj_mgmt_window[so.subtype].current_obj = so
+        self.ms.dict_obj_mgmt_window[so.subtype].update()
 
     @adapt_coordinates
     def node_motion(self, event):
@@ -254,7 +256,7 @@ class Scenario(tk.Canvas):
             self.coords(self.temp_line_x_bottom, x0, event.y, event.x, event.y)
     
     def change_object_selection(self, event=None):
-        self.object_selection = (self.object_selection == "link")*"node" or "link" 
+        self.obj_selection = (self.obj_selection == "link")*"node" or "link" 
 
     @adapt_coordinates
     def end_point_select_nodes(self, event):
@@ -269,8 +271,8 @@ class Scenario(tk.Canvas):
             for obj in self.find_enclosed(start_x, start_y, event.x, event.y):
                 if obj in self.object_id_to_object:
                     enclosed_obj = self.object_id_to_object[obj]
-                    if enclosed_obj.class_type == self.object_selection:
-                        self.so[self.object_selection].add(enclosed_obj)
+                    if enclosed_obj.class_type == self.obj_selection:
+                        self.so[self.obj_selection].add(enclosed_obj)
             self.highlight_objects(*self.so["node"]|self.so["link"])
             self._start_position = [None]*2
         
@@ -345,17 +347,20 @@ class Scenario(tk.Canvas):
         # the corresponding node's coordinates accordingly
         for node in self.ntw.pn["node"].values():
             new_coords = self.coords(node.oval[0])
-            node.x, node.y = (new_coords[0] + new_coords[2])/2, (new_coords[3] + new_coords[1])/2
+            node.x = (new_coords[0] + new_coords[2]) / 2
+            node.y = (new_coords[3] + new_coords[1]) / 2
             self.coords(node.lid, node.x - 15, node.y + 10)
             for layer in self.layers[self.layered_display]:
                 if node.image[layer] or not layer:
-                    x, y = node.x - (node.imagex)/2, node.y - layer*self.diff_y - (node.imagey)/2
+                    x = node.x - node.imagex / 2
+                    y = node.y - layer*self.diff_y - node.imagey / 2
                     self.coords(node.image[layer], x, y)
             if self.layered_display and node.layer_line:
                 max_layer = 2 if self.ntw.graph[node]["traffic"] else 1 if self.ntw.graph[node]["route"] else 0
-                self.coords(node.layer_line, node.x, node.y, node.x, node.y - max_layer*self.diff_y)
+                coord = (node.x, node.y, node.x, node.y - max_layer*self.diff_y)
+                self.coords(node.layer_line, *coord)
             # the oval was also resized while scaling
-            #node.size = abs(new_coords[0] - new_coords[2])/2 
+            node.size = abs(new_coords[0] - new_coords[2])/2 
             for type in self.ntw.link_type:
                 for neighbor, t in self.ntw.graph[node][type]:
                     layer = "all" if not self.layered_display else t.layer
@@ -403,7 +408,10 @@ class Scenario(tk.Canvas):
         for obj in objects:
             if obj.class_type == "node":
                 self.itemconfig(obj.oval, fill=color)
-                self.itemconfig(obj.image[0], image=self.ms.dict_image["red"][obj.subtype])
+                self.itemconfig(
+                                obj.image[0], 
+                                image = self.ms.dict_image["red"][obj.subtype]
+                                )
             elif obj.class_type == "link":
                 dash = (3, 5) if dash else ()
                 self.itemconfig(obj.line, fill=color, width=5, dash=dash)
@@ -412,9 +420,13 @@ class Scenario(tk.Canvas):
         for obj in objects:
             if obj.class_type == "node":
                 self.itemconfig(obj.oval, fill=obj.color)
-                self.itemconfig(obj.image[0], image=self.ms.dict_image["default"][obj.subtype])
+                self.itemconfig(
+                                obj.image[0], 
+                                image = self.ms.dict_image["default"][obj.subtype]
+                                )
             elif obj.class_type == "link":
-                self.itemconfig(obj.line, fill=obj.color, width=self.LINK_WIDTH, dash=obj.dash)  
+                self.itemconfig(obj.line, fill=obj.color, 
+                                        width=self.LINK_WIDTH, dash=obj.dash)  
                 
     def unhighlight_all(self):
         for object_type in self.ntw.pn:
@@ -424,58 +436,76 @@ class Scenario(tk.Canvas):
         node.lid = self.create_text(node.x - 15, node.y + 10, anchor="nw")
         self.itemconfig(node.lid, fill="blue", tags="label")
         # set the text of the label with refresh label
-        self._refresh_object_label(node)
+        self.refresh_label(node)
         
     # refresh the label for one object with the current object label
-    def _refresh_object_label(self, current_object, label_type=None):
+    def refresh_label(self, obj, label_type=None, itf=False):
+        # label_type is None if we simply want to update the label value
+        # but not change the type of label displayed.
         if not label_type:
-            label_type = self._current_object_label[current_object.network_type]
-        label_id = current_object.lid
-        if current_object.class_type == "link":
-            if_label_id = current_object.ilid
+            label_type = self.current_label[obj.type.title()].lower()
+        else:
+            label_type = label_type.lower()
+        # we retrieve the id of the normal label in general, but the interface
+        # labels id (two labels) if we update the interfaces labels. 
+        label_id = obj.lid if not itf else obj.ilid
+        
+        # if it is not, it means there is no label to display. 
+        # we have one or two labels to reset to an empty string depending 
+        # on whether it is the interface labels or another one.
         if label_type == "none":
-            self.itemconfig(label_id, text="")
-        elif label_type in ("capacity", "flow", "cost", "traffic", "wctraffic"):
-            # retrieve the value of the parameter depending on label type
-            valueSD = getattr(current_object, label_type + "SD")
-            valueDS = getattr(current_object, label_type + "DS")
-            if label_type == "traffic":
-                text = str(valueSD + valueDS)
-                self.itemconfig(label_id, text=text)
+            if itf:
+                self.itemconfig(label_id[0], text="")
+                self.itemconfig(label_id[1], text="")
             else:
-                self.itemconfig(if_label_id[0], text=valueSD)
-                self.itemconfig(if_label_id[1], text=valueDS)
-        elif label_type == "interface name":
-            self.itemconfig(if_label_id[0], text=current_object.interfaceS)
-            self.itemconfig(if_label_id[1], text=current_object.interfaceD)
+                self.itemconfig(label_id, text="")
         elif label_type == "position":
-            text = "({}, {})".format(current_object.x, current_object.y)
+            text = "({}, {})".format(obj.x, obj.y)
             self.itemconfig(label_id, text=text)
         elif label_type == "coordinates":
-            text = "({}, {})".format(current_object.longitude, current_object.latitude)
-            self.itemconfig(label_id, text=text)
-        elif label_type == "ipaddress" and current_object.type == "trunk":
-            valueS = getattr(current_object, label_type + "S")
-            valueD = getattr(current_object, label_type + "D")
-            self.itemconfig(if_label_id[0], text=valueS)
-            self.itemconfig(if_label_id[1], text=valueD)
-        elif label_type == "ipaddress" and current_object.subtype == "router":
-            value = getattr(current_object, label_type)
-            self.itemconfig(label_id, text=value)
+            text = "({}, {})".format(obj.longitude, obj.latitude)
+        elif label_type in ("capacity", "flow", "cost", "traffic", "wctraffic"):
+            # retrieve the value of the parameter depending on label type
+            valueSD = getattr(obj, label_type + "SD")
+            valueDS = getattr(obj, label_type + "DS")
+            if itf:
+                self.itemconfig(label_id[0], text=valueSD)
+                self.itemconfig(label_id[1], text=valueDS)
+            # if it isn't an interface, the label type is necessarily 
+            # among traffic and wctraffic: we display the total amount of
+            # traffic going over the link (traffic sum of both directions)
+            else:
+                text = str(valueSD + valueDS)
+                self.itemconfig(label_id, text=text)
+        elif itf and label_type in ("name", "ipaddress"):
+            # to display the name of the interface, we retrieve the "interface"
+            # parameters of the corresponding trunk
+            if label_type == "name":
+                label_type = "interface"
+            valueS = getattr(obj, label_type + "S")
+            valueD = getattr(obj, label_type + "D")
+            self.itemconfig(label_id[0], text=valueS)
+            self.itemconfig(label_id[1], text=valueD)
         else:
-            self.itemconfig(label_id, text=getattr(current_object, label_type))
-        self.itemconfig(label_id, font="bold")
+            self.itemconfig(label_id, text=getattr(obj, label_type))
             
     # change label and refresh it for all objects
-    def _refresh_object_labels(self, type, var_label=None):
-        if var_label:
-            self._current_object_label[type] = var_label
-        for obj in self.ntw.pn[type].values():
-            self._refresh_object_label(obj, self._current_object_label[type])
+    def refresh_labels(self, type, label=None):
+        if label:
+            self.current_label[type] = label
+        # if we change the interface label, it is actually the trunk we
+        # need to retrieve, since that's where we store the interfaces values
+        obj_type = "trunk" if type == "Interface" else type.lower()
+        # interface is a boolean that tells the "refresh_label" function
+        # whether we want to update the interface label, or the trunk label,
+        # since they have the same name
+        itf = type == "Interface"
+        for obj in self.ntw.pn[obj_type].values():
+            self.refresh_label(obj, self.current_label[type], itf)
             
     def refresh_all_labels(self):
-        for type in self.ntw.pn:
-            self._refresh_object_labels(type)
+        for type in self.current_label:
+            self.refresh_labels(type)
             
     # show/hide display menu per type of objects
     def show_hide(self, menu, type, index):
@@ -483,10 +513,15 @@ class Scenario(tk.Canvas):
         new_label = self.display_per_type[type]*"Hide" or "Show"
         menu.entryconfigure(index, label=" ".join((new_label, type)))
         new_state = tk.NORMAL if self.display_per_type[type] else tk.HIDDEN
-        if type in self.ntw.node_class:
-            for node in filter(lambda o: o.subtype == type, self.ntw.pn["node"].values()):
-                self.itemconfig(node.image[0] if self.display_image else node.oval, state=new_state)
+        if type in self.ntw.node_type:
+            for node in self.ntw.ftr("node", type):
+                self.itemconfig(node.image[0] if self.display_image 
+                                            else node.oval, state=new_state)
                 self.itemconfig(node.lid, state=new_state)
+        elif type in self.ntw.trunk_type:
+            for trunk in self.ntw.ftr("trunk", type):
+                self.itemconfig(trunk.line, state=new_state)
+                self.itemconfig(trunk.lid, state=new_state)
         else:
             for link in self.ntw.pn[type].values():
                 self.itemconfig(link.line, state=new_state)
@@ -504,7 +539,8 @@ class Scenario(tk.Canvas):
         for layer in self.layers[self.layered_display]:
             if n.image[layer]:
                 y =  newy - layer*self.diff_y
-                self.coords(n.image[layer], newx - (n.imagex)//2, y - (n.imagey)//2)
+                coord_image = (newx - (n.imagex)//2, y - (n.imagey)//2)
+                self.coords(n.image[layer], *coord_image)
                 self.coords(n.oval[layer], newx - s, y - s, newx + s, y + s)
             self.coords(n.lid, newx - 15, newy + 10)
         
@@ -512,7 +548,8 @@ class Scenario(tk.Canvas):
         if self.layered_display:
             for layer in range(1, 3):
                 if n.layer_line[layer]:
-                    self.coords(n.layer_line[layer], newx, newy, newx, newy - layer*self.diff_y)
+                    coord = (newx, newy, newx, newy - layer*self.diff_y)
+                    self.coords(n.layer_line[layer], *coord)
     
         # update links coordinates
         for type_link in self.ntw.link_type:
@@ -532,16 +569,18 @@ class Scenario(tk.Canvas):
     def _create_link_label(self, link):
         coeff = self.compute_coeff(link)
         link.lid = self.create_text(*self.offcenter(coeff, *link.lpos), 
-                                        anchor="nw", fill="red", tags="label")
+                            anchor="nw", fill="red", tags="label", font="bold")
         # we also create the interface labels, which position is at 1/4
         # of the line between the end point and the middle point
         # source interface label coordinates:
         s = self.offcenter(coeff, *self.if_label(link))
-        link.ilid[0] = self.create_text(*s, anchor="nw", fill="red", tags="label")
+        link.ilid[0] = self.create_text(*s, anchor="nw", fill="red",
+                                                    tags="label", font="bold")
         # destination interface label coordinates:                                                        
         d = self.offcenter(coeff, *self.if_label(link, "d"))
-        link.ilid[1] = self.create_text(*d, anchor="nw", fill="red", tags="label")
-        self._refresh_object_label(link)
+        link.ilid[1] = self.create_text(*d, anchor="nw", fill="red", 
+                                                    tags="label", font="bold")
+        self.refresh_label(link)
                         
     def offcenter(self, coeff, x, y):
         # move the label off-center, so that its position depends on the 
@@ -551,7 +590,9 @@ class Scenario(tk.Canvas):
     def compute_coeff(self, link):
         # compute the slope of the link's line
         try:
-            coeff = (link.destination.y - link.source.y) / (link.destination.x - link.source.x)
+            dy = link.destination.y - link.source.y
+            dx = link.destination.x - link.source.x
+            coeff = dy / dx
         except ZeroDivisionError:
             coeff = 0
         return coeff
@@ -571,24 +612,10 @@ class Scenario(tk.Canvas):
         return if_label_x, if_label_y
                     
     def update_link_label_coordinates(self, link):
-        try:
-            coeff = (link.destination.y - link.source.y) / (link.destination.x - link.source.x)
-        except ZeroDivisionError:
-            coeff = 0
+        coeff = self.compute_coeff(link)
         self.coords(link.lid, *self.offcenter(coeff, *link.lpos))
         self.coords(link.ilid[0], *self.offcenter(coeff, *self.if_label(link)))
         self.coords(link.ilid[1], *self.offcenter(coeff, *self.if_label(link, "d")))
-        
-    def frucht(self):
-        # update the optimal pairwise distance
-        self.opd = sqrt(500*500/len(self.ntw.pn["node"].values())) if self.ntw.pn["node"].values() else 0
-        self.ntw.fruchterman(self.opd)     
-        for n in self.ntw.pn["node"].values():
-            self.move_node(n)
-        # stop job if convergence reached
-        if all(-10**(-2) < n.vx * n.vy < 10**(-2) for n in self.ntw.pn["node"].values()):
-            return self._cancel()
-        self._job = self.after(1, lambda: self.ntw.frucht())
         
     # cancel the graph drawing job
     def _cancel(self):
@@ -608,7 +635,8 @@ class Scenario(tk.Canvas):
         node.oval[layer] = self.create_oval(node.x-s, y-s, node.x+s, y+s, 
                                 outline=node.color, fill=node.color, tags=tags)
         # create/hide the image/the oval depending on the current mode
-        self.itemconfig(node.oval[layer] if self.display_image else node.image[layer], state=tk.HIDDEN)
+        self.itemconfig(node.oval[layer] if self.display_image 
+                                        else node.image[layer], state=tk.HIDDEN)
         if not layer:
             self.create_node_label(node)
             self.object_id_to_object[node.oval[layer]] = node
@@ -620,10 +648,12 @@ class Scenario(tk.Canvas):
         dict_link_to_coords = {}
         type = layer if layer == "all" else self.layers[1][layer]
         for id, link in enumerate(self.ntw.links_between(source, destination, type)):
-            d = ((id+1)//2) * 30 * (-1)**id
-            xC, yC = (xA+xB)/2 + d*sin(angle), (yA+yB)/2 - d*cos(angle)
+            d = ((id + 1) // 2) * 30 * (-1)**id
+            xC = (xA + xB) / 2 + d * sin(angle)
+            yC = (yA + yB) / 2 - d * cos(angle)
             offset = 0 if layer == "all" else layer * self.diff_y
-            dict_link_to_coords[link] = (xA, yA - offset, xC, yC - offset, xB, yB - offset)
+            coord = (xA, yA - offset, xC, yC - offset, xB, yB - offset)
+            dict_link_to_coords[link] = coord
             link.lpos = (xC, yC - offset)
         return dict_link_to_coords
         
@@ -664,7 +694,7 @@ class Scenario(tk.Canvas):
         self.tag_lower(new_link.line)
         self.object_id_to_object[new_link.line] = new_link
         self._create_link_label(new_link)
-        self._refresh_object_label(new_link)
+        self.refresh_label(new_link)
         
     def erase_all(self):
         self.delete("all")
@@ -701,7 +731,7 @@ class Scenario(tk.Canvas):
                     
     def remove_objects(self, *objects):
         for obj in objects:
-            if obj.network_type not in ("traffic", "route"):
+            if obj.type not in ("traffic", "route"):
                 for AS in list(obj.AS):
                     AS.management.remove_from_AS(obj)
             if obj.class_type == "node":
@@ -731,7 +761,7 @@ class Scenario(tk.Canvas):
                     for edge in (obj.source, obj.destination):
                         # we check if there still are other links of the same
                         # type (i.e at the same layer) between the edge nodes
-                        if not self.ntw.graph[edge][obj.network_type]:
+                        if not self.ntw.graph[edge][obj.type]:
                             # if that's not the case, we delete the upper-layer
                             # projection of the edge nodes, and reset the 
                             # associated "layer to projection id" dictionnary
@@ -745,9 +775,9 @@ class Scenario(tk.Canvas):
     def draw_objects(self, objects, random_drawing):
         self._cancel()
         for obj in objects:
-            if obj.network_type == "node":
+            if obj.type == "node":
                 if random_drawing:
-                    obj.x, obj.y = random.randint(100,700), random.randint(100,700)
+                    obj.x, obj.y = randint(100,700), randint(100,700)
                     self.move_node(obj)
                 if not obj.image[0]: 
                     self.create_node(obj)

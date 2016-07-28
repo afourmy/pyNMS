@@ -31,7 +31,7 @@ class Area(object):
         
     def add_to_area(self, *objects):
         for obj in objects:
-            self.pa[obj.network_type].add(obj)
+            self.pa[obj.type].add(obj)
             obj.AS[self.AS].add(self)
             
     def remove_from_area(self, *objects):

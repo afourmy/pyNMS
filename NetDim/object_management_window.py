@@ -120,13 +120,13 @@ class ObjectManagementWindow(FocusTopLevel):
             if property == "name":
                 name = getattr(self.current_obj, property)
                 if name != str_var.get():
-                    if self.current_obj.network_type == "node":
+                    if self.current_obj.type == "node":
                         adj_links = self.ms.cs.ntw.graph.pop(self.current_obj, None)
                     old_name = name
-                    del self.ms.cs.ntw.pn[self.current_obj.network_type][old_name]
+                    del self.ms.cs.ntw.pn[self.current_obj.type][old_name]
                     setattr(self.current_obj, property, str_var.get())
-                    self.ms.cs.ntw.pn[self.current_obj.network_type][str_var.get()] = self.current_obj
-                    if self.current_obj.network_type == "node":
+                    self.ms.cs.ntw.pn[self.current_obj.type][str_var.get()] = self.current_obj
+                    if self.current_obj.type == "node":
                         self.ms.cs.ntw.graph[self.current_obj] = adj_links
             elif property == "path":
                 setattr(self.current_obj, property, self.current_path)
@@ -138,7 +138,7 @@ class ObjectManagementWindow(FocusTopLevel):
                         value = self.ms.prop_to_type[property](str_var.get())
                     setattr(self.current_obj, property, value)
             # refresh the label if it was changed
-            self.ms.cs._refresh_object_label(self.current_obj)
+            self.ms.cs.refresh_label(self.current_obj)
             # move the node on the canvas in case it's coordinates were updated
             if self.current_obj.class_type == "node":
                 self.ms.cs.move_node(self.current_obj)

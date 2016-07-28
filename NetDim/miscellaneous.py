@@ -44,7 +44,8 @@ class CustomTopLevel(tk.Toplevel):
         self.configure(background="#A1DBCD")        
         ttk.Style().configure("TButton", background="#A1DBCD")
         ttk.Style().configure("TLabel", background="#A1DBCD")
-        ttk.Style().configure("Treeview", background="#A1DBCD", foreground="black")
+        ttk.Style().configure("Treeview", background="#A1DBCD", 
+                                                            foreground="black")
         ttk.Style().configure('TLabelframe', background="#A1DBCD")
         ttk.Style().configure('TLabelframe.Label', background="#A1DBCD")
         ttk.Style().configure('TCheckbutton', background="#A1DBCD")
@@ -54,8 +55,9 @@ class FocusTopLevel(CustomTopLevel):
         super().__init__()
         
         self.var_focus = tk.IntVar()
-        self.checkbutton_focus = tk.Checkbutton(self, text="Focus", bg="#A1DBCD", variable=self.var_focus, command=self.change_focus)
-        self.checkbutton_focus.grid(row=0, column=0)
+        self.checkbutton_focus = tk.Checkbutton(self, text="Focus", 
+            bg="#A1DBCD", variable=self.var_focus, command=self.change_focus)
+        self.checkbutton_focus.grid(row=0, column=0, sticky=tk.W)
             
     def change_focus(self):
         self.wm_attributes("-topmost", self.var_focus.get())

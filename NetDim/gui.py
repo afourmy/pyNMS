@@ -180,13 +180,20 @@ class NetDim(tk.Tk):
         "Interface",
         "Name", 
         "Distance", 
-        "Cost", 
-        "Capacity", 
-        "Flow", 
         "Traffic", 
         "WCTraffic",
+        )),
+        
+        ("Interface", 
+        (
+        "None", 
+        "Name", 
+        "Cost",
+        "Capacity",
+        "Flow",
         "IPaddress",
-        "Interface name"
+        "Traffic", 
+        "WCTraffic",
         )),
         
         ("Route", 
@@ -309,7 +316,7 @@ class NetDim(tk.Tk):
         "costDS": "Cost D -> S", 
         "cost": "Cost",
         "capacitySD": "Capacity S -> D", 
-        "capacityDS": "Capacity S -> S", 
+        "capacityDS": "Capacity D -> S", 
         "traffic": "Traffic",
         "trafficSD": "Traffic S -> D", 
         "trafficDS": "Traffic D -> S", 
@@ -376,10 +383,10 @@ class NetDim(tk.Tk):
         menu_options = tk.Menu(menubar, tearoff=0)
         for obj_type, label_type in self.object_label.items():
             menu_type = tk.Menu(menubar, tearoff=0)
-            for lbl in label_type:
-                cmd = lambda o=obj_type, l=lbl: self.cs._refresh_object_labels(o.lower(), l.lower())
-                menu_type.add_command(label=lbl, command=cmd)
             menu_options.add_cascade(label=obj_type + " label", menu=menu_type)
+            for lbl in label_type:
+                cmd = lambda o=obj_type, l=lbl: self.cs.refresh_labels(o, l)
+                menu_type.add_command(label=lbl, command=cmd)
             
         menu_options.add_command(label="Change display", command=lambda: self.cs.change_display())
         
