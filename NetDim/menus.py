@@ -5,6 +5,7 @@
 import tkinter as tk
 import AS
 import config
+import routing_table
 import drawing_options_window
                                 
 class RightClickMenu(tk.Menu):
@@ -47,8 +48,8 @@ class RightClickMenu(tk.Menu):
             node ,= scenario.so["node"]
             self.add_command(label="Configuration", 
                         command=lambda: self.configure(node, scenario))
-            self.add_command(label="RFT builder", 
-                        command=lambda: scenario.ntw.RFT_SP_tree_builder(node))
+            self.add_command(label="Routing table", 
+                        command=lambda: self.routing_table(node, scenario))
                         
             self.add_separator()
         
@@ -119,6 +120,10 @@ class RightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def configure(self, node, scenario):
         config.Configuration(node, scenario)
+        
+    @empty_selection_and_destroy_menu
+    def routing_table(self, node, scenario):
+        routing_table.RoutingTable(node, scenario)
     
     @empty_selection_and_destroy_menu
     def show_object_properties(self, scenario):

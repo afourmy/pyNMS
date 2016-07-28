@@ -6,13 +6,17 @@ import miscellaneous
 import objects
 import AS
 import random
-import numpy as np
+from network_functions import compute_network
 from math import cos, sin, asin, radians, sqrt
-from cvxopt import matrix, glpk
 from collections import defaultdict, deque, OrderedDict
 from heapq import heappop, heappush
 from operator import getitem, itemgetter
 from itertools import combinations
+try:
+    import numpy as np
+    from cvxopt import matrix, glpk
+except:
+    pass
 
 class Network(object):
     
@@ -188,8 +192,7 @@ class Network(object):
     def attached_subnetworks(self, node):
         for _, trunk in self.graph[node]["trunk"]:
             ip, mask = trunk("ipaddress", node), trunk("subnetmask", node)
-            # TODO compute the subnetwork with ip addresses library
-            yield subnetwork
+            yield compute_network(ip, mask)
             
     def calculate_all(self):
         # reset the traffic for all trunks
@@ -722,7 +725,7 @@ class Network(object):
     
     ## 1) RFT builder for LB-free networks: subnetworks / interfaces mapping
     
-    def RFT_SP_tree_builder(
+    def RFT_builder(
                self, 
                source, 
                allowed_trunks = None, 
@@ -752,9 +755,9 @@ class Network(object):
                 # to the exit interface, which is the interface of the neighbor
                 # of the source node.
                 if node != source:
-                    for subntw in self.attached_subnetworks(node):
-                        if subntw not in visited_subnetworks:
-                            visited_subnetworks.add(subntw)
+                    for subnetwork in self.attached_subnetworks(node):
+                        if subnetwork not in visited_subnetworks:
+                            visited_subnetworks.add(subnetwork)
                             mapping[exit_if] |= {subnetwork}
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     if node == source:
@@ -762,6 +765,12 @@ class Network(object):
                         # mentioned in the routing table, not the IP of the 
                         # interface directly attached to the source node.
                         exit_if = adj_trunk("ipaddress", neighbor)
+                        # we will also compute the subnetwork of the attached
+                        # interface to add it to the set of visited subnetworks,
+                        # so that it isn't added to the tree: it is a directly 
+                        # connected interface
+                        mask = adj_trunk("subnetmask", neighbor)
+                        visited_subnetworks.add(compute_network(exit_if, mask))
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes:
                         continue
@@ -770,6 +779,7 @@ class Network(object):
                         continue
                     heappush(heap, (dist + adj_trunk("cost", node), neighbor, 
                                                                     exit_if))
+        print(mapping)
         return mapping
         
     
