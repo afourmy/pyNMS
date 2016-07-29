@@ -8,6 +8,8 @@ class RoutingTable(tk.Toplevel):
         self.cs = scenario
         self.rt = ScrolledText(self, wrap="word", bg="beige")
         self.wm_attributes("-topmost", True)
+        
+        types = {"OSPF": "O", "RIP": "R", "ISIS": "i"}
 
         codes = """
 Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
@@ -34,14 +36,13 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
             c_if = "C       {ntw} is directly connected, {exit_if}\n"\
                                                 .format(ntw=ntw, exit_if=exit_if)  
             self.rt.insert("insert", c_if)
-            
-        mapping = self.cs.ntw.RFT_builder(node)
-        
-        for exit_if, subnetworks in mapping.items():
-            for ntw in subnetworks:
-                route = "O       {ntw} via {exit_if}\n"\
-                                            .format(ntw=ntw, exit_if=exit_if)
-                self.rt.insert("insert", route)
+                
+        for AS in node.AS:
+            for exit_if, subnetworks in node.routing_table[AS].items():
+                for ntw in subnetworks:
+                    route = "{type}       {ntw} via {exit_if}\n"\
+                        .format(type=types[AS.type], ntw=ntw, exit_if=exit_if)
+                    self.rt.insert("insert", route)
                 
         self.rt.pack(fill=tk.BOTH, expand=tk.YES)
                                             

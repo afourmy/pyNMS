@@ -63,7 +63,7 @@ class ASManagement(FocusTopLevel):
         self.dict_listbox = {}
         for index, type in enumerate(self.obj_type):
             lbl = tk.Label(self, bg="#A1DBCD", text="".join(("AS ",type,"s")))
-            listbox = ObjectListbox(self, activestyle="none", width=15, height=7)
+            listbox = ObjectListbox(self, activestyle="none", width=15, height=7, selectmode="extended")
             self.dict_listbox[type] = listbox
             yscroll = tk.Scrollbar(self, 
                     command=self.dict_listbox[type].yview, orient=tk.VERTICAL)
@@ -170,29 +170,29 @@ class ASManagement(FocusTopLevel):
     ## Functions used directly from the AS Management window
         
     # function to highlight the selected object on the canvas
-    def highlight_object(self, event, obj_type):
-        selected_object = self.dict_listbox[obj_type].selected()
-        selected_object = self.scenario.ntw.of(name=selected_object, _type=obj_type)
+    def highlight_object(self, event, obj_type):        
         self.scenario.unhighlight_all()
-        self.scenario.highlight_objects(selected_object)
+        for selected_object in self.dict_listbox[obj_type].selected():
+            selected_object = self.scenario.ntw.of(name=selected_object, _type=obj_type)
+            self.scenario.highlight_objects(selected_object)
         
     # remove the object selected in "obj_type" listbox from the AS
     def remove_selected(self, obj_type):
         # remove and retrieve the selected object in the listbox
-        selected_obj = self.dict_listbox[obj_type].pop_selected()
-        # remove it from the AS as well
-        self.AS.remove_from_AS(self.scenario.ntw.of(name=selected_obj, _type=obj_type))
+        for selected_obj in self.dict_listbox[obj_type].pop_selected():
+            # remove it from the AS as well
+            self.AS.remove_from_AS(self.scenario.ntw.of(name=selected_obj, _type=obj_type))
         
     def add_to_edges(self):
-        selected_node = self.dict_listbox["node"].selected()
-        self.dict_listbox["edge"].insert(selected_node) 
-        selected_node = self.scenario.ntw.nf(name=selected_node)
-        self.AS.add_to_edges(selected_node)
+        for selected_node in self.dict_listbox["node"].selected():
+            self.dict_listbox["edge"].insert(selected_node) 
+            selected_node = self.scenario.ntw.nf(name=selected_node)
+            self.AS.add_to_edges(selected_node)
             
     def remove_from_edges(self):
-        selected_edge = self.dict_listbox["edge"].pop_selected()
-        selected = self.scenario.ntw.nf(name=selected_edge) 
-        self.AS.remove_from_edges(selected)
+        for selected_edge in self.dict_listbox["edge"].pop_selected():
+            selected = self.scenario.ntw.nf(name=selected_edge) 
+            self.AS.remove_from_edges(selected)
         
     def add_to_AS(self, area, *objects):
         self.AS.add_to_AS(self.AS.areas[area], *objects)

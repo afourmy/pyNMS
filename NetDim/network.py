@@ -6,6 +6,7 @@ import miscellaneous
 import objects
 import AS
 import random
+import warnings
 from network_functions import compute_network
 from math import cos, sin, asin, radians, sqrt
 from collections import defaultdict, deque, OrderedDict
@@ -16,7 +17,7 @@ try:
     import numpy as np
     from cvxopt import matrix, glpk
 except:
-    pass
+    warnings.warn("Package missing: linear programming functions will fail")
 
 class Network(object):
     
@@ -186,13 +187,6 @@ class Network(object):
             for neighbor, trunk in self.graph[nodeA][_type]:
                 if neighbor == nodeB:
                     yield trunk
-                    
-    # find the ip addresses of all subnetworks attached to a router.
-    # we use it to built the routing table after computing the SPT
-    def attached_subnetworks(self, node):
-        for _, trunk in self.graph[node]["trunk"]:
-            ip, mask = trunk("ipaddress", node), trunk("subnetmask", node)
-            yield compute_network(ip, mask)
             
     def calculate_all(self):
         # reset the traffic for all trunks
@@ -255,7 +249,14 @@ class Network(object):
             # we dimension the trunks of all AS routes 
             AS.management.link_dimensioning()
         self.ip_allocation()
+        self.subnetwork_allocation()
         self.interface_allocation()
+        
+        # we compute the routing table of all routers
+        for router in self.ftr("node", "router"):
+            for AS in router.AS:
+                router.routing_table[AS] = self.RFT_builder(router, AS)
+            
         self.sco.refresh_all_labels()
         
     def ip_allocation(self):
@@ -292,7 +293,13 @@ class Network(object):
             trunk.ipaddressS = address + str(cpt_ip)
             trunk.ipaddressD = address + str(cpt_ip + 1)
             cpt_ip += 4
-                
+    
+    def subnetwork_allocation(self):
+        # we update the subnetwork property for all trunks
+        for trunk in self.pn["trunk"].values():
+            src = trunk.source
+            ip, mask = trunk("ipaddress", src), trunk("subnetmask", src)
+            trunk.sntw = compute_network(ip, mask)
 
     def interface_allocation(self):
         for node in self.graph:
@@ -499,6 +506,16 @@ class Network(object):
     ## 5) OSPF routing algorithm
     
     def OSPF_routing(self, source, target, OSPF_AS, a_n=None, a_t=None):
+        # this functions simulates OSPF routing.
+        # It will work in 99% cases, but fails to properly consider:
+        # - area hijacking: an ABR may advertise a cost which is wrong in
+        # practice, because of intra-area priority. This could mislead the 
+        # backbone routers that will not choose the real shortest path because
+        # they don't know the topology of the area of the ABR that advertises
+        # the wrong cost.
+        # See "Area hijacking in OSPF" 
+        # - load balancing: if load-balancing (cef) is enabled, packets
+        # could be sent on several exit interfaces, but A* finds only one path.
         
         if a_n is None:
             a_n = OSPF_AS.pAS["node"]
@@ -723,23 +740,14 @@ class Network(object):
         
     ## Model 2:
     
-    ## 1) RFT builder for LB-free networks: subnetworks / interfaces mapping
+    ## 1) RFT builder for LB-free AS: subnetworks / interfaces mapping
     
-    def RFT_builder(
-               self, 
-               source, 
-               allowed_trunks = None, 
-               allowed_nodes = None
-               ):
+    def RFT_builder(self, source, AS):
                 
-        if allowed_trunks is None:
-            allowed_trunks = set(self.pn["trunk"].values())
-        if allowed_nodes is None:
-            allowed_nodes = set(self.pn["node"].values())
-            
         visited = set()
-        # we keep track of all already yielded subnetworks so that we 
-        # don't yield them more than once.
+        allowed_nodes, allowed_trunks = AS.pAS["node"], AS.pAS["trunk"]
+        # we keep track of all already visited subnetworks so that we 
+        # don't add them more than once to the mapping dict.
         visited_subnetworks = set()
         heap = [(0, source, None)]
         # dictionnary that binds IP addresses to an exit interface of the source
@@ -755,10 +763,10 @@ class Network(object):
                 # to the exit interface, which is the interface of the neighbor
                 # of the source node.
                 if node != source:
-                    for subnetwork in self.attached_subnetworks(node):
-                        if subnetwork not in visited_subnetworks:
-                            visited_subnetworks.add(subnetwork)
-                            mapping[exit_if] |= {subnetwork}
+                    for _, trunk in self.graph[node]["trunk"]:
+                        if trunk.sntw not in visited_subnetworks:
+                            visited_subnetworks.add(trunk.sntw)
+                            mapping[exit_if] |= {trunk.sntw}
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     if node == source:
                         # it is the IP of the Next-Hop interface which is 
@@ -769,8 +777,7 @@ class Network(object):
                         # interface to add it to the set of visited subnetworks,
                         # so that it isn't added to the tree: it is a directly 
                         # connected interface
-                        mask = adj_trunk("subnetmask", neighbor)
-                        visited_subnetworks.add(compute_network(exit_if, mask))
+                        visited_subnetworks.add(adj_trunk.sntw)
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes:
                         continue
@@ -779,7 +786,6 @@ class Network(object):
                         continue
                     heappush(heap, (dist + adj_trunk("cost", node), neighbor, 
                                                                     exit_if))
-        print(mapping)
         return mapping
         
     

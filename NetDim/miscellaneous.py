@@ -17,7 +17,8 @@ class ObjectListbox(tk.Listbox):
         return obj in self.get(0, "end")
         
     def selected(self):
-        return self.get(self.curselection())
+        for selected_line in self.curselection():
+            yield self.get(selected_line)
         
     def pop(self, obj):
         if str(obj) in self:
@@ -26,8 +27,12 @@ class ObjectListbox(tk.Listbox):
             return obj
         
     def pop_selected(self):
-        selection = self.selected()
-        return self.pop(selection)
+        # the tricky part here is that indexes stored in curselection are 
+        # retrieved once and for all, and as we remove objects from the listbox, 
+        # the real index is updated, and we have to decrease the curselection
+        # index by how many objects we've deleted so far.
+        for idx, obj in enumerate(self.curselection()):
+            yield self.pop(self.get(obj - idx))
         
     def clear(self):
         self.delete(0, tk.END)

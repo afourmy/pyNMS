@@ -64,11 +64,9 @@ class Router(Node):
     imagex, imagey = 33, 25
     
     def __init__(self, *args):
-        args = list(args)
-        if len(args) > 3:
-            self.routing_table = args.pop()
-        else:
-            self.routing_table = None
+        # routing table is a dictionnary that associates 
+        # an AS to a routing table
+        self.routing_table = {}
         super().__init__(*args)
         
 class Switch(Node):
@@ -224,6 +222,7 @@ class Ethernet(Trunk):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.sntw = None
         
 class WDMFiber(Trunk):
     
