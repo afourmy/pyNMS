@@ -4,12 +4,13 @@ import tkinter as tk
 
 class RoutingTable(tk.Toplevel):
     def __init__(self, node, scenario):
-        super().__init__(width=1500) 
+        super().__init__() 
         self.cs = scenario
         self.rt = ScrolledText(self, wrap="word", bg="beige")
         self.wm_attributes("-topmost", True)
         
         types = {"OSPF": "O", "RIP": "R", "ISIS": "i"}
+        # faire ospf: ("O", 110), 
 
         codes = """
 Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
@@ -27,9 +28,7 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
 
         for _, adj_trunk in scenario.ntw.graph[node]["trunk"]:
             exit_if = adj_trunk("interface", node)
-            exit_if_ip = adj_trunk("ipaddress", node)
-            exit_if_mask = adj_trunk("subnetmask", node)
-            ntw = compute_network(exit_if_ip, exit_if_mask)
+            ntw = adj_trunk.sntw
             
             # entry for a connected interface in the routing table.
             # it is the summarized ip of both interfaces of the connected link.
@@ -38,11 +37,12 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
             self.rt.insert("insert", c_if)
                 
         for AS in node.AS:
-            for exit_if, subnetworks in node.routing_table[AS].items():
-                for ntw in subnetworks:
-                    route = "{type}       {ntw} via {exit_if}\n"\
-                        .format(type=types[AS.type], ntw=ntw, exit_if=exit_if)
-                    self.rt.insert("insert", route)
+            # rajouter l'interface
+            for (rtype, sntw), (ex_ip, ex_int) in node.routing_table[AS].items():
+                rtype = rtype + " "*(8 - len(rtype))
+                route = "{rtype}{sntw} via {ex_ip}, {ex_int}\n"\
+                    .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)
+                self.rt.insert("insert", route)
                 
         self.rt.pack(fill=tk.BOTH, expand=tk.YES)
                                             

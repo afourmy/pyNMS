@@ -751,10 +751,10 @@ class Network(object):
         visited_subnetworks = set()
         heap = [(0, source, None)]
         # dictionnary that binds IP addresses to an exit interface of the source
-        mapping = defaultdict(set)
+        mapping = {}
         
         while heap:
-            dist, node, exit_if = heappop(heap)
+            dist, node, path_trunk, exit = heappop(heap)
             if node not in visited:
                 visited.add(node)
                 # if node hadn't been visited yet, it means that the
@@ -764,20 +764,30 @@ class Network(object):
                 # of the source node.
                 if node != source:
                     for _, trunk in self.graph[node]["trunk"]:
-                        if trunk.sntw not in visited_subnetworks:
-                            visited_subnetworks.add(trunk.sntw)
-                            mapping[exit_if] |= {trunk.sntw}
+                        ex_tk, ex_ip, ex_int = exit
+                        rtype = "O IA" if not trunk.AS[AS] & ex_tk.AS[AS] else "O"
+                        if ("O", trunk.sntw) in visited_subnetworks: 
+                            continue
+                        else:
+                            visited_subnetworks.add((rtype, trunk.sntw))
+                            mapping[(rtype, trunk.sntw)] = (ex_ip, ex_int)
+                            if rtype == "O":
+                                mapping.pop(("O IA", trunk.sntw), None)
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     if node == source:
                         # it is the IP of the Next-Hop interface which is 
                         # mentioned in the routing table, not the IP of the 
                         # interface directly attached to the source node.
-                        exit_if = adj_trunk("ipaddress", neighbor)
-                        # we will also compute the subnetwork of the attached
+                        exit = (adj_trunk, 
+                                adj_trunk("ipaddress", neighbor),
+                                adj_trunk("interface", source)
+                                )
+                        # we compute the subnetwork of the attached
                         # interface to add it to the set of visited subnetworks,
                         # so that it isn't added to the tree: it is a directly 
                         # connected interface
-                        visited_subnetworks.add(adj_trunk.sntw)
+                        visited_subnetworks.add(("O", adj_trunk.sntw))
+                        visited_subnetworks.add(("O IA", adj_trunk.sntw))
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes:
                         continue
@@ -785,8 +795,67 @@ class Network(object):
                     if adj_trunk not in allowed_trunks: 
                         continue
                     heappush(heap, (dist + adj_trunk("cost", node), neighbor, 
-                                                                    exit_if))
+                                                                        exit))
         return mapping
+    
+    # def RFT_builder(self, source, AS):
+    #             
+    #     visited = set()
+    #     allowed_nodes, allowed_trunks = AS.pAS["node"], AS.pAS["trunk"]
+    #     # we keep track of all already visited subnetworks so that we 
+    #     # don't add them more than once to the mapping dict.
+    #     visited_subnetworks = set()
+    #     heap = [(0, source, [], None)]
+    #     # dictionnary that binds IP addresses to an exit interface of the source
+    #     mapping = {}
+    #     
+    #     while heap:
+    #         dist, node, path_trunk, exit = heappop(heap)
+    #         if (node, tuple(path_trunk)) not in visited:
+    #             visited.add((node, tuple(path_trunk)))
+    #             # if node hadn't been visited yet, it means that the
+    #             # current path is the shortest to reach this node.
+    #             # we associate all subnetwork addresses attached to the node 
+    #             # to the exit interface, which is the interface of the neighbor
+    #             # of the source node.
+    #             if node != source:
+    #                 for _, trunk in self.graph[node]["trunk"]:
+    #                     ex_tk, ex_ip, ex_int = exit
+    #                     rtype = "O IA" if not trunk.AS[AS] & ex_tk.AS[AS] else "O"
+    #                     if ("O", trunk.sntw) in visited_subnetworks: 
+    #                         continue
+    #                     else:
+    #                         visited_subnetworks.add((rtype, trunk.sntw))
+    #                         mapping[(rtype, trunk.sntw)] = (ex_ip, ex_int)
+    #                         if rtype == "O":
+    #                             mapping.pop(("O IA", trunk.sntw), None)
+    #             for neighbor, adj_trunk in self.graph[node]["trunk"]:
+    #                 if adj_trunk in path_trunk:
+    #                     continue
+    #                 if node == source:
+    #                     # it is the IP of the Next-Hop interface which is 
+    #                     # mentioned in the routing table, not the IP of the 
+    #                     # interface directly attached to the source node.
+    #                     exit = (adj_trunk, 
+    #                             adj_trunk("ipaddress", neighbor),
+    #                             adj_trunk("interface", source)
+    #                             )
+    #                     # we compute the subnetwork of the attached
+    #                     # interface to add it to the set of visited subnetworks,
+    #                     # so that it isn't added to the tree: it is a directly 
+    #                     # connected interface
+    #                     visited_subnetworks.add(("O", adj_trunk.sntw))
+    #                     visited_subnetworks.add(("O IA", adj_trunk.sntw))
+    #                 # excluded and allowed nodes
+    #                 if neighbor not in allowed_nodes:
+    #                     cont
+    #                     inue
+    #                 # excluded and allowed trunks
+    #                 if adj_trunk not in allowed_trunks: 
+    #                     continue
+    #                 heappush(heap, (dist + adj_trunk("cost", node), neighbor, 
+    #                                             path_trunk + [adj_trunk], exit))
+    #     return mapping
         
     
     ## 2) RFT builder for LB-enabled networks: ECMP tree from source node

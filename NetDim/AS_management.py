@@ -384,21 +384,21 @@ class ASManagement(FocusTopLevel):
         self.dict_listbox["area names"].insert(name)
 
     def delete_area(self):
-        selected_area_name = self.dict_listbox["area names"].pop_selected()
-        selected_area = self.AS.area_factory(name=selected_area_name)
-        self.AS.delete_area(selected_area)
+        for area_name in self.dict_listbox["area names"].pop_selected():
+            selected_area = self.AS.area_factory(name=selected_area_name)
+            self.AS.delete_area(selected_area)
                 
     def display_area(self, event):
-        area = self.dict_listbox["area names"].selected()
-        area = self.AS.area_factory(area)
-        self.scenario.unhighlight_all()
-        self.scenario.highlight_objects(*(area.pa["node"] | area.pa["trunk"]))
-        self.dict_listbox["area nodes"].clear()
-        self.dict_listbox["area trunks"].clear()
-        for node in area.pa["node"]:
-            self.dict_listbox["area nodes"].insert(node)
-        for trunk in area.pa["trunk"]:
-            self.dict_listbox["area trunks"].insert(trunk)
+        for area in self.dict_listbox["area names"].selected():
+            area = self.AS.area_factory(area)
+            self.scenario.unhighlight_all()
+            self.scenario.highlight_objects(*(area.pa["node"] | area.pa["trunk"]))
+            self.dict_listbox["area nodes"].clear()
+            self.dict_listbox["area trunks"].clear()
+            for node in area.pa["node"]:
+                self.dict_listbox["area nodes"].insert(node)
+            for trunk in area.pa["trunk"]:
+                self.dict_listbox["area trunks"].insert(trunk)
             
     ## Functions used to modify AS from the right-click menu
     
