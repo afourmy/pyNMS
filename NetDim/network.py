@@ -189,6 +189,15 @@ class Network(object):
                     yield trunk
             
     def calculate_all(self):
+        self.ip_allocation()
+        self.subnetwork_allocation()
+        self.interface_allocation()
+        
+        # we compute the routing table of all routers
+        for router in self.ftr("node", "router"):
+            for AS in router.AS:
+                router.routing_table = self.RFT_builder(router, AS)
+        
         # reset the traffic for all trunks
         for trunk in self.pn["trunk"].values():
             trunk.trafficSD = trunk.trafficDS = 0.
@@ -245,17 +254,9 @@ class Network(object):
                 # update of the previous node
                 prec_node = link.source if sd == "DS" else link.destination
                 
-        for AS in self.pnAS.values():
-            # we dimension the trunks of all AS routes 
-            AS.management.link_dimensioning()
-        self.ip_allocation()
-        self.subnetwork_allocation()
-        self.interface_allocation()
-        
-        # we compute the routing table of all routers
-        for router in self.ftr("node", "router"):
-            for AS in router.AS:
-                router.routing_table[AS] = self.RFT_builder(router, AS)
+        # for AS in self.pnAS.values():
+        #     # we dimension the trunks of all AS routes 
+        #     AS.management.link_dimensioning()
             
         self.sco.refresh_all_labels()
         
@@ -740,7 +741,27 @@ class Network(object):
         
     ## Model 2:
     
-    ## 1) RFT builder for LB-free AS: subnetworks / interfaces mapping
+    ## 1) RFT-based routing
+    
+    def RFT_path_finder(self, source, destination):
+        for _, trunk in self.graph[destination]["trunk"]:
+            break
+        dest_int = trunk.sntw
+        curr_router, curr_int = source, None
+        path_node, path_trunk = [], []
+        print(source, destination, dest_int)
+        while curr_router != destination:
+            *_, curr_router, curr_trunk = curr_router.routing_table[dest_int]
+            print(curr_router)
+            if curr_router not in path_node:
+                path_node.append(curr_router)
+                path_trunk.append(curr_trunk)
+            else:
+                break
+        print(path_node, path_trunk)
+        return path_node, path_trunk
+     
+    ## 2) RFT builder for LB-free AS: subnetworks / interfaces mapping
     
     def RFT_builder(self, source, AS):
                 
@@ -749,53 +770,70 @@ class Network(object):
         # we keep track of all already visited subnetworks so that we 
         # don't add them more than once to the mapping dict.
         visited_subnetworks = set()
-        heap = [(0, source, None)]
+        heap = [(0, source, False, None)]
         # dictionnary that binds IP addresses to an exit interface of the source
         mapping = {}
+        # source area: we make sure that if the node is connected to an area,
+        # the path we find to any subnetwork in that area is an intra-area path.
+        src_areas = source.AS[AS]
         
         while heap:
-            dist, node, path_trunk, exit = heappop(heap)
-            if node not in visited:
-                visited.add(node)
-                # if node hadn't been visited yet, it means that the
-                # current path is the shortest to reach this node.
-                # we associate all subnetwork addresses attached to the node 
-                # to the exit interface, which is the interface of the neighbor
-                # of the source node.
+            #TODO droit que de toucher qu'une seule fois le backbone au maximum
+            # si on a déjà été dans le backbone plus le droit d'y retourner 
+            # de quelque manière que ce soit
+            
+            dist, node, backbone, exit = heappop(heap)
+            if not backbone:
+                backbone = len(node.AS[AS]) > 1
+            # if (exit, node) hasn't been visited yet, it means that the
+            # current path is the shortest to reach this node via this
+            # exit interface.
+            # we associate all subnetwork addresses attached to the node 
+            # to the exit interface (the interface of the neighbor
+            # of the source node), provided that this subnetwork hasn't been
+            # reached from another interface before that, and that it isn't
+            # an intra-area path for an area to which the source belongs.
+            if (exit, node) not in visited:
+                visited.add((exit, node))
                 if node != source:
                     for _, trunk in self.graph[node]["trunk"]:
-                        ex_tk, ex_ip, ex_int = exit
-                        rtype = "O IA" if not trunk.AS[AS] & ex_tk.AS[AS] else "O"
-                        if ("O", trunk.sntw) in visited_subnetworks: 
-                            continue
-                        else:
-                            visited_subnetworks.add((rtype, trunk.sntw))
-                            mapping[(rtype, trunk.sntw)] = (ex_ip, ex_int)
-                            if rtype == "O":
-                                mapping.pop(("O IA", trunk.sntw), None)
+                        ex_tk, ex_ip, ex_int, nh, nt = exit
+                        # we check if the trunk has any common area with the
+                        # exit trunk: if it does not, it is an inter-area route.
+                        rtype = "O" if (trunk.AS[AS] & ex_tk.AS[AS]) else "O IA"
+                        if (rtype, trunk.sntw) not in visited_subnetworks:
+                            if ("O", trunk.sntw) in visited_subnetworks:
+                                continue
+                            else:
+                                visited_subnetworks.add((rtype, trunk.sntw))
+                                mapping[trunk.sntw] = (rtype, ex_ip, ex_int, nh, nt)
+                # if backbone == 2:
+                #     break
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     if node == source:
                         # it is the IP of the Next-Hop interface which is 
                         # mentioned in the routing table, not the IP of the 
                         # interface directly attached to the source node.
-                        exit = (adj_trunk, 
-                                adj_trunk("ipaddress", neighbor),
-                                adj_trunk("interface", source)
-                                )
+                        ex_ip = adj_trunk("ipaddress", neighbor)
+                        ex_int = adj_trunk("interface", source)
+                        exit = (adj_trunk, ex_ip, ex_int, neighbor, adj_trunk) 
                         # we compute the subnetwork of the attached
                         # interface to add it to the set of visited subnetworks,
                         # so that it isn't added to the tree: it is a directly 
                         # connected interface
-                        visited_subnetworks.add(("O", adj_trunk.sntw))
-                        visited_subnetworks.add(("O IA", adj_trunk.sntw))
+                        mapping[adj_trunk.sntw] = ("C", ex_ip, ex_int, neighbor, adj_trunk)
+                        for rtype in ("O", "O IA"):
+                            visited_subnetworks.add((rtype, adj_trunk.sntw))
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes:
                         continue
                     # excluded and allowed trunks
                     if adj_trunk not in allowed_trunks: 
                         continue
+                    if backbone and len(node.AS[AS]) == 1 and len(neighbor.AS[AS]) > 1:
+                        backbone = 2
                     heappush(heap, (dist + adj_trunk("cost", node), neighbor, 
-                                                                        exit))
+                                                                backbone, exit))
         return mapping
     
     # def RFT_builder(self, source, AS):

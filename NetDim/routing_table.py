@@ -36,13 +36,12 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
                                                 .format(ntw=ntw, exit_if=exit_if)  
             self.rt.insert("insert", c_if)
                 
-        for AS in node.AS:
-            # rajouter l'interface
-            for (rtype, sntw), (ex_ip, ex_int) in node.routing_table[AS].items():
-                rtype = rtype + " "*(8 - len(rtype))
-                route = "{rtype}{sntw} via {ex_ip}, {ex_int}\n"\
-                    .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)
-                self.rt.insert("insert", route)
+        # rajouter l'interface
+        for sntw, (rtype, ex_ip, ex_int, *_) in node.routing_table.items():
+            rtype = rtype + " "*(8 - len(rtype))
+            route = "{rtype}{sntw} via {ex_ip}, {ex_int}\n"\
+                .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)
+            self.rt.insert("insert", route)
                 
         self.rt.pack(fill=tk.BOTH, expand=tk.YES)
                                             

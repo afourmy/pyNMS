@@ -11,7 +11,7 @@ class ASManagement(FocusTopLevel):
     
     def __init__(self, scenario, AS, imp):
         super().__init__()
-        self.scenario = scenario
+        self.cs = scenario
         self.AS = AS
         self.failed_trunk = None
         self.title("Manage AS")
@@ -171,27 +171,27 @@ class ASManagement(FocusTopLevel):
         
     # function to highlight the selected object on the canvas
     def highlight_object(self, event, obj_type):        
-        self.scenario.unhighlight_all()
+        self.cs.unhighlight_all()
         for selected_object in self.dict_listbox[obj_type].selected():
-            selected_object = self.scenario.ntw.of(name=selected_object, _type=obj_type)
-            self.scenario.highlight_objects(selected_object)
+            selected_object = self.cs.ntw.of(name=selected_object, _type=obj_type)
+            self.cs.highlight_objects(selected_object)
         
     # remove the object selected in "obj_type" listbox from the AS
     def remove_selected(self, obj_type):
         # remove and retrieve the selected object in the listbox
         for selected_obj in self.dict_listbox[obj_type].pop_selected():
             # remove it from the AS as well
-            self.AS.remove_from_AS(self.scenario.ntw.of(name=selected_obj, _type=obj_type))
+            self.AS.remove_from_AS(self.cs.ntw.of(name=selected_obj, _type=obj_type))
         
     def add_to_edges(self):
         for selected_node in self.dict_listbox["node"].selected():
             self.dict_listbox["edge"].insert(selected_node) 
-            selected_node = self.scenario.ntw.nf(name=selected_node)
+            selected_node = self.cs.ntw.nf(name=selected_node)
             self.AS.add_to_edges(selected_node)
             
     def remove_from_edges(self):
         for selected_edge in self.dict_listbox["edge"].pop_selected():
-            selected = self.scenario.ntw.nf(name=selected_edge) 
+            selected = self.cs.ntw.nf(name=selected_edge) 
             self.AS.remove_from_edges(selected)
         
     def add_to_AS(self, area, *objects):
@@ -201,13 +201,13 @@ class ASManagement(FocusTopLevel):
             
     def find_edge_nodes(self):
         self.dict_listbox["edge"].clear()
-        for edge in self.scenario.ntw.find_edge_nodes(self.AS):
+        for edge in self.cs.ntw.find_edge_nodes(self.AS):
             self.dict_listbox["edge"].insert(edge)
             
     def find_trunks(self):
         trunks_between_domain_nodes = set()
         for node in self.AS.pAS["node"]:
-            for neighbor, adj_trunk in self.scenario.ntw.graph[node]["trunk"]:
+            for neighbor, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
                 if neighbor in self.AS.pAS["node"]:
                     trunks_between_domain_nodes.add(adj_trunk)
         self.add_to_AS("Backbone", *trunks_between_domain_nodes)
@@ -220,12 +220,13 @@ class ASManagement(FocusTopLevel):
             for eB in self.AS.pAS["edge"]:
                 if eA != eB and eB not in self.AS.routes[eA]:
                     name = "->".join((str(eA), str(eB)))
-                    route = self.scenario.ntw.lf(link_type="route", 
+                    route = self.cs.ntw.lf(link_type="route", 
                                                         name=name, s=eA, d=eB)
-                    _, route.path = self.AS.algorithm(eA, eB, self.AS)
+                    _, route.path = self.cs.ntw.RFT_path_finder(eA, eB)
+                    #_, route.path = self.AS.algorithm(eA, eB, self.AS)
                     route.AS = self.AS
                     self.AS.pAS["route"].add(route)
-                    self.scenario.create_link(route)
+                    self.cs.create_link(route)
                     
     def trigger_failure(self, trunk):
         self.failed_trunk = trunk
@@ -337,7 +338,7 @@ class ASManagement(FocusTopLevel):
                     self.AS.border_routers.add(node)
                     self.AS.areas["Backbone"].add_to_area(node)
             
-            for neighbor, adj_trunk in self.scenario.ntw.graph[node]["trunk"]:
+            for neighbor, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
                 
                 # A multi-area IS-IS AS is defined by the status of its nodes.
                 # we automatically update the trunk area status, by considering 
@@ -391,8 +392,8 @@ class ASManagement(FocusTopLevel):
     def display_area(self, event):
         for area in self.dict_listbox["area names"].selected():
             area = self.AS.area_factory(area)
-            self.scenario.unhighlight_all()
-            self.scenario.highlight_objects(*(area.pa["node"] | area.pa["trunk"]))
+            self.cs.unhighlight_all()
+            self.cs.highlight_objects(*(area.pa["node"] | area.pa["trunk"]))
             self.dict_listbox["area nodes"].clear()
             self.dict_listbox["area trunks"].clear()
             for node in area.pa["node"]:
