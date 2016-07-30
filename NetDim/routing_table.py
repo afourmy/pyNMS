@@ -1,5 +1,6 @@
 from network_functions import compute_network
 from tkinter.scrolledtext import ScrolledText
+from operator import itemgetter
 import tkinter as tk
 
 class RoutingTable(tk.Toplevel):
@@ -25,22 +26,16 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
         
         gateway = "Gateway of last resort is not set\n\n"
         self.rt.insert("insert", gateway)
-
-        for _, adj_trunk in scenario.ntw.graph[node]["trunk"]:
-            exit_if = adj_trunk("interface", node)
-            ntw = adj_trunk.sntw
-            
-            # entry for a connected interface in the routing table.
-            # it is the summarized ip of both interfaces of the connected link.
-            c_if = "C       {ntw} is directly connected, {exit_if}\n"\
-                                                .format(ntw=ntw, exit_if=exit_if)  
-            self.rt.insert("insert", c_if)
                 
-        # rajouter l'interface
-        for sntw, (rtype, ex_ip, ex_int, *_) in node.routing_table.items():
+        node.routing_table = sorted(node.routing_table.items(), key=itemgetter(1))
+        for sntw, (rtype, ex_ip, ex_int, *_) in node.routing_table:
             rtype = rtype + " "*(8 - len(rtype))
-            route = "{rtype}{sntw} via {ex_ip}, {ex_int}\n"\
-                .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)
+            if rtype[0] == "O":
+                route = "{rtype}{sntw} via {ex_ip}, {ex_int}\n"\
+                    .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)
+            else:
+                route = "{rtype}{sntw} is directly connected, {ex_int}\n"\
+                    .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)
             self.rt.insert("insert", route)
                 
         self.rt.pack(fill=tk.BOTH, expand=tk.YES)

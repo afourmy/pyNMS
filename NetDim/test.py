@@ -188,8 +188,8 @@ class TestISIS(unittest.TestCase):
 class TestOSPF(unittest.TestCase):
     
     results = (
-    ("node8->node1", ["trunk11", "trunk7", "trunk12", "trunk5"]),
-    ("node1->node8", ["trunk5", "trunk3", "trunk6", "trunk11"])
+    ("node8->node1", ["trunk11", "trunk6", "trunk1"]),
+    ("node1->node8", ["trunk5", "trunk12", "trunk9", "trunk10", "trunk11"])
     )
  
     @start_and_import("test_ospf.xls")
