@@ -18,21 +18,22 @@ class MainFrame(tk.Frame):
         background = "#A1DBCD"
         )
         
+        self.ms = master
         self.bg_color = "#E6E6FA"
         self.font = ("Helvetica", 8, "bold")
         self.type_to_button = {}
         
         self.type_to_action = {
-        "netdim": lambda: master.cs.ntw.calculate_all(),
-        "motion": lambda: self.switch_to(master, "motion"),
-        "multi-layer": lambda: master.cs.switch_display_mode(),
+        "netdim": lambda: self.ms.cs.ntw.calculate_all(),
+        "motion": lambda: self.switch_to("motion"),
+        "multi-layer": lambda: self.ms.cs.switch_display_mode(),
         }
         
         for topo in ("tree", "star", "full-mesh", "ring"):
-            self.type_to_action[topo] = lambda t=topo: NetworkDimension(master.cs, t)
+            self.type_to_action[topo] = lambda t=topo: NetworkDimension(self.ms.cs, t)
             
-        for obj_type in master.object_properties:
-            cmd = lambda o=obj_type: self.change_creation_mode(master, o)
+        for obj_type in self.ms.object_properties:
+            cmd = lambda o=obj_type: self.change_creation_mode(o)
             self.type_to_action[obj_type] = cmd
         
         for button_type, cmd in self.type_to_action.items():
@@ -62,10 +63,10 @@ class MainFrame(tk.Frame):
         ttk.Style().configure("TRadiobutton", background="#A1DBCD")
         node_selection = ttk.Radiobutton(self, text="Node selection",
                         variable=selection_value, value="node", 
-                        command=lambda: self.change_selection(master, "node"))
+                        command=lambda: self.change_selection("node"))
         link_selection = ttk.Radiobutton(self, text="Link selection",
                         variable=selection_value, value="link", 
-                        command=lambda: self.change_selection(master, "link"))
+                        command=lambda: self.change_selection("link"))
         
         # affichage des radio button
         node_selection.grid(row=5, column=0, columnspan=2, 
@@ -110,25 +111,25 @@ class MainFrame(tk.Frame):
         self.type_to_button["full-mesh"].grid(row=17,column=2, sticky="w")
         self.type_to_button["ring"].grid(row=17,column=3, sticky="w")
 
-    def change_selection(self, master, mode):
-        master.cs.object_selection = mode
+    def change_selection(self, mode):
+        self.ms.cs.obj_selection = mode
         
-    def switch_to(self, master, mode):
+    def switch_to(self, mode):
         relief = tk.SUNKEN if mode == "motion" else tk.RAISED
         self.type_to_button["motion"].config(relief=relief)
-        master.cs._mode = mode
-        master.cs.switch_binding()
+        self.ms.cs._mode = mode
+        self.ms.cs.switch_binding()
         
-    def change_creation_mode(self, master, mode):
+    def change_creation_mode(self, mode):
         # change the mode to creation 
-        self.switch_to(master, "creation")
-        master.cs._creation_mode = mode
+        self.switch_to("creation")
+        self.ms.cs._creation_mode = mode
         for obj_type in self.type_to_button:
             if mode == obj_type:
                 self.type_to_button[obj_type].config(relief=tk.SUNKEN)
             else:
                 self.type_to_button[obj_type].config(relief=tk.FLAT)
-        master.cs.switch_binding()
+        self.ms.cs.switch_binding()
         
     def erase_graph(self, scenario):
         scenario.erase_graph()

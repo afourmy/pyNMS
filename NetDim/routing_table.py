@@ -28,11 +28,17 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
         self.rt.insert("insert", gateway)
                 
         node.routing_table = sorted(node.routing_table.items(), key=itemgetter(1))
-        for sntw, (rtype, ex_ip, ex_int, *_) in node.routing_table:
+        for sntw, (rtype, ex_ip, ex_int, cost, *_) in node.routing_table:
             rtype = rtype + " "*(8 - len(rtype))
             if rtype[0] == "O":
-                route = "{rtype}{sntw} via {ex_ip}, {ex_int}\n"\
-                    .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)
+                route = "{rtype}{sntw} [110/{cost}] via {ex_ip}, {ex_int}\n"\
+                                                        .format(
+                                                                cost = cost, 
+                                                                rtype = rtype, 
+                                                                sntw = sntw, 
+                                                                ex_ip = ex_ip, 
+                                                                ex_int = ex_int
+                                                                )
             else:
                 route = "{rtype}{sntw} is directly connected, {ex_int}\n"\
                     .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)

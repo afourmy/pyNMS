@@ -795,7 +795,8 @@ class Network(object):
                                 continue
                             else:
                                 visited_subnetworks.add((rtype, trunk.sntw))
-                                mapping[trunk.sntw] = (rtype, ex_ip, ex_int, nh, nt)
+                                mapping[trunk.sntw] = (rtype, ex_ip, ex_int, 
+                                            dist + trunk("cost", node), nh, nt)
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     if node == source:
                         # it is the IP of the Next-Hop interface which is 
@@ -808,7 +809,8 @@ class Network(object):
                         # interface to add it to the set of visited subnetworks,
                         # so that it isn't added to the tree: it is a directly 
                         # connected interface
-                        mapping[adj_trunk.sntw] = ("C", ex_ip, ex_int, neighbor, adj_trunk)
+                        mapping[adj_trunk.sntw] = ("C", ex_ip, ex_int, 
+                                                    dist, neighbor, adj_trunk)
                         for rtype in ("O", "O IA"):
                             visited_subnetworks.add((rtype, adj_trunk.sntw))
                     # excluded and allowed nodes
