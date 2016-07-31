@@ -98,13 +98,13 @@ class ObjectManagementWindow(FocusTopLevel):
         
     def find_path(self):
         name, *parameters = self.get_user_input()
-        route_path_nodes, route_path_links = self.ms.cs.ntw.A_star(*parameters)
+        nodes, trunks = self.ms.cs.ntw.A_star(*parameters)
         
-        if route_path_links:
+        if trunks:
             self.ms.cs.unhighlight_all()
-            self.current_path = route_path_links
-            self.dict_var["path"].set(route_path_links)
-            self.ms.cs.highlight_objects(*route_path_links)
+            self.current_path = trunks
+            self.dict_var["path"].set(trunks)
+            self.ms.cs.highlight_objects(*(nodes + trunks))
         else:
             self.ms.cs.unhighlight_all()
             # activate focus to prevent the messagebox from removing the window

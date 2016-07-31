@@ -10,6 +10,7 @@ import area
 import AS_management
 
 class AutonomousSystem(object):
+    
     class_type = "AS"
 
     def __init__(

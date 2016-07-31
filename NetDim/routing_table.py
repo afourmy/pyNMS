@@ -9,9 +9,6 @@ class RoutingTable(tk.Toplevel):
         self.cs = scenario
         self.rt = ScrolledText(self, wrap="word", bg="beige")
         self.wm_attributes("-topmost", True)
-        
-        types = {"OSPF": "O", "RIP": "R", "ISIS": "i"}
-        # faire ospf: ("O", 110), 
 
         codes = """
 Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
@@ -28,21 +25,26 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
         self.rt.insert("insert", gateway)
                 
         node.routing_table = sorted(node.routing_table.items(), key=itemgetter(1))
-        for sntw, (rtype, ex_ip, ex_int, cost, *_) in node.routing_table:
-            rtype = rtype + " "*(8 - len(rtype))
-            if rtype[0] == "O":
-                route = "{rtype}{sntw} [110/{cost}] via {ex_ip}, {ex_int}\n"\
-                                                        .format(
-                                                                cost = cost, 
-                                                                rtype = rtype, 
-                                                                sntw = sntw, 
-                                                                ex_ip = ex_ip, 
-                                                                ex_int = ex_int
-                                                                )
+        for sntw, routes in node.routing_table:
+            if len(routes) - 1:
+                pass
             else:
-                route = "{rtype}{sntw} is directly connected, {ex_int}\n"\
-                    .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)
-            self.rt.insert("insert", route)
+                route ,= routes
+                rtype, ex_ip, ex_int, cost, *_ ,= route
+                rtype = rtype + " "*(8 - len(rtype))
+                if rtype[0] == "O":
+                    route = "{rtype}{sntw} [110/{cost}] via {ex_ip}, {ex_int}\n"\
+                                                            .format(
+                                                                    cost = cost, 
+                                                                    rtype = rtype, 
+                                                                    sntw = sntw, 
+                                                                    ex_ip = ex_ip, 
+                                                                    ex_int = ex_int
+                                                                    )
+                else:
+                    route = "{rtype}{sntw} is directly connected, {ex_int}\n"\
+                        .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)
+                self.rt.insert("insert", route)
                 
         self.rt.pack(fill=tk.BOTH, expand=tk.YES)
                                             

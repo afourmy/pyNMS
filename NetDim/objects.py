@@ -66,7 +66,7 @@ class Router(Node):
     def __init__(self, *args):
         # routing table is a dictionnary that associates 
         # an AS to a routing table
-        self.routing_table = None
+        self.rt = None
         super().__init__(*args)
         
 class Switch(Node):

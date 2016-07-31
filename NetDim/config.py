@@ -14,14 +14,14 @@ class Configuration(tk.Toplevel):
         self.entry_config.insert("insert", conf_t)
         
         # configuration of the loopback interface
-        # lo = " {name}(config)# interface Loopback0\n".format(name=node.name)
-        # lo_ip = " {name}(config-if)# ip address {ip} {mask}\n"\
-        #         .format(name=node.name, ip=node.ipaddress, mask=node.subnetmask)
+        lo = " {name}(config)# interface Loopback0\n".format(name=node.name)
+        lo_ip = " {name}(config-if)# ip address {ip} {mask}\n"\
+                .format(name=node.name, ip=node.ipaddress, mask=node.subnetmask)
                 
-        # self.entry_config.insert("insert", lo)
-        # self.entry_config.insert("insert", lo_ip)
-        # exit = " {name}(config-if)# exit\n".format(name=node.name)
-        # self.entry_config.insert("insert", exit)
+        self.entry_config.insert("insert", lo)
+        self.entry_config.insert("insert", lo_ip)
+        exit = " {name}(config-if)# exit\n".format(name=node.name)
+        self.entry_config.insert("insert", exit)
         
         for _, adj_trunk in scenario.ntw.graph[node]["trunk"]:
             direction = "S"*(adj_trunk.source == node) or "D"
@@ -71,13 +71,6 @@ class Configuration(tk.Toplevel):
                         pi = " {name}(config-router)# passive-interface {i}\n"\
                                 .format(name=node.name, i=interface)
                         self.entry_config.insert("insert", pi)
-                        
-                    exit = " {name}(config-if)# exit\n".format(name=node.name)
-                    self.entry_config.insert("insert", exit)
-                        
-                end = " {name}(config-router)# end\n"\
-                                    .format(name=node.name, ip=ip)
-                self.entry_config.insert("insert", end)
                 
             elif AS.type == "OSPF":
                 
@@ -100,10 +93,6 @@ class Configuration(tk.Toplevel):
                         pi = " {name}(config-router)# passive-interface {i}\n"\
                                 .format(name=node.name, i=interface)
                         self.entry_config.insert("insert", pi)
-                        
-                end = " {name}(config-router)# end\n"\
-                                    .format(name=node.name, ip=ip)
-                self.entry_config.insert("insert", end)
                 
             elif AS.type == "ISIS":
                 
@@ -186,8 +175,8 @@ class Configuration(tk.Toplevel):
                         self.entry_config.insert("insert", isis_conf)
                         self.entry_config.insert("insert", cct_type_conf)
                         
-                        end = " {name}(config-if)# end\n".format(name=node.name)
-                        self.entry_config.insert("insert", end)
+                end = " {name}(config-if)# end\n".format(name=node.name)
+                self.entry_config.insert("insert", end)
                 
         self.entry_config.pack(fill=tk.BOTH, expand=tk.YES)
 

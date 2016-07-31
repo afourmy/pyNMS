@@ -195,8 +195,10 @@ class Network(object):
         
         # we compute the routing table of all routers
         for router in self.ftr("node", "router"):
+            self.static_RFT_builder(router)
             for AS in router.AS:
-                router.routing_table = self.RFT_builder(router, AS)
+                self.RFT_builder(router, AS)
+            print(router.rt)
         
         # reset the traffic for all trunks
         for trunk in self.pn["trunk"].values():
@@ -413,9 +415,9 @@ class Network(object):
             
         pc = [target] + path_constraints[::-1]
         visited = set()
-        heap = [(0, source, [], pc)]
+        heap = [(0, source, [source], [], pc)]
         while heap:
-            dist, node, path, pc = heappop(heap)  
+            dist, node, nodes, trunks, pc = heappop(heap)
             if node not in visited:
                 visited.add(node)
                 if node == pc[-1]:
@@ -423,7 +425,7 @@ class Network(object):
                     heap.clear()
                     pc.pop()
                     if not pc:
-                        return [], path
+                        return nodes, trunks
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes-excluded_nodes: 
@@ -431,8 +433,14 @@ class Network(object):
                     # excluded and allowed trunks
                     if adj_trunk not in allowed_trunks-excluded_trunks: 
                         continue
-                    heappush(heap, (dist + adj_trunk("cost", node), 
-                                            neighbor, path + [adj_trunk], pc))
+                    heappush(heap, (
+                                    dist + adj_trunk("cost", node), 
+                                    neighbor,
+                                    nodes + [neighbor], 
+                                    trunks + [adj_trunk], 
+                                    pc
+                                    )
+                            )
         return [], []
         
     ## 3) RIP routing algorithm
@@ -741,20 +749,42 @@ class Network(object):
         
     ## Model 2:
     
-    ## 1) RFT-based routing
+    ## 1) RFT-based routing and dimensioning
+    #TODO dimensioning yet to be done 
     
     def RFT_path_finder(self, source, destination):
         # the two lines below run faster than making the set an iterable
         for _, trunk in self.graph[destination]["trunk"]:
             break
         dest_int = trunk.sntw
-        curr_router, curr_int = source, None
-        path_node, path_trunk = [], []
-        while curr_router != destination:
-            *_, curr_router, curr_trunk = curr_router.routing_table[dest_int]
-            path_node.append(curr_router)
-            path_trunk.append(curr_trunk)
+        heap = [(source, 100)]
+        path_node, path_trunk = set(), set()
+        while heap:
+            curr_router, share = heap.pop()
+            if curr_router == destination:
+                continue
+            routes = curr_router.routing_table[dest_int]
+            for route in routes:
+                *_, router, trunk = route
+                path_node.add(router)
+                path_trunk.add(trunk)
+                heap.append((router, share / len(routes)))
+                print(share)
+
         return path_node, path_trunk
+        
+    ## 2) Add connected interfaces to the RFT
+    # TODO and default / static route too
+    
+    def static_RFT_builder(self, source):
+        
+        for neighbor, adj_trunk in self.graph[source]["trunk"]:
+            ex_ip = adj_trunk("ipaddress", neighbor)
+            ex_int = adj_trunk("interface", source)
+            # we compute the subnetwork of the attached
+            # interface: it is a directly connected interface
+            source.rft[adj_trunk.sntw] = {("C", ex_ip, ex_int, 
+                                        dist, neighbor, adj_trunk)}
      
     ## 2) RFT builder for LB-free AS: subnetworks / interfaces mapping
     
@@ -771,7 +801,7 @@ class Network(object):
         # source area: we make sure that if the node is connected to an area,
         # the path we find to any subnetwork in that area is an intra-area path.
         src_areas = source.AS[AS]
-        
+                                        
         while heap:
             dist, node, exit = heappop(heap)
             # if (exit, node) hasn't been visited yet, it means that the
@@ -785,18 +815,27 @@ class Network(object):
             if (exit, node) not in visited:
                 visited.add((exit, node))
                 if node != source:
-                    for _, trunk in self.graph[node]["trunk"]:
-                        ex_tk, ex_ip, ex_int, nh, nt = exit
-                        # we check if the trunk has any common area with the
-                        # exit trunk: if it does not, it is an inter-area route.
-                        rtype = "O" if (trunk.AS[AS] & ex_tk.AS[AS]) else "O IA"
-                        if (rtype, trunk.sntw) not in visited_subnetworks:
-                            if ("O", trunk.sntw) in visited_subnetworks:
-                                continue
-                            else:
-                                visited_subnetworks.add((rtype, trunk.sntw))
-                                mapping[trunk.sntw] = (rtype, ex_ip, ex_int, 
-                                            dist + trunk("cost", node), nh, nt)
+                    for neighbor, trunk in self.graph[node]["trunk"]:
+                        if neighbor == source:
+                            continue
+                        ex_tk, ex_ip, ex_int, nh = exit
+                        if AS.type == "RIP":
+                            new_sntw = ("R", trunk.sntw)
+                            if new_sntw not in visited_subnetworks:
+                                visited_subnetworks.add(new_sntw)
+                                mapping[trunk.sntw] = {("R", ex_ip, ex_int, 
+                                            dist + trunk("cost", node), nh, ex_tk)}
+                        elif AS.type == "OSPF":
+                            # we check if the trunk has any common area with the
+                            # exit trunk: if it does not, it is an inter-area route.
+                            rtype = "O" if (trunk.AS[AS] & ex_tk.AS[AS]) else "O IA"
+                            if (rtype, trunk.sntw) not in visited_subnetworks:
+                                if ("O", trunk.sntw) in visited_subnetworks:
+                                    continue
+                                else:
+                                    visited_subnetworks.add((rtype, trunk.sntw))
+                                    mapping[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                                                dist + trunk("cost", node), nh, ex_tk)}
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     if node == source:
                         # it is the IP of the Next-Hop interface which is 
@@ -804,15 +843,7 @@ class Network(object):
                         # interface directly attached to the source node.
                         ex_ip = adj_trunk("ipaddress", neighbor)
                         ex_int = adj_trunk("interface", source)
-                        exit = (adj_trunk, ex_ip, ex_int, neighbor, adj_trunk) 
-                        # we compute the subnetwork of the attached
-                        # interface to add it to the set of visited subnetworks,
-                        # so that it isn't added to the tree: it is a directly 
-                        # connected interface
-                        mapping[adj_trunk.sntw] = ("C", ex_ip, ex_int, 
-                                                    dist, neighbor, adj_trunk)
-                        for rtype in ("O", "O IA"):
-                            visited_subnetworks.add((rtype, adj_trunk.sntw))
+                        exit = (adj_trunk, ex_ip, ex_int, neighbor) 
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes:
                         continue
@@ -823,67 +854,92 @@ class Network(object):
                                                                         exit))
         return mapping
     
-    ## 2) RFT builder for LB-enabled networks: ECMP tree from source node
+    ## 2) RFT builder for LB-enabled networks
     
-    # the reason why we keep all ECMPs and not just the SP is to handle 
-    # load-balancing-enabled network (mapping of the traffic flow with the
-    # appropriate % on each ECMP).
-    # the K parameter defines how many ECMP we will look for (4 by default).
-    # in order to build the routing and forwarding table, we need to build an
-    # Equal-Cost Multi-Paths Tree that allows us to bind exit ("next-hop")
-    # interfaces from the source node to the list of ECMPs for all other
-    # distant nodes.
-    # complexity is exponential.
-    
-    def RFT_ECMP_tree_builder(
+    def RFT_LB_builder(
                self, 
                source, 
+               AS,
                K = 4,
                allowed_trunks = None, 
                allowed_nodes = None
                ):
-                
-        if allowed_trunks is None:
-            allowed_trunks = set(self.pn["trunk"].values())
-        if allowed_nodes is None:
-            allowed_nodes = set(self.pn["node"].values())
-            
+    
         visited = set()
+        allowed_nodes, allowed_trunks = AS.pAS["node"], AS.pAS["trunk"]
+        # we keep track of all already visited subnetworks so that we 
+        # don't add them more than once to the mapping dict.
+        visited_subnetworks = set()
         heap = [(0, source, [])]
-        # dictionnary that binds a node to all the ECMP that can be used
-        # to reach it
-        node_to_ECMP = defaultdict(list)
-        # dictionnary that associates a node to its SP distance from the source
-        SP_dist = {}
+        # dictionnary that binds IP addresses to an exit interface of the source
+        mapping = {}
+        # source area: we make sure that if the node is connected to an area,
+        # the path we find to any subnetwork in that area is an intra-area path.
+        src_areas = source.AS[AS]
+        # cost of the shortesth path to a subnetwork
+        SP_cost = {}
+        
+        # troubleshoot load balancing with extended ping:
+        # https://learningnetwork.cisco.com/thread/35429
+        
+        # C       10.0.0.8 is directly connected, Ethernet0/1
+        # O       10.0.0.0 [110/20] via 10.0.0.6, 00:08:02, Ethernet0/0
+        #                  [110/20] via 10.0.0.9, 00:08:02, Ethernet0/1
+        # C       10.0.0.4 is directly connected, Ethernet0/0
+
         
         while heap:
             dist, node, path_trunk = heappop(heap)  
             if (node, tuple(path_trunk)) not in visited:
                 visited.add((node, tuple(path_trunk)))
-                # if node is not yet in the dist dictionnary, it means we reach
-                # it for the first time: we found the (first) shortest path
-                if node not in SP_dist:
-                    SP_dist[node] = dist
-                    node_to_ECMP[node].append(path_trunk)
-                elif dist == SP_dist[node] and K > len(node_to_ECMP[node]):
-                    # if it isn't, but the path we're assessing has the same 
-                    # length, and we haven't found K ECMP yet, the path is valid
-                    node_to_ECMP[node].append(path_trunk)
+                if node != source:
+                    ex_tk = path_trunk[0]
+                    nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
+                    ex_ip = ex_tk("ipaddress", nh)
+                    ex_int = ex_tk("interface", source)
+                    for neighbor, trunk in self.graph[node]["trunk"]:
+                        if neighbor == source:
+                            continue
+                        curr_dist = dist + trunk("cost", node)
+                        if trunk.sntw not in mapping:
+                            SP_cost[trunk.sntw] = curr_dist
+                            mapping[trunk.sntw] = {("R", ex_ip, ex_int, 
+                                                        curr_dist, nh, ex_tk)}
+                        else:
+                            if curr_dist == SP_cost[trunk.sntw] and K > len(mapping[trunk.sntw]):
+                                mapping[trunk.sntw].add(("R", ex_ip, ex_int, 
+                                                        curr_dist, nh, ex_tk))
+                        # 
+                        # if AS.type == "RIP":
+                        #     mapping[trunk.sntw] = {("R", ex_ip, ex_int, 
+                        #                     dist + trunk("cost", node), nh, ex_tk)}
+                        # elif AS.type == "OSPF":
+                        #     # we check if the trunk has any common area with the
+                        #     # exit trunk: if it does not, it is an inter-area route.
+                        #     rtype = "O" if (trunk.AS[AS] & ex_tk.AS[AS]) else "O IA"
+                        #     if (rtype, trunk.sntw) not in visited_subnetworks:
+                        #         if ("O", trunk.sntw) in visited_subnetworks:
+                        #             continue
+                        #         else:
+                        #             visited_subnetworks.add((rtype, trunk.sntw))
+                        #             mapping[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                        #                         dist + trunk("cost", node), nh, ex_tk)}
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
-                    # we check whether we've used the trunk already, for
-                    # we consider only loop-free paths
                     if adj_trunk in path_trunk:
                         continue
+                    if node == source:
+                        ex_ip = adj_trunk("ipaddress", neighbor)
+                        ex_int = adj_trunk("interface", source)
+                        mapping[adj_trunk.sntw] = {("C", ex_ip, ex_int, 
+                                                    dist, neighbor, adj_trunk)}
                     # excluded and allowed nodes
-                    if neighbor not in allowed_nodes: 
+                    if neighbor not in allowed_nodes:
                         continue
                     # excluded and allowed trunks
                     if adj_trunk not in allowed_trunks: 
                         continue
-                    heappush(heap, (dist + adj_trunk("cost", node), neighbor, 
-                                                    path_trunk + [adj_trunk]))
-        return SP_dist, node_to_ECMP
-            
+                    heappush(heap, (dist + adj_trunk("cost", node), neighbor, path_trunk + [adj_trunk]))
+        return mapping
         
     ## Link-disjoint / link-and-node-disjoint shortest pair algorithms
     

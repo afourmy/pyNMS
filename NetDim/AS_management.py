@@ -213,7 +213,6 @@ class ASManagement(FocusTopLevel):
         self.add_to_AS("Backbone", *trunks_between_domain_nodes)
         
     def create_routes(self):
-        
         self.update_AS_topology()
         
         for eA in self.AS.pAS["edge"]:
