@@ -7,7 +7,7 @@ class RoutingTable(tk.Toplevel):
     def __init__(self, node, scenario):
         super().__init__() 
         self.cs = scenario
-        self.rt = ScrolledText(self, wrap="word", bg="beige")
+        self.ST = ScrolledText(self, wrap="word", bg="beige")
         self.wm_attributes("-topmost", True)
 
         codes = """
@@ -19,13 +19,13 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
         ia - IS-IS inter area, * - candidate default, U - per-user static route
         o - ODR, P - periodic downloaded static route\n\n"""
         
-        self.rt.insert("insert", codes)
+        self.ST.insert("insert", codes)
         
         gateway = "Gateway of last resort is not set\n\n"
-        self.rt.insert("insert", gateway)
+        self.ST.insert("insert", gateway)
                 
-        node.routing_table = sorted(node.routing_table.items(), key=itemgetter(1))
-        for sntw, routes in node.routing_table:
+        list_RT = sorted(node.rt.items(), key=itemgetter(1))
+        for sntw, routes in list_RT:
             if len(routes) - 1:
                 pass
             else:
@@ -44,7 +44,7 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
                 else:
                     route = "{rtype}{sntw} is directly connected, {ex_int}\n"\
                         .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)
-                self.rt.insert("insert", route)
+                self.ST.insert("insert", route)
                 
-        self.rt.pack(fill=tk.BOTH, expand=tk.YES)
+        self.ST.pack(fill=tk.BOTH, expand=tk.YES)
                                             

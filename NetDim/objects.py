@@ -64,9 +64,7 @@ class Router(Node):
     imagex, imagey = 33, 25
     
     def __init__(self, *args):
-        # routing table is a dictionnary that associates 
-        # an AS to a routing table
-        self.rt = None
+        self.rt = {}
         super().__init__(*args)
         
 class Switch(Node):

@@ -212,20 +212,20 @@ class ASManagement(FocusTopLevel):
                     trunks_between_domain_nodes.add(adj_trunk)
         self.add_to_AS("Backbone", *trunks_between_domain_nodes)
         
-    def create_routes(self):
-        self.update_AS_topology()
-        
-        for eA in self.AS.pAS["edge"]:
-            for eB in self.AS.pAS["edge"]:
-                if eA != eB and eB not in self.AS.routes[eA]:
-                    name = "->".join((str(eA), str(eB)))
-                    route = self.cs.ntw.lf(link_type="route", 
-                                                        name=name, s=eA, d=eB)
-                    _, route.path = self.cs.ntw.RFT_path_finder(eA, eB)
-                    #_, route.path = self.AS.algorithm(eA, eB, self.AS)
-                    route.AS = self.AS
-                    self.AS.pAS["route"].add(route)
-                    self.cs.create_link(route)
+    # def create_routes(self):
+    #     self.update_AS_topology()
+    #     
+    #     for eA in self.AS.pAS["edge"]:
+    #         for eB in self.AS.pAS["edge"]:
+    #             if eA != eB and eB not in self.AS.routes[eA]:
+    #                 name = "->".join((str(eA), str(eB)))
+    #                 route = self.cs.ntw.lf(link_type="route", 
+    #                                                     name=name, s=eA, d=eB)
+    #                 _, route.path = self.cs.ntw.RFT_path_finder(eA, eB)
+    #                 #_, route.path = self.AS.algorithm(eA, eB, self.AS)
+    #                 route.AS = self.AS
+    #                 self.AS.pAS["route"].add(route)
+    #                 self.cs.create_link(route)
                     
     def trigger_failure(self, trunk):
         self.failed_trunk = trunk

@@ -623,8 +623,6 @@ class Scenario(tk.Canvas):
             self.after_cancel(self._job)
             self._job = None
             
-    ## TODO repair the 3D view
-            
     def create_node(self, node, layer=0):
         s = self.NODE_SIZE
         curr_image = self.ms.dict_image["default"][node.subtype]
@@ -716,7 +714,7 @@ class Scenario(tk.Canvas):
             self.planal_move(50)
             min_y = min(node.y for node in self.ntw.pn["node"].values())
             max_y = max(node.y for node in self.ntw.pn["node"].values())
-            self.diff_y = max_y - min_y + 100
+            self.diff_y = (max_y - min_y) // 3
             
         self.draw_all(False)
             
