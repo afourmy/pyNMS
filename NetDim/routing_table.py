@@ -63,6 +63,15 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
                                                                     ex_ip = ex_ip, 
                                                                     ex_int = ex_int
                                                                     )
+                elif rtype[0] == "i":
+                    route = "{rtype}{sntw} [115/{cost}] via {ex_ip}, {ex_int}\n"\
+                                                            .format(
+                                                                    cost = cost, 
+                                                                    rtype = rtype, 
+                                                                    sntw = sntw, 
+                                                                    ex_ip = ex_ip, 
+                                                                    ex_int = ex_int
+                                                                    )
                 else:
                     route = "{rtype}{sntw} is directly connected, {ex_int}\n"\
                         .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)
