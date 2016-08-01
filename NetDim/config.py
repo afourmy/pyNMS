@@ -1,27 +1,38 @@
+from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 import tkinter as tk
 
 class Configuration(tk.Toplevel):
     def __init__(self, node, scenario):
         super().__init__() 
-        self.entry_config = ScrolledText(self, wrap="word", bg="beige")
+        
+        notebook = ttk.Notebook(self)
+        config_frame = ttk.Frame(notebook)
+        st_config = ScrolledText(config_frame, wrap="word", bg="beige")
+        
+        debug_frame = ttk.Frame(notebook)
+        st_debug = ScrolledText(debug_frame, wrap="word", bg="beige")
+        
+        notebook.add(config_frame, text="Configuration")
+        notebook.add(debug_frame, text="Troubleshooting commands")
+        
         self.wm_attributes("-topmost", True)
 
         enable_mode = " {name}> enable\n".format(name=node.name)  
         conf_t = " {name}# configure terminal\n".format(name=node.name)
 
-        self.entry_config.insert("insert", enable_mode)
-        self.entry_config.insert("insert", conf_t)
+        st_config.insert("insert", enable_mode)
+        st_config.insert("insert", conf_t)
         
         # configuration of the loopback interface
         lo = " {name}(config)# interface Loopback0\n".format(name=node.name)
         lo_ip = " {name}(config-if)# ip address {ip} {mask}\n"\
                 .format(name=node.name, ip=node.ipaddress, mask=node.subnetmask)
                 
-        self.entry_config.insert("insert", lo)
-        self.entry_config.insert("insert", lo_ip)
+        st_config.insert("insert", lo)
+        st_config.insert("insert", lo_ip)
         exit = " {name}(config-if)# exit\n".format(name=node.name)
-        self.entry_config.insert("insert", exit)
+        st_config.insert("insert", exit)
         
         for _, adj_trunk in scenario.ntw.graph[node]["trunk"]:
             direction = "S"*(adj_trunk.source == node) or "D"
@@ -35,9 +46,9 @@ class Configuration(tk.Toplevel):
                                     .format(name=node.name, ip=ip, mask=mask)
             no_shut = " {name}(config-if)# no shutdown\n".format(name=node.name)
             
-            self.entry_config.insert("insert", interface_conf)
-            self.entry_config.insert("insert", interface_ip)
-            self.entry_config.insert("insert", no_shut)
+            st_config.insert("insert", interface_conf)
+            st_config.insert("insert", interface_ip)
+            st_config.insert("insert", no_shut)
             
             if any(AS.type == "OSPF" for AS in adj_trunk.AS):
                 direction = "SD" if direction == "S" else "DS"
@@ -46,17 +57,17 @@ class Configuration(tk.Toplevel):
                     change_cost = (" {name}(config-if)#"
                                     " ip ospf cost {cost}\n")\
                                     .format(name=node.name, cost=cost)
-                    self.entry_config.insert("insert", change_cost)
+                    st_config.insert("insert", change_cost)
                     
             exit = " {name}(config-if)# exit\n".format(name=node.name)
-            self.entry_config.insert("insert", exit)
+            st_config.insert("insert", exit)
             
         for AS in node.AS:
             
             if AS.type == "RIP":
                 activate_rip = " {name}(config)# router rip\n"\
                                                 .format(name=node.name)
-                self.entry_config.insert("insert", activate_rip)
+                st_config.insert("insert", activate_rip)
                 
                 for _, adj_trunk in scenario.ntw.graph[node]["trunk"]:
                     direction = "S"*(adj_trunk.source == node) or "D"
@@ -65,18 +76,18 @@ class Configuration(tk.Toplevel):
                         
                         interface_ip = " {name}(config-router)# network {ip}\n"\
                                                 .format(name=node.name, ip=ip)
-                        self.entry_config.insert("insert", interface_ip)
+                        st_config.insert("insert", interface_ip)
                     else:
                         interface = getattr(adj_trunk, "interface" + direction)
                         pi = " {name}(config-router)# passive-interface {i}\n"\
                                 .format(name=node.name, i=interface)
-                        self.entry_config.insert("insert", pi)
+                        st_config.insert("insert", pi)
                 
             elif AS.type == "OSPF":
                 
                 activate_ospf = " {name}(config)# router ospf 1\n"\
                                                     .format(name=node.name)
-                self.entry_config.insert("insert", activate_ospf)
+                st_config.insert("insert", activate_ospf)
                 
                 for _, adj_trunk in scenario.ntw.graph[node]["trunk"]:
                     direction = "S"*(adj_trunk.source == node) or "D"
@@ -86,13 +97,13 @@ class Configuration(tk.Toplevel):
                         interface_ip = (" {name}(config-router)# network" 
                                         " {ip} 0.0.0.3 area {area_id}\n")\
                         .format(name=node.name, ip=ip, area_id=trunk_area.id)
-                        self.entry_config.insert("insert", interface_ip)
+                        st_config.insert("insert", interface_ip)
                             
                     else:
                         interface = getattr(adj_trunk, "interface" + direction)
                         pi = " {name}(config-router)# passive-interface {i}\n"\
                                 .format(name=node.name, i=interface)
-                        self.entry_config.insert("insert", pi)
+                        st_config.insert("insert", pi)
                 
             elif AS.type == "ISIS":
                 
@@ -113,7 +124,7 @@ class Configuration(tk.Toplevel):
                     
                 # The AFI, or the Authority & Format Identifier.
                 # In an IP-only environment, this number has no meaning 
-                # separate from the Area ID itself. Most vendors and operators 
+                # separate from the Area ID it Most vendors and operators 
                 # tend to stay compliant with the defunct protocols by 
                 # specifying an AFI of “49”. 
                 # We will stick to this convention.
@@ -140,11 +151,11 @@ class Configuration(tk.Toplevel):
                                                 .format(name=node.name)
                 exit = " {name}(config-router)# exit\n".format(name=node.name)
                                                 
-                self.entry_config.insert("insert", activate_isis)
-                self.entry_config.insert("insert", net_conf)
-                self.entry_config.insert("insert", level_conf)
-                self.entry_config.insert("insert", plo)
-                self.entry_config.insert("insert", exit)
+                st_config.insert("insert", activate_isis)
+                st_config.insert("insert", net_conf)
+                st_config.insert("insert", level_conf)
+                st_config.insert("insert", plo)
+                st_config.insert("insert", exit)
                                    
                 for neighbor, adj_trunk in scenario.ntw.graph[node]["trunk"]:
                     
@@ -171,13 +182,20 @@ class Configuration(tk.Toplevel):
                         cct_type_conf = " {name}(config-if)# isis circuit-type {ct}\n"\
                                             .format(name=node.name, ct=cct_type)
                             
-                        self.entry_config.insert("insert", interface_conf)
-                        self.entry_config.insert("insert", isis_conf)
-                        self.entry_config.insert("insert", cct_type_conf)
+                        st_config.insert("insert", interface_conf)
+                        st_config.insert("insert", isis_conf)
+                        st_config.insert("insert", cct_type_conf)
                         
                 end = " {name}(config-if)# end\n".format(name=node.name)
-                self.entry_config.insert("insert", end)
-                
-        self.entry_config.pack(fill=tk.BOTH, expand=tk.YES)
+                st_config.insert("insert", end)
+
+        # disable the scrolledtext so that it cannot be edited
+        st_config.config(state=tk.DISABLED)
+        st_debug.config(state=tk.DISABLED)
+        
+        # pack the scrolledtext in the frames, and the notebook in the window
+        st_config.pack(fill=tk.BOTH, expand=tk.YES)
+        st_debug.pack(fill=tk.BOTH, expand=tk.YES)
+        notebook.pack(fill=tk.BOTH, expand=tk.YES)
 
         

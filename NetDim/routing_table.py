@@ -27,7 +27,29 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
         list_RT = sorted(node.rt.items(), key=itemgetter(1))
         for sntw, routes in list_RT:
             if len(routes) - 1:
-                pass
+                for idx, route in enumerate(routes):
+                    rtype, ex_ip, ex_int, cost, *_ ,= route
+                    rtype = rtype + " "*(8 - len(rtype))
+                    if not idx:
+                        line = "{rtype}{sntw} [110/{cost}] via {ex_ip}, {ex_int}\n"\
+                                                            .format(
+                                                                    cost = cost, 
+                                                                    rtype = rtype, 
+                                                                    sntw = sntw, 
+                                                                    ex_ip = ex_ip, 
+                                                                    ex_int = ex_int
+                                                                    )
+                    else:
+                        spaces = " "*(len(rtype) + len(sntw))
+                        line = "{spaces} [110/{cost}] via {ex_ip}, {ex_int}\n"\
+                                                            .format(
+                                                                    cost = cost, 
+                                                                    spaces = spaces,
+                                                                    ex_ip = ex_ip, 
+                                                                    ex_int = ex_int
+                                                                    )
+                    self.ST.insert("insert", line)
+                        
             else:
                 route ,= routes
                 rtype, ex_ip, ex_int, cost, *_ ,= route

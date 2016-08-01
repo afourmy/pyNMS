@@ -860,32 +860,48 @@ class Network(object):
                     ex_ip = ex_tk("ipaddress", nh)
                     ex_int = ex_tk("interface", source)
                     for neighbor, trunk in self.graph[node]["trunk"]:
+                        curr_dist = dist + trunk("cost", node)
                         if neighbor == source:
                             continue
-                        curr_dist = dist + trunk("cost", node)
-                        if trunk.sntw not in source.rt:
-                            SP_cost[trunk.sntw] = curr_dist
-                            source.rt[trunk.sntw] = {("R", ex_ip, ex_int, 
-                                                        curr_dist, nh, ex_tk)}
-                        else:
-                            if curr_dist == SP_cost[trunk.sntw] and K > len(source.rt[trunk.sntw]):
-                                source.rt[trunk.sntw].add(("R", ex_ip, ex_int, 
-                                                        curr_dist, nh, ex_tk))
-                        # 
-                        # if AS.type == "RIP":
-                        #     source.rt[trunk.sntw] = {("R", ex_ip, ex_int, 
-                        #                     dist + trunk("cost", node), nh, ex_tk)}
-                        # elif AS.type == "OSPF":
-                        #     # we check if the trunk has any common area with the
-                        #     # exit trunk: if it does not, it is an inter-area route.
-                        #     rtype = "O" if (trunk.AS[AS] & ex_tk.AS[AS]) else "O IA"
-                        #     if (rtype, trunk.sntw) not in visited_subnetworks:
-                        #         if ("O", trunk.sntw) in visited_subnetworks:
-                        #             continue
-                        #         else:
-                        #             visited_subnetworks.add((rtype, trunk.sntw))
-                        #             source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
-                        #                         dist + trunk("cost", node), nh, ex_tk)}
+                        if AS.type == "RIP":
+                            if trunk.sntw not in source.rt:
+                                SP_cost[trunk.sntw] = curr_dist
+                                source.rt[trunk.sntw] = {("R", ex_ip, ex_int, 
+                                                            curr_dist, nh, ex_tk)}
+                            else:
+                                if curr_dist == SP_cost[trunk.sntw] and K > len(source.rt[trunk.sntw]):
+                                    source.rt[trunk.sntw].add(("R", ex_ip, ex_int, 
+                                                            curr_dist, nh, ex_tk))
+
+                        elif AS.type == "OSPF":
+                            # we check if the trunk has any common area with the
+                            # exit trunk: if it does not, it is an inter-area route.
+                            rtype = "O" if (trunk.AS[AS] & ex_tk.AS[AS]) else "O IA"
+                            if trunk.sntw not in source.rt:
+                                SP_cost[trunk.sntw] = curr_dist
+                                source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                                                            curr_dist, nh, ex_tk)}
+                            else:
+                                
+                                for route in source.rt[trunk.sntw]:
+                                    break
+                                if route[0] == "O" and rtype == "IA":
+                                    continue
+                                elif route[0] == "O IA" and rtype == "O":
+                                    SP_cost[trunk.sntw] = curr_dist
+                                    source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                                                            curr_dist, nh, ex_tk)}
+                                else:
+                                    if curr_dist == SP_cost[trunk.sntw] and K > len(source.rt[trunk.sntw]):
+                                        source.rt[trunk.sntw].add((rtype, ex_ip, ex_int, 
+                                                            curr_dist, nh, ex_tk))
+                            if (rtype, trunk.sntw) not in visited_subnetworks:
+                                if ("O", trunk.sntw) in visited_subnetworks:
+                                    continue
+                                else:
+                                    visited_subnetworks.add((rtype, trunk.sntw))
+                                    source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                                                dist + trunk("cost", node), nh, ex_tk)}
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     if adj_trunk in path_trunk:
                         continue
