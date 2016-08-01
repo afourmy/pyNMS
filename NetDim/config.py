@@ -34,7 +34,7 @@ class Configuration(tk.Toplevel):
         exit = " {name}(config-if)# exit\n".format(name=node.name)
         st_config.insert("insert", exit)
         
-        for _, adj_trunk in scenario.ntw.graph[node]["trunk"]:
+        for neighbor, adj_trunk in scenario.ntw.graph[node]["trunk"]:
             direction = "S"*(adj_trunk.source == node) or "D"
             interface = getattr(adj_trunk, "interface" + direction)
             ip = getattr(adj_trunk, "ipaddress" + direction)
@@ -58,6 +58,38 @@ class Configuration(tk.Toplevel):
                                     " ip ospf cost {cost}\n")\
                                     .format(name=node.name, cost=cost)
                     st_config.insert("insert", change_cost)
+                    
+            # IS-IS is configured both in "config-router" mode and on the 
+            # interface itself: the code is set here so that the user doesn't
+            # have the exit the interace, then come back to it for IS-IS.
+            for AS in node.AS:
+                
+                node_area ,= node.AS[AS]
+                in_backbone = node_area.name == "Backbone"
+                
+                # we configure isis only if the neighbor 
+                # belongs to the same AS.
+                if AS in neighbor.AS:
+                    
+                    # activate IS-IS on the interface
+                    isis_conf = " {name}(config-if)# ip router isis\n"\
+                                                        .format(name=node.name)
+                                                        
+                    # we need to check what area the neighbor belongs to.
+                    # If it belongs to the node's area, the interface is 
+                    # configured as L1 with circuit-type, else with L2.            
+                    neighbor_area ,= neighbor.AS[AS]
+                    
+                    # we configure circuit-type as level 2 if the routers
+                    # belong to different areas, or they both belong to
+                    # the backbone
+                    l2 = node_area != neighbor_area or in_backbone
+                    cct_type = "level-2" if l2 else "level-1"
+                    cct_type_conf = " {name}(config-if)# isis circuit-type {ct}\n"\
+                                        .format(name=node.name, ct=cct_type)
+                        
+                    st_config.insert("insert", isis_conf)
+                    st_config.insert("insert", cct_type_conf)
                     
             exit = " {name}(config-if)# exit\n".format(name=node.name)
             st_config.insert("insert", exit)
@@ -112,7 +144,7 @@ class Configuration(tk.Toplevel):
                 # or a L1 area
                 # - whether the node is at the edge of its area (L1/L2)
                 node_area ,= node.AS[AS]
-                in_backbone = node_area.id == 2
+                in_backbone = node_area.name == "Backbone"
                 level = "level-1-2" if node in AS.border_routers else (
                         "level-2" if in_backbone else "level-1")
                 
@@ -156,35 +188,6 @@ class Configuration(tk.Toplevel):
                 st_config.insert("insert", level_conf)
                 st_config.insert("insert", plo)
                 st_config.insert("insert", exit)
-                                   
-                for neighbor, adj_trunk in scenario.ntw.graph[node]["trunk"]:
-                    
-                    # we configure isis only if the neighbor 
-                    # belongs to the same AS.
-                    if AS in neighbor.AS:
-                        direction = "S"*(adj_trunk.source == node) or "D"
-                        interface = getattr(adj_trunk, "interface" + direction)
-                        interface_conf = " {name}(config)# interface {interface}\n"\
-                                        .format(name=node.name, interface=interface)
-                        isis_conf = " {name}(config-if)# ip router isis\n"\
-                                                            .format(name=node.name)
-                                                            
-                        # we need to check what area the neighbor belongs to.
-                        # If it belongs to the node's area, the interface is 
-                        # configured as L1 with circuit-type, else with L2.            
-                        neighbor_area ,= neighbor.AS[AS]
-                        
-                        # we configure circuit-type as level 2 if the routers
-                        # belong to different areas, or they both belong to
-                        # the backbone
-                        l2 = node_area != neighbor_area or node_area.id == 2
-                        cct_type = "level-2" if l2 else "level-1"
-                        cct_type_conf = " {name}(config-if)# isis circuit-type {ct}\n"\
-                                            .format(name=node.name, ct=cct_type)
-                            
-                        st_config.insert("insert", interface_conf)
-                        st_config.insert("insert", isis_conf)
-                        st_config.insert("insert", cct_type_conf)
                         
                 end = " {name}(config-if)# end\n".format(name=node.name)
                 st_config.insert("insert", end)

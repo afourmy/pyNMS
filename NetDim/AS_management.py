@@ -385,7 +385,7 @@ class ASManagement(FocusTopLevel):
 
     def delete_area(self):
         for area_name in self.dict_listbox["area names"].pop_selected():
-            selected_area = self.AS.area_factory(name=selected_area_name)
+            selected_area = self.AS.area_factory(name=area_name)
             self.AS.delete_area(selected_area)
                 
     def display_area(self, event):

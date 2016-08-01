@@ -145,8 +145,7 @@ class ModifyAS(CustomTopLevel):
         # always at least one row and one column with a weight > 0
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
-        
-        # TODO make it a dict
+
         if mode == "add":
             command = lambda: self.add(scenario, *obj)
             values = tuple(map(str, scenario.ntw.pnAS.values()))
