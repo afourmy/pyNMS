@@ -54,6 +54,7 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
                 route ,= routes
                 rtype, ex_ip, ex_int, cost, *_ ,= route
                 rtype = rtype + " "*(8 - len(rtype))
+                print(rtype)
                 if rtype[0] == "O":
                     route = "{rtype}{sntw} [110/{cost}] via {ex_ip}, {ex_int}\n"\
                                                             .format(
