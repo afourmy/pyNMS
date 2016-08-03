@@ -293,6 +293,7 @@ class Scenario(tk.Canvas):
     @adapt_coordinates
     def link_creation(self, event, type):
         protocol = None
+        print(type)
         if type in ("ethernet", "wdm"):
             type, protocol = "trunk", type
         # delete the temporary line
@@ -305,8 +306,10 @@ class Scenario(tk.Canvas):
             destination_node = self.object_id_to_object[self.drag_item]
             if destination_node.class_type == "node": # because tag filtering doesn't work !
                 # create the link and the associated line
+                print(start_node, destination_node)
                 if start_node != destination_node:
                     new_link = self.ntw.lf(link_type=type, protocol=protocol, s=start_node, d=destination_node)
+                    print(new_link)
                     self.create_link(new_link)
               
     @adapt_coordinates
@@ -714,7 +717,7 @@ class Scenario(tk.Canvas):
             self.planal_move(50)
             min_y = min(node.y for node in self.ntw.pn["node"].values())
             max_y = max(node.y for node in self.ntw.pn["node"].values())
-            self.diff_y = (max_y - min_y) // 3
+            self.diff_y = (max_y - min_y) // 2
             
         self.draw_all(False)
             

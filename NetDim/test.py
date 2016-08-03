@@ -113,14 +113,15 @@ class TestSP(unittest.TestCase):
         self.route9 = self.netdim.cs.ntw.pn["route"]["route9"]
         self.route10 = self.netdim.cs.ntw.pn["route"]["route10"]
         self.route11 = self.netdim.cs.ntw.pn["route"]["route11"]
-        self.netdim.cs.ntw.calculate_all()
  
     def tearDown(self):
         self.netdim.destroy()
  
     def test_A_star(self):
         for i, r in enumerate((self.route9, self.route10, self.route11)):
-            self.assertEqual(list(map(str, r.path)), self.results[i])
+            _, path = self.netdim.cs.ntw.A_star(r.source, r.destination)
+            self.assertEqual(list(map(str, path)), self.results[i])
+            r.path = path
         
     def test_bellman_ford(self):
         for i, r in enumerate((self.route9, self.route10, self.route11)):
@@ -130,9 +131,10 @@ class TestSP(unittest.TestCase):
     def test_floyd_warshall(self):
         cost_trunk = lambda trunk: trunk.costSD
         all_length = self.netdim.cs.ntw.floyd_warshall()
-        for r in (self.route9, self.route10, self.route11):
+        for i, r in enumerate((self.route9, self.route10, self.route11)):
             path_length = all_length[r.source][r.destination]
-            self.assertEqual(sum(map(cost_trunk, r.path)), path_length)
+            _, path = self.netdim.cs.ntw.A_star(r.source, r.destination)
+            self.assertEqual(sum(map(cost_trunk, path)), path_length)
             
     def test_LP(self):
         for i, r in enumerate((self.route9, self.route10, self.route11)):
@@ -166,8 +168,8 @@ class TestMCF(unittest.TestCase):
 class TestISIS(unittest.TestCase):
     
     results = (
-    ("node5->node0", ["trunk5","trunk3","trunk2"]),
-    ("node0->node5", ["trunk1","trunk0","trunk4","trunk5"])
+    ("traffic9", {"trunk0", "trunk1", "trunk4", "trunk5"}),
+    ("traffic10", {"trunk2", "trunk3", "trunk5"})
     )
  
     @start_and_import("test_ISIS.xls")
@@ -178,18 +180,18 @@ class TestISIS(unittest.TestCase):
         self.netdim.destroy()
  
     def test_ISIS(self):
-        self.assertEqual(len(self.netdim.cs.ntw.pn["route"]), 2)
-        for route, path in self.results:
+        self.assertEqual(len(self.netdim.cs.ntw.pn["traffic"]), 2)
+        for traffic, path in self.results:
             # we retrieve the actual route from its name in pn
-            route = self.netdim.cs.ntw.pn["route"][route]
+            traffic_link = self.netdim.cs.ntw.pn["traffic"][traffic]
             # we check that the path is conform to IS-IS protocol
-            self.assertEqual(list(map(str, route.path)), path)
+            self.assertEqual(set(map(str, traffic_link.path)), path)
             
 class TestOSPF(unittest.TestCase):
     
     results = (
-    ("node8->node1", ["trunk11", "trunk6", "trunk1"]),
-    ("node1->node8", ["trunk5", "trunk12", "trunk9", "trunk10", "trunk11"])
+    ("traffic16", {"trunk14", "trunk2", "trunk3", "trunk6", "trunk8", "trunk15"}),
+    ("traffic15", {"trunk14", "trunk2", "trunk4", "trunk5", "trunk6", "trunk8", "trunk15"})
     )
  
     @start_and_import("test_ospf.xls")
@@ -200,12 +202,12 @@ class TestOSPF(unittest.TestCase):
         self.netdim.destroy()
  
     def test_OSPF(self):
-        self.assertEqual(len(self.netdim.cs.ntw.pn["route"]), 2)
-        for route, path in self.results:
+        self.assertEqual(len(self.netdim.cs.ntw.pn["traffic"]), 2)
+        for traffic_link, path in self.results:
             # we retrieve the actual route from its name in pn
-            route = self.netdim.cs.ntw.pn["route"][route]
+            traffic_link = self.netdim.cs.ntw.pn["traffic"][traffic_link]
             # we check that the path is conform to OSPF protocol
-            self.assertEqual(list(map(str, route.path)), path)
+            self.assertEqual(set(map(str, traffic_link.path)), path)
             
 class TestCSPF(unittest.TestCase):
     
