@@ -62,8 +62,9 @@ class Scenario(tk.Canvas):
         # display state per type of objects
         self.display_per_type = dict.fromkeys(self.ntw.all_type, True)
         
-        # id of the failure icon
-        self.id_failure = None
+        # indexes of the failure icons: dictionnary that bins
+        # trunks item to the id of the associated icon
+        self.id_fdtks = {}
         
         # list of currently selected object ("so")
         self.so = {"node": set(), "link": set()}
@@ -173,11 +174,12 @@ class Scenario(tk.Canvas):
             
     def highlight_route(self, route):
         # if the route has no AS, there is no management window
-        ft = route.AS.management.failed_trunk if route.AS else None
-        if ft and ft in route.path:
-            self.highlight_objects(*route.r_path[ft], color="gold", dash=True)
-        else:
-            self.highlight_objects(*route.path)
+        # TODO
+        # ft = route.AS.management.failed_trunk if route.AS else None
+        # if ft and ft in route.path:
+        #     self.highlight_objects(*route.r_path[ft], color="gold", dash=True)
+        # else:
+        self.highlight_objects(*route.path)
         
     @adapt_coordinates
     def find_closest_node(self, event):
@@ -293,7 +295,6 @@ class Scenario(tk.Canvas):
     @adapt_coordinates
     def link_creation(self, event, type):
         protocol = None
-        print(type)
         if type in ("ethernet", "wdm"):
             type, protocol = "trunk", type
         # delete the temporary line
@@ -308,8 +309,12 @@ class Scenario(tk.Canvas):
                 # create the link and the associated line
                 print(start_node, destination_node)
                 if start_node != destination_node:
-                    new_link = self.ntw.lf(link_type=type, protocol=protocol, s=start_node, d=destination_node)
-                    print(new_link)
+                    new_link = self.ntw.lf(
+                                           link_type = type, 
+                                           protocol = protocol, 
+                                           s = start_node, 
+                                           d = destination_node
+                                           )
                     self.create_link(new_link)
               
     @adapt_coordinates
@@ -565,9 +570,9 @@ class Scenario(tk.Canvas):
                     self.update_link_label_coordinates(link)
                     # if there is a link in failure, we need to update the
                     # failure icon by retrieving the middle position of the arc
-                    if link == self.ntw.failed_trunk:
+                    if link in self.ntw.fdtks:
                         mid_x, mid_y = link_to_coords[link][2:4]
-                        self.coords(self.id_failure, mid_x, mid_y)
+                        self.coords(self.id_fdtks[link], mid_x, mid_y)
                         
     def _create_link_label(self, link):
         coeff = self.compute_coeff(link)
@@ -828,20 +833,25 @@ class Scenario(tk.Canvas):
             
     ## Failure simulation
     
+    def remove_failure(self, trunk):
+        self.ntw.fdtks.remove(trunk)
+        icon_id = self.id_fdtks.pop(trunk)
+        self.delete(icon_id)
+    
     def remove_failures(self):
-        for AS in self.ntw.pnAS.values():
-            AS.management.failed_trunk = None
-            self.delete(self.id_failure)
+        self.ntw.fdtks.clear()
+        for idx in self.id_fdtks.values():
+            self.delete(idx)
+        self.id_fdtks.clear()
     
     def simulate_failure(self, trunk):
-        self.delete(self.id_failure)
-        for AS in trunk.AS:
-            AS.management.trigger_failure(trunk)
+        self.ntw.fdtks.add(trunk)
         self.refresh_all_labels()
         source, destination = trunk.source, trunk.destination
         xA, yA, xB, yB = source.x, source.y, destination.x, destination.y
-        self.id_failure = self.create_image(
+        id_failure = self.create_image(
                                             (xA+xB)/2, 
                                             (yA+yB)/2, 
                                             image = self.ms.img_failure
                                             )
+        self.id_fdtks[trunk] = id_failure

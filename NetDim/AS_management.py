@@ -13,7 +13,6 @@ class ASManagement(FocusTopLevel):
         super().__init__()
         self.cs = scenario
         self.AS = AS
-        self.failed_trunk = None
         self.title("Manage AS")
         self.obj_type = ("trunk", "node", "edge") 
         self.area_listbox = ("area names", "area trunks", "area nodes")
@@ -63,7 +62,8 @@ class ASManagement(FocusTopLevel):
         self.dict_listbox = {}
         for index, type in enumerate(self.obj_type):
             lbl = tk.Label(self, bg="#A1DBCD", text="".join(("AS ",type,"s")))
-            listbox = ObjectListbox(self, activestyle="none", width=15, height=7, selectmode="extended")
+            listbox = ObjectListbox(self, activestyle="none", width=15, 
+                                            height=7, selectmode="extended")
             self.dict_listbox[type] = listbox
             yscroll = tk.Scrollbar(self, 
                     command=self.dict_listbox[type].yview, orient=tk.VERTICAL)
@@ -212,106 +212,23 @@ class ASManagement(FocusTopLevel):
                     trunks_between_domain_nodes.add(adj_trunk)
         self.add_to_AS("Backbone", *trunks_between_domain_nodes)
         
-    # def create_routes(self):
-    #     self.update_AS_topology()
-    #     
-    #     for eA in self.AS.pAS["edge"]:
-    #         for eB in self.AS.pAS["edge"]:
-    #             if eA != eB and eB not in self.AS.routes[eA]:
-    #                 name = "->".join((str(eA), str(eB)))
-    #                 route = self.cs.ntw.lf(link_type="route", 
-    #                                                     name=name, s=eA, d=eB)
-    #                 _, route.path = self.cs.ntw.RFT_path_finder(eA, eB)
-    #                 #_, route.path = self.AS.algorithm(eA, eB, self.AS)
-    #                 route.AS = self.AS
-    #                 self.AS.pAS["route"].add(route)
-    #                 self.cs.create_link(route)
+    def create_traffic(self):
+        self.update_AS_topology()
+        
+        for eA in self.AS.pAS["edge"]:
+            for eB in self.AS.pAS["edge"]:
+                if eA != eB:
+                    name = "->".join((str(eA), str(eB)))
+                    # creation of the traffic and path finding procedure
+                    tl = self.cs.ntw.lf(link_type="traffic", 
+                                                        name=name, s=eA, d=eB)
+                    _, tl.path = self.cs.ntw.RFT_path_finder(eA, eB)
+                    self.cs.create_link(route)
                     
     def trigger_failure(self, trunk):
         self.failed_trunk = trunk
         self.failure_traffic()
-                    
-    def failure_traffic(self):
-        for trunk in self.AS.pAS["trunk"]:
-            trunk.trafficSD = trunk.trafficDS = 0.
-        # this function is used for failure simulation. When a link is set in
-        # failure, the traffic property display the traffic going over the link
-        # considering this failure case.
-        # It is also used when removing the failure, to update the trunk traffic 
-        # back to the "normal mode" traffic
-        for route in self.AS.pAS["route"]:
-            s, d = route.source, route.destination
-            prec_node = s
-            ft = self.failed_trunk
-            # if there is no failed trunk or the failed trunk is not on the
-            # normal patf of the route, we consider the normal route
-            if not ft or ft not in route.path:
-                traffic_path = route.path
-            else:
-                traffic_path = route.r_path[ft]
-            # if there is no link in failure, we add the route traffic 
-            # of the trunk (normal dimensioning), but if there is a failure,
-            # we add the traffic to the recovery path instead
-            for trunk in traffic_path:
-                sd = (trunk.source == prec_node)*"SD" or "DS"
-                trunk.__dict__["traffic" + sd] += route.traffic
-                # update of the previous node
-                prec_node = trunk.source if sd == "DS" else trunk.destination
-                    
-    def link_dimensioning(self):
-        for route in self.AS.pAS["route"]:
-            s, d = route.source, route.destination
-            for trunk in route.path:
-                # list of allowed trunks: all AS trunks but the failed one
-                a_t = self.AS.pAS["trunk"] - {trunk}
-                if self.var_pct_type.get() == "IGP convergence":
-                    # apply the AS routing algorithm, ignoring the failed trunk
-                    _, recovery_path = self.AS.algorithm(s, d, self.AS, a_t=a_t)
-                    route.r_path[trunk] = recovery_path
-                elif self.var_pct_type.get() == "FRR ECMP":
-                    pass
-
-        # we call failure traffic, knowing that link dimensioning is 
-        # called during "calculate all", and all failed trunk have been
-        # previously reseted.
-        # this means that failure traffic will trigger the normal procedure,
-        # and the traffic computation will not consider any failure case.
-        self.failure_traffic()
-            
-        # finally, we must compute the worst case traffic, that is the 
-        # maximum amount of traffic that can be sent on the link, 
-        # considering all possible failure cases
-        # we initialize it to the normal case traffic which is a lower bound
-        # of the worst case traffic.
-        for trunk in self.AS.pAS["trunk"]:
-            trunk.wctrafficSD = trunk.trafficSD
-            trunk.wctrafficDS = trunk.trafficDS
-            
-        for failed_trunk in self.AS.pAS["trunk"]:
-            # we create a dict of trunk, that contains for all trunks the 
-            # resulting traffic, considering that failed_trunk is in failure
-            trunk_traffic = {trunk: {"SD": 0, "DS": 0} 
-                                        for trunk in self.AS.pAS["trunk"]}
-            
-            for route in self.AS.pAS["route"]:
-                prec_node = route.source
-                if failed_trunk not in route.path:
-                    traffic_path = route.path
-                else:
-                    traffic_path = route.r_path[failed_trunk]
-                for trunk in traffic_path:
-                    sd = (trunk.source == prec_node)*"SD" or "DS"
-                    trunk_traffic[trunk][sd] += route.traffic
-                    # update of the previous node
-                    prec_node = trunk.source if sd == "DS" else trunk.destination
-            # we add the resulting traffic for the given failure case considered
-            # to all_traffic, which contains all such resulting traffic
-            for trunk in trunk_traffic:
-                for sd in ("SD", "DS"):
-                    new_wctraffic = trunk_traffic[trunk][sd]
-                    if new_wctraffic > getattr(trunk, "wctraffic" + sd):
-                        setattr(trunk, "wctraffic" + sd, new_wctraffic)
-                
+                                    
     def update_AS_topology(self):
         
         self.AS.border_routers.clear()
@@ -367,8 +284,6 @@ class ASManagement(FocusTopLevel):
                 elif self.AS.type == "OSPF":
                     for area in adj_trunk.AS[self.AS]:
                         area.add_to_area(node)
-                        
-
                 
     def update_cost(self):
         for trunk in self.AS.pAS["trunk"]:

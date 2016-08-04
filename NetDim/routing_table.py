@@ -3,6 +3,13 @@ from tkinter.scrolledtext import ScrolledText
 from operator import itemgetter
 import tkinter as tk
 
+# protocol to Administrative Distances
+AD = {
+"O": 110,
+"i": 115,
+"R": 120
+}
+
 class RoutingTable(tk.Toplevel):
     def __init__(self, node, scenario):
         super().__init__() 
@@ -31,21 +38,23 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
                     rtype, ex_ip, ex_int, cost, *_ ,= route
                     rtype = rtype + " "*(8 - len(rtype))
                     if not idx:
-                        line = "{rtype}{sntw} [110/{cost}] via {ex_ip}, {ex_int}\n"\
-                                                            .format(
-                                                                    cost = cost, 
-                                                                    rtype = rtype, 
-                                                                    sntw = sntw, 
-                                                                    ex_ip = ex_ip, 
-                                                                    ex_int = ex_int
-                                                                    )
+                        line = "{rtype}{sntw} [{AD}/{cost}] via {ex_ip}, {ex_int}\n"\
+                                                        .format(
+                                                                cost = cost, 
+                                                                rtype = rtype, 
+                                                                sntw = sntw, 
+                                                                AD = AD[rtype[0]],
+                                                                ex_ip = ex_ip, 
+                                                                ex_int = ex_int
+                                                                )
                     else:
                         spaces = " "*(len(rtype) + len(sntw))
-                        line = "{spaces} [110/{cost}] via {ex_ip}, {ex_int}\n"\
+                        line = "{spaces} [{AD}/{cost}] via {ex_ip}, {ex_int}\n"\
                                                             .format(
-                                                                    cost = cost, 
                                                                     spaces = spaces,
-                                                                    ex_ip = ex_ip, 
+                                                                    AD = AD[rtype[0]],
+                                                                    cost = cost,
+                                                                    ex_ip = ex_ip,
                                                                     ex_int = ex_int
                                                                     )
                     self.ST.insert("insert", line)
@@ -54,25 +63,16 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
                 route ,= routes
                 rtype, ex_ip, ex_int, cost, *_ ,= route
                 rtype = rtype + " "*(8 - len(rtype))
-                print(rtype)
-                if rtype[0] == "O":
-                    route = "{rtype}{sntw} [110/{cost}] via {ex_ip}, {ex_int}\n"\
-                                                            .format(
-                                                                    cost = cost, 
-                                                                    rtype = rtype, 
-                                                                    sntw = sntw, 
-                                                                    ex_ip = ex_ip, 
-                                                                    ex_int = ex_int
-                                                                    )
-                elif rtype[0] == "i":
-                    route = "{rtype}{sntw} [115/{cost}] via {ex_ip}, {ex_int}\n"\
-                                                            .format(
-                                                                    cost = cost, 
-                                                                    rtype = rtype, 
-                                                                    sntw = sntw, 
-                                                                    ex_ip = ex_ip, 
-                                                                    ex_int = ex_int
-                                                                    )
+                if rtype[0] in ("O", "i", "R"):
+                    route = "{rtype}{sntw} [{AD}/{cost}] via {ex_ip}, {ex_int}\n"\
+                                                    .format(
+                                                            cost = cost, 
+                                                            rtype = rtype, 
+                                                            sntw = sntw,
+                                                            AD = AD[rtype[0]],
+                                                            ex_ip = ex_ip, 
+                                                            ex_int = ex_int
+                                                            )
                 else:
                     route = "{rtype}{sntw} is directly connected, {ex_int}\n"\
                         .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)

@@ -33,8 +33,7 @@ class AutonomousSystem(object):
         self.pAS = {
         "trunk": trunks, 
         "node": nodes, 
-        "edge": edges,
-        "route": routes
+        "edge": edges
         }
         
         # areas is a dict associating a name to an area

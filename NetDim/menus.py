@@ -81,9 +81,12 @@ class RightClickMenu(tk.Menu):
         # exactly one trunk: failure simulation menu
         if not scenario.so["node"] and len(scenario.so["link"]) == 1:
             trunk ,= scenario.so["link"]
-            if trunk.type == "trunk" and trunk.AS:
+            if trunk.type == "trunk":
                 self.add_command(label="Simulate failure", 
                         command=lambda: self.simulate_failure(trunk, scenario))
+                if trunk in scenario.ntw.fdtks:
+                    self.add_command(label="Remove failure", 
+                        command=lambda: self.remove_failure(trunk, scenario))
                     
             self.add_separator()
                     
@@ -118,6 +121,10 @@ class RightClickMenu(tk.Menu):
         scenario.simulate_failure(trunk)
         
     @empty_selection_and_destroy_menu
+    def remove_failure(self, trunk, scenario):
+        scenario.remove_failure(trunk)
+        
+    @empty_selection_and_destroy_menu
     def configure(self, node, scenario):
         config.Configuration(node, scenario)
         
@@ -144,7 +151,7 @@ class GeneralRightClickMenu(tk.Menu):
         self.add_command(label="Stop drawing", command=lambda: scenario._cancel())
         
         # remove all failures if there is at least one
-        if any(AS.management.failed_trunk for AS in scenario.ntw.pnAS.values()):
+        if scenario.ntw.fdtks:
             self.add_separator()
             self.add_command(label="Remove all failures",
                     command=lambda: self.remove_all_failures(scenario))

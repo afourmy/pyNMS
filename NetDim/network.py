@@ -57,9 +57,9 @@ class Network(object):
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link = self.cpt_node = self.cpt_AS = 1
         
-        # this parameter is used for failure simulation, to display the 
-        # recovery path of a route considering the failed trunk
-        self.failed_trunk = None
+        # set of all trunks in failure: this parameter is used for
+        # link dimensioning and failure simulation
+        self.fdtks = set()
         
     # function filtering pn to retrieve all objects of a given subtype
     def ftr(self, type, subtype):
@@ -194,6 +194,24 @@ class Network(object):
                     yield trunk
             
     def calculate_all(self):
+        #TODO must be divided into several functions:
+        # 
+        # path finding procedure for all traffic link
+        # NO !!! shouldnt be one failure in the AS but one failure in the network
+        # because a failure in one AS may impact the traffic flows in another AS
+        # we should loop through all the network trunks, and fail them one after one,
+        # and record the worst case traffic for all network trunks.
+        # this gives us the worst case traffic
+        # then if the user fails more than one link, implement the SRG system,
+        # and let him calculate all to see the impact of multiple/SRG failures
+        # by recomputing all ROUTING TABLE (because if there was only one path, we
+        # need to find a new path !!!!)
+        # add a new parameter for trunk: WC trunk that displays the trunk
+        # which failures results in the worst case traffic.
+        # worst case traffic by failing links one after another: one failure on the AS only
+        # when highlighting a traffic link and there is a link in failure which
+        # belongs to its path, display the associated rerouted path
+        # make a drop-down list appear allowing to choose what to do
         for AS in self.pnAS.values():
             # for all OSPF and IS-IS AS, fill the ABR/L1L2 sets
             # update link area based on nodes area (ISIS) and vice-versa (OSPF)
@@ -218,8 +236,7 @@ class Network(object):
         # remove all link in failure, so that when we call "link dimensioning",
         # which in turns calls "failure traffic", the traffic is computed in
         # normal mode, without considering any existing failure
-        self.sco.remove_failures()
-
+        # self.sco.remove_failures()
 
         # for traffic link, we use a BGP-like routing to restraint the routing
         # path to routes when crossing an AS
@@ -569,43 +586,7 @@ class Network(object):
                     heappush(heap, (dist + cost, neighbor, 
                                                     path + [adj_trunk], step))
         return [], []
-        
-    def protection_routing(self, normal_path, algorithm, failed_link):
-        pass
-            
-    ## 6) Traffic routing algorithm
-    
-    def traffic_routing(self, traffic_link):
-        
-        source, target = traffic_link.source, traffic_link.destination
-        visited = set()
-        heap = [(0, source, [])]
-        # we count how many AS we cross in case of ECMP AS path, to keep the 
-        # shortest in terms of AS
-        while heap:
-            dist, node, path = heappop(heap)  
-            if node not in visited:
-                visited.add(node)
-                if node == target:
-                    return [], path
-                adj_links = self.graph[node]["trunk"] | self.graph[node]["route"]
-                for neighbor, adj_link in adj_links:
-                    sd = (node == adj_link.source)*"SD" or "DS"
-                    # if the link is a trunk and belongs to an AS,  
-                    # we ignore it because we use only AS's routes
-                    if adj_link.type == "trunk" and adj_link.AS: 
-                        continue
-                    # if the link is a route, we make sure the current node is 
-                    # the source of the route because routes are unidirectionnal
-                    if adj_link.type == "route" and adj_link.source != node: 
-                        continue
-                    # if the link is a route, it is unidirectional and the
-                    # property is simply cost, but if it is a trunk, there are
-                    # one cost per direction and we retrieve the right one
-                    cost = "cost"*(adj_link.type == "route") or "cost" + sd 
-                    dist += getattr(adj_link, cost)
-                    heappush(heap, (dist, neighbor, path + [adj_link]))
-            
+
     ## 7) Bellman-Ford algorithm
         
     def bellman_ford(
@@ -732,17 +713,24 @@ class Network(object):
         heap = [(source, traffic.throughput)]
         path_node, path_trunk = {source}, set()
         i = 0
-        while heap and i < 25:
+        while heap and i < 50:
             i += 1
             curr_router, share = heap.pop()
             if curr_router == destination:
                 continue
             # if there is a default route, we use it.
-            try:
+            if "0.0.0.0" in curr_router.rt:
                 routes = curr_router.rt["0.0.0.0"]
-            except KeyError:
+            elif dest_int in curr_router.rt:
                 routes = curr_router.rt[dest_int]
-            share /= len(routes)
+            else:
+                warnings.warn("Path not found for {}".format(traffic))
+                break
+            # we count the number of trunks in failure
+            failed_links = sum(r[-1] in self.fdtks for r in routes)
+            # and remove them from share so that they are ignored for 
+            # link dimensioning
+            share /= len(routes) - failed_links
             for route in routes:
                 *_, router, trunk = route
                 path_node.add(router)
@@ -750,8 +738,8 @@ class Network(object):
                 sd = (curr_router == trunk.source)*"SD" or "DS"
                 trunk.__dict__["traffic" + sd] += share
                 heap.append((router, share))
-        if i == 25:
-            print("loop")
+        if i == 50:
+            print("loop\nloop\nloop\nloop\nloop\nloop\nloop\nloop\nloop\nloop\n")
              
         traffic.path = path_trunk
 
@@ -763,6 +751,8 @@ class Network(object):
     def static_RFT_builder(self, source):
         
         for neighbor, adj_trunk in self.graph[source]["trunk"]:
+            if adj_trunk in self.fdtks:
+                continue
             ex_ip = adj_trunk("ipaddress", neighbor)
             ex_int = adj_trunk("interface", source)
             # we compute the subnetwork of the attached
@@ -776,7 +766,8 @@ class Network(object):
     def RFT_builder(self, source, AS):
                 
         visited = set()
-        allowed_nodes, allowed_trunks = AS.pAS["node"], AS.pAS["trunk"]
+        allowed_nodes = AS.pAS["node"]
+        allowed_trunks =  AS.pAS["trunk"] - self.fdtks
         # we keep track of all already visited subnetworks so that we 
         # don't add them more than once to the mapping dict.
         visited_subnetworks = set()
@@ -837,18 +828,17 @@ class Network(object):
                         ex_ip = adj_trunk("ipaddress", neighbor)
                         ex_int = adj_trunk("interface", source)
                         exit = (adj_trunk, ex_ip, ex_int, neighbor)                         
-                        
                     heappush(heap, (dist + adj_trunk("cost", node), neighbor, adj_trunk,
                                                                         exit))
             if node != source:
                 ex_tk, ex_ip, ex_int, nh = exit
-                if AS.type == "RIP" and node != source:
+                if AS.type == "RIP":
                     new_sntw = ("R", trunk.sntw)
                     if new_sntw not in visited_subnetworks:
                         visited_subnetworks.add(new_sntw)
                         source.rt[trunk.sntw] = {("R", ex_ip, ex_int, 
                                                     dist, nh, ex_tk)}
-                elif AS.type == "OSPF" and node != source:
+                elif AS.type == "OSPF":
                     # we check if the trunk has any common area with the
                     # exit trunk: if it does not, it is an inter-area route.
                     rtype = "O" if trunk.AS[AS] & ex_tk.AS[AS] else "O IA"
@@ -865,7 +855,7 @@ class Network(object):
                             source.rt["0.0.0.0"] = {("i*L1", ex_ip, ex_int,
                                                         dist, nh, ex_tk)}
                         else:
-                            if node != source and ("i L1", trunk.sntw) not in visited_subnetworks and trunk.AS[AS] & ex_tk.AS[AS]:
+                            if ("i L1", trunk.sntw) not in visited_subnetworks and trunk.AS[AS] & ex_tk.AS[AS]:
                                 visited_subnetworks.add(("i L1", trunk.sntw))
                                 source.rt[trunk.sntw] = {("i L1", ex_ip, ex_int,
                                         dist + trunk("cost", node), nh, ex_tk)}
@@ -894,7 +884,7 @@ class Network(object):
 
     
     ## 2) RFT builder for LB-enabled networks
-    
+                                                
     def RFT_LB_builder(
                self, 
                source, 
@@ -905,7 +895,8 @@ class Network(object):
                ):
     
         visited = set()
-        allowed_nodes, allowed_trunks = AS.pAS["node"], AS.pAS["trunk"]
+        allowed_nodes = AS.pAS["node"]
+        allowed_trunks =  AS.pAS["trunk"] - self.fdtks
         # we keep track of all already visited subnetworks so that we 
         # don't add them more than once to the mapping dict.
         visited_subnetworks = set()
@@ -924,77 +915,78 @@ class Network(object):
         #                  [110/20] via 10.0.0.9, 00:08:02, Ethernet0/1
         # C       10.0.0.4 is directly connected, Ethernet0/0
 
-        
+   #       
         while heap:
             dist, node, path_trunk = heappop(heap)  
             if (node, tuple(path_trunk)) not in visited:
                 visited.add((node, tuple(path_trunk)))
-                for neighbor, trunk in self.graph[node]["trunk"]:
-                    if trunk in path_trunk:
+                for neighbor, adj_trunk in self.graph[node]["trunk"]:
+                    if adj_trunk in path_trunk:
                         continue
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes:
                         continue
                     # excluded and allowed trunks
-                    if trunk not in allowed_trunks: 
+                    if adj_trunk not in allowed_trunks: 
                         continue
                     if node == source:
-                        ex_ip = trunk("ipaddress", neighbor)
-                        ex_int = trunk("interface", source)
-                        source.rt[trunk.sntw] = {("C", ex_ip, ex_int, 
-                                                    dist, neighbor, trunk)}
-                    elif path_trunk:
-                        ex_tk = path_trunk[0]
-                        nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
-                        ex_ip = ex_tk("ipaddress", nh)
-                        ex_int = ex_tk("interface", source)
-                        curr_dist = dist + trunk("cost", node)
-                        if neighbor == source:
+                        ex_ip = adj_trunk("ipaddress", neighbor)
+                        ex_int = adj_trunk("interface", source)
+                        source.rt[adj_trunk.sntw] = {("C", ex_ip, ex_int, 
+                                                    dist, neighbor, adj_trunk)}
+                        SP_cost[adj_trunk.sntw] = 0
+                    heappush(heap, (dist + adj_trunk("cost", node), neighbor, 
+                                                    path_trunk + [adj_trunk]))
+                    
+            if path_trunk:
+                trunk = path_trunk[-1]
+                ex_tk = path_trunk[0]
+                nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
+                ex_ip = ex_tk("ipaddress", nh)
+                ex_int = ex_tk("interface", source)
+                curr_dist = dist + trunk("cost", node)
+                if AS.type == "RIP":
+                    if trunk.sntw not in source.rt:
+                        SP_cost[trunk.sntw] = curr_dist
+                        source.rt[trunk.sntw] = {("R", ex_ip, ex_int, 
+                                                    curr_dist, nh, ex_tk)}
+                    else:
+                        if curr_dist == SP_cost[trunk.sntw] and K > len(source.rt[trunk.sntw]):
+                            source.rt[trunk.sntw].add(("R", ex_ip, ex_int, 
+                                                    curr_dist, nh, ex_tk))
+                elif AS.type == "OSPF":
+                    # we check if the trunk has any common area with the
+                    # exit trunk: if it does not, it is an inter-area route.
+                    rtype = "O" if (trunk.AS[AS] & ex_tk.AS[AS]) else "O IA"
+                    if trunk.sntw not in source.rt:
+                        SP_cost[trunk.sntw] = curr_dist
+                        source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                                                    curr_dist, nh, ex_tk)}
+                    else:
+                        for route in source.rt[trunk.sntw]:
+                            break
+                        if route[0] == "O" and rtype == "IA":
                             continue
-                        if AS.type == "RIP":
-                            if trunk.sntw not in source.rt:
-                                SP_cost[trunk.sntw] = curr_dist
-                                source.rt[trunk.sntw] = {("R", ex_ip, ex_int, 
-                                                            curr_dist, nh, ex_tk)}
-                            else:
-                                if curr_dist == SP_cost[trunk.sntw] and K > len(source.rt[trunk.sntw]):
-                                    source.rt[trunk.sntw].add(("R", ex_ip, ex_int, 
-                                                            curr_dist, nh, ex_tk))
-                        elif AS.type == "OSPF":
-                            # we check if the trunk has any common area with the
-                            # exit trunk: if it does not, it is an inter-area route.
-                            rtype = "O" if (trunk.AS[AS] & ex_tk.AS[AS]) else "O IA"
-                            if trunk.sntw not in source.rt:
-                                SP_cost[trunk.sntw] = curr_dist
-                                source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
-                                                            curr_dist, nh, ex_tk)}
-                            else:
-                                for route in source.rt[trunk.sntw]:
-                                    break
-                                if route[0] == "O" and rtype == "IA":
-                                    continue
-                                elif route[0] == "O IA" and rtype == "O":
-                                    SP_cost[trunk.sntw] = curr_dist
-                                    source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
-                                                            curr_dist, nh, ex_tk)}
-                                else:
-                                    if curr_dist == SP_cost[trunk.sntw] and K > len(source.rt[trunk.sntw]):
-                                        source.rt[trunk.sntw].add((rtype, ex_ip, ex_int, 
-                                                            curr_dist, nh, ex_tk))
-                            if (rtype, trunk.sntw) not in visited_subnetworks:
-                                if ("O", trunk.sntw) in visited_subnetworks:
-                                    continue
-                                else:
-                                    visited_subnetworks.add((rtype, trunk.sntw))
-                                    source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
-                                                dist + trunk("cost", node), nh, ex_tk)}
-                        # TODO
-                        # IS-IS uses per-address unequal cost load balancing 
-                        # a user-defined variance defined as a percentage of the
-                        # primary path cost defines which paths can be used
-                        # (up to 9).
-                                                
-                    heappush(heap, (dist + trunk("cost", node), neighbor, path_trunk + [trunk]))
+                        elif route[0] == "O IA" and rtype == "O":
+                            SP_cost[trunk.sntw] = curr_dist
+                            source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                                                    curr_dist, nh, ex_tk)}
+                        else:
+                            if curr_dist == SP_cost[trunk.sntw] and K > len(source.rt[trunk.sntw]):
+                                source.rt[trunk.sntw].add((rtype, ex_ip, ex_int, 
+                                                    curr_dist, nh, ex_tk))
+                    if (rtype, trunk.sntw) not in visited_subnetworks:
+                        if ("O", trunk.sntw) in visited_subnetworks:
+                            continue
+                        else:
+                            visited_subnetworks.add((rtype, trunk.sntw))
+                            source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                                        dist + trunk("cost", node), nh, ex_tk)}
+                    # TODO
+                    # IS-IS uses per-address unequal cost load balancing 
+                    # a user-defined variance defined as a percentage of the
+                    # primary path cost defines which paths can be used
+                    # (up to 9).
         
     ## Link-disjoint / link-and-node-disjoint shortest pair algorithms
     
