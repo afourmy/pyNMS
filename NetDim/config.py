@@ -64,12 +64,12 @@ class Configuration(tk.Toplevel):
             # have the exit the interace, then come back to it for IS-IS.
             for AS in node.AS:
                 
-                node_area ,= node.AS[AS]
-                in_backbone = node_area.name == "Backbone"
-                
                 # we configure isis only if the neighbor 
                 # belongs to the same AS.
-                if AS in neighbor.AS:
+                if AS in neighbor.AS and AS.type == "ISIS":
+                    
+                    node_area ,= node.AS[AS]
+                    in_backbone = node_area.name == "Backbone"
                     
                     # activate IS-IS on the interface
                     isis_conf = " {name}(config-if)# ip router isis\n"\

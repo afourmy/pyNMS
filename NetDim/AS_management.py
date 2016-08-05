@@ -101,8 +101,8 @@ class ASManagement(FocusTopLevel):
         self.button_find_edge_nodes = ttk.Button(self, text="Find edges", 
                                 command=lambda: self.find_edge_nodes())
                                 
-        self.button_create_route = ttk.Button(self, text="Create route", 
-                                command=lambda: self.create_routes())
+        self.button_create_route = ttk.Button(self, text="Create traffic", 
+                                command=lambda: self.create_traffic())
         
         # find domain trunks: the trunks between nodes of the AS
         self.button_find_trunks = ttk.Button(self, text="Find trunks", 
@@ -222,13 +222,8 @@ class ASManagement(FocusTopLevel):
                     # creation of the traffic and path finding procedure
                     tl = self.cs.ntw.lf(link_type="traffic", 
                                                         name=name, s=eA, d=eB)
-                    _, tl.path = self.cs.ntw.RFT_path_finder(eA, eB)
-                    self.cs.create_link(route)
-                    
-    def trigger_failure(self, trunk):
-        self.failed_trunk = trunk
-        self.failure_traffic()
-                                    
+                    self.cs.create_link(tl)
+                                                    
     def update_AS_topology(self):
         
         self.AS.border_routers.clear()

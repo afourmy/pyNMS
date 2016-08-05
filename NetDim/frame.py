@@ -4,7 +4,9 @@
 
 import tkinter as tk
 from tkinter import ttk
+from collections import OrderedDict
 from graph_generation import NetworkDimension
+from miscellaneous import CustomTopLevel, ObjectListbox
 import drawing_options_window
 
 class MainFrame(tk.Frame):
@@ -17,14 +19,26 @@ class MainFrame(tk.Frame):
         relief = "solid", 
         background = "#A1DBCD"
         )
-        
+
         self.ms = master
         self.bg_color = "#E6E6FA"
         self.font = ("Helvetica", 8, "bold")
+        
+        functions = OrderedDict([
+        ("Update AS topology", self.ms.cs.ntw.update_AS_topology),
+        ("Interface allocation", self.ms.cs.ntw.interface_allocation),
+        ("IP addressing", self.ms.cs.ntw.ip_allocation),
+        ("Subnetwork allocation", self.ms.cs.ntw.subnetwork_allocation),
+        ("WC trunk dimensioning", self.ms.cs.ntw.trunk_dimensioning),
+        ("Create routing tables", self.ms.cs.ntw.rt_creation),
+        ("Route traffic links", self.ms.cs.ntw.path_finder),
+        ("Refresh labels", self.ms.cs.refresh_all_labels)
+        ])
+        
         self.type_to_button = {}
         
         self.type_to_action = {
-        "netdim": lambda: self.ms.cs.ntw.calculate_all(),
+        "netdim": lambda: Computation(self.ms, functions),
         "motion": lambda: self.switch_to("motion"),
         "multi-layer": lambda: self.ms.cs.switch_display_mode(),
         }
@@ -134,4 +148,27 @@ class MainFrame(tk.Frame):
     def erase_graph(self, scenario):
         scenario.erase_graph()
         scenario.ntw.erase_network()
+        
+class Computation(CustomTopLevel):    
+            
+    def __init__(self, master, functions):
+        super().__init__()
+        self.fcts = functions
+        self.lb_functions = ObjectListbox(self, activestyle="none", width=15, 
+                                            height=7, selectmode="extended")
+                                            
+        for function in self.fcts:
+            self.lb_functions.insert(function) 
+            
+        # button to confirm selection and trigger functions
+        self.OK_button = ttk.Button(self, text="OK", command=self.OK)
+                                
+        self.lb_functions.pack(fill=tk.BOTH, expand=1)
+        self.OK_button.pack()
+        
+    def OK(self):
+        for function in self.lb_functions.selected():
+            print(function)
+            self.fcts[function]()
+        self.destroy()
         

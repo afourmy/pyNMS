@@ -722,7 +722,7 @@ class Scenario(tk.Canvas):
             self.planal_move(50)
             min_y = min(node.y for node in self.ntw.pn["node"].values())
             max_y = max(node.y for node in self.ntw.pn["node"].values())
-            self.diff_y = (max_y - min_y) // 2
+            self.diff_y = (max_y - min_y) // 2 + 100
             
         self.draw_all(False)
             
@@ -855,3 +855,4 @@ class Scenario(tk.Canvas):
                                             image = self.ms.img_failure
                                             )
         self.id_fdtks[trunk] = id_failure
+        

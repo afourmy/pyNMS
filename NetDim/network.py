@@ -7,6 +7,7 @@ import objects
 import AS
 import random
 import warnings
+import tkinter as tk
 from network_functions import compute_network
 from math import cos, sin, asin, radians, sqrt
 from collections import defaultdict, deque, OrderedDict
@@ -53,7 +54,7 @@ class Network(object):
         # pn for "pool network"
         self.pn = {"trunk": {}, "node": {}, "route": {}, "traffic": {}}
         self.pnAS = {}
-        self.sco = scenario
+        self.cs = scenario
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link = self.cpt_node = self.cpt_AS = 1
         
@@ -122,7 +123,7 @@ class Network(object):
         if name not in self.pnAS:
             # creation of the AS
             self.pnAS[name] = AS.AutonomousSystem(
-                                                  self.sco, 
+                                                  self.cs, 
                                                   _type, 
                                                   name, 
                                                   id,
@@ -212,34 +213,37 @@ class Network(object):
         # when highlighting a traffic link and there is a link in failure which
         # belongs to its path, display the associated rerouted path
         # make a drop-down list appear allowing to choose what to do
+
+        self.update_AS_topology()
+        self.ip_allocation()
+        self.subnetwork_allocation()
+        self.interface_allocation()
+        self.trunk_dimensioning()
+        self.rt_creation()
+        self.path_finder()
+        self.cs.refresh_all_labels()
+        
+    def update_AS_topology(self):
         for AS in self.pnAS.values():
             # for all OSPF and IS-IS AS, fill the ABR/L1L2 sets
             # update link area based on nodes area (ISIS) and vice-versa (OSPF)
             AS.management.update_AS_topology()
-            
-        self.ip_allocation()
-        self.subnetwork_allocation()
-        self.interface_allocation()
         
+    def rt_creation(self):
         # we compute the routing table of all routers
         for router in self.ftr("node", "router"):
             router.rt = {}
             self.static_RFT_builder(router)
             for AS in router.AS:
                 self.RFT_builder(router, AS)
-        
+                
+    def reset_traffic(self):
         # reset the traffic for all trunks
         for trunk in self.pn["trunk"].values():
             trunk.trafficSD = trunk.trafficDS = 0.
-            trunk.wctrafficSD = trunk.wctrafficDS = 0.
-            
-        # remove all link in failure, so that when we call "link dimensioning",
-        # which in turns calls "failure traffic", the traffic is computed in
-        # normal mode, without considering any existing failure
-        # self.sco.remove_failures()
-
-        # for traffic link, we use a BGP-like routing to restraint the routing
-        # path to routes when crossing an AS
+                
+    def path_finder(self):
+        self.reset_traffic()
         for traffic in self.pn["traffic"].values():
             src, dest = traffic.source, traffic.destination
             if src.subtype == "router" and dest.subtype == "router":
@@ -248,8 +252,27 @@ class Network(object):
                 _, traffic.path = self.A_star(src, dest)
             if not traffic.path:
                 print("no path found for {}".format(traffic))
-            
-        self.sco.refresh_all_labels()
+        
+    def trunk_dimensioning(self):
+        # we need to remove all failures before dimensioning the trunks:
+        # the set of failed trunk will be redefined, but we also need the
+        # icons to be cleaned from the canvas
+        self.cs.remove_failures()
+        
+        # we consider each trunk in the network to be failed, one by one
+        for failed_trunk in self.pn["trunk"].values():
+            self.fdtks = {failed_trunk}
+            # the trunk being failed, we will recreate all routing tables
+            # then use the path finding procedure to map the traffic flows
+            self.rt_creation()
+            self.path_finder()
+            for trunk in self.pn["trunk"].values():
+                for dir in ("SD", "DS"):
+                    curr_traffic = getattr(trunk, "traffic" + dir)
+                    if curr_traffic > getattr(trunk, "wctraffic" + dir):
+                        setattr(trunk, "wctraffic" + dir, curr_traffic)
+                        
+        self.cs.remove_failures()
         
     def ip_allocation(self):
         # we use 10.0.0.0/8 to allocate IP addresses for all interfaces in
@@ -295,12 +318,10 @@ class Network(object):
 
     def interface_allocation(self):
         for node in self.graph:
-            index_interface = 0
-            for _, adj_trunk in self.graph[node]["trunk"]:
+            for idx, (_, adj_trunk) in enumerate(self.graph[node]["trunk"]):
                 direction = "S"*(adj_trunk.source == node) or "D"
-                interface = "Ethernet0/{}".format(index_interface)
+                interface = "Ethernet0/{}".format(idx)
                 setattr(adj_trunk, "interface" + direction, interface)
-                index_interface += 1
             
     def bfs(self, source):
         visited = set()
@@ -1608,7 +1629,7 @@ class Network(object):
         
         # we compute the path of all traffic links
         self.calculate_all()
-        graph_sco = self.sco.ms.add_scenario()
+        graph_sco = self.cs.ms.add_scenario()
         
         # in the new graph, each node corresponds to a traffic path
         # we create one node per traffic link in the new scenario            
