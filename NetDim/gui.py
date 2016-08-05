@@ -97,6 +97,8 @@ class NetDim(tk.Tk):
         # handle, considering all possible failure cases.
         "wctrafficSD",
         "wctrafficDS",
+        # the trunk which failure results in the worst case traffic
+        "wcfailure",
         "flowSD", 
         "flowDS",
         "ipaddressS", 
@@ -281,6 +283,7 @@ class NetDim(tk.Tk):
         "trafficDS": float,
         "wctrafficSD": float,
         "wctrafficDS": float,
+        "wcfailure": str,
         "flowSD": float,
         "flowDS": float,
         "ipaddressS": str,
@@ -322,6 +325,7 @@ class NetDim(tk.Tk):
         "trafficDS": "Traffic D -> S", 
         "wctrafficSD": "Worst case traffic S -> D", 
         "wctrafficDS": "Worst case traffic D -> S", 
+        "wcfailure": "Worst case failure",
         "flowSD": "Flow S -> D", 
         "flowDS": "Flow D -> S", 
         "ipaddressS": "IP address (source)",

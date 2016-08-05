@@ -199,6 +199,7 @@ class Trunk(Link):
         
         self.trafficSD = self.trafficDS = 0.
         self.wctrafficSD = self.wctrafficDS = 0.
+        self.wcfailure = None
         self.flowSD = self.flowDS = 0.
         # list of AS to which the trunks belongs. AS is actually a dictionnary
         # associating an AS to a set of area the trunks belongs to

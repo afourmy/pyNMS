@@ -195,25 +195,6 @@ class Network(object):
                     yield trunk
             
     def calculate_all(self):
-        #TODO must be divided into several functions:
-        # 
-        # path finding procedure for all traffic link
-        # NO !!! shouldnt be one failure in the AS but one failure in the network
-        # because a failure in one AS may impact the traffic flows in another AS
-        # we should loop through all the network trunks, and fail them one after one,
-        # and record the worst case traffic for all network trunks.
-        # this gives us the worst case traffic
-        # then if the user fails more than one link, implement the SRG system,
-        # and let him calculate all to see the impact of multiple/SRG failures
-        # by recomputing all ROUTING TABLE (because if there was only one path, we
-        # need to find a new path !!!!)
-        # add a new parameter for trunk: WC trunk that displays the trunk
-        # which failures results in the worst case traffic.
-        # worst case traffic by failing links one after another: one failure on the AS only
-        # when highlighting a traffic link and there is a link in failure which
-        # belongs to its path, display the associated rerouted path
-        # make a drop-down list appear allowing to choose what to do
-
         self.update_AS_topology()
         self.ip_allocation()
         self.subnetwork_allocation()
@@ -233,9 +214,10 @@ class Network(object):
         # we compute the routing table of all routers
         for router in self.ftr("node", "router"):
             router.rt = {}
-            self.static_RFT_builder(router)
+            #self.static_RFT_builder(router)
             for AS in router.AS:
                 self.RFT_builder(router, AS)
+            self.static_RFT_builder(router)
                 
     def reset_traffic(self):
         # reset the traffic for all trunks
@@ -271,6 +253,7 @@ class Network(object):
                     curr_traffic = getattr(trunk, "traffic" + dir)
                     if curr_traffic > getattr(trunk, "wctraffic" + dir):
                         setattr(trunk, "wctraffic" + dir, curr_traffic)
+                        setattr(trunk, "wcfailure", str(failed_trunk))
                         
         self.cs.remove_failures()
         
@@ -770,7 +753,6 @@ class Network(object):
     # TODO and default / static route too
     
     def static_RFT_builder(self, source):
-        
         for neighbor, adj_trunk in self.graph[source]["trunk"]:
             if adj_trunk in self.fdtks:
                 continue
@@ -848,7 +830,9 @@ class Network(object):
                         # interface directly attached to the source node.
                         ex_ip = adj_trunk("ipaddress", neighbor)
                         ex_int = adj_trunk("interface", source)
-                        exit = (adj_trunk, ex_ip, ex_int, neighbor)                         
+                        exit = (adj_trunk, ex_ip, ex_int, neighbor) 
+                        source.rt[adj_trunk.sntw] = {("C", ex_ip, ex_int, 
+                                                       0, neighbor, adj_trunk)}                        
                     heappush(heap, (dist + adj_trunk("cost", node), neighbor, adj_trunk,
                                                                         exit))
             if node != source:
@@ -883,24 +867,27 @@ class Network(object):
                     else:
                         trunkAS ,= trunk.AS[AS]
                         exit_area ,= ex_tk.AS[AS]
-                        rtype = "i L1" if trunk.AS[AS] & ex_tk.AS[AS] and trunkAS.name != "Backbone" else "i L2"
-                        if node != source:
-                            # we favor intra-area routes by excluding a 
-                            # route if the area of the exit trunk is not
-                            # the one of the subnetwork
-                            if not ex_tk.AS[AS] & trunk.AS[AS] and trunkAS.name == "Backbone":
-                                continue
-                            # if the source is an L1/L2 node and the destination
-                            # is an L1 area different from its own, we force it
-                            # to use the backbone by forbidding it to use the
-                            # exit interface in the source area
-                            if rtype == "i L2" and source in AS.border_routers and exit_area.name != "Backbone":
-                                continue
-                            if ("i L1", trunk.sntw) not in visited_subnetworks and ("i L2", trunk.sntw) not in visited_subnetworks:
-                                
-                                visited_subnetworks.add((rtype, trunk.sntw))
-                                source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int,
-                                        dist + trunk("cost", node), nh, ex_tk)}
+                        rtype = "i L1" if (trunk.AS[AS] & ex_tk.AS[AS] and 
+                                        trunkAS.name != "Backbone") else "i L2"
+                        # we favor intra-area routes by excluding a 
+                        # route if the area of the exit trunk is not
+                        # the one of the subnetwork
+                        if (not ex_tk.AS[AS] & trunk.AS[AS] 
+                                        and trunkAS.name == "Backbone"):
+                            continue
+                        # if the source is an L1/L2 node and the destination
+                        # is an L1 area different from its own, we force it
+                        # to use the backbone by forbidding it to use the
+                        # exit interface in the source area
+                        if (rtype == "i L2" and source in AS.border_routers and 
+                                    exit_area.name != "Backbone"):
+                            continue
+                        if (("i L1", trunk.sntw) not in visited_subnetworks 
+                            and ("i L2", trunk.sntw) not in visited_subnetworks):
+                            
+                            visited_subnetworks.add((rtype, trunk.sntw))
+                            source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int,
+                                    dist + trunk("cost", node), nh, ex_tk)}
             
 
     

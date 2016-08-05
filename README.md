@@ -34,16 +34,16 @@ Projects can be saved to an excel or a csv format. This can also be used to impo
 ![Excel project](https://github.com/mintoo/networks/raw/master/Readme/xls_import.PNG)
 
 It is also possible to import graphml files from the [Topology Zoo] (http://www.topology-zoo.org/). The Topology Zoo gathers information about existing networks. All files are provided in the Workspace Folder.
-As an example, this is the topology of the BENESTRA network in Slovakia:
+As an example, this is the topology of the RENATER network in France, in 2010:
 
-![Graphml Impport](https://github.com/mintoo/networks/raw/master/Readme/BenestraBB.PNG)
+![Graphml Impport](https://github.com/mintoo/networks/raw/master/Readme/RENATER.PNG)
 
 ## AS Management
 
 Nodes and trunks can be added to an AS by selecting them on the canvas, with the right-click menu. The AS topology is displayed in the "AS Management" panel. This window is also used to create and manage areas.
 Routes are created between every couple of "edge nodes", in order to prevent the creation of too many routes.
 
-![AS Management](https://github.com/mintoo/networks/raw/master/Readme/AS_management.PNG)
+![AS Management](https://github.com/mintoo/networks/raw/master/Readme/domain_management.PNG)
 
 ## Routing algorithms
 
@@ -53,15 +53,17 @@ Four algorithms have been implemented to find the shortest path between two devi
 - Floyd-Warshall algorithm
 - Shortest path with linear programming (GLPK)
 
-Dijkstra algorithm (quasi-linear complexity) is used by default. Variations of Dijkstra algorithm (A*) were implemented to find the traffic path in an AS depending on the protocol.
-The reason for using specific algorithms is that multi-area topologies can lead to suboptimal routing:
-- In IS-IS, an L1 router sends all traffic to the closest L1/L2 router, even though there could be a shorter path (in terms of metric) if there are multiple L1/L2 routers in the starting area.
-- In OSPF, intra-area routes are always favored over inter-area routes, even when inter-area routes happen to be the shortest.
+However, a shortest path algorithm is not enough to find the path of a traffic flow inside a network, because:
+- a router is capable of load-balancing the traffic among several equal (OSPF) or unequal (IS-IS, EIGRP) cost paths.
+- multi-area topologies can lead to suboptimal routing:
+  * In IS-IS, an L1 router sends all traffic to the closest L1/L2 router, even though there could be a shorter path (in terms of metric) if there are multiple L1/L2 routers in the starting area.
+  * In OSPF, intra-area routes are always favored over inter-area routes, even when inter-area routes happen to be the shortest. An ABR can advertize the wrong cost to other routers, which results in "area hijacking".
 
-Clicking on a route or a traffic link highlights its path through the network. In both IS-IS and OSPF AS, the aforementioned constraints may cause asymmetrical routing. This is one of the reasons why routes are unidirectional.
-Consequently, two routes are created between each pair of edge nodes.
+I came up to the conclusion that the only way to properly route flows in a network is to bring the model as close to real-life routing as possible: 
+1. First, Netdim automatically assigns IP addresses and interfaces to all routers.
+2. For each device, a switching / routing table is created to associate a destination address to a exit interface / next-hop device.
 
-![Route highlight](https://github.com/mintoo/networks/raw/master/Readme/routing.PNG)
+![Routing table](https://github.com/mintoo/networks/raw/master/Readme/routing_table.PNG)
 
 ## 3D display
 
@@ -86,7 +88,7 @@ When highlighting a route's path, the "recovery path" is displayed: it shows how
 
 ## Automatic device configuration
 
-Netdim automatically assigns IP addresses and interfaces to all routers. After an AS is created, Netdim shows all Cisco commands required to properly configure the protocol on the device. 
+After an AS is created, Netdim shows all Cisco commands required to properly configure the protocol on the device. 
 This information can in turn be used along with network simulator like GNS3 to learn how to configure a network.
 
 ![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/config.PNG)
