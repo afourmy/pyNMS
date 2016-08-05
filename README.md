@@ -25,7 +25,7 @@ Two spring-layout algorithms are implemented:
 
 On a 4-layer deep tree which nodes are initially drawn at a random position on the canvas, the algorithm converges within a few seconds to a visually pleasing tree shape.
 
-![Graph visualization](https://github.com/mintoo/networks/raw/master/Readme/visualization.PNG =500x)
+![Graph visualization](https://github.com/mintoo/networks/raw/master/Readme/visualization.PNG =100x20)
 
 ## Saving and import/export
 
