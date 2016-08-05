@@ -63,7 +63,7 @@ I came up to the conclusion that the only way to properly route flows in a netwo
 1. First, Netdim automatically assigns IP addresses and interfaces to all routers.
 2. For each device, a switching / routing table is created to associate a destination address to a exit interface / next-hop device.
 
-![Routing table](https://github.com/mintoo/networks/raw/master/Readme/routing_table.PNG)
+![Routing table](https://github.com/mintoo/networks/raw/master/Readme/routing_table.png)
 
 ## 3D display
 
