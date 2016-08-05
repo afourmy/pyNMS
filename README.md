@@ -23,7 +23,7 @@ Two spring-layout algorithms are implemented:
 - Eades algorithm
 - Fructherman-Reingold algorithm
 
-On a 5-layer deep tree which nodes are initially drawn at a random position on the canvas, the algorithm converges within a few seconds to a visually pleasing tree shape.
+On a 4-layer deep tree which nodes are initially drawn at a random position on the canvas, the algorithm converges within a few seconds to a visually pleasing tree shape.
 
 ![Graph visualization](https://github.com/mintoo/networks/raw/master/Readme/visualization.PNG)
 
@@ -59,9 +59,9 @@ However, a shortest path algorithm is not enough to find the path of a traffic f
   * In IS-IS, an L1 router sends all traffic to the closest L1/L2 router, even though there could be a shorter path (in terms of metric) if there are multiple L1/L2 routers in the starting area.
   * In OSPF, intra-area routes are always favored over inter-area routes, even when inter-area routes happen to be the shortest. An ABR can advertize the wrong cost to other routers, which results in "area hijacking".
 
-I came up to the conclusion that the only way to properly route flows in a network is to bring the model as close to real-life routing as possible: 
-1. First, Netdim automatically assigns IP addresses and interfaces to all routers.
-2. For each device, a switching / routing table is created to associate a destination address to a exit interface / next-hop device.
+I've come to the conclusion that the only way to properly route flows in a network is to bring the model as close to real-life routing as possible: 
+  1. First, Netdim automatically assigns IP addresses and interfaces to all routers.
+  2. For each device, a switching / routing table is created to associate a destination address to an exit interface.
 
 ![Routing table](https://github.com/mintoo/networks/raw/master/Readme/routing_table.png)
 
@@ -110,22 +110,16 @@ In an optical-bypass enabled network, a wavelength can cross an optical switch w
 
 ![WA topology](https://github.com/mintoo/networks/raw/master/Readme/WA_problem.png)
 
-In the following example, there are 3 lightpaths. If there is a transponder at "node2" to take care of the wavelength conversion, we need only two wavelengths overall: we can assign a wavelength l1 to traffic3, l2 to traffic4, and traffic5 will first use l2 from node1 to node2, then l1 from node2 to node3.
-However, in an optical-bypass enabled network, there can be no OEO conversion at node2, and we need three wavelengths in total.
+In the following example, there are 3 paths. If there is a transponder at "node2" to take care of the wavelength conversion, we need only two wavelengths overall: we can assign a wavelength M to traffic3, N to traffic4, and traffic5 will first use N from node1 to node2, then M from node2 to node3. However, in an optical-bypass enabled network, there can be no OEO conversion at node2: the number of wavelengths we need depends how we assign them.
+If we assign M to both traffic3 and N to traffic4, we will have to use a third wavelength for traffic5, since M and N are already used. However, we could assign M to both traffic3 and traffic4, which leaves N free to use for traffic5: the minimal number of wavelengts required is 2.
 
-The wavelength allocation problem consists in finding the minimum number of wavelengths that are required, and how to allocate them to lightpaths. This problem is solved in NetDim with linear programming.
-Create the optical network topology (with WDM trunks and traffic link), then click on "Network routing > RWA".
-This will create, in another scenario, a transformed graph, which we use for the LP model.
+The wavelength allocation problem consists in finding the minimum number of wavelengths that are required, and how to allocate them to lightpaths. This problem can be solved with linear programming.
 
-![WA solution](https://github.com/mintoo/networks/raw/master/Readme/WA_problem2.png)
+# A simple use case: create an OSPF tessaract (4-hypercube)
 
-Go to this new scenario, then click on "Network routing > LP RWA formulation".
+## Create the tessaract
 
-# A simple use case: OSPF single-area AS creation and configuration
-
-## Create a full-meshed graph with 4 routers
-Click on the ring icon at the bottom of Netdim menu. A window pops up, asking for the number and the type of nodes.
-Leave the default parameters and click on "OK".
+Go to the "Network routing" menu, and select the entry "Graph generation". Click on the "Hypercube" button and leave the dimension to 4.
 
 ![Graph creation](https://github.com/mintoo/networks/raw/master/Readme/use_case_step1.PNG)
 
@@ -144,23 +138,37 @@ Select all 4 nodes and right-click on one of them. Choose "OSPF" in the "Type" l
 ## Add trunks to the AS
 The AS was created as a set of nodes: it has no trunk yet. Click on the "Find trunks" button.
 This will automatically add all trunks which both ends belong the AS.
-Add a few edge nodes (routes are only created between edge nodes).
+Add a few edge nodes. Click on the "Create traffic" button: traffic flows will be automatically created between edge nodes.
 This AS management panel also display the area topology. In our case, all nodes and trunks are part of the backbone, there is no other area.
 
 ![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step4.PNG)
 
 ## Assign IP address and look at the configuration panel
-Click on "Netdim" logo. This will trigger the assignment of IP addresses to all routers. It will also create "routes" between each pair of "edge nodes", and compute their path in accordance with the OSPF protocol (since there is only one area, it results in a simple shortest path).
+Click on "Netdim" logo. This will open a menu where you can choose which action to perform:
+- Update AS topology
+- Interface allocation: assign Ethernet interfaces to all trunks: these interfaces are used to create the routing table of the attached routers, as well as for the configuration panel.
+- IP addressing: assign IP addressing to all interfaces.
+- Subnetwork allocation: compute a subnetwork address for all trunks. Subnetworks depend on the IP addresses of both interfaces of the trunk. For example, if the IP addresses are 10.0.0.1/24 and 10.0.0.2/24, the "subnetwork" advertised by the router will be 10.0.0.0/24.
+- WC trunk dimensioning: this computes the maximum traffic the trunk may have to carry considering all possible trunk failure. NetDim fails all trunks of the network one by one, and evaluates the impact in terms of bandwidth for each trunk. The highest value is kept in memory, as well as the trunk which failure induces this value.
+- Create routing tables.
+- Route traffic links: based on the routing tables that were created in the previous step, NetDim finds the path of each traffic flows and map the traffic on physical trunks, just like it's done in real-world networks.
+- Refresh labels: update all label values.
+
+In our case, select all actions and confirm.
+
+![Calculate all](https://github.com/mintoo/networks/raw/master/Readme/use_case_step5.PNG)
+
 From this point on, you can:
 - Choose which label to display from the "Options" menu (IP address, interface, etc)
 - Click on a route to see how the traffic is routed through the AS
 - Access the configuration panel by right-clicking on a router, and select the "Configuration" entry.
-![Routing](https://github.com/mintoo/networks/raw/master/Readme/use_case_step5.PNG)
+
+![Routing](https://github.com/mintoo/networks/raw/master/Readme/use_case_step6.PNG)
 
 ## Multi-layer display
-Finally, you can trigger the multi-layer display to dissociate routes from trunks and better assess the situation.
+Finally, you can trigger the multi-layer display to dissociate traffic links from trunks and better assess the situation.
 
-![Multi-layer display](https://github.com/mintoo/networks/raw/master/Readme/use_case_step6.PNG)
+![Multi-layer display](https://github.com/mintoo/networks/raw/master/Readme/use_case_step7.PNG)
 
 # To be done
 
