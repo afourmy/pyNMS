@@ -1,5 +1,6 @@
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
+from miscellaneous import CustomScrolledText
 import tkinter as tk
 
 class Configuration(tk.Toplevel):
@@ -8,13 +9,13 @@ class Configuration(tk.Toplevel):
         
         notebook = ttk.Notebook(self)
         config_frame = ttk.Frame(notebook)
-        st_config = ScrolledText(config_frame, wrap="word", bg="beige")
+        st_config = CustomScrolledText(config_frame)
         
         debug_frame = ttk.Frame(notebook)
-        st_debug = ScrolledText(debug_frame, wrap="word", bg="beige")
+        st_debug = CustomScrolledText(debug_frame)
         
-        notebook.add(config_frame, text="Configuration")
-        notebook.add(debug_frame, text="Troubleshooting commands")
+        notebook.add(config_frame, text=" Configuration ")
+        notebook.add(debug_frame, text=" General troubleshooting commands ")
         
         self.wm_attributes("-topmost", True)
 
@@ -192,9 +193,9 @@ class Configuration(tk.Toplevel):
                 end = " {name}(config-if)# end\n".format(name=node.name)
                 st_config.insert("insert", end)
                 
-        show_ip_route = """
-    show ip route ("sh ip ro"): 
-    
+        show_ip_route = "show ip route (sh ip ro)"
+        show_ip_route_text = """
+
     Displays the IP routing table of the router, which contains:
         - directly connected subnet (C)
         - default (*) and static routes (S)
@@ -206,11 +207,12 @@ class Configuration(tk.Toplevel):
     administrative distance, and the second one is the metric.
     It also indicates the "gateway of last resort": the path the router 
     use in case no other path is available.
+    
         """
         
-        show_ip_protocols = """
-    show ip protocols ("sh ip pro"):
-    
+        show_ip_protocols = "show ip protocols (sh ip pro)"
+        show_ip_protocols_text = """
+        
     Displays all IP protocols that have been configured and are running on
     the router, with the following information:
         - Timers:
@@ -222,20 +224,66 @@ class Configuration(tk.Toplevel):
         - Version of the protocol
         - Maximum path (~ number of path used for load-sharing)
         - Default administrative distance
+        
+    Under the line "Routing for Networks", there is the list of networks
+    the protocol knows about.
+    This is a way to check for which interfaces a given protocol is enabled.
+    It also displays the list of passive interfaces for that protocol.
+    
         """
         
-        st_debug.insert("insert", show_ip_route)
-        st_debug.insert("insert", show_ip_protocols)
+        show_ip_interface = "show interface (sh int)"
+        show_ip_interface_text = """
         
-        if any(AS.type == "RIP" for AS in node.AS):
+    Displays many information about the configuration and status of all 
+    interfaces, among which:
+        - Interface status
+        - IP address and subnet mask
+        - Protocol status on the interface
+        - MTU, bandwidth, utilization, errors 
         
-            debug_rip = ttk.Frame(notebook)
-            st_debug_rip = ScrolledText(debug_rip, wrap="word", bg="beige")
-            
-            notebook.add(debug_rip, text="RIP Troubleshooting")
+        """
+        
+        show_ip_interface_brief = "show interface (sh int)"
+        show_ip_interface_brief_text = """
+        
+    Displays a summary of IP related information for all interfaces:
+        - IP address and subnet mask of the interface
+        - Administrative status (up / down)
+        - Status of the IP protocol (up / down)
+        
+        """
+        
+        show_running_configuration = "show running configuration (sh run)"
+        show_running_configuration_text = """
+        
+    Displays the configuration in the memory.
+    This configuration is not saved until the following command is entered:
+    "copy running-configuration startup-configuration" ("copy run start").
+    
+        """
+        
+        st_debug.insert("insert", "        ")
+        st_debug.insert("insert", show_ip_route, "title")
+        st_debug.insert("insert", show_ip_route_text)
+        st_debug.insert("insert", show_ip_protocols, "title")
+        st_debug.insert("insert", show_ip_protocols_text)
+        st_debug.insert("insert", show_ip_interface, "title")
+        st_debug.insert("insert", show_ip_interface_text)
+        st_debug.insert("insert", show_ip_interface_brief, "title")
+        st_debug.insert("insert", show_ip_interface_brief_text)
+        st_debug.insert("insert", show_running_configuration, "title")
+        st_debug.insert("insert", show_running_configuration_text)
+        
+        #if any(AS.type == "RIP" for AS in node.AS):
+        
+        debug_rip = ttk.Frame(notebook)
+        st_debug_rip = CustomScrolledText(debug_rip)
+        
+        notebook.add(debug_rip, text=" RIP Troubleshooting ")
 
-            debug_ip_rip = """
-    debug ip rip ("deb ip rip"):
+        debug_ip_rip = "debug ip rip (deb ip rip)"
+        debug_ip_rip_text = """
     
     Displays the RIP routing updates sent and received sent on the router's
     interfaces, and detects potential issues:
@@ -244,12 +292,23 @@ class Configuration(tk.Toplevel):
     The debug mode can be deactivated by typing:
         - no debug rip (rip only) / no debug all (all debug modes)
         - equivalently: undebug rip / undebug all
+        
         """
         
-            st_debug_rip.tag_config("a", foreground="blue", font=("Times", "24", "bold italic"))
-            st_debug_rip.insert("insert", debug_ip_rip, ("a",))
-            st_debug_rip.config(state=tk.DISABLED)
-            st_debug_rip.pack(fill=tk.BOTH, expand=tk.YES)
+        show_ip_rip_database = "show ip rip databse (sh ip rip)"
+        show_ip_rip_database_text = """
+    
+    Displays all summary address entries in the RIP routing database.
+    If an address is not in this database, it cannot be advertised.
+    
+        """
+    
+        st_debug_rip.insert("insert", "        ")
+        st_debug_rip.insert("insert", debug_ip_rip, "title")
+        st_debug_rip.insert("insert", debug_ip_rip_text)
+        
+        st_debug_rip.config(state=tk.DISABLED)
+        st_debug_rip.pack(fill=tk.BOTH, expand=tk.YES)
 
         # disable the scrolledtext so that it cannot be edited
         st_config.config(state=tk.DISABLED)
