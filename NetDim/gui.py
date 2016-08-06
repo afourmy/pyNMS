@@ -377,7 +377,7 @@ class NetDim(tk.Tk):
         menu_routing.add_command(label="RWA", 
                                         command=lambda: self.cs.ntw.RWA_graph_transformation())
         menu_routing.add_command(label="LP_RWA_formulation", 
-                                        command=lambda: self.cs.ntw.LP_RWA_formulation())
+                                        command=lambda: self.cs.ntw.largest_degree_first())
                                         
                                         
                                         

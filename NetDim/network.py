@@ -1604,7 +1604,7 @@ class Network(object):
     def RWA_graph_transformation(self):
         
         # we compute the path of all traffic trunks
-        self.calculate_all()
+        self.path_finder()
         graph_sco = self.cs.ms.add_scenario()
         
         # in the new graph, each node corresponds to a traffic path
@@ -1618,14 +1618,50 @@ class Network(object):
                         nA, nB = tlA.name, tlB.name
                         name = "{} - {}".format(nA, nB)
                         graph_sco.ntw.lf(
-                                        s = graph_sco.ntw.nf(name=nA),
-                                        d = graph_sco.ntw.nf(name=nB),
-                                        name = name
-                                        )
+                                         s = graph_sco.ntw.nf(
+                                                              name = nA,
+                                                              node_type = "oxc"
+                                                              ),
+                                         d = graph_sco.ntw.nf(
+                                                              name = nB,
+                                                              node_type = "oxc"
+                                                              ),
+                                         name = name
+                                         )
             visited.add(tlA)
                             
         graph_sco.draw_all(False)
         return graph_sco
+        
+    def largest_degree_first(self, K=1000):
+        # we color the transformed graph by allocating colors to largest
+        # degree nodes:
+        # 1) we select the largest degree uncolored oxc
+        # 2) we look at the adjacent vertices and select the minimum indexed
+        # color not yet used by adjacent vertices
+        # 3) when everything is colored, we stop
+        
+        # we will use a dictionary that binds oxc to the color it uses.
+        oxc_color = dict.fromkeys(self.ftr("node", "oxc"), None)
+        # and a list that contains all vertices that we have yet to color
+        uncolored_nodes = list(oxc_color)
+        # we will use a function that returns the degree of a node to sort
+        # the list in ascending order, and pop nodes one by one
+        uncolored_nodes.sort(key = lambda node: self.graph[node]["trunk"])
+        
+        while uncolored_nodes:
+            largest_degree = uncolored_nodes.pop()
+            # we compute the set of colors used by adjacent vertices
+            neighbor_colors = set(oxc_color[neighbor] for neighbor, _ in
+                                    self.graph[largest_degree]["trunk"])
+            # we find the minimum indexed color which is available
+            color_set = set(range(K)) - neighbor_colors
+            # and assign it to the current oxc
+            oxc_color[largest_degree] = min(color_set)
+            
+        number_lambda = len(set(oxc_color.values()))
+        warnings.warn(str(number_lambda))
+        return number_lambda
         
     def LP_RWA_formulation(self, K=10):
 
@@ -1714,7 +1750,8 @@ class Network(object):
     
         binvar = set(range(K * (V + 1)))
         solsta, x = glpk.ilp(c, G.T, h, A.T, b, B=binvar)
-
+        
+        warnings.warn(str(int(sum(x[-K:]))))
         return int(sum(x[-K:]))
         
     ## Distance functions
@@ -1883,6 +1920,7 @@ class Network(object):
                         s = self.nf(name = n1, node_type = subtype), 
                         d = self.nf(name = n3, node_type = subtype)
                         )
+        print(len(self.pn["node"]), len(self.pn["trunk"]))
                     
     ## 6) Hypercube generation
             

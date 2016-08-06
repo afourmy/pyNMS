@@ -112,7 +112,7 @@ In an optical-bypass enabled network, a wavelength can cross an optical switch w
 ![WA topology](https://github.com/mintoo/networks/raw/master/Readme/WA_problem.png)
 
 In the following example, there are 3 paths. If there is a transponder at "node2" to take care of the wavelength conversion, we need only two wavelengths overall: we can assign a wavelength M to traffic3, N to traffic4, and traffic5 will first use N from node1 to node2, then M from node2 to node3. However, in an optical-bypass enabled network, there can be no OEO conversion at node2: the number of wavelengths we need depends how we assign them.
-If we assign M to both traffic3 and N to traffic4, we will have to use a third wavelength for traffic5, since M and N are already used. However, we could assign M to both traffic3 and traffic4, which leaves N free to use for traffic5: the minimal number of wavelengts required is 2.
+If we assign M to traffic3 and N to traffic4, we will have to use a third wavelength for traffic5, since M and N are already used. However, we could assign M to both traffic3 and traffic4, which leaves N free to use for traffic5: the minimal number of wavelengths required is 2.
 
 The wavelength allocation problem consists in finding the minimum number of wavelengths that are required, and how to allocate them to lightpaths. This problem can be solved with linear programming.
 

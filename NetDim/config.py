@@ -246,7 +246,8 @@ class Configuration(tk.Toplevel):
         - equivalently: undebug rip / undebug all
         """
         
-            st_debug_rip.insert("insert", debug_ip_rip)
+            st_debug_rip.tag_config("a", foreground="blue", font=("Times", "24", "bold italic"))
+            st_debug_rip.insert("insert", debug_ip_rip, ("a",))
             st_debug_rip.config(state=tk.DISABLED)
             st_debug_rip.pack(fill=tk.BOTH, expand=tk.YES)
 

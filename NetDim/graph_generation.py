@@ -170,7 +170,7 @@ class GraphGeneration(FocusTopLevel):
                                         column=0, columnspan=2, pady=5, padx=5)
                                         
         self.graph_generation = {
-        "Desargues": lambda: self.ms.cs.ntw.petersen(5, 2, "router"),
+        "Desargues": lambda: self.ms.cs.ntw.petersen(5, 2, "oxc"),
         "graph-test": lambda: self.ms.cs.ntw.petersen(6, 3, "router")
         }
             
