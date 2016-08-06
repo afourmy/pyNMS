@@ -276,6 +276,7 @@ class Configuration(tk.Toplevel):
         st_debug.insert("insert", show_running_configuration_text)
         
         #if any(AS.type == "RIP" for AS in node.AS):
+        # https://networklessons.com/rip/troubleshooting-rip/
         
         debug_rip = ttk.Frame(notebook)
         st_debug_rip = CustomScrolledText(debug_rip)

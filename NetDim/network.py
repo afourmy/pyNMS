@@ -900,26 +900,17 @@ class Network(object):
         # we keep track of all already visited subnetworks so that we 
         # don't add them more than once to the mapping dict.
         visited_subnetworks = set()
-        heap = [(0, source, [])]
+        heap = [(0, source, [], None)]
         # source area: we make sure that if the node is connected to an area,
         # the path we find to any subnetwork in that area is an intra-area path.
         src_areas = source.AS[AS]
         # cost of the shortesth path to a subnetwork
         SP_cost = {}
         
-        # troubleshoot load balancing with extended ping:
-        # https://learningnetwork.cisco.com/thread/35429
-        
-        # C       10.0.0.8 is directly connected, Ethernet0/1
-        # O       10.0.0.0 [110/20] via 10.0.0.6, 00:08:02, Ethernet0/0
-        #                  [110/20] via 10.0.0.9, 00:08:02, Ethernet0/1
-        # C       10.0.0.4 is directly connected, Ethernet0/0
-
-   #       
         while heap:
-            dist, node, path_trunk = heappop(heap)  
-            if (node, tuple(path_trunk)) not in visited:
-                visited.add((node, tuple(path_trunk)))
+            dist, node, path_trunk, ex_int = heappop(heap)  
+            if (node, ex_int) not in visited:
+                visited.add((node, ex_int))
                 for neighbor, adj_trunk in self.graph[node]["trunk"]:
                     if adj_trunk in path_trunk:
                         continue
@@ -936,7 +927,7 @@ class Network(object):
                                                     dist, neighbor, adj_trunk)}
                         SP_cost[adj_trunk.sntw] = 0
                     heappush(heap, (dist + adj_trunk("cost", node), neighbor, 
-                                                    path_trunk + [adj_trunk]))
+                                            path_trunk + [adj_trunk], ex_int))
                     
             if path_trunk:
                 trunk = path_trunk[-1]
