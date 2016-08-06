@@ -15,7 +15,8 @@ import object_management_window as omw
 import advanced_graph_options as ago
 import drawing_options_window as dow
 import graph_generation as gg
-import menu
+import rwa_window as rwaw
+import main_menu
 import scenario
 import csv
 import xlrd
@@ -352,21 +353,21 @@ class NetDim(tk.Tk):
         
         ## ----- Menus : -----
         menubar = tk.Menu(self)
-        main_menu = tk.Menu(menubar, tearoff=0)
-        main_menu.add_command(label="Add scenario", 
+        upper_menu = tk.Menu(menubar, tearoff=0)
+        upper_menu.add_command(label="Add scenario", 
                                         command=lambda: self.add_scenario())
-        main_menu.add_command(label="Delete scenario", 
+        upper_menu.add_command(label="Delete scenario", 
                                         command=lambda: self.delete_scenario())
-        main_menu.add_command(label="Duplicate scenario", 
+        upper_menu.add_command(label="Duplicate scenario", 
                                     command=lambda: self.duplicate_scenario())
-        main_menu.add_separator()
-        main_menu.add_command(label="Import graph", 
+        upper_menu.add_separator()
+        upper_menu.add_command(label="Import graph", 
                                         command=lambda: self.import_graph())
-        main_menu.add_command(label="Export graph", 
+        upper_menu.add_command(label="Export graph", 
                                         command=lambda: self.export_graph())
-        main_menu.add_separator()
-        main_menu.add_command(label="Exit", command=self.destroy)
-        menubar.add_cascade(label="Main",menu=main_menu)
+        upper_menu.add_separator()
+        upper_menu.add_command(label="Exit", command=self.destroy)
+        menubar.add_cascade(label="Main",menu=upper_menu)
         menu_drawing = tk.Menu(menubar, tearoff=0)
         menu_drawing.add_command(label="Default drawing parameters", 
                         command=lambda: dow.DrawingOptions(self))
@@ -379,12 +380,8 @@ class NetDim(tk.Tk):
         menu_routing.add_command(label="Network Tree View", 
                                         command=lambda: NetworkTreeView(self))
         menu_routing.add_command(label="RWA", 
-                                        command=lambda: self.cs.ntw.RWA_graph_transformation())
-        menu_routing.add_command(label="LP_RWA_formulation", 
-                                        command=lambda: self.cs.ntw.largest_degree_first())
-                                        
-                                        
-                                        
+                                    command=lambda: self.rwa_window.deiconify())
+                                                             
         menubar.add_cascade(label="Network routing",menu=menu_routing)
 
         # choose which label to display per type of object
@@ -444,12 +441,15 @@ class NetDim(tk.Tk):
         # advanced graph options
         self.advanced_graph_options = ago.AdvancedGraphOptionsWindow(self)
         
+        # routing and wavelength assignment window
+        self.rwa_window = rwaw.RWAWindow(self)
+        
         # graph generation window
         self.graph_generation = gg.GraphGeneration(self)
         
         # create a menu
-        self.menu = menu.MainMenu(self)
-        self.menu.pack(fill=tk.BOTH, side=tk.LEFT)
+        self.main_menu = main_menu.MainMenu(self)
+        self.main_menu.pack(fill=tk.BOTH, side=tk.LEFT)
         self.scenario_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
         
         # dict of nodes image for node creation
@@ -491,7 +491,7 @@ class NetDim(tk.Tk):
                 img = ImageTk.PhotoImage(img_pil)
                 # set the default image for the button of the frame
                 if color == "default":
-                    self.menu.type_to_button[node_type].config(image=img, 
+                    self.main_menu.type_to_button[node_type].config(image=img, 
                                                         width=50, height=50)
                 self.dict_image[color][node_type] = img
         
@@ -502,7 +502,7 @@ class NetDim(tk.Tk):
                 img_pil = ImageTk.Image.open(img_path).resize(image_size)
                 img = ImageTk.PhotoImage(img_pil)
                 self.dict_image[category_type][image_type] = img
-                self.menu.type_to_button[image_type].config(image=img, 
+                self.main_menu.type_to_button[image_type].config(image=img, 
                                                         width=x, height=y+10)
                 
         # image for a link failure
@@ -513,12 +513,13 @@ class NetDim(tk.Tk):
         cs_name = self.scenario_notebook.tab(self.scenario_notebook.select(), "text")
         self.cs = self.dict_scenario[cs_name]
         
-    def add_scenario(self):
+    def add_scenario(self, name=None):
         self.cpt_scenario += 1
-        new_scenario_name = " ".join(("scenario", str(self.cpt_scenario)))
-        new_scenario = scenario.Scenario(self, new_scenario_name)
-        self.scenario_notebook.add(new_scenario, text=new_scenario_name, compound=tk.TOP)
-        self.dict_scenario[new_scenario_name] = new_scenario
+        if not name:
+            name = " ".join(("scenario", str(self.cpt_scenario)))
+        new_scenario = scenario.Scenario(self, name)
+        self.scenario_notebook.add(new_scenario, text=name, compound=tk.TOP)
+        self.dict_scenario[name] = new_scenario
         return new_scenario
         
     def duplicate_scenario(self):

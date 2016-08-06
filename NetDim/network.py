@@ -1604,11 +1604,11 @@ class Network(object):
         
     ## Optical networks: routing and wavelength assignment
     
-    def RWA_graph_transformation(self):
+    def RWA_graph_transformation(self, name=None):
         
         # we compute the path of all traffic trunks
         self.path_finder()
-        graph_sco = self.cs.ms.add_scenario()
+        graph_sco = self.cs.ms.add_scenario(name)
         
         # in the new graph, each node corresponds to a traffic path
         # we create one node per traffic trunk in the new scenario            
@@ -1663,7 +1663,7 @@ class Network(object):
             oxc_color[largest_degree] = min_index
             
         number_lambda = max(oxc_color.values()) + 1
-        warnings.warn(str(number_lambda))
+        print(number_lambda)
         return number_lambda
         
     def LP_RWA_formulation(self, K=10):

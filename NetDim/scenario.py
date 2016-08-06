@@ -307,7 +307,6 @@ class Scenario(tk.Canvas):
             destination_node = self.object_id_to_object[self.drag_item]
             if destination_node.class_type == "node": # because tag filtering doesn't work !
                 # create the link and the associated line
-                print(start_node, destination_node)
                 if start_node != destination_node:
                     new_link = self.ntw.lf(
                                            link_type = type, 
