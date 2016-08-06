@@ -65,6 +65,7 @@ class NetDim(tk.Tk):
         "latitude", 
         "ipaddress", 
         "subnetmask", 
+        "LB_paths",
         "AS"
         )
         
@@ -72,7 +73,7 @@ class NetDim(tk.Tk):
         # import/export the AS of a node, because when the AS itself is imported, 
         # we rebuild #its logical topology, and that includes 
         # rebuilding the nodes AS dict
-        node_common_ie_properties = node_common_properties[:-1]
+        node_common_ie_properties = node_common_properties[:-2]
         
         link_common_properties = (
         "protocol",
@@ -172,7 +173,8 @@ class NetDim(tk.Tk):
         "Name", 
         "Position", 
         "Coordinates", 
-        "IPAddress"
+        "IPAddress",
+        "LB_paths"
         )),
         
         ("Trunk", 
@@ -268,6 +270,7 @@ class NetDim(tk.Tk):
         "interface": str,
         "ipaddress": str,
         "subnetmask": str,
+        "LB_paths": int,
         "x": float, 
         "y": float, 
         "longitude": float, 
@@ -310,6 +313,7 @@ class NetDim(tk.Tk):
         "interface": "Interface",
         "ipaddress": "IP address",
         "subnetmask": "Subnet mask",
+        "LB_paths": "Maximum paths (LB)",
         "x": "X coordinate", 
         "y": "Y coordinate", 
         "longitude": "Longitude", 

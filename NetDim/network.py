@@ -193,69 +193,13 @@ class Network(object):
             for neighbor, trunk in self.graph[nodeA][_type]:
                 if neighbor == nodeB:
                     yield trunk
-            
-    def calculate_all(self):
-        self.update_AS_topology()
-        self.ip_allocation()
-        self.subnetwork_allocation()
-        self.interface_allocation()
-        self.trunk_dimensioning()
-        self.rt_creation()
-        self.path_finder()
-        self.cs.refresh_all_labels()
-        
+                    
     def update_AS_topology(self):
         for AS in self.pnAS.values():
             # for all OSPF and IS-IS AS, fill the ABR/L1L2 sets
             # update trunk area based on nodes area (ISIS) and vice-versa (OSPF)
             AS.management.update_AS_topology()
-        
-    def rt_creation(self):
-        # we compute the routing table of all routers
-        for router in self.ftr("node", "router"):
-            router.rt = {}
-            for AS in router.AS:
-                self.RFT_builder(router, AS)
-            self.static_RFT_builder(router)
-                
-    def reset_traffic(self):
-        # reset the traffic for all trunks
-        for trunk in self.pn["trunk"].values():
-            trunk.trafficSD = trunk.trafficDS = 0.
-                
-    def path_finder(self):
-        self.reset_traffic()
-        for traffic in self.pn["traffic"].values():
-            src, dest = traffic.source, traffic.destination
-            if src.subtype == "router" and dest.subtype == "router":
-                self.RFT_path_finder(traffic)
-            else:
-                _, traffic.path = self.A_star(src, dest)
-            if not traffic.path:
-                print("no path found for {}".format(traffic))
-        
-    def trunk_dimensioning(self):
-        # we need to remove all failures before dimensioning the trunks:
-        # the set of failed trunk will be redefined, but we also need the
-        # icons to be cleaned from the canvas
-        self.cs.remove_failures()
-        
-        # we consider each trunk in the network to be failed, one by one
-        for failed_trunk in self.pn["trunk"].values():
-            self.fdtks = {failed_trunk}
-            # the trunk being failed, we will recreate all routing tables
-            # then use the path finding procedure to map the traffic flows
-            self.rt_creation()
-            self.path_finder()
-            for trunk in self.pn["trunk"].values():
-                for dir in ("SD", "DS"):
-                    curr_traffic = getattr(trunk, "traffic" + dir)
-                    if curr_traffic > getattr(trunk, "wctraffic" + dir):
-                        setattr(trunk, "wctraffic" + dir, curr_traffic)
-                        setattr(trunk, "wcfailure", str(failed_trunk))
-                        
-        self.cs.remove_failures()
-        
+            
     def ip_allocation(self):
         # we use 10.0.0.0/8 to allocate IP addresses for all interfaces in
         # an AS. we use the format 10.x.y.z where
@@ -305,6 +249,62 @@ class Network(object):
                 direction = "S"*(adj_trunk.source == node) or "D"
                 interface = "Ethernet0/{}".format(idx)
                 setattr(adj_trunk, "interface" + direction, interface)
+                
+    def trunk_dimensioning(self):
+        # we need to remove all failures before dimensioning the trunks:
+        # the set of failed trunk will be redefined, but we also need the
+        # icons to be cleaned from the canvas
+        self.cs.remove_failures()
+        
+        # we consider each trunk in the network to be failed, one by one
+        for failed_trunk in self.pn["trunk"].values():
+            self.fdtks = {failed_trunk}
+            # the trunk being failed, we will recreate all routing tables
+            # then use the path finding procedure to map the traffic flows
+            self.rt_creation()
+            self.path_finder()
+            for trunk in self.pn["trunk"].values():
+                for dir in ("SD", "DS"):
+                    curr_traffic = getattr(trunk, "traffic" + dir)
+                    if curr_traffic > getattr(trunk, "wctraffic" + dir):
+                        setattr(trunk, "wctraffic" + dir, curr_traffic)
+                        setattr(trunk, "wcfailure", str(failed_trunk))
+                        
+        self.cs.remove_failures()
+        
+    def rt_creation(self):
+        # we compute the routing table of all routers
+        for router in self.ftr("node", "router"):
+            router.rt = {}
+            for AS in router.AS:
+                self.RFT_builder(router, AS)
+            self.static_RFT_builder(router)
+                
+    def reset_traffic(self):
+        # reset the traffic for all trunks
+        for trunk in self.pn["trunk"].values():
+            trunk.trafficSD = trunk.trafficDS = 0.
+                
+    def path_finder(self):
+        self.reset_traffic()
+        for traffic in self.pn["traffic"].values():
+            src, dest = traffic.source, traffic.destination
+            if all(node.subtype == "router" for node in (src, dest)):
+                self.RFT_path_finder(traffic)
+            else:
+                _, traffic.path = self.A_star(src, dest)
+            if not traffic.path:
+                print("no path found for {}".format(traffic))
+                
+    def calculate_all(self):
+        self.update_AS_topology()
+        self.ip_allocation()
+        self.subnetwork_allocation()
+        self.interface_allocation()
+        self.trunk_dimensioning()
+        self.rt_creation()
+        self.path_finder()
+        self.cs.refresh_all_labels()
             
     def bfs(self, source):
         visited = set()
@@ -764,10 +764,15 @@ class Network(object):
             source.rt[adj_trunk.sntw] = {("C", ex_ip, ex_int, 
                                                     0, neighbor, adj_trunk)}
                                         
-     
     ## 2) RFT builder for LB-free AS: subnetworks / interfaces mapping
     
     def RFT_builder(self, source, AS):
+        if source.LB_paths == 1:
+            self.RFT_LB_free_builder(source, AS)
+        else:
+            self.RFT_LB_builder(source, AS, source.LB_paths)
+    
+    def RFT_LB_free_builder(self, source, AS):
                 
         visited = set()
         allowed_nodes = AS.pAS["node"]
@@ -886,9 +891,7 @@ class Network(object):
                self, 
                source, 
                AS,
-               K = 4,
-               allowed_trunks = None, 
-               allowed_nodes = None
+               K = 4
                ):
     
         visited = set()
@@ -1633,7 +1636,7 @@ class Network(object):
         graph_sco.draw_all(False)
         return graph_sco
         
-    def largest_degree_first(self, K=1000):
+    def largest_degree_first(self):
         # we color the transformed graph by allocating colors to largest
         # degree nodes:
         # 1) we select the largest degree uncolored oxc
@@ -1652,14 +1655,14 @@ class Network(object):
         while uncolored_nodes:
             largest_degree = uncolored_nodes.pop()
             # we compute the set of colors used by adjacent vertices
-            neighbor_colors = set(oxc_color[neighbor] for neighbor, _ in
+            colors = set(oxc_color[neighbor] for neighbor, _ in
                                     self.graph[largest_degree]["trunk"])
             # we find the minimum indexed color which is available
-            color_set = set(range(K)) - neighbor_colors
+            min_index = [i in colors for i in range(len(colors) + 1)].index(0)
             # and assign it to the current oxc
-            oxc_color[largest_degree] = min(color_set)
+            oxc_color[largest_degree] = min_index
             
-        number_lambda = len(set(oxc_color.values()))
+        number_lambda = max(oxc_color.values()) + 1
         warnings.warn(str(number_lambda))
         return number_lambda
         

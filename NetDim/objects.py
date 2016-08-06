@@ -41,6 +41,8 @@ class Node(object):
         # list of AS to which the node belongs. AS is actually a dictionnary
         # associating an AS to a set of area the node belongs to
         self.AS = defaultdict(set)
+        # number of path considered for load-balancing
+        self.LB_paths = 1
         
     def __repr__(self):
         return self.name
