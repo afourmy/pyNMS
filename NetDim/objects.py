@@ -42,7 +42,7 @@ class Node(object):
         # associating an AS to a set of area the node belongs to
         self.AS = defaultdict(set)
         # number of path considered for load-balancing
-        self.LB_paths = 1
+        self.LB_paths = 4
         
     def __repr__(self):
         return self.name

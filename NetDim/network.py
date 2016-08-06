@@ -716,9 +716,7 @@ class Network(object):
         dest_int = trunk.sntw
         heap = [(source, traffic.throughput)]
         path_node, path_trunk = {source}, set()
-        i = 0
-        while heap and i < 50:
-            i += 1
+        while heap:
             curr_router, share = heap.pop()
             if curr_router == destination:
                 continue
@@ -743,8 +741,6 @@ class Network(object):
                 sd = (curr_router == trunk.source)*"SD" or "DS"
                 trunk.__dict__["traffic" + sd] += share
                 heap.append((router, share))
-        if i == 50:
-            print("loop\nloop\nloop\nloop\nloop\nloop\nloop\nloop\nloop\nloop\n")
              
         traffic.path = path_trunk
 
