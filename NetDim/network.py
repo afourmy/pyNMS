@@ -207,14 +207,13 @@ class Network(object):
     def update_AS_topology(self):
         for AS in self.pnAS.values():
             # for all OSPF and IS-IS AS, fill the ABR/L1L2 sets
-            # update link area based on nodes area (ISIS) and vice-versa (OSPF)
+            # update trunk area based on nodes area (ISIS) and vice-versa (OSPF)
             AS.management.update_AS_topology()
         
     def rt_creation(self):
         # we compute the routing table of all routers
         for router in self.ftr("node", "router"):
             router.rt = {}
-            #self.static_RFT_builder(router)
             for AS in router.AS:
                 self.RFT_builder(router, AS)
             self.static_RFT_builder(router)
@@ -281,6 +280,7 @@ class Network(object):
         # we use 192.168.0.0/16 to allocate loopback addresses to all routers
         for id, router in enumerate(self.ftr("node", "router"), 1):
             router.ipaddress = "192.168." + str(id // 255) + "." + str(id % 255)
+            router.subnetmask = "255.255.255.255"
             
         # finally, we use 172.16.0.0/16 for all trunks that do not belong
         # to an AS
@@ -345,7 +345,7 @@ class Network(object):
             allowed_nodes = set(self.pn["node"].values())
         
         prec_node = {i: None for i in allowed_nodes}
-        prec_link = {i: None for i in allowed_nodes}
+        prec_trunk = {i: None for i in allowed_nodes}
         visited = set()
         dist = {i: float("inf") for i in allowed_nodes}
         dist[source] = 0
@@ -364,14 +364,14 @@ class Network(object):
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
                         prec_node[neighbor] = node
-                        prec_link[neighbor] = adj_trunk
+                        prec_trunk[neighbor] = adj_trunk
                         heappush(heap, (dist_neighbor, neighbor))
                         
         # traceback the path from target to source
-        curr, path_link = target, [prec_link[target]]
+        curr, path_trunk = target, [prec_trunk[target]]
         while curr != source:
             curr = prec_node[curr]
-            path_link.append(prec_link[curr])
+            path_trunk.append(prec_trunk[curr])
                         
         # we return:
         # - the dist dictionnary, that contains the distance from the source
@@ -379,7 +379,7 @@ class Network(object):
         # - the shortest path from source to target
         # - all edges that belong to the Shortest Path Tree
         # we need all three variables for Suurbale algorithm below
-        return dist, path_link[:-1][::-1], filter(None, prec_link.values())
+        return dist, path_trunk[:-1][::-1], filter(None, prec_trunk.values())
         
     ## 2) A* algorithm for CSPF modelization
             
@@ -541,14 +541,14 @@ class Network(object):
         else:
             target_area ,= target.AS[OSPF_AS]
             
-        # step indicates in which area we are, which tells us which links 
+        # step indicates in which area we are, which tells us which trunks 
         # can/cannot be used. 
         # If step is 0, we are in the source area, heading to the backbone. 
         # If step is 1, we are in the backbone, heading to the destination area.
         # If step is 2, we are in the destination area, heading to the exit edge.
-        # Because of OSPF intra-area priority, we cannot use links that belong
+        # Because of OSPF intra-area priority, we cannot use trunks that belong
         # to the source area once we've reached the backbone, and we cannot 
-        # use links from the backbone once we've reached the destination
+        # use trunks from the backbone once we've reached the destination
         # area.
         step = 2*(source_area == target_area) or source_area == backbone
 
@@ -573,13 +573,13 @@ class Network(object):
                     # we ignore what's not allowed (not in the AS or in failure)
                     if neighbor not in a_n or adj_trunk not in a_t:
                         continue
-                    # if step is 0, we can only use links of the source area
+                    # if step is 0, we can only use trunks of the source area
                     if not step and adj_trunk not in source_area.pa["trunk"]: 
                         continue
-                    # else if step is 1, we can only use links of the backbone
+                    # else if step is 1, we can only use trunks of the backbone
                     if step == 1 and adj_trunk not in backbone.pa["trunk"]: 
                         continue
-                    # else if step is 2, we can only use links of the target area
+                    # else if step is 2, we can only use trunks of the target area
                     if step == 2 and adj_trunk not in target_area.pa["trunk"]: 
                         continue
                     # here, it is very important not to reuse an existing 
@@ -615,7 +615,7 @@ class Network(object):
 
         n = len(allowed_nodes)
         prec_node = {i: None for i in allowed_nodes}
-        prec_link = {i: None for i in allowed_nodes}
+        prec_trunk = {i: None for i in allowed_nodes}
         dist = {i: float("inf") for i in allowed_nodes}
         dist[source] = 0
         
@@ -634,17 +634,17 @@ class Network(object):
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
                         prec_node[neighbor] = node
-                        prec_link[neighbor] = adj_trunk
+                        prec_trunk[neighbor] = adj_trunk
                         negative_cycle = True
                         
         # traceback the path from target to source
         if dist[target] != float("inf"):
-            curr, path_node, path_link = target, [target], [prec_link[target]]
+            curr, path_node, path_trunk = target, [target], [prec_trunk[target]]
             while curr != source:
                 curr = prec_node[curr]
-                path_link.append(prec_link[curr])
+                path_trunk.append(prec_trunk[curr])
                 path_node.append(curr)
-            return path_node[::-1], path_link[:-1][::-1]
+            return path_node[::-1], path_trunk[:-1][::-1]
         else:
             return [], []
             
@@ -722,19 +722,20 @@ class Network(object):
             curr_router, share = heap.pop()
             if curr_router == destination:
                 continue
-            # if there is a default route, we use it.
-            if "0.0.0.0" in curr_router.rt:
-                routes = curr_router.rt["0.0.0.0"]
-            elif dest_int in curr_router.rt:
+            if dest_int in curr_router.rt:
                 routes = curr_router.rt[dest_int]
+            # if we wannot find the destination address in the routing table, 
+            # and there is a default route, we use it.
+            elif "0.0.0.0" in curr_router.rt:
+                routes = curr_router.rt["0.0.0.0"]
             else:
                 warnings.warn("Path not found for {}".format(traffic))
                 break
             # we count the number of trunks in failure
-            failed_links = sum(r[-1] in self.fdtks for r in routes)
+            failed_trunks = sum(r[-1] in self.fdtks for r in routes)
             # and remove them from share so that they are ignored for 
-            # link dimensioning
-            share /= len(routes) - failed_links
+            # trunk dimensioning
+            share /= len(routes) - failed_trunks
             for route in routes:
                 *_, router, trunk = route
                 path_node.add(router)
@@ -771,26 +772,13 @@ class Network(object):
         visited = set()
         allowed_nodes = AS.pAS["node"]
         allowed_trunks =  AS.pAS["trunk"] - self.fdtks
-        # we keep track of all already visited subnetworks so that we 
-        # don't add them more than once to the mapping dict.
+        # we keep track of all already visited subnetworks
         visited_subnetworks = set()
         heap = [(0, source, None, None)]
         # source area: we make sure that if the node is connected to an area,
         # the path we find to any subnetwork in that area is an intra-area path.
         src_areas = source.AS[AS]
                 
-        # pour la route vers le L1/L2 le plus proche, on a i*L1 0.0.0.0/0 qui
-        # est une route par défaut
-        # pour une route dans l'area de départ, on aura i L1
-        # i*L1  0.0.0.0/0 [115/10] via 10.0.0.13, 00:02:59, FastEthernet0/0
-        #     10.0.0.0/8 is variably subnetted, 2 subnets, 2 masks
-        # C        10.0.0.12/30 is directly connected, FastEthernet0/0
-        # L        10.0.0.14/32 is directly connected, FastEthernet0/0
-        
-        # inside L2: i L2 blabla
-        
-        # config + route leaking:
-        # https://sites.google.com/site/amitsciscozone/home/is-is/is-is-route-leaking
         if AS.type == "ISIS":
             
             # if source is an L1 there will be a default route to
@@ -801,7 +789,6 @@ class Network(object):
             # must add the i*L1 default route when we first meet a L1/L2 node
             # and all other routes are i L1 as rtype (route type).
             isL1 = source not in AS.border_routers and src_area.name != "Backbone"
-            
                                         
         while heap:
             dist, node, trunk, exit = heappop(heap)
@@ -833,8 +820,8 @@ class Network(object):
                         exit = (adj_trunk, ex_ip, ex_int, neighbor) 
                         source.rt[adj_trunk.sntw] = {("C", ex_ip, ex_int, 
                                                        0, neighbor, adj_trunk)}                        
-                    heappush(heap, (dist + adj_trunk("cost", node), neighbor, adj_trunk,
-                                                                        exit))
+                    heappush(heap, (dist + adj_trunk("cost", node), neighbor, 
+                                                            adj_trunk, exit))
             if node != source:
                 ex_tk, ex_ip, ex_int, nh = exit
                 if AS.type == "RIP":
@@ -856,11 +843,13 @@ class Network(object):
                                                         dist, nh, ex_tk)}
                 elif AS.type == "ISIS":
                     if isL1:
-                        if node in AS.border_routers and "0.0.0.0" not in source.rt:
+                        if (node in AS.border_routers 
+                                            and "0.0.0.0" not in source.rt):
                             source.rt["0.0.0.0"] = {("i*L1", ex_ip, ex_int,
                                                         dist, nh, ex_tk)}
                         else:
-                            if ("i L1", trunk.sntw) not in visited_subnetworks and trunk.AS[AS] & ex_tk.AS[AS]:
+                            if (("i L1", trunk.sntw) not in visited_subnetworks 
+                                            and trunk.AS[AS] & ex_tk.AS[AS]):
                                 visited_subnetworks.add(("i L1", trunk.sntw))
                                 source.rt[trunk.sntw] = {("i L1", ex_ip, ex_int,
                                         dist + trunk("cost", node), nh, ex_tk)}
@@ -1044,11 +1033,11 @@ class Network(object):
         
     def bhandari(self, source, target, a_n=None, a_t=None):
     # - we find the shortest path from source to target using A* algorithm
-    # - we replace bidirectionnal links of the shortest path by unidirectional 
-    # links with a negative cost
+    # - we replace bidirectionnal trunks of the shortest path with unidirectional 
+    # trunks with a negative cost
     # - we run Bellman-Ford algorithm to find the new 
     # shortest path from source to target
-    # - we remove all overlapping links
+    # - we remove all overlapping trunks
         
         if a_t is None:
             a_t = set(self.pn["trunk"].values())
@@ -1070,7 +1059,7 @@ class Network(object):
                               allowed_nodes = a_n
                               ) 
                    
-        # we set the cost of the shortest path links to float("inf"), which 
+        # we set the cost of the shortest path trunks to float("inf"), which 
         # is equivalent to just removing them. In the reverse direction, 
         # we set the cost to -1.
         current_node = source
@@ -1101,7 +1090,7 @@ class Network(object):
     # resulting cost of 0 with that formula, since c(a, b) = d(s, a) - d(s, b)
     # - we run A* algorithm to find the new 
     # shortest path from source to target
-    # - we remove all overlapping links
+    # - we remove all overlapping trunks
         
         if a_t is None:
             a_t = set(self.pn["trunk"].values())
@@ -1123,13 +1112,13 @@ class Network(object):
                               allowed_nodes = a_n
                               ) 
                               
-        # we change the links cost with the formula described above
-        for link in tree:
+        # we change the trunks cost with the formula described above
+        for trunk in tree:
             # new_c(a, b) = c(a, b) - D(b) + D(a) where D(x) is the 
             # distance from the source to x.
-            src, dest = link.source, link.destination
-            link.costSD += dist[src] - dist[dest]
-            link.costDS += dist[dest] - dist[src]
+            src, dest = trunk.source, trunk.destination
+            trunk.costSD += dist[src] - dist[dest]
+            trunk.costDS += dist[dest] - dist[src]
             
         # we exclude the edge of the shortest path (infinite cost)
         current_node = source
@@ -1151,8 +1140,8 @@ class Network(object):
     ## Flow algorithms
     
     def reset_flow(self):
-        for link in self.pn["trunk"].values():
-            link.flowSD = link.flowDS = 0
+        for trunk in self.pn["trunk"].values():
+            trunk.flowSD = trunk.flowDS = 0
     
     ## 1) Ford-Fulkerson algorithm
         
@@ -1160,11 +1149,11 @@ class Network(object):
         visit[curr_node] = True
         if curr_node == target:
             return val
-        for neighbor, adj_link in self.graph[curr_node]["trunk"]:
-            direction = curr_node == adj_link.source
+        for neighbor, adj_trunk in self.graph[curr_node]["trunk"]:
+            direction = curr_node == adj_trunk.source
             sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
-            cap = getattr(adj_link, "capacity" + sd)
-            current_flow = getattr(adj_link, "flow" + sd)
+            cap = getattr(adj_trunk, "capacity" + sd)
+            current_flow = getattr(adj_trunk, "flow" + sd)
             if cap > current_flow and not visit[neighbor]:
                 residual_capacity = min(val, cap - current_flow)
                 global_flow = self.augment_ff(
@@ -1174,8 +1163,8 @@ class Network(object):
                                               visit
                                               )
                 if global_flow > 0:
-                    adj_link.__dict__["flow" + sd] += global_flow
-                    adj_link.__dict__["flow" + ds] -= global_flow
+                    adj_trunk.__dict__["flow" + sd] += global_flow
+                    adj_trunk.__dict__["flow" + ds] -= global_flow
                     return global_flow
         return False
         
@@ -1227,7 +1216,7 @@ class Network(object):
                 prec_node = augmenting_path[curr_node]
                 find_trunk = lambda p: getitem(p, 0) == prec_node
                 (_, trunk) ,= filter(find_trunk, self.graph[curr_node]["trunk"])
-                # define sd and ds depending on how the link is defined
+                # define sd and ds depending on how the trunk is defined
                 direction = curr_node == trunk.source
                 sd, ds = direction*"SD" or "DS", direction*"DS" or "SD"
                 trunk.__dict__["flow" + ds] += global_flow
@@ -1614,14 +1603,14 @@ class Network(object):
     
     def RWA_graph_transformation(self):
         
-        # we compute the path of all traffic links
+        # we compute the path of all traffic trunks
         self.calculate_all()
         graph_sco = self.cs.ms.add_scenario()
         
         # in the new graph, each node corresponds to a traffic path
-        # we create one node per traffic link in the new scenario            
+        # we create one node per traffic trunk in the new scenario            
         visited = set()
-        # tl stands for traffic link
+        # tl stands for traffic trunk
         for tlA in self.pn["traffic"].values():
             for tlB in self.pn["traffic"].values():
                 if tlB not in visited and tlA != tlB:
@@ -1676,7 +1665,7 @@ class Network(object):
         for i in range(K):
             for trunk in self.pn["trunk"].values():
                 p_src, p_dest = trunk.source, trunk.destination
-                # we want to ensure that paths that have at least one link in 
+                # we want to ensure that paths that have at least one trunk in 
                 # common are not assigned the same wavelength.
                 # this means that x_v_src_i + x_v_dest_i <= y_i
                 row = []
@@ -1901,7 +1890,7 @@ class Network(object):
         # we create a n-dim hypercube by connecting two (n-1)-dim hypercubes
         i = 0
         graph_nodes = [self.nf(name=str(0), node_type=subtype)]
-        graph_links = []
+        graph_trunks = []
         while i < n+1:
             for k in range(len(graph_nodes)):
                 # creation of the nodes of the second hypercube
@@ -1911,20 +1900,20 @@ class Network(object):
                                            node_type = subtype
                                            )
                                    )
-            for trunk in graph_links[:]:
+            for trunk in graph_trunks[:]:
                 # connection of the two hypercubes
                 source, destination = trunk.source, trunk.destination
                 n1 = str(int(source.name) + 2**i)
                 n2 = str(int(destination.name) + 2**i)
-                graph_links.append(
+                graph_trunks.append(
                                    self.lf(
                                            s = self.nf(name = n1), 
                                            d = self.nf(name = n2)
                                            )
                                    )
             for k in range(len(graph_nodes)//2):
-                # creation of the links of the second hypercube
-                graph_links.append(
+                # creation of the trunks of the second hypercube
+                graph_trunks.append(
                                    self.lf(
                                            s = graph_nodes[k], 
                                            d = graph_nodes[k+2**i]

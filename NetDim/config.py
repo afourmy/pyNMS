@@ -191,6 +191,64 @@ class Configuration(tk.Toplevel):
                         
                 end = " {name}(config-if)# end\n".format(name=node.name)
                 st_config.insert("insert", end)
+                
+        show_ip_route = """
+    show ip route ("sh ip ro"): 
+    
+    Displays the IP routing table of the router, which contains:
+        - directly connected subnet (C)
+        - default (*) and static routes (S)
+        - routes dynamically learned from a routing protocol:
+            * RIP (R)
+            * OSPF (O (intra-area), O IA (inter-area))
+            * IS-IS (i L1 (intra-area), i L2 (inter-area))
+    For each entry, there are two numbers in bracket: the first one is the
+    administrative distance, and the second one is the metric.
+    It also indicates the "gateway of last resort": the path the router 
+    use in case no other path is available.
+        """
+        
+        show_ip_protocols = """
+    show ip protocols ("sh ip pro"):
+    
+    Displays all IP protocols that have been configured and are running on
+    the router, with the following information:
+        - Timers:
+            * Routing updates interval (default: 30s) 
+            * Invalid (time interval after which a route is declared invalid /
+            default: 180s)
+            * Flush (~ route garbage collection: time that must pass
+            before the route is removed from the routing table / default: 240s)
+        - Version of the protocol
+        - Maximum path (~ number of path used for load-sharing)
+        - Default administrative distance
+        """
+        
+        st_debug.insert("insert", show_ip_route)
+        st_debug.insert("insert", show_ip_protocols)
+        
+        if any(AS.type == "RIP" for AS in node.AS):
+        
+            debug_rip = ttk.Frame(notebook)
+            st_debug_rip = ScrolledText(debug_rip, wrap="word", bg="beige")
+            
+            notebook.add(debug_rip, text="RIP Troubleshooting")
+
+            debug_ip_rip = """
+    debug ip rip ("deb ip rip"):
+    
+    Displays the RIP routing updates sent and received sent on the router's
+    interfaces, and detects potential issues:
+        - Mismatch in the RIP version
+        
+    The debug mode can be deactivated by typing:
+        - no debug rip (rip only) / no debug all (all debug modes)
+        - equivalently: undebug rip / undebug all
+        """
+        
+            st_debug_rip.insert("insert", debug_ip_rip)
+            st_debug_rip.config(state=tk.DISABLED)
+            st_debug_rip.pack(fill=tk.BOTH, expand=tk.YES)
 
         # disable the scrolledtext so that it cannot be edited
         st_config.config(state=tk.DISABLED)

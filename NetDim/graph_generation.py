@@ -135,8 +135,8 @@ class GraphGeneration(FocusTopLevel):
                                                         padx=5, sticky='nsew')
                                         
         self.graph_properties = {
-        "Desargues": (3, 4),
-        "graph-test": (4, 5)
+        "Desargues": (3, 4, 2),
+        "graph-test": (4, 5, 4)
         }
         
         # List of classic graphs

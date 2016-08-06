@@ -268,10 +268,6 @@ class Route(Link):
         self.cost = cost
         self.traffic = traffic
         self.AS = AS
-        # r_path ("recovery path") contains, for each link of the route's path 
-        # the associated recovery path, i.e the path of the route if the link 
-        # in failure did not exist.
-        self.r_path = dict()
         
 class Traffic(Link):
     type = "traffic"

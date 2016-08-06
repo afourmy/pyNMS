@@ -73,16 +73,17 @@ Nodes are drawn at all 3 layers, and connected with a dashed line to further imp
 
 ![AS Management](https://github.com/mintoo/networks/raw/master/Readme/3D-display.PNG)
 
-## Capacity planning
+## Capacity planning 
 
-Once traffic links are created, they are routed on the trunks outside an AS, and the routes to cross an AS. The resulting traffic flow is computed for all trunks. This leads to trunk dimensioning and capacity planning.
+Once traffic links are created, they are routed on the trunks. The resulting traffic flow is computed for all for all interfaces. In the following example, the router load-balance the traffic on four equal-cost multi-path.
 
 ![Capacity planning](https://github.com/mintoo/networks/raw/master/Readme/capacity_planning.PNG)
 
 ## Failure simulation
 
-It is possible to simulate the failure of a device and see how it impacts the network routing and dimensioning.
-When highlighting a route's path, the "recovery path" is displayed: it shows how the traffic is being rerouted after the failure has occured.
+It is possible to simulate the failure of one or several devices and see how it impacts the network routing and dimensioning. A trunk can be set "in failure" from the right-click menu.
+For the failure to be considered, it is required to trigger the update of all routing tables, then route the traffic flows. 
+On the same example as above, we see that the router is now load-balancing the traffic on two paths only, and the total traffic flow is computed accordingly.
 
 ![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/failure_simulation.PNG)
 

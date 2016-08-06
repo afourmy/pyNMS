@@ -9,7 +9,7 @@ from graph_generation import NetworkDimension
 from miscellaneous import CustomTopLevel, ObjectListbox
 import drawing_options_window
 
-class MainFrame(tk.Frame):
+class MainMenu(tk.Frame):
     
     def __init__(self, master):
         super().__init__(

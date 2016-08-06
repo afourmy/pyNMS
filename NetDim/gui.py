@@ -15,7 +15,7 @@ import object_management_window as omw
 import advanced_graph_options as ago
 import drawing_options_window as dow
 import graph_generation as gg
-import frame
+import menu
 import scenario
 import csv
 import xlrd
@@ -443,9 +443,9 @@ class NetDim(tk.Tk):
         # graph generation window
         self.graph_generation = gg.GraphGeneration(self)
         
-        # create a frame
-        self.main_frame = frame.MainFrame(self)
-        self.main_frame.pack(fill=tk.BOTH, side=tk.LEFT)
+        # create a menu
+        self.menu = menu.MainMenu(self)
+        self.menu.pack(fill=tk.BOTH, side=tk.LEFT)
         self.scenario_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
         
         # dict of nodes image for node creation
@@ -487,7 +487,7 @@ class NetDim(tk.Tk):
                 img = ImageTk.PhotoImage(img_pil)
                 # set the default image for the button of the frame
                 if color == "default":
-                    self.main_frame.type_to_button[node_type].config(image=img, 
+                    self.menu.type_to_button[node_type].config(image=img, 
                                                         width=50, height=50)
                 self.dict_image[color][node_type] = img
         
@@ -498,7 +498,7 @@ class NetDim(tk.Tk):
                 img_pil = ImageTk.Image.open(img_path).resize(image_size)
                 img = ImageTk.PhotoImage(img_pil)
                 self.dict_image[category_type][image_type] = img
-                self.main_frame.type_to_button[image_type].config(image=img, 
+                self.menu.type_to_button[image_type].config(image=img, 
                                                         width=x, height=y+10)
                 
         # image for a link failure
