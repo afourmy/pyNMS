@@ -21,10 +21,7 @@ class Scenario(tk.Canvas):
         self._job = None
         # number of iteration of the graph layout algorithm
         self.drawing_iteration = 0
-        
-        # default colors for highlighting areas
-        self.default_colors = ["black", "red", "green", "blue", "cyan", "yellow", "magenta"]
-        
+            
         # default link width and node size
         self.LINK_WIDTH = 5
         self.NODE_SIZE = 8
@@ -96,13 +93,22 @@ class Scenario(tk.Canvas):
         # initialize other bindings depending on the mode
         self.switch_binding()
         
+        # window and highlight when hovering over an object
+        self.bind("<Motion>", lambda e: self.motion(e))
+        self.pwindow = None
+        
+        # we also keep track of the closest object for the motion function
+        self.co = None
+        
         # switch the object rectangle selection by pressing space
         self.bind("<space>", self.change_object_selection)
         
         # add nodes to a current selection by pressing control
         self.ctrl = False
+        
         def change_ctrl(value):
             self.ctrl = value
+            
         self.bind("<Control-KeyRelease>", lambda _: change_ctrl(False))
         self.bind("<Control-KeyPress>", lambda _: change_ctrl(True))
         
@@ -124,7 +130,7 @@ class Scenario(tk.Canvas):
             # add bindings to drag a node with left-click
             self.tag_bind("node", "<Button-1>", self.find_closest_node, add="+")
             for tag in ("node", "link"):
-                self.tag_bind(tag, "<Button-1>", self.find_closest_object, add="+")
+                self.tag_bind(tag, "<Button-1>", self.update_mgmt_window, add="+")
             self.tag_bind("node", "<B1-Motion>", self.node_motion)
             
             # add binding to select all nodes in a rectangle
@@ -173,12 +179,6 @@ class Scenario(tk.Canvas):
             self.highlight_route(route)
             
     def highlight_route(self, route):
-        # if the route has no AS, there is no management window
-        # TODO
-        # ft = route.AS.management.failed_trunk if route.AS else None
-        # if ft and ft in route.path:
-        #     self.highlight_objects(*route.r_path[ft], color="gold", dash=True)
-        # else:
         self.highlight_objects(*route.path)
         
     @adapt_coordinates
@@ -194,26 +194,98 @@ class Scenario(tk.Canvas):
             for sn in self.so["node"]:
                 self._dict_start_position[sn] = [sn.x, sn.y]
         else:
-            # we forget about the old selection, consider only the 
-            # newly selected node, and update the dict of start position
-            self.so = {"node": {main_node_selected}, "link": set()}
+            # if ctrl is not pressed, we forget about the old selection, 
+            # consider only the newly selected node, and unhighlight everything
+            if not self.ctrl:
+                self.so = {"node": {main_node_selected}, "link": set()}
+                self.unhighlight_all()
+            # else, we add the node to the current selection
+            else:
+                self.so["node"].add(main_node_selected)
+            # we update the dict of start position
             x, y = main_node_selected.x, main_node_selected.y
             self._dict_start_position[main_node_selected] = [x, y]
             # we also need to update the highlight to that the old selection
             # is no longer highlighted but the newly selected node is.
-            self.unhighlight_all()
             self.highlight_objects(main_node_selected)
-            
+
+    def update_mgmt_window(self, event):
+        if self.co:
+            # update the object management window with the closest object
+            self.ms.dict_obj_mgmt_window[self.co.subtype].current_obj = self.co
+            self.ms.dict_obj_mgmt_window[self.co.subtype].update()
+    
     @adapt_coordinates
-    def find_closest_object(self, event):
-        self.closest_object_id = self.find_closest(event.x, event.y)[0]
-        so = self.object_id_to_object[self.closest_object_id]
-        # update the object management window if it is opened
-        self.ms.dict_obj_mgmt_window[so.subtype].current_obj = so
-        self.ms.dict_obj_mgmt_window[so.subtype].update()
+    def motion(self, event):
+        x, y = event.x, event.y
+        # if there is at least one object on the canvas
+        if self.find_closest(x, y):
+            # we retrieve it
+            co_id = self.find_closest(x, y)[0]
+            if co_id in self.object_id_to_object:
+                co = self.object_id_to_object[co_id]
+                # we check if the closest object is under the mouse on the canvas
+                if co_id in self.find_overlapping(x - 1, y - 1, x + 1, y + 1):
+                    if co != self.co:
+                        if self.pwindow:
+                            self.pwindow.destroy()
+                        if self.co and self.co not in self.so[self.co.class_type]:
+                            self.unhighlight_objects(self.co)
+                        self.co = co
+                        if co not in self.so[co.class_type]:
+                            self.highlight_objects(self.co, color="purple")
+                        self.pwindow = tk.Toplevel(self)
+                        self.pwindow.wm_overrideredirect(1)
+                        # we adjust the position of the tipbox depending on 
+                        # what type of object it is: if it is a node, we set it 
+                        # in the upper right corner, if it is a link, we set it
+                        # slightly above the middle
+                        if co.class_type == "node":
+                            x0 = self.ms.winfo_x() + co.x + 335
+                            y0 = self.ms.winfo_y() + co.y + 70
+                            text = co.name
+                        else:
+                            src, dest = co.source, co.destination
+                            x0 = self.ms.winfo_x() + (src.x + dest.x + 680) / 2
+                            y0 = self.ms.winfo_y() + (src.y + dest.y + 125) / 2
+                            text = "Name: {name}\nSource: {src}\nDestination: {dest}"\
+                                        .format(
+                                                name = co.name,
+                                                src = co.source,
+                                                dest = co.destination
+                                                )
+                        self.pwindow.wm_geometry("+%d+%d" % (x0, y0))
+                        try:
+                            # mac os compatibility
+                            self.pwindow.tk.call(
+                                            "::tk::unsupported::MacWindowStyle",
+                                            "style", 
+                                            self.pwindow._w,
+                                            "help", 
+                                            "noActivates"
+                                            )
+                        except tk.TclError:
+                            pass
+                        label = tk.Label(
+                                        self.pwindow, 
+                                        text = text, 
+                                        justify = tk.LEFT,
+                                        background = "#ffffe0", 
+                                        relief = tk.SOLID, 
+                                        borderwidth = 1,
+                                        font = ("tahoma", "8", "normal")
+                                        )
+                        label.pack(ipadx=1)
+                elif self.co:
+                    if self.co not in self.so[co.class_type]:
+                        self.unhighlight_objects(self.co)
+                    self.co = None
+                    self.pwindow.destroy()
 
     @adapt_coordinates
     def node_motion(self, event):
+        # destroy the tip window when moving a node
+        self.pwindow.destroy()
         for selected_node in self.so["node"]:
             # the main node initial position, the main node current position, 
             # and the other node initial position form a rectangle.
@@ -227,8 +299,7 @@ class Scenario(tk.Canvas):
         node = self.object_id_to_object[self.drag_item]
         # update coordinates of the node and move it
         node.x, node.y = event.x, event.y
-        self.move_node(node)
-                
+        self.move_node(node)     
                 
     def start_point_select_objects(self, event):
         x, y = self.canvasx(event.x), self.canvasy(event.y)
@@ -287,6 +358,11 @@ class Scenario(tk.Canvas):
         
     @adapt_coordinates
     def line_creation(self, event):
+        # remove the purple highlight of the closest object when creating 
+        # a link: the normal system doesn't work because we are in "B1-Motion"
+        # mode and not just "Motion"
+        if self.co:
+            self.unhighlight_objects(self.co)
         # node from which the link starts
         start_node = self.object_id_to_object[self.drag_item]
         # create a line to show the link
@@ -417,7 +493,7 @@ class Scenario(tk.Canvas):
                 self.itemconfig(obj.oval, fill=color)
                 self.itemconfig(
                                 obj.image[0], 
-                                image = self.ms.dict_image["red"][obj.subtype]
+                                image = self.ms.dict_image[color][obj.subtype]
                                 )
             elif obj.class_type == "link":
                 dash = (3, 5) if dash else ()

@@ -17,7 +17,8 @@ class Node(object):
                  longitude = 0, 
                  latitude = 0, 
                  ipaddress = "0.0.0.0",
-                 subnetmask = "255.255.255.255"
+                 subnetmask = "255.255.255.255",
+                 LB_paths = 1
                  ):
         self.name = name
         self.longitude = int(longitude)
@@ -42,7 +43,7 @@ class Node(object):
         # associating an AS to a set of area the node belongs to
         self.AS = defaultdict(set)
         # number of path considered for load-balancing
-        self.LB_paths = 4
+        self.LB_paths = LB_paths
         
     def __repr__(self):
         return self.name

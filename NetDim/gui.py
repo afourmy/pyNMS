@@ -74,7 +74,7 @@ class NetDim(tk.Tk):
         # import/export the AS of a node, because when the AS itself is imported, 
         # we rebuild #its logical topology, and that includes 
         # rebuilding the nodes AS dict
-        node_common_ie_properties = node_common_properties[:-2]
+        node_common_ie_properties = node_common_properties[:-1]
         
         link_common_properties = (
         "protocol",
@@ -351,6 +351,8 @@ class NetDim(tk.Tk):
         "AS": "Autonomous system"
         }
         
+        colors = ["default", "red", "purple"]
+        
         ## ----- Menus : -----
         menubar = tk.Menu(self)
         upper_menu = tk.Menu(menubar, tearoff=0)
@@ -484,7 +486,7 @@ class NetDim(tk.Tk):
         "full-mesh": (40, 36)
         }}
         
-        for color in ["default", "red"]:
+        for color in colors:
             for node_type in self.cs.ntw.node_type:
                 img_path = join(self.path_icon, "".join((color, "_", node_type, ".gif")))
                 img_pil = ImageTk.Image.open(img_path).resize(self.node_size_image[node_type])
