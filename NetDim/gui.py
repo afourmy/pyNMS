@@ -375,11 +375,11 @@ class NetDim(tk.Tk):
         menu_routing = tk.Menu(menubar, tearoff=0)
         menu_routing.add_command(label="Graph generation", 
                         command=lambda: self.graph_generation.deiconify())
-        menu_routing.add_command(label="Advanced graph options", 
+        menu_routing.add_command(label="Advanced algorithms", 
                         command=lambda: self.advanced_graph_options.deiconify())
         menu_routing.add_command(label="Network Tree View", 
                                         command=lambda: NetworkTreeView(self))
-        menu_routing.add_command(label="RWA", 
+        menu_routing.add_command(label="Wavelength assignment", 
                                     command=lambda: self.rwa_window.deiconify())
                                                              
         menubar.add_cascade(label="Network routing",menu=menu_routing)

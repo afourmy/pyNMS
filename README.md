@@ -1,9 +1,9 @@
 ﻿# Introduction
 
-Netdim is a network design and planning software.
+NetDim is a network design and planning software.
 
 A network in NetDim is made of:
-- devices (router, optical switch, host machine or antenna)
+- devices (router, optical switch, host machine, etc)
 - physical links (<a href="https://en.wikipedia.org/wiki/Link_aggregation">trunks</a>)
 - routes
 - traffic links
@@ -48,7 +48,7 @@ Routes are created between every couple of "edge nodes", in order to prevent the
 ## Routing algorithms
 
 Four algorithms have been implemented to find the shortest path between two devices:
-- Dijkstra algorithm
+- Dijkstra and A* algorithm
 - Bellman-Ford algorithm
 - Floyd-Warshall algorithm
 - Shortest path with linear programming (GLPK)
@@ -82,7 +82,7 @@ Once traffic links are created, they are routed on the trunks. The resulting tra
 ## Failure simulation
 
 It is possible to simulate the failure of one or several devices and see how it impacts the network routing and dimensioning. A trunk can be set "in failure" from the right-click menu.
-For the failure to be considered, it is required to trigger the update of all routing tables, then route the traffic flows. 
+For the failure to be considered, it is required to trigger the update of all routing tables, then route the traffic flows again. 
 On the same example as above, we see that the router is now load-balancing the traffic on two paths only, and the total traffic flow is computed accordingly.
 
 ![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/failure_simulation.PNG)
@@ -90,31 +90,61 @@ On the same example as above, we see that the router is now load-balancing the t
 ## Automatic device configuration
 
 After an AS is created, Netdim shows all Cisco commands required to properly configure the protocol on the device. 
-This information can in turn be used along with network simulator like GNS3 to learn how to configure a network.
+This information can in turn be used along with network emulator like GNS3 to learn how to configure a network.
 
 ![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/config.PNG)
 
-## Transportation problem
+## Advanced algorithms
 
 The transportation problem consists in finding the best way to carry traffic flows through the network.
 It has a number of variations (maximum flow, minimum-cost flow, traffic-demand constrained flow, etc).
-Four methods were implemented to solve the transportation problem:
+
+Four methods were implemented to solve the maximum flow problem:
 
 - Ford-Fulkerson algorithm
 - Edmond-Karps algorithm
 - Dinic algorithm
 - Linear programming with GLPK
 
+Two methods to solve the minimum-cost flow problem:
+
+- Linear programming with GLPK
+- Cycle-canceling algorithm (~ Klein algorithm)
+
+Another recurrent problem in networking is to find the shortest link-disjoint paths. 
+Four methods were implemented to find the K link-disjoint shortest paths:
+
+- Constrained A*
+- Bhandari algorithm
+- Suurbale algorithm
+- Linear programming with GLPK
+
+To run these algorithms, go to the "Network routing" menu and click on the "Advanced algorithms" entry.
+Select an algorithm, fill in all the associated fields, and confirm.
+
+![Algorithm window](https://github.com/mintoo/networks/raw/master/Readme/algorithm_window.png)
+
 ## Wavelength allocation problem
 
 In an optical-bypass enabled network, a wavelength can cross an optical switch without Optical-Electrical-Optical (OEO) conversion. While this is a step forward towards cheaper and "greener" networks, a trade-off is that there has to be an end-to-end "wavelength continuity": a wavelength stays the same from the source edge to the destination edge, and it cannot be used by different lightpaths on the same optical fiber.
 
-![WA topology](https://github.com/mintoo/networks/raw/master/Readme/WA_problem.png)
+![WA topology](https://github.com/mintoo/networks/raw/master/Readme/RWA_problem1.png)
 
 In the following example, there are 3 paths. If there is a transponder at "node2" to take care of the wavelength conversion, we need only two wavelengths overall: we can assign a wavelength M to traffic3, N to traffic4, and traffic5 will first use N from node1 to node2, then M from node2 to node3. However, in an optical-bypass enabled network, there can be no OEO conversion at node2: the number of wavelengths we need depends how we assign them.
 If we assign M to traffic3 and N to traffic4, we will have to use a third wavelength for traffic5, since M and N are already used. However, we could assign M to both traffic3 and traffic4, which leaves N free to use for traffic5: the minimal number of wavelengths required is 2.
 
-The wavelength allocation problem consists in finding the minimum number of wavelengths that are required, and how to allocate them to lightpaths. This problem can be solved with linear programming.
+The wavelength allocation problem consists in finding the minimum number of wavelengths that are required, and how to allocate them to lightpaths.
+Build an network with optical switches (OXCs) and traffic links (at most one per couple of OXC), then go to the "Network routing" and click on the "Wavelength assignment" entry.
+
+![WA topology](https://github.com/mintoo/networks/raw/master/Readme/RWA_problem2.png)
+
+The first step is to trigger the graph transformation: type a name for the scenario and click on "Graph transformation".
+Two methods were implemented to solve the wavelength assignment problem:
+
+- Linear programming with GLPK
+- "Largest degree first" heuristic
+
+Choose one of them in the list and click on "Run algorithm": NetDim will find out how many wavelengths are needed.
 
 # A simple use case: create an OSPF tessaract (4-hypercube)
 

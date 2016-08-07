@@ -10,7 +10,7 @@ class RWAWindow(FocusTopLevel):
                         
         # label frame
         self.lf_rwa = ttk.Labelframe(self, padding=(6, 6, 12, 12), 
-                                                        text='RWA')
+                                    text='Routing and Wavelength Assignment')
         self.lf_rwa.grid(column=0, columnspan=2, pady=5, padx=5, 
                                                         row=1, sticky='nsew')
                                                         

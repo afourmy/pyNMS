@@ -17,7 +17,7 @@ from itertools import combinations
 try:
     import numpy as np
     from cvxopt import matrix, glpk
-except:
+except ImportError:
     warnings.warn("Package missing: linear programming functions will fail")
 
 class Network(object):
@@ -597,6 +597,7 @@ class Network(object):
                      self, 
                      source, 
                      target, 
+                     cycle = False,
                      excluded_trunks = None, 
                      excluded_nodes = None, 
                      allowed_trunks = None, 
@@ -638,15 +639,28 @@ class Network(object):
                         negative_cycle = True
                         
         # traceback the path from target to source
-        if dist[target] != float("inf"):
+        if dist[target] != float("inf") and not cycle:
             curr, path_node, path_trunk = target, [target], [prec_trunk[target]]
             while curr != source:
                 curr = prec_node[curr]
                 path_trunk.append(prec_trunk[curr])
                 path_node.append(curr)
             return path_node[::-1], path_trunk[:-1][::-1]
-        else:
-            return [], []
+        # if we want a cycle, and one exists, we find it
+        if cycle and negative_cycle:
+                curr, path_node, path_trunk = target, [target], [prec_trunk[target]]
+                # return the cycle itself (for the cycle cancelling algorithm) 
+                # starting from the target, we go through the predecessors 
+                # we find any cycle (we don't necessarily have to come back to
+                # the target).
+                while curr not in path_node:
+                    curr = prec_node[curr]
+                    path_trunk.append(prec_trunk[curr])
+                    path_node.append(curr)
+                return path_node[::-1], path_trunk[:-1][::-1]
+        # if we didn't find a path, and were not looking for a cycle, 
+        # we return empty lists
+        return [], []
             
     ## 8) Floyd-Warshall algorithm
             
