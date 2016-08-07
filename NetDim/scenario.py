@@ -254,7 +254,7 @@ class Scenario(tk.Canvas):
                                          self.ms.prop_to_nice_name[property] 
                                          + " : " + str(getattr(co, property)) 
                                          + " " for property in 
-                                        self.ms.box_properties[co.class_type]
+                                        self.ms.box_properties[co.type]
                                          )
                         x0, y0 = self.ms.winfo_x() + 317, self.ms.winfo_y() + 110
                         self.pwindow.wm_geometry("+%d+%d" % (x0, y0))

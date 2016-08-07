@@ -263,13 +263,28 @@ class NetDim(tk.Tk):
         "LB_paths"
         ),
         
-        "link" : (
+        "trunk": (
         "name", 
         "protocol",
         "interface",
         "source", 
         "destination"
-        )}
+        ),
+        
+        "route": (
+        "name", 
+        "source", 
+        "destination"
+        ),
+        
+        "traffic": (
+        "name", 
+        "source", 
+        "destination",
+        "throughput",
+        )
+        
+        }
         
         # methods for string to object conversions
         convert_node = lambda n: self.cs.ntw.nf(name=n)

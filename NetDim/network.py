@@ -1651,7 +1651,7 @@ class Network(object):
         uncolored_nodes = list(oxc_color)
         # we will use a function that returns the degree of a node to sort
         # the list in ascending order, and pop nodes one by one
-        uncolored_nodes.sort(key = lambda node: self.graph[node]["trunk"])
+        uncolored_nodes.sort(key = lambda node: len(self.graph[node]["trunk"]))
         
         while uncolored_nodes:
             largest_degree = uncolored_nodes.pop()
