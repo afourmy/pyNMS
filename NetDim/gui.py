@@ -254,6 +254,23 @@ class NetDim(tk.Tk):
         "throughput"
         ))])
         
+        # ordered dicts are needed to have the same menu order 
+        self.box_properties = {
+        "node": (
+        "name", 
+        "ipaddress", 
+        "subnetmask", 
+        "LB_paths"
+        ),
+        
+        "link" : (
+        "name", 
+        "protocol",
+        "interface",
+        "source", 
+        "destination"
+        )}
+        
         # methods for string to object conversions
         convert_node = lambda n: self.cs.ntw.nf(name=n)
         convert_link = lambda l: self.cs.ntw.lf(name=l)

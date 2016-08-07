@@ -241,19 +241,22 @@ class Scenario(tk.Canvas):
                         # in the upper right corner, if it is a link, we set it
                         # slightly above the middle
                         if co.class_type == "node":
-                            x0 = self.ms.winfo_x() + co.x + 335
-                            y0 = self.ms.winfo_y() + co.y + 70
                             text = co.name
                         else:
                             src, dest = co.source, co.destination
-                            x0 = self.ms.winfo_x() + (src.x + dest.x + 680) / 2
-                            y0 = self.ms.winfo_y() + (src.y + dest.y + 125) / 2
                             text = "Name: {name}\nSource: {src}\nDestination: {dest}"\
                                         .format(
                                                 name = co.name,
                                                 src = co.source,
                                                 dest = co.destination
                                                 )
+                        text = "\n".join(
+                                         self.ms.prop_to_nice_name[property] 
+                                         + " : " + str(getattr(co, property)) 
+                                         + " " for property in 
+                                        self.ms.box_properties[co.class_type]
+                                         )
+                        x0, y0 = self.ms.winfo_x() + 317, self.ms.winfo_y() + 110
                         self.pwindow.wm_geometry("+%d+%d" % (x0, y0))
                         try:
                             # mac os compatibility
