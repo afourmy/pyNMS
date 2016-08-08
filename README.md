@@ -65,6 +65,22 @@ I've come to the conclusion that the only way to properly route flows in a netwo
 
 ![Routing table](https://github.com/mintoo/networks/raw/master/Readme/routing_table.png)
 
+## Automatic device configuration
+
+After an AS is created, Netdim shows all Cisco commands required to properly configure the protocol on the device. 
+This information can in turn be used along with network emulator like GNS3 to learn how to configure a network.
+
+![Automatic configuration](https://github.com/mintoo/networks/raw/master/Readme/config.PNG)
+
+## Troubleshooting commands
+
+NetDim also provides an help with troubleshooting. You can right-click on a router and select the "Troubleshooting" entry to get a list of (Cisco) troubleshooting commands:
+
+- General troubleshooting commands
+- Per-AS type troubleshooting commands, depending on which AS the router belongs to
+
+![Troubleshooting](https://github.com/mintoo/networks/raw/master/Readme/troubleshooting.png)
+
 ## 3D display
 
 There are 3 layers in NetDim: the physical layer (Ethernet and WDM fiber trunks), the logical layer (routes), and the traffic layer (traffic links).
@@ -86,22 +102,6 @@ For the failure to be considered, it is required to trigger the update of all ro
 On the same example as above, we see that the router is now load-balancing the traffic on two paths only, and the total traffic flow is computed accordingly.
 
 ![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/failure_simulation.PNG)
-
-## Automatic device configuration
-
-After an AS is created, Netdim shows all Cisco commands required to properly configure the protocol on the device. 
-This information can in turn be used along with network emulator like GNS3 to learn how to configure a network.
-
-![Automatic configuration](https://github.com/mintoo/networks/raw/master/Readme/config.PNG)
-
-## Troubleshooting commands
-
-NetDim also provides an help with troubleshooting. You can right-click on a router and select the "Troubleshooting" entry to get a list of (Cisco) troubleshooting commands:
-
-- General troubleshooting commands
-- Per-AS type troubleshooting commands, depending on which AS the router belongs to
-
-![Troubleshooting](https://github.com/mintoo/networks/raw/master/Readme/troubleshooting.PNG)
 
 ## Advanced algorithms
 
