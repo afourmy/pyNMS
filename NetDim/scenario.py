@@ -230,10 +230,11 @@ class Scenario(tk.Canvas):
                         if self.pwindow:
                             self.pwindow.destroy()
                         if self.co and self.co not in self.so[self.co.class_type]:
+                            
                             self.unhighlight_objects(self.co)
                         self.co = co
                         if co not in self.so[co.class_type]:
-                            self.highlight_objects(self.co, color="purple")
+                            self.highlight_objects(co, color="purple")
                         self.pwindow = tk.Toplevel(self)
                         self.pwindow.wm_overrideredirect(1)
                         # we adjust the position of the tipbox depending on 
@@ -256,7 +257,7 @@ class Scenario(tk.Canvas):
                                          + " " for property in 
                                         self.ms.box_properties[co.type]
                                          )
-                        x0, y0 = self.ms.winfo_x() + 317, self.ms.winfo_y() + 110
+                        x0, y0 = self.ms.winfo_x() + 316, self.ms.winfo_y() + 110
                         self.pwindow.wm_geometry("+%d+%d" % (x0, y0))
                         try:
                             # mac os compatibility
@@ -279,11 +280,11 @@ class Scenario(tk.Canvas):
                                         font = ("tahoma", "8", "normal")
                                         )
                         label.pack(ipadx=1)
-                elif self.co:
-                    if self.co not in self.so[co.class_type]:
-                        self.unhighlight_objects(self.co)
-                    self.co = None
-                    self.pwindow.destroy()
+                    elif self.co:
+                        if self.co not in self.so[co.class_type]:
+                            self.unhighlight_objects(self.co)
+                        self.co = None
+                        self.pwindow.destroy()
 
     @adapt_coordinates
     def node_motion(self, event):
@@ -491,7 +492,11 @@ class Scenario(tk.Canvas):
         
     ## Highlight and Unhighlight links and nodes (depending on class_type)
     def highlight_objects(self, *objects, color="red", dash=False):
+        # highlight in red = selection: everything that is highlighted in red
+        # is considered selected, and everything that isn't, unselected.
         for obj in objects:
+            if color == "red":
+                self.so[obj.class_type].add(obj)
             if obj.class_type == "node":
                 self.itemconfig(obj.oval, fill=color)
                 self.itemconfig(
@@ -501,6 +506,7 @@ class Scenario(tk.Canvas):
             elif obj.class_type == "link":
                 dash = (3, 5) if dash else ()
                 self.itemconfig(obj.line, fill=color, width=5, dash=dash)
+
                 
     def unhighlight_objects(self, *objects):
         for obj in objects:
