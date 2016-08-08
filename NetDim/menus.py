@@ -4,7 +4,8 @@
 
 import tkinter as tk
 import AS
-import config
+import configuration
+import troubleshooting
 import routing_table
 import drawing_options_window
                                 
@@ -46,10 +47,12 @@ class RightClickMenu(tk.Menu):
         # exactly one node: configuration menu
         if not scenario.so["link"] and len(scenario.so["node"]) == 1:
             node ,= scenario.so["node"]
-            self.add_command(label="Configuration", 
-                        command=lambda: self.configure(node, scenario))
             self.add_command(label="Routing table", 
                         command=lambda: self.routing_table(node, scenario))
+            self.add_command(label="Configuration", 
+                        command=lambda: self.configure(node, scenario))
+            self.add_command(label="Troubleshooting", 
+                        command=lambda: self.troubleshoot(node, scenario))
                         
             self.add_separator()
         
@@ -125,12 +128,16 @@ class RightClickMenu(tk.Menu):
         scenario.remove_failure(trunk)
         
     @empty_selection_and_destroy_menu
-    def configure(self, node, scenario):
-        config.Configuration(node, scenario)
-        
-    @empty_selection_and_destroy_menu
     def routing_table(self, node, scenario):
         routing_table.RoutingTable(node, scenario)
+        
+    @empty_selection_and_destroy_menu
+    def configure(self, node, scenario):
+        configuration.Configuration(node, scenario)
+        
+    @empty_selection_and_destroy_menu
+    def troubleshoot(self, node, scenario):
+        troubleshooting.Troubleshooting(node, scenario)
     
     @empty_selection_and_destroy_menu
     def show_object_properties(self, scenario):

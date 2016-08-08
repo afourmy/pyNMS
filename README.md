@@ -92,7 +92,16 @@ On the same example as above, we see that the router is now load-balancing the t
 After an AS is created, Netdim shows all Cisco commands required to properly configure the protocol on the device. 
 This information can in turn be used along with network emulator like GNS3 to learn how to configure a network.
 
-![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/config.PNG)
+![Automatic configuration](https://github.com/mintoo/networks/raw/master/Readme/config.PNG)
+
+## Troubleshooting commands
+
+NetDim also provides an help with troubleshooting. You can right-click on a router and select the "Troubleshooting" entry to get a list of (Cisco) troubleshooting commands:
+
+- General troubleshooting commands
+- Per-AS type troubleshooting commands, depending on which AS the router belongs to
+
+![Troubleshooting](https://github.com/mintoo/networks/raw/master/Readme/troubleshooting.PNG)
 
 ## Advanced algorithms
 
