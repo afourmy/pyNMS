@@ -11,7 +11,7 @@ from math import cos, sin, atan2, sqrt, radians
 class Scenario(tk.Canvas):
     
     def __init__(self, master, name):
-        super().__init__(width=1300, height=800, background="white")
+        super().__init__(width=1300, height=800, background="bisque")
         self.name = name
         self.ntw = network.Network(self)
         self.object_id_to_object = {}
