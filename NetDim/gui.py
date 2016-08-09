@@ -282,9 +282,7 @@ class NetDim(tk.Tk):
         "source", 
         "destination",
         "throughput",
-        )
-        
-        }
+        )}
         
         # methods for string to object conversions
         convert_node = lambda n: self.cs.ntw.nf(name=n)

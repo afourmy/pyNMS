@@ -4,10 +4,8 @@
 
 import tkinter as tk
 from tkinter import ttk, messagebox
-from miscellaneous import FocusTopLevel
+from miscellaneous import CustomTopLevel, FocusTopLevel
 
-# http://stackoverflow.com/questions/7546050/switch-between-two-frames-in-tkinter
-# TODO: only one window containing all 5 frames
 class ObjectManagementWindow(FocusTopLevel):
     
     read_only = (
@@ -158,3 +156,47 @@ class ObjectManagementWindow(FocusTopLevel):
             # without computing a new path
             if property == "path":
                 self.current_path = self.current_obj.path
+                
+class PropertyChanger(FocusTopLevel):
+                                    
+    def __init__(self, master, objects, type):
+        super().__init__()
+        self.ms = master
+        print(objects, type)
+        
+        # list of properties
+        self.var_property = tk.StringVar()
+        self.property_list = ttk.Combobox(self, 
+                                    textvariable=self.var_property, width=6)
+        self.property_list["values"] = self.ms.object_properties[type]
+        self.property_list.current(0)
+        self.property_list.bind('<<ComboboxSelected>>', 
+                                        lambda e: self.update_property())
+        self.property_list.grid(row=0, column=0, pady=5, padx=5)
+                            
+        self.entry_prop = ttk.Entry(self, width=9)
+        self.entry_prop.grid(row=1, column=0, pady=5, padx=5)
+        
+        self.button_OK = ttk.Button(self, text="OK", 
+                                        command=lambda: self.confirm(objects))
+        self.button_OK.grid(row=2, column=0,
+                                        pady=5, padx=5, sticky="nsew")
+        
+        # update property with first value of the list
+        self.update_property()
+        
+    def update_property(self):
+        self.property = self.var_property.get()
+        
+    def confirm(self, objects):
+        value = self.ms.prop_to_type[self.property](self.entry_prop.get())
+        for object in objects:
+            setattr(object, self.property, value)
+        self.destroy()
+        
+    
+
+        
+
+                
+
