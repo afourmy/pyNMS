@@ -622,10 +622,10 @@ class Network(object):
     def RFT_builder(
                self, 
                source, 
-               AS,
-               K = 4
+               AS
                ):
     
+        K = source.LB_paths
         visited = set()
         allowed_nodes = AS.pAS["node"]
         allowed_trunks =  AS.pAS["trunk"] - self.fdtks

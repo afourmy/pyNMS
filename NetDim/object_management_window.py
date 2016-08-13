@@ -156,8 +156,9 @@ class ObjectManagementWindow(FocusTopLevel):
             obj_prop = getattr(self.current_obj, property)
             if property == "default_route":
                 combobox, var = str_var
-                attached_ints = (None,) + tuple(trunk("ipaddress", self.current_obj) for _, trunk
-                            in self.ms.cs.ntw.graph[self.current_obj]["trunk"])
+                attached_ints = (None,) + tuple(filter(None, 
+                            (trunk("ipaddress", neighbor) for neighbor, trunk
+                            in self.ms.cs.ntw.graph[self.current_obj]["trunk"])))
                 combobox["values"] = attached_ints
                 var.set(obj_prop)
             elif type(obj_prop) in (list, set):
