@@ -616,131 +616,10 @@ class Network(object):
             # interface: it is a directly connected interface
             source.rt[adj_trunk.sntw] = {("C", ex_ip, ex_int, 
                                                     0, neighbor, adj_trunk)}
-                                        
-    ## 2) RFT builder for LB-free AS: subnetworks / interfaces mapping
-    
-    def RFT_builder(self, source, AS):
-        if source.LB_paths == 1:
-            self.RFT_LB_free_builder(source, AS)
-        else:
-            self.RFT_LB_builder(source, AS, source.LB_paths)
-    
-    def RFT_LB_free_builder(self, source, AS):
-                
-        visited = set()
-        allowed_nodes = AS.pAS["node"]
-        allowed_trunks =  AS.pAS["trunk"] - self.fdtks
-        # we keep track of all already visited subnetworks
-        visited_subnetworks = set()
-        heap = [(0, source, None, None)]
-        # source area: we make sure that if the node is connected to an area,
-        # the path we find to any subnetwork in that area is an intra-area path.
-        src_areas = source.AS[AS]
-                
-        if AS.type == "ISIS":
-            
-            # if source is an L1 there will be a default route to
-            # 0.0.0.0 heading to the closest L1/L2 node.
-            src_area ,= source.AS[AS]
-            
-            # we keep a boolean telling us if source is L1 so that we know we
-            # must add the i*L1 default route when we first meet a L1/L2 node
-            # and all other routes are i L1 as rtype (route type).
-            isL1 = source not in AS.border_routers and src_area.name != "Backbone"
-                                        
-        while heap:
-            dist, node, trunk, exit = heappop(heap)
-            # if (exit, node) hasn't been visited yet, it means that the
-            # current path is the shortest to reach this node via this
-            # exit interface.
-            # we associate all subnetwork addresses attached to the node 
-            # to the exit interface (the interface of the neighbor
-            # of the source node), provided that this subnetwork hasn't been
-            # reached from another interface before that, and that it isn't
-            # an intra-area path for an area to which the source belongs.
-            if (exit, node) not in visited:
-                visited.add((exit, node))                            
-                for neighbor, adj_trunk in self.graph[node]["trunk"]:
-                    # excluded and allowed nodes
-                    if neighbor not in allowed_nodes:
-                        continue
-                    # excluded and allowed trunks
-                    if adj_trunk not in allowed_trunks: 
-                        continue
-                    if neighbor == source:
-                        continue
-                    if node == source:
-                        # it is the IP of the Next-Hop interface which is 
-                        # mentioned in the routing table, not the IP of the 
-                        # interface directly attached to the source node.
-                        ex_ip = adj_trunk("ipaddress", neighbor)
-                        ex_int = adj_trunk("interface", source)
-                        exit = (adj_trunk, ex_ip, ex_int, neighbor) 
-                        source.rt[adj_trunk.sntw] = {("C", ex_ip, ex_int, 
-                                                       0, neighbor, adj_trunk)}                        
-                    heappush(heap, (dist + adj_trunk("cost", node), neighbor, 
-                                                            adj_trunk, exit))
-            if node != source:
-                ex_tk, ex_ip, ex_int, nh = exit
-                if AS.type == "RIP":
-                    new_sntw = ("R", trunk.sntw)
-                    if new_sntw not in visited_subnetworks:
-                        visited_subnetworks.add(new_sntw)
-                        source.rt[trunk.sntw] = {("R", ex_ip, ex_int, 
-                                                    dist, nh, ex_tk)}
-                elif AS.type == "OSPF":
-                    # we check if the trunk has any common area with the
-                    # exit trunk: if it does not, it is an inter-area route.
-                    rtype = "O" if trunk.AS[AS] & ex_tk.AS[AS] else "O IA"
-                    if (rtype, trunk.sntw) not in visited_subnetworks:
-                        if ("O", trunk.sntw) in visited_subnetworks:
-                            continue
-                        else:
-                            visited_subnetworks.add((rtype, trunk.sntw))
-                            source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
-                                                        dist, nh, ex_tk)}
-                elif AS.type == "ISIS":
-                    if isL1:
-                        if (node in AS.border_routers 
-                                            and "0.0.0.0" not in source.rt):
-                            source.rt["0.0.0.0"] = {("i*L1", ex_ip, ex_int,
-                                                        dist, nh, ex_tk)}
-                        else:
-                            if (("i L1", trunk.sntw) not in visited_subnetworks 
-                                            and trunk.AS[AS] & ex_tk.AS[AS]):
-                                visited_subnetworks.add(("i L1", trunk.sntw))
-                                source.rt[trunk.sntw] = {("i L1", ex_ip, ex_int,
-                                        dist + trunk("cost", node), nh, ex_tk)}
-                    else:
-                        trunkAS ,= trunk.AS[AS]
-                        exit_area ,= ex_tk.AS[AS]
-                        rtype = "i L1" if (trunk.AS[AS] & ex_tk.AS[AS] and 
-                                        trunkAS.name != "Backbone") else "i L2"
-                        # we favor intra-area routes by excluding a 
-                        # route if the area of the exit trunk is not
-                        # the one of the subnetwork
-                        if (not ex_tk.AS[AS] & trunk.AS[AS] 
-                                        and trunkAS.name == "Backbone"):
-                            continue
-                        # if the source is an L1/L2 node and the destination
-                        # is an L1 area different from its own, we force it
-                        # to use the backbone by forbidding it to use the
-                        # exit interface in the source area
-                        if (rtype == "i L2" and source in AS.border_routers and 
-                                    exit_area.name != "Backbone"):
-                            continue
-                        if (("i L1", trunk.sntw) not in visited_subnetworks 
-                            and ("i L2", trunk.sntw) not in visited_subnetworks):
-                            
-                            visited_subnetworks.add((rtype, trunk.sntw))
-                            source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int,
-                                    dist + trunk("cost", node), nh, ex_tk)}
-            
-
-    
-    ## 2) RFT builder for LB-enabled networks
+                                            
+    ## 3) RFT builder
                                                 
-    def RFT_LB_builder(
+    def RFT_builder(
                self, 
                source, 
                AS,
@@ -759,6 +638,17 @@ class Network(object):
         src_areas = source.AS[AS]
         # cost of the shortesth path to a subnetwork
         SP_cost = {}
+                
+        if AS.type == "ISIS":
+            
+            # if source is an L1 there will be a default route to
+            # 0.0.0.0 heading to the closest L1/L2 node.
+            src_area ,= source.AS[AS]
+            
+            # we keep a boolean telling us if source is L1 so that we know we
+            # must add the i*L1 default route when we first meet a L1/L2 node
+            # and all other routes are i L1 as rtype (route type).
+            isL1 = source not in AS.border_routers and src_area.name != "Backbone"
         
         while heap:
             dist, node, path_trunk, ex_int = heappop(heap)  
@@ -795,7 +685,8 @@ class Network(object):
                         source.rt[trunk.sntw] = {("R", ex_ip, ex_int, 
                                                     curr_dist, nh, ex_tk)}
                     else:
-                        if curr_dist == SP_cost[trunk.sntw] and K > len(source.rt[trunk.sntw]):
+                        if (curr_dist == SP_cost[trunk.sntw] 
+                            and K > len(source.rt[trunk.sntw])):
                             source.rt[trunk.sntw].add(("R", ex_ip, ex_int, 
                                                     curr_dist, nh, ex_tk))
                 elif AS.type == "OSPF":
@@ -816,7 +707,8 @@ class Network(object):
                             source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
                                                     curr_dist, nh, ex_tk)}
                         else:
-                            if curr_dist == SP_cost[trunk.sntw] and K > len(source.rt[trunk.sntw]):
+                            if (curr_dist == SP_cost[trunk.sntw]
+                                and K > len(source.rt[trunk.sntw])):
                                 source.rt[trunk.sntw].add((rtype, ex_ip, ex_int, 
                                                     curr_dist, nh, ex_tk))
                     if (rtype, trunk.sntw) not in visited_subnetworks:
@@ -826,6 +718,42 @@ class Network(object):
                             visited_subnetworks.add((rtype, trunk.sntw))
                             source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
                                         dist + trunk("cost", node), nh, ex_tk)}
+                elif AS.type == "ISIS":
+                    if isL1:
+                        if (node in AS.border_routers 
+                                            and "0.0.0.0" not in source.rt):
+                            source.rt["0.0.0.0"] = {("i*L1", ex_ip, ex_int,
+                                                        dist, nh, ex_tk)}
+                        else:
+                            if (("i L1", trunk.sntw) not in visited_subnetworks 
+                                            and trunk.AS[AS] & ex_tk.AS[AS]):
+                                visited_subnetworks.add(("i L1", trunk.sntw))
+                                source.rt[trunk.sntw] = {("i L1", ex_ip, ex_int,
+                                        dist + trunk("cost", node), nh, ex_tk)}
+                    else:
+                        trunkAS ,= trunk.AS[AS]
+                        exit_area ,= ex_tk.AS[AS]
+                        rtype = "i L1" if (trunk.AS[AS] & ex_tk.AS[AS] and 
+                                        trunkAS.name != "Backbone") else "i L2"
+                        # we favor intra-area routes by excluding a 
+                        # route if the area of the exit trunk is not
+                        # the one of the subnetwork
+                        if (not ex_tk.AS[AS] & trunk.AS[AS] 
+                                        and trunkAS.name == "Backbone"):
+                            continue
+                        # if the source is an L1/L2 node and the destination
+                        # is an L1 area different from its own, we force it
+                        # to use the backbone by forbidding it to use the
+                        # exit interface in the source area
+                        if (rtype == "i L2" and source in AS.border_routers and 
+                                    exit_area.name != "Backbone"):
+                            continue
+                        if (("i L1", trunk.sntw) not in visited_subnetworks 
+                            and ("i L2", trunk.sntw) not in visited_subnetworks):
+                            
+                            visited_subnetworks.add((rtype, trunk.sntw))
+                            source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int,
+                                    dist + trunk("cost", node), nh, ex_tk)}
                     # TODO
                     # IS-IS uses per-address unequal cost load balancing 
                     # a user-defined variance defined as a percentage of the
