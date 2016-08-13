@@ -68,6 +68,9 @@ class Router(Node):
     
     def __init__(self, *args):
         self.rt = {}
+        # the default route is the gateway of last resort: 
+        # it is a default exit interface.
+        self.default_route = None
         super().__init__(*args)
         
 class Switch(Node):

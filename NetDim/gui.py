@@ -132,7 +132,7 @@ class NetDim(tk.Tk):
         )
         
         self.object_properties = collections.OrderedDict([
-        ("router", node_common_properties),
+        ("router", node_common_properties + ("default_route",)),
         ("oxc", node_common_properties),
         ("host", node_common_properties),
         ("antenna", node_common_properties),
@@ -175,7 +175,8 @@ class NetDim(tk.Tk):
         "Position", 
         "Coordinates", 
         "IPAddress",
-        "LB_paths"
+        "LB_paths",
+        "Default_Route"
         )),
         
         ("Trunk", 
@@ -255,6 +256,8 @@ class NetDim(tk.Tk):
         ))])
         
         # ordered dicts are needed to have the same menu order 
+        # box properties defines which properties are to be displayed in the
+        # upper left corner of the canvas when hoverin over an object
         self.box_properties = {
         "node": (
         "name", 
@@ -302,6 +305,7 @@ class NetDim(tk.Tk):
         "ipaddress": str,
         "subnetmask": str,
         "LB_paths": int,
+        "default_route": str,
         "x": float, 
         "y": float, 
         "longitude": float, 
@@ -345,6 +349,7 @@ class NetDim(tk.Tk):
         "ipaddress": "IP address",
         "subnetmask": "Subnet mask",
         "LB_paths": "Maximum paths (LB)",
+        "default_route": "Default Route",
         "x": "X coordinate", 
         "y": "Y coordinate", 
         "longitude": "Longitude", 

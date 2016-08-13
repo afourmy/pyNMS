@@ -269,8 +269,7 @@ class Network(object):
                     if curr_traffic > getattr(trunk, "wctraffic" + dir):
                         setattr(trunk, "wctraffic" + dir, curr_traffic)
                         setattr(trunk, "wcfailure", str(failed_trunk))
-                        
-        self.cs.remove_failures()
+            self.fdtks.clear()
         
     def rt_creation(self):
         # we compute the routing table of all routers
@@ -301,7 +300,6 @@ class Network(object):
         self.ip_allocation()
         self.subnetwork_allocation()
         self.interface_allocation()
-        self.trunk_dimensioning()
         self.rt_creation()
         self.path_finder()
         self.cs.refresh_all_labels()
@@ -435,163 +433,8 @@ class Network(object):
                                     )
                             )
         return [], []
-        
-    ## 3) RIP routing algorithm
-    
-    def RIP_routing(self, source, target, RIP_AS, a_n=None, a_t=None):
-        
-        if a_n is None:
-            a_n = RIP_AS.pAS["node"]
-        if a_t is None:
-            a_t = RIP_AS.pAS["trunk"]
-                    
-        return self.A_star(
-                           source, 
-                           target, 
-                           allowed_nodes = a_n,
-                           allowed_trunks = a_t
-                           )
-        
-    ## 4) IS-IS routing algorithm 
-        
-    def ISIS_routing(self, source, target, ISIS_AS, a_n=None, a_t=None):
-        
-        if a_n is None:
-            a_n = ISIS_AS.pAS["node"]
-        if a_t is None:
-            a_t = ISIS_AS.pAS["trunk"]
-        
-        source_area, target_area = None, None
-        backbone = ISIS_AS.areas["Backbone"]
-        source_area ,= source.AS[ISIS_AS]
-        target_area ,= target.AS[ISIS_AS]
-        
-        # step indicates what we have to do:
-        # if step is False, it means we are in the source area, heading 
-        # for the backbone. The traffic will be routed to the closest L1/L2
-        # router of the source area.
-        # if step is True, it means we are in the backbone or the target area, 
-        # heading to the destination edge via the shortest path.
-        step = source_area in (backbone, target_area)
-        
-        # when heading for the destination, we are allowed to use only nodes
-        # that belong to the backbone or to the destination area
-        allowed = backbone.pa["node"] | target_area.pa["node"]
-        
-        visited = set()
-        heap = [(0, source, [])]
-        while heap:
-            dist, node, path = heappop(heap)  
-            if node not in visited:
-                visited.add(node)
-                if node == target:
-                    return [], path
-                if not step and node in ISIS_AS.border_routers:
-                    step = True
-                    heap.clear()
-                for neighbor, adj_trunk in self.graph[node]["trunk"]:
-                    # we ignore what's not allowed (not in the AS or in failure)
-                    if neighbor not in a_n or adj_trunk not in a_t:
-                        continue
-                    # if step is False, we use only L1 or L1/L2 nodes that 
-                    # belong to the source area
-                    if not step and neighbor not in source_area.pa["node"]: 
-                        continue
-                    # else, we use only backbone nodes (L1/L2 or L2) or nodes
-                    # that belong to the destination area
-                    if step and neighbor not in allowed: 
-                        continue
-                    heappush(heap, (dist + adj_trunk("cost", node), 
-                                                neighbor, path + [adj_trunk]))
-        return [], []
-            
-    ## 5) OSPF routing algorithm
-    
-    def OSPF_routing(self, source, target, OSPF_AS, a_n=None, a_t=None):
-        # this functions simulates OSPF routing.
-        # It will work in 99% cases, but fails to properly consider:
-        # - area hijacking: an ABR may advertise a cost which is wrong in
-        # practice, because of intra-area priority. This could mislead the 
-        # backbone routers that will not choose the real shortest path because
-        # they don't know the topology of the area of the ABR that advertises
-        # the wrong cost.
-        # See "Area hijacking in OSPF" 
-        # - load balancing: if load-balancing (cef) is enabled, packets
-        # could be sent on several exit interfaces, but A* finds only one path.
-        
-        if a_n is None:
-            a_n = OSPF_AS.pAS["node"]
-        if a_t is None:
-            a_t = OSPF_AS.pAS["trunk"]
-        
-        source_area = target_area = None
-        backbone = OSPF_AS.areas["Backbone"]
-        
-        # if source has more than one area, it is a L1/L2 node
-        # which means it is in the backbone
-        if len(source.AS[OSPF_AS]) > 1:
-            source_area = backbone
-        # else, it has only one area, which we retrieve
-        else:
-            source_area ,= source.AS[OSPF_AS]
-            
-        # same for target
-        if len(target.AS[OSPF_AS]) > 1:
-            target_area = backbone
-        else:
-            target_area ,= target.AS[OSPF_AS]
-            
-        # step indicates in which area we are, which tells us which trunks 
-        # can/cannot be used. 
-        # If step is 0, we are in the source area, heading to the backbone. 
-        # If step is 1, we are in the backbone, heading to the destination area.
-        # If step is 2, we are in the destination area, heading to the exit edge.
-        # Because of OSPF intra-area priority, we cannot use trunks that belong
-        # to the source area once we've reached the backbone, and we cannot 
-        # use trunks from the backbone once we've reached the destination
-        # area.
-        step = 2*(source_area == target_area) or source_area == backbone
 
-        visited = set()
-        heap = [(0, source, [], step)]
-        while heap:
-            dist, node, path, step = heappop(heap)
-            if (node, step) not in visited:
-                visited.add((node, step))
-                if node == target:
-                    return [], path
-                # in case an ABR is connected to both the source and the target 
-                # area, step will be incremented straigth from 0 to 2 since the
-                # ABR also belongs to the backbone.
-                # that's why we need to break the condition into 2 conditions
-                if not step and backbone in node.AS[OSPF_AS]:
-                    step += 1
-                if step == 1 and target_area in node.AS[OSPF_AS]:
-                    step += 1
-                for neighbor, adj_trunk in self.graph[node]["trunk"]:
-                    sd = (node == adj_trunk.source)*"SD" or "DS"
-                    # we ignore what's not allowed (not in the AS or in failure)
-                    if neighbor not in a_n or adj_trunk not in a_t:
-                        continue
-                    # if step is 0, we can only use trunks of the source area
-                    if not step and adj_trunk not in source_area.pa["trunk"]: 
-                        continue
-                    # else if step is 1, we can only use trunks of the backbone
-                    if step == 1 and adj_trunk not in backbone.pa["trunk"]: 
-                        continue
-                    # else if step is 2, we can only use trunks of the target area
-                    if step == 2 and adj_trunk not in target_area.pa["trunk"]: 
-                        continue
-                    # here, it is very important not to reuse an existing 
-                    # variable like dist or path (for instance by appending
-                    # adj_trunk to path before pushing it to the binary heap)
-                    # as it would mess the whole thing up.
-                    cost = getattr(adj_trunk, "cost" + sd)
-                    heappush(heap, (dist + cost, neighbor, 
-                                                    path + [adj_trunk], step))
-        return [], []
-
-    ## 7) Bellman-Ford algorithm
+    ## 3) Bellman-Ford algorithm
         
     def bellman_ford(
                      self, 
@@ -662,7 +505,7 @@ class Network(object):
         # we return empty lists
         return [], []
             
-    ## 8) Floyd-Warshall algorithm
+    ## 4) Floyd-Warshall algorithm
             
     def floyd_warshall(self):
         nodes = list(self.pn["node"].values())
@@ -694,7 +537,7 @@ class Network(object):
                     
         return all_length  
         
-    ## 9) DFS (all loop-free paths)
+    ## 5) DFS (all loop-free paths)
         
     def all_paths(self, source, target=None):
         # generates all loop-free paths from source to optional target

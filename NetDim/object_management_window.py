@@ -18,7 +18,8 @@ class ObjectManagementWindow(FocusTopLevel):
                 )
                 
     property_list = {
-    "interface": ("FE", "GE", "10GE", "40GE", "100GE")
+    "interface": ("FE", "GE", "10GE", "40GE", "100GE"),
+    "default_route": (None,)
     }
                 
     def __init__(self, master, type):
@@ -46,12 +47,14 @@ class ObjectManagementWindow(FocusTopLevel):
             if property in self.property_list:
                 pvalue = ttk.Combobox(self, textvariable=str_var, width=12)
                 pvalue["values"] = self.property_list[property]
+                self.dict_var[property] = (pvalue, str_var)
             else:
                 s = "readonly" if property in self.read_only else tk.NORMAL
                 pvalue = tk.Entry(self, textvariable=str_var, width=15, state=s)
+                self.dict_var[property] = str_var
                 
             pvalue.grid(row=index+1, pady=1, padx=5, column=1, sticky=tk.W)
-            self.dict_var[property] = str_var
+            
     
         # route finding possibilities for a route 
         if type == "route":
@@ -128,6 +131,9 @@ class ObjectManagementWindow(FocusTopLevel):
                         self.ms.cs.ntw.graph[self.current_obj] = adj_links
             elif property == "path":
                 setattr(self.current_obj, property, self.current_path)
+            elif property == "default_route":
+                combobox, var = str_var
+                setattr(self.current_obj, property, var.get())
             else:
                 if property not in self.read_only:
                     if property in ("path_constraints", "excluded_nodes", "excluded_trunks"): 
@@ -148,7 +154,13 @@ class ObjectManagementWindow(FocusTopLevel):
     def update(self):
         for property, str_var in self.dict_var.items():
             obj_prop = getattr(self.current_obj, property)
-            if type(obj_prop) in (list, set):
+            if property == "default_route":
+                combobox, var = str_var
+                attached_ints = (None,) + tuple(trunk("ipaddress", self.current_obj) for _, trunk
+                            in self.ms.cs.ntw.graph[self.current_obj]["trunk"])
+                combobox["values"] = attached_ints
+                var.set(obj_prop)
+            elif type(obj_prop) in (list, set):
                 str_var.set(",".join(map(str, obj_prop)))
             else:
                 str_var.set(obj_prop)
