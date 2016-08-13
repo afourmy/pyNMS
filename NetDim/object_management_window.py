@@ -47,7 +47,10 @@ class ObjectManagementWindow(FocusTopLevel):
             if property in self.property_list:
                 pvalue = ttk.Combobox(self, textvariable=str_var, width=12)
                 pvalue["values"] = self.property_list[property]
-                self.dict_var[property] = (pvalue, str_var)
+                if property == "default_route":
+                    self.dict_var[property] = (pvalue, str_var)
+                else:
+                    self.dict_var[property] = str_var
             else:
                 s = "readonly" if property in self.read_only else tk.NORMAL
                 pvalue = tk.Entry(self, textvariable=str_var, width=15, state=s)

@@ -678,7 +678,7 @@ class Network(object):
                 nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
                 ex_ip = ex_tk("ipaddress", nh)
                 ex_int = ex_tk("interface", source)
-                curr_dist = dist + trunk("cost", node)
+                curr_dist = dist #+ trunk("cost", node)
                 if AS.type == "RIP":
                     if trunk.sntw not in source.rt:
                         SP_cost[trunk.sntw] = curr_dist
