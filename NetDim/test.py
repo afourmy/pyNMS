@@ -110,35 +110,35 @@ class TestSP(unittest.TestCase):
  
     @start_and_import("test_SP.xls")
     def setUp(self):
-        self.route9 = self.netdim.cs.ntw.pn["route"]["route9"]
-        self.route10 = self.netdim.cs.ntw.pn["route"]["route10"]
-        self.route11 = self.netdim.cs.ntw.pn["route"]["route11"]
+        get_node = lambda node_name: self.netdim.cs.ntw.pn["node"][node_name]
+        self.route9 = (get_node("node0"), get_node("node4"))
+        self.route10 = (get_node("node0"), get_node("node5"))
+        self.route11 = (get_node("node0"), get_node("node3"))
  
     def tearDown(self):
         self.netdim.destroy()
  
     def test_A_star(self):
         for i, r in enumerate((self.route9, self.route10, self.route11)):
-            _, path = self.netdim.cs.ntw.A_star(r.source, r.destination)
+            _, path = self.netdim.cs.ntw.A_star(r[0], r[1])
             self.assertEqual(list(map(str, path)), self.results[i])
-            r.path = path
         
     def test_bellman_ford(self):
         for i, r in enumerate((self.route9, self.route10, self.route11)):
-            _, path = self.netdim.cs.ntw.bellman_ford(r.source, r.destination)
+            _, path = self.netdim.cs.ntw.bellman_ford(r[0], r[1])
             self.assertEqual(list(map(str, path)), self.results[i])
         
     def test_floyd_warshall(self):
         cost_trunk = lambda trunk: trunk.costSD
         all_length = self.netdim.cs.ntw.floyd_warshall()
         for i, r in enumerate((self.route9, self.route10, self.route11)):
-            path_length = all_length[r.source][r.destination]
-            _, path = self.netdim.cs.ntw.A_star(r.source, r.destination)
+            path_length = all_length[r[0]][r[1]]
+            _, path = self.netdim.cs.ntw.A_star(r[0], r[1])
             self.assertEqual(sum(map(cost_trunk, path)), path_length)
             
     def test_LP(self):
         for i, r in enumerate((self.route9, self.route10, self.route11)):
-            path = self.netdim.cs.ntw.LP_SP_formulation(r.source, r.destination)
+            path = self.netdim.cs.ntw.LP_SP_formulation(r[0], r[1])
             self.assertEqual(list(map(str, path)), self.results[i])
             
 class TestMCF(unittest.TestCase):

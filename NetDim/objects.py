@@ -227,7 +227,6 @@ class Ethernet(Trunk):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.sntw = None
         
 class WDMFiber(Trunk):
     
@@ -255,7 +254,7 @@ class Route(Link):
                  source, 
                  destination, 
                  distance = 0,
-                 nh_int = None,
+                 nh_tk = None,
                  destination_sntw = None,
                  path_constraints = [], 
                  excluded_trunks = set(), 

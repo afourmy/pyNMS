@@ -76,7 +76,7 @@ class NetDim(tk.Tk):
         # rebuilding the nodes AS dict
         node_common_ie_properties = node_common_properties[:-1]
         
-        link_common_properties = (
+        trunk_common_properties = (
         "protocol",
         "interface",
         "name", 
@@ -109,10 +109,11 @@ class NetDim(tk.Tk):
         "ipaddressD", 
         "subnetmaskD", 
         "interfaceD",
+        "sntw",
         "AS"
         )
         
-        link_common_ie_properties = (
+        trunk_common_ie_properties = (
         "protocol",
         "interface",
         "name", 
@@ -128,7 +129,7 @@ class NetDim(tk.Tk):
         "interfaceS",
         "ipaddressD", 
         "subnetmaskD", 
-        "interfaceD"
+        "interfaceD",
         )
         
         self.object_properties = collections.OrderedDict([
@@ -141,8 +142,8 @@ class NetDim(tk.Tk):
         ("cloud", node_common_properties),
         ("switch", node_common_properties),
         
-        ("ethernet", link_common_properties),
-        ("wdm", link_common_properties + ("lambda_capacity",)),
+        ("ethernet", trunk_common_properties),
+        ("wdm", trunk_common_properties + ("lambda_capacity",)),
         
         ("route", (
         "name",
@@ -190,6 +191,7 @@ class NetDim(tk.Tk):
         "Distance", 
         "Traffic", 
         "WCTraffic",
+        "Sntw"
         )),
         
         ("Interface", 
@@ -234,16 +236,16 @@ class NetDim(tk.Tk):
         ("cloud", node_common_ie_properties),
         ("switch", node_common_ie_properties),
         
-        ("ethernet", link_common_ie_properties),
-        ("wdm", link_common_ie_properties + ("lambda_capacity",)),
+        ("ethernet", trunk_common_ie_properties),
+        ("wdm", trunk_common_ie_properties + ("lambda_capacity",)),
         
         ("route", (
         "name", 
         "source", 
         "destination", 
+        "distance", 
         "nh_tk",
         "destination_sntw",
-        "distance", 
         "path_constraints",
         "excluded_nodes", 
         "excluded_trunks", 
@@ -275,7 +277,8 @@ class NetDim(tk.Tk):
         "protocol",
         "interface",
         "source", 
-        "destination"
+        "destination",
+        "sntw"
         ),
         
         "route": (
@@ -336,6 +339,7 @@ class NetDim(tk.Tk):
         "subnetmaskD": str, 
         "interfaceS": str,
         "interfaceD": str,
+        "sntw": str,
         "throughput": float,
         "lambda_capacity": int,
         "source": convert_node, 
@@ -382,6 +386,7 @@ class NetDim(tk.Tk):
         "subnetmaskD": "Subnet mask (destination)",
         "interfaceS": "Interface (source)",
         "interfaceD": "Interface (destination)",
+        "sntw": "Subnetwork",
         "throughput": "Throughput",
         "lambda_capacity": "Lambda capacity",
         "source": "Source",
