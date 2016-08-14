@@ -147,8 +147,10 @@ class NetDim(tk.Tk):
         ("route", (
         "name",
         "source", 
-        "destination", 
-        "distance", 
+        "destination",
+        "nh_tk",
+        "destination_IP",
+        "distance",
         "path_constraints", 
         "excluded_nodes", 
         "excluded_trunks", 
@@ -239,6 +241,8 @@ class NetDim(tk.Tk):
         "name", 
         "source", 
         "destination", 
+        "nh_tk",
+        "destination_IP",
         "distance", 
         "path_constraints",
         "excluded_nodes", 
@@ -277,7 +281,9 @@ class NetDim(tk.Tk):
         "route": (
         "name", 
         "source", 
-        "destination"
+        "destination",
+        "nh_tk",
+        "destination_IP"
         ),
         
         "traffic": (
@@ -334,6 +340,8 @@ class NetDim(tk.Tk):
         "lambda_capacity": int,
         "source": convert_node, 
         "destination": convert_node, 
+        "nh_tk": str,
+        "destination_IP": str,
         "path_constraints": convert_nodes_list, 
         "excluded_nodes": self.convert_nodes_set,
         "excluded_trunks": self.convert_links_set, 
@@ -378,6 +386,8 @@ class NetDim(tk.Tk):
         "lambda_capacity": "Lambda capacity",
         "source": "Source",
         "destination": "Destination",
+        "nh_tk": "Next-hop trunk",
+        "destination_IP": "Destination IP",
         "path_constraints": "Path constraints",
         "excluded_nodes": "Excluded nodes",
         "excluded_trunks": "Excluded trunks",

@@ -17,9 +17,14 @@ class ObjectManagementWindow(FocusTopLevel):
                  "AS"
                 )
                 
-    property_list = {
-    "interface": ("FE", "GE", "10GE", "40GE", "100GE"),
-    "default_route": (None,)
+    property_fixed_list = {
+    "interface": ("FE", "GE", "10GE", "40GE", "100GE")
+    }
+    
+    property_var_list = {
+    "default_route": (None,),
+    "nh_tk": (None,),
+    "destination_IP": (None,)
     }
                 
     def __init__(self, master, type):
@@ -44,13 +49,14 @@ class ObjectManagementWindow(FocusTopLevel):
             str_var = tk.StringVar()
             
             # value of the property: drop-down list or entry
-            if property in self.property_list:
+            if property in self.property_fixed_list:
                 pvalue = ttk.Combobox(self, textvariable=str_var, width=12)
-                pvalue["values"] = self.property_list[property]
-                if property == "default_route":
-                    self.dict_var[property] = (pvalue, str_var)
-                else:
-                    self.dict_var[property] = str_var
+                pvalue["values"] = self.property_fixed_list[property]
+                self.dict_var[property] = str_var
+            elif property in self.property_var_list:
+                pvalue = ttk.Combobox(self, textvariable=str_var, width=12)
+                pvalue["values"] = self.property_var_list[property]
+                self.dict_var[property] = (pvalue, str_var)                    
             else:
                 s = "readonly" if property in self.read_only else tk.NORMAL
                 pvalue = tk.Entry(self, textvariable=str_var, width=15, state=s)
@@ -58,7 +64,6 @@ class ObjectManagementWindow(FocusTopLevel):
                 
             pvalue.grid(row=index+1, pady=1, padx=5, column=1, sticky=tk.W)
             
-    
         # route finding possibilities for a route 
         if type == "route":
             self.button_compute_path = ttk.Button(self, text="Compute path", 
@@ -134,7 +139,7 @@ class ObjectManagementWindow(FocusTopLevel):
                         self.ms.cs.ntw.graph[self.current_obj] = adj_links
             elif property == "path":
                 setattr(self.current_obj, property, self.current_path)
-            elif property == "default_route":
+            elif property in ("default_route", "nh_tk", "destination_IP"):
                 combobox, var = str_var
                 setattr(self.current_obj, property, var.get())
             else:
@@ -162,6 +167,21 @@ class ObjectManagementWindow(FocusTopLevel):
                 attached_ints = (None,) + tuple(filter(None, 
                             (trunk("ipaddress", neighbor) for neighbor, trunk
                             in self.ms.cs.ntw.graph[self.current_obj]["trunk"])))
+                combobox["values"] = attached_ints
+                var.set(obj_prop)
+            elif property == "nh_tk":
+                combobox, var = str_var
+                src_route = self.current_obj.source
+                attached_ints = tuple(filter(None, (trunk for _, trunk 
+                                in self.ms.cs.ntw.graph[src_route]["trunk"])))
+                combobox["values"] = attached_ints
+                var.set(obj_prop)
+            elif property == "destination_IP":
+                combobox, var = str_var
+                dest_route = self.current_obj.destination
+                attached_ints = tuple(filter(None, 
+                            (trunk("ipaddress", dest_route) for _, trunk
+                            in self.ms.cs.ntw.graph[dest_route]["trunk"])))
                 combobox["values"] = attached_ints
                 var.set(obj_prop)
             elif type(obj_prop) in (list, set):

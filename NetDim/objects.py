@@ -202,7 +202,6 @@ class Trunk(Link):
         self.ipaddressD = ipaddressD
         self.subnetmaskD = subnetmaskD
         self.interfaceD = interfaceD
-        
         self.trafficSD = self.trafficDS = 0.
         self.wctrafficSD = self.wctrafficDS = 0.
         self.wcfailure = None
@@ -254,7 +253,9 @@ class Route(Link):
                  name, 
                  source, 
                  destination, 
-                 distance = 0, 
+                 distance = 0,
+                 nh_int = None,
+                 destination_IP = None,
                  path_constraints = [], 
                  excluded_trunks = set(), 
                  excluded_nodes = set(), 
@@ -266,6 +267,8 @@ class Route(Link):
                  ):
                      
         super().__init__(name, source, destination, distance)
+        self.nh_tk = None
+        self.destination_IP = None
         self.path_constraints = path_constraints
         self.excluded_nodes = excluded_nodes
         self.excluded_trunks = excluded_trunks

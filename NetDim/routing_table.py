@@ -5,6 +5,7 @@ import tkinter as tk
 
 # protocol to Administrative Distances
 AD = {
+"S": 1,
 "O": 110,
 "i": 115,
 "R": 120
@@ -72,6 +73,15 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
                                                             AD = AD[rtype[0]],
                                                             ex_ip = ex_ip, 
                                                             ex_int = ex_int
+                                                            )
+                elif rtype[0] == "S":
+                    route = "{rtype}{sntw} [{AD}/{cost}] via {ex_ip}\n"\
+                                                    .format(
+                                                            cost = cost, 
+                                                            rtype = rtype, 
+                                                            sntw = sntw,
+                                                            AD = AD[rtype[0]],
+                                                            ex_ip = ex_ip, 
                                                             )
                 else:
                     route = "{rtype}{sntw} is directly connected, {ex_int}\n"\

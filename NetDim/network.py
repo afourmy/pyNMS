@@ -269,7 +269,8 @@ class Network(object):
                     if curr_traffic > getattr(trunk, "wctraffic" + dir):
                         setattr(trunk, "wctraffic" + dir, curr_traffic)
                         setattr(trunk, "wcfailure", str(failed_trunk))
-            self.fdtks.clear()
+                        
+        self.fdtks.clear()
         
     def rt_creation(self):
         # we compute the routing table of all routers
@@ -607,6 +608,14 @@ class Network(object):
     # TODO and default / static route too
     
     def static_RFT_builder(self, source):
+        for _, sroute in self.graph[source]["route"]:
+            if sroute.destination_IP not in source.rt:
+                nh_tk = self.lf(name=sroute.nh_tk)
+                nh_int = nh_tk("interface", source)
+                nh_ip = nh_tk("ipaddress", source)
+                source.rt[sroute.destination_IP] = {("S", nh_ip, nh_int, 0, 
+                                                                None, nh_tk)}
+                    
         for neighbor, adj_trunk in self.graph[source]["trunk"]:
             if adj_trunk in self.fdtks:
                 continue
@@ -678,46 +687,47 @@ class Network(object):
                 nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
                 ex_ip = ex_tk("ipaddress", nh)
                 ex_int = ex_tk("interface", source)
-                curr_dist = dist #+ trunk("cost", node)
                 if AS.type == "RIP":
                     if trunk.sntw not in source.rt:
-                        SP_cost[trunk.sntw] = curr_dist
+                        SP_cost[trunk.sntw] = dist
                         source.rt[trunk.sntw] = {("R", ex_ip, ex_int, 
-                                                    curr_dist, nh, ex_tk)}
+                                                    dist, nh, ex_tk)}
                     else:
-                        if (curr_dist == SP_cost[trunk.sntw] 
+                        if (dist == SP_cost[trunk.sntw] 
                             and K > len(source.rt[trunk.sntw])):
                             source.rt[trunk.sntw].add(("R", ex_ip, ex_int, 
-                                                    curr_dist, nh, ex_tk))
+                                                    dist, nh, ex_tk))
                 elif AS.type == "OSPF":
                     # we check if the trunk has any common area with the
                     # exit trunk: if it does not, it is an inter-area route.
                     rtype = "O" if (trunk.AS[AS] & ex_tk.AS[AS]) else "O IA"
                     if trunk.sntw not in source.rt:
-                        SP_cost[trunk.sntw] = curr_dist
+                        SP_cost[trunk.sntw] = dist
                         source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
-                                                    curr_dist, nh, ex_tk)}
+                                                    dist, nh, ex_tk)}
                     else:
                         for route in source.rt[trunk.sntw]:
                             break
                         if route[0] == "O" and rtype == "IA":
                             continue
                         elif route[0] == "O IA" and rtype == "O":
-                            SP_cost[trunk.sntw] = curr_dist
+                            SP_cost[trunk.sntw] = dist
                             source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
-                                                    curr_dist, nh, ex_tk)}
+                                                    dist, nh, ex_tk)}
                         else:
-                            if (curr_dist == SP_cost[trunk.sntw]
+                            if (dist == SP_cost[trunk.sntw]
                                 and K > len(source.rt[trunk.sntw])):
-                                source.rt[trunk.sntw].add((rtype, ex_ip, ex_int, 
-                                                    curr_dist, nh, ex_tk))
+                                source.rt[trunk.sntw].add((
+                                                        rtype, ex_ip, ex_int, 
+                                                         dist, nh, ex_tk
+                                                         ))
                     if (rtype, trunk.sntw) not in visited_subnetworks:
                         if ("O", trunk.sntw) in visited_subnetworks:
                             continue
                         else:
                             visited_subnetworks.add((rtype, trunk.sntw))
                             source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
-                                        dist + trunk("cost", node), nh, ex_tk)}
+                                                            dist, nh, ex_tk)}
                 elif AS.type == "ISIS":
                     if isL1:
                         if (node in AS.border_routers 
