@@ -24,7 +24,7 @@ class ObjectManagementWindow(FocusTopLevel):
     property_var_list = {
     "default_route": (None,),
     "nh_tk": (None,),
-    "destination_IP": (None,)
+    "destination_sntw": (None,)
     }
                 
     def __init__(self, master, type):
@@ -139,7 +139,7 @@ class ObjectManagementWindow(FocusTopLevel):
                         self.ms.cs.ntw.graph[self.current_obj] = adj_links
             elif property == "path":
                 setattr(self.current_obj, property, self.current_path)
-            elif property in ("default_route", "nh_tk", "destination_IP"):
+            elif property in ("default_route", "nh_tk", "destination_sntw"):
                 combobox, var = str_var
                 setattr(self.current_obj, property, var.get())
             else:
@@ -176,11 +176,11 @@ class ObjectManagementWindow(FocusTopLevel):
                                 in self.ms.cs.ntw.graph[src_route]["trunk"])))
                 combobox["values"] = attached_ints
                 var.set(obj_prop)
-            elif property == "destination_IP":
+            elif property == "destination_sntw":
                 combobox, var = str_var
                 dest_route = self.current_obj.destination
                 attached_ints = tuple(filter(None, 
-                            (trunk("ipaddress", dest_route) for _, trunk
+                            (trunk.sntw for _, trunk
                             in self.ms.cs.ntw.graph[dest_route]["trunk"])))
                 combobox["values"] = attached_ints
                 var.set(obj_prop)

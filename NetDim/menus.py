@@ -6,6 +6,7 @@ import tkinter as tk
 import AS
 import configuration
 import troubleshooting
+import ping
 import routing_table
 import drawing_options_window
 from object_management_window import PropertyChanger
@@ -49,6 +50,8 @@ class RightClickMenu(tk.Menu):
                         command=lambda: self.configure(node))
             self.add_command(label="Troubleshooting", 
                         command=lambda: self.troubleshoot(node))
+            self.add_command(label="Ping", 
+                        command=lambda: self.ping(node))
                         
             self.add_separator()
         
@@ -165,6 +168,10 @@ class RightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def troubleshoot(self, node):
         troubleshooting.Troubleshooting(node, self.cs)
+        
+    @empty_selection_and_destroy_menu
+    def ping(self, node):
+        ping.Ping(node, self.cs)
     
     @empty_selection_and_destroy_menu
     def show_object_properties(self):

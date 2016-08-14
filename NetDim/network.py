@@ -564,6 +564,30 @@ class Network(object):
         
     ## Model 2:
     
+    ## 0) Ping / traceroute
+    
+    def ping(self, source, dest_sntw):
+        curr_router = source
+        while True:
+            print(curr_router)
+            attached_sntw = [tk.sntw for _, tk in self.graph[curr_router]["trunk"]]
+            print(attached_sntw)
+            if dest_sntw in attached_sntw:
+                break
+            if dest_sntw in curr_router.rt:
+                routes = curr_router.rt[dest_sntw]
+            # if we wannot find the destination address in the routing table, 
+            # and there is a default route, we use it.
+            elif "0.0.0.0" in curr_router.rt:
+                routes = curr_router.rt["0.0.0.0"]
+            else:
+                warnings.warn("Packet discarded by {}:".format(curr_router))
+                break
+            for route in routes:
+                yield route
+                *_, curr_router, _ = route
+                break
+    
     ## 1) RFT-based routing and dimensioning
     
     def RFT_path_finder(self, traffic):
@@ -609,12 +633,13 @@ class Network(object):
     
     def static_RFT_builder(self, source):
         for _, sroute in self.graph[source]["route"]:
-            if sroute.destination_IP not in source.rt:
+            if sroute.destination_sntw not in source.rt:
                 nh_tk = self.lf(name=sroute.nh_tk)
+                nb = nh_tk.destination if nh_tk.source == source else nh_tk.source
                 nh_int = nh_tk("interface", source)
                 nh_ip = nh_tk("ipaddress", source)
-                source.rt[sroute.destination_IP] = {("S", nh_ip, nh_int, 0, 
-                                                                None, nh_tk)}
+                source.rt[sroute.destination_sntw] = {("S", nh_ip, nh_int, 0, 
+                                                                    nb, nh_tk)}
                     
         for neighbor, adj_trunk in self.graph[source]["trunk"]:
             if adj_trunk in self.fdtks:
