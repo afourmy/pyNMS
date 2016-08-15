@@ -98,6 +98,11 @@ class RightClickMenu(tk.Menu):
                             menu=DrawingMenu(self.cs, self.cs.so["node"]))
             self.add_separator()
             
+            # multiple links creation menu
+            self.add_command(label="Create multiple links", 
+                                command=lambda: self.multiple_links(self.cs))
+            self.add_separator()
+            
             # only one subtype of nodes
             for subtype in self.cs.ntw.node_type:
                 ftr = lambda o, st=subtype: o.subtype == st
@@ -185,6 +190,10 @@ class RightClickMenu(tk.Menu):
     def change_property(self, objects, subtype):
         PropertyChanger(self.cs.ms, objects, subtype)
         
+    @empty_selection_and_destroy_menu
+    def multiple_links(self, scenario):
+        graph_generation.MultipleLinks(scenario, self.cs.so["node"])
+        
 class GeneralRightClickMenu(tk.Menu):
     def __init__(self, event, scenario):
         super().__init__(tearoff=0)
@@ -206,10 +215,10 @@ class GeneralRightClickMenu(tk.Menu):
                     
         self.add_separator()
                    
-        # stop drawing entry
+        # multiple nodes creation
         self.add_command(label="Create multiple nodes", 
                 command=lambda: graph_generation.MultipleNodes(self.cs, x, y))
-        
+                
         # make the menu appear    
         self.tk_popup(event.x_root, event.y_root)
 

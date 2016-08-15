@@ -1814,5 +1814,8 @@ class Network(object):
         for k in range(n):
             yield self.nf(name = str(k + nb_nodes), node_type = subtype)
             
-            
+    def multiple_links(self, source_nodes, destination_node):
+        # create a link between the destination node and all source nodes
+        for src_node in source_nodes:
+            self.lf(s=src_node, d=destination_node)
             

@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous import CustomTopLevel, FocusTopLevel
+from miscellaneous import ObjectListbox, CustomTopLevel, FocusTopLevel
 from os.path import join
 from PIL import ImageTk
 
@@ -194,7 +194,6 @@ class MultipleNodes(CustomTopLevel):
     def __init__(self, scenario, x, y):
         super().__init__()
         self.title("Multiple nodes")
-        self.type = type
         self.cs = scenario
         
         self.nb_nodes = ttk.Label(self, text="Number of nodes")
@@ -230,6 +229,44 @@ class MultipleNodes(CustomTopLevel):
                                x,
                                y
                                )
+        
+        self.cs.draw_all(random=False)
+        self.destroy()
+        
+class MultipleLinks(CustomTopLevel):    
+    def __init__(self, scenario, source_nodes):
+        super().__init__()
+        self.title("Multiple links")
+        self.cs = scenario
+        
+        self.dest_node = ttk.Label(self, text="Destination nodes :")
+
+        self.listbox = ObjectListbox(self, activestyle="none", width=15, 
+                                        height=7, selectmode="extended")
+        yscroll = tk.Scrollbar(self, command=self.listbox.yview, orient=tk.VERTICAL)
+        self.listbox.configure(yscrollcommand=yscroll.set)
+        self.listbox.grid(row=1, column=0)
+        yscroll.grid(row=1, column=1, sticky="ns")
+        
+        # add all nodes of the scenario to the listbox
+        for node in self.cs.ntw.pn["node"]:
+            self.listbox.insert(node)
+    
+        # confirmation button
+        self.button_confirmation = ttk.Button(self, text="OK", command=
+                                        lambda: self.create_links(source_nodes))
+        
+        # position in the grid
+        self.dest_node.grid(row=0, column=0, pady=5, padx=5, sticky=tk.W)
+        self.button_confirmation.grid(row=2, column=0, columnspan=2, pady=5, 
+                                                        padx=5, sticky="nsew")
+        
+    def create_links(self, source_nodes):
+        for selected_node in self.listbox.selected():
+            # retrieve the node object based on its name
+            dest_node = self.cs.ntw.nf(name=selected_node)
+            # create links from all selected nodes to the selected node
+            self.cs.ntw.multiple_links(source_nodes, dest_node)
         
         self.cs.draw_all(random=False)
         self.destroy()
