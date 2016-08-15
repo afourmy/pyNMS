@@ -940,3 +940,10 @@ class Scenario(tk.Canvas):
                                             )
         self.id_fdtks[trunk] = id_failure
         
+    ## Multiple object creation
+    
+    def multiple_nodes(self, n, subtype, x, y):
+        for node in self.ntw.multiple_nodes(n, subtype):
+            node.x = x
+            node.y = y
+        

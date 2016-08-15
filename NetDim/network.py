@@ -1806,5 +1806,13 @@ class Network(object):
                     s = self.nf(name = str(i + n), node_type = subtype), 
                     d = self.nf(name = str((i + n + k)%n + n), node_type = subtype)
                     )
+                    
+    ## Multiple object creation
+    
+    def multiple_nodes(self, n, subtype):
+        nb_nodes = len(self.pn["node"])
+        for k in range(n):
+            yield self.nf(name = str(k + nb_nodes), node_type = subtype)
+            
             
             

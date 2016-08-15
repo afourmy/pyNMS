@@ -9,6 +9,7 @@ import troubleshooting
 import ping
 import routing_table
 import drawing_options_window
+import graph_generation
 from object_management_window import PropertyChanger
                                 
 class RightClickMenu(tk.Menu):
@@ -188,6 +189,7 @@ class GeneralRightClickMenu(tk.Menu):
     def __init__(self, event, scenario):
         super().__init__(tearoff=0)
         self.cs = scenario
+        x, y = self.cs.canvasx(event.x), self.cs.canvasy(event.y)
         
         # drawing mode selection
         nodes = self.cs.ntw.pn["node"].values()
@@ -202,6 +204,12 @@ class GeneralRightClickMenu(tk.Menu):
             self.add_command(label="Remove all failures",
                     command=lambda: self.remove_all_failures())
                     
+        self.add_separator()
+                   
+        # stop drawing entry
+        self.add_command(label="Create multiple nodes", 
+                command=lambda: graph_generation.MultipleNodes(self.cs, x, y))
+        
         # make the menu appear    
         self.tk_popup(event.x_root, event.y_root)
 
