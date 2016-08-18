@@ -99,6 +99,7 @@ class Host(Node):
     
     def __init__(self, *args):
         super().__init__(*args)
+        self.rt = {}
         
 class Regenerator(Node):
 
@@ -218,7 +219,9 @@ class Trunk(Link):
         dir = (node == self.source)*"SD" or "DS"
         if property in ("subnetmask", "interface", "ipaddress"):
             dir = dir[:-1]
-        return getattr(self, property + dir)
+        # returning __dict__ and not just getattr(property) allows to use
+        # this function both as a getter and a setter
+        return self.__dict__[property + dir]
         
 class Ethernet(Trunk):
     

@@ -63,8 +63,8 @@ class Network(object):
         self.fdtks = set()
         
     # function filtering pn to retrieve all objects of a given subtype
-    def ftr(self, type, subtype):
-        keep = lambda r: r.subtype == subtype
+    def ftr(self, type, *subtypes):
+        keep = lambda r: r.subtype in subtypes
         return filter(keep, self.pn[type].values())
           
     # "lf" is the link factory. Creates or retrieves any type of link
@@ -274,7 +274,7 @@ class Network(object):
         
     def rt_creation(self):
         # we compute the routing table of all routers
-        for router in self.ftr("node", "router"):
+        for router in self.ftr("node", "router", "host"):
             router.rt = {}
             for AS in router.AS:
                 self.RFT_builder(router, AS)
@@ -295,6 +295,48 @@ class Network(object):
                 _, traffic.path = self.A_star(src, dest)
             if not traffic.path:
                 print("no path found for {}".format(traffic))
+                
+    def network_finder(self):
+        # we associate a set of trunks to each layer-3 segment.
+        # at this point, there isn't any IP allocated yet: we cannot assign
+        # IP addresses until we know the network layer-3 segment topology.
+        network_to_trunk = set()
+        # we keep the set of all trunks we've already visited 
+        visited_trunks = set()
+        # we loop through all the layer-3-networks boundaries: routers.
+        for router in self.ftr("node", "router"):
+            # we start by looking at all attached trunks, and when we find one
+            # that hasn't been visited yet, we don't stop until we've discovered
+            # all network's trunks (i.e until we've reached all boundaries 
+            # of that networks: routers or host).
+            for neighbor, trunk in self.graph[router]["trunk"]:
+                if trunk in visited_trunks:
+                    continue
+                visited_trunks.add(trunk)
+                # we update the set of trunks of the network as we discover them
+                current_network = {(trunk, router)}
+                if neighbor.subtype not in ("router", "host"):
+                    # we add the neighbor of the router in the stack: we'll fill 
+                    # the stack with nodes as we discover them, provided that 
+                    # these nodes are not boundaries, i.e not router or host
+                    stack_network = [neighbor]
+                    visited_nodes = {router}
+                    while stack_network:
+                        curr_node = stack_network.pop()
+                        for node, adj_trunk in self.graph[curr_node]["trunk"]:
+                            visited_trunks.add(adj_trunk)
+                            if node in visited_nodes:
+                                continue
+                            visited_nodes.add(node)
+                            if node.subtype not in ("router", "host"):
+                                stack_network.append(node)
+                            else:
+                                current_network.add((adj_trunk, node))
+                else:
+                    current_network.add((trunk, neighbor))
+                network_to_trunk.add(frozenset(current_network))
+        print(network_to_trunk)
+                
                 
     def calculate_all(self):
         self.update_AS_topology()

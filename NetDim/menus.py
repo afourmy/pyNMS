@@ -219,11 +219,19 @@ class GeneralRightClickMenu(tk.Menu):
         self.add_command(label="Create multiple nodes", 
                 command=lambda: graph_generation.MultipleNodes(self.cs, x, y))
                 
+        # find networks
+        self.add_command(label="find networks", 
+                command=lambda: self.network())
+                
         # make the menu appear    
         self.tk_popup(event.x_root, event.y_root)
 
     def remove_all_failures(self):
         self.cs.remove_failures()
+        self.destroy()
+        
+    def network(self):
+        self.cs.ntw.network_finder()
         self.destroy()
         
 class DrawingMenu(tk.Menu):
