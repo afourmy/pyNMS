@@ -226,11 +226,9 @@ class Network(object):
             router.ipaddress = "192.168." + str(id // 255) + "." + str(id % 255)
             router.subnetmask = "255.255.255.255"
             
-        # finally, we use 172.16.0.0/16 for all trunks that do not belong
-        # to an AS
-        no_AS = lambda t: not t.AS
+        # finally, we use 172.16.0.0/16 for all AS-free trunks
         cpt_ip, address = 1, "172.16.0."
-        for trunk in filter(no_AS, self.pn["trunk"].values()):
+        for trunk in filter(lambda t: not t.AS, self.pn["trunk"].values()):
             trunk.subnetmaskS = trunk.subnetmaskD = mask
             trunk.ipaddressS = address + str(cpt_ip)
             trunk.ipaddressD = address + str(cpt_ip + 1)

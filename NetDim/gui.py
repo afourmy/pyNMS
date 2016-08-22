@@ -445,7 +445,8 @@ class NetDim(tk.Tk):
                 cmd = lambda o=obj_type, l=lbl: self.cs.refresh_labels(o, l)
                 menu_type.add_command(label=lbl, command=cmd)
             
-        menu_options.add_command(label="Change display", command=lambda: self.cs.change_display())
+        menu_options.add_command(label="Change display", 
+                                    command=lambda: self.cs.change_display())
         
         # show / hide option per type of objects
         menu_display = tk.Menu(menubar, tearoff=0)
@@ -538,8 +539,10 @@ class NetDim(tk.Tk):
         
         for color in colors:
             for node_type in self.cs.ntw.node_type:
-                img_path = join(self.path_icon, "".join((color, "_", node_type, ".gif")))
-                img_pil = ImageTk.Image.open(img_path).resize(self.node_size_image[node_type])
+                img_path = join(self.path_icon, "".join(
+                                            (color, "_", node_type, ".gif")))
+                img_pil = ImageTk.Image.open(img_path).resize(
+                                            self.node_size_image[node_type])
                 img = ImageTk.PhotoImage(img_pil)
                 # set the default image for the button of the frame
                 if color == "default":
@@ -558,7 +561,8 @@ class NetDim(tk.Tk):
                                                         width=x, height=y+10)
                 
         # image for a link failure
-        img_pil = ImageTk.Image.open(join(self.path_icon, "failure.png")).resize((25,25))
+        img_pil = ImageTk.Image.open(join(self.path_icon, "failure.png"))\
+                                                                .resize((25,25))
         self.img_failure = ImageTk.PhotoImage(img_pil)
             
     def change_cs(self, event=None):
@@ -633,13 +637,13 @@ class NetDim(tk.Tk):
         
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):
-                AS_name, AS_type, AS_id, AS_nodes, AS_trunks, AS_edges = AS_sheet.row_values(row_index)
-                AS_id = int(AS_id)
-                AS_nodes = self.convert_nodes_set(AS_nodes)
-                AS_trunks = self.convert_links_set(AS_trunks)
-                AS_edges = self.convert_nodes_set(AS_edges)
-                self.cs.ntw.AS_factory(AS_name, AS_type, AS_id, AS_trunks, AS_nodes, 
-                                                        AS_edges, set(), True)
+                name, type, id, nodes, trunks, edges = AS_sheet.row_values(row_index)
+                id = int(id)
+                nodes = self.convert_nodes_set(nodes)
+                trunks = self.convert_links_set(trunks)
+                edges = self.convert_nodes_set(edges)
+                self.cs.ntw.AS_factory(name, type, id, trunks, nodes, 
+                                                        edges, set(), True)
             
             # creation of the area
             for row_index in range(1, area_sheet.nrows):
@@ -667,13 +671,13 @@ class NetDim(tk.Tk):
                         self.cs.ntw.lf(*param, link_type=obj_type, 
                                                         name=n, s=s, d=d)
                     elif obj_type == "AS":
-                        AS_name, AS_type, AS_id, AS_nodes, AS_trunks, AS_edges = other
-                        AS_id = int(AS_id)
-                        AS_nodes = self.convert_nodes_set(unstar(AS_nodes))
-                        AS_trunks = self.convert_links_set(unstar(AS_trunks))
-                        AS_edges = self.convert_nodes_set(unstar(AS_edges))
-                        self.cs.ntw.AS_factory(AS_name, AS_type, AS_id, AS_trunks, AS_nodes, 
-                                                                AS_edges, set(), True)
+                        name, type, id, nodes, trunks, edges = other
+                        id = int(id)
+                        nodes = self.convert_nodes_set(unstar(nodes))
+                        trunks = self.convert_links_set(unstar(trunks))
+                        edges = self.convert_nodes_set(unstar(edges))
+                        self.cs.ntw.AS_factory(name, type, id, trunks, nodes, 
+                                                                edges, set(), True)
                                                                 
                     elif obj_type == "area":
                         name, AS, id, nodes, trunks = other
