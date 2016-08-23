@@ -373,10 +373,7 @@ class Scenario(tk.Canvas):
         self.coords(self.temp_line, start_node.x, start_node.y, event.x, event.y)
         
     @adapt_coordinates
-    def link_creation(self, event, type):
-        protocol = None
-        if type in ("ethernet", "wdm"):
-            type, protocol = "trunk", type
+    def link_creation(self, event, subtype):
         # delete the temporary line
         self.delete(self.temp_line)
         # node from which the link starts
@@ -389,8 +386,7 @@ class Scenario(tk.Canvas):
                 # create the link and the associated line
                 if start_node != destination_node:
                     new_link = self.ntw.lf(
-                                           link_type = type, 
-                                           protocol = protocol, 
+                                           subtype = subtype,
                                            s = start_node, 
                                            d = destination_node
                                            )

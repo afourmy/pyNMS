@@ -176,10 +176,10 @@ class Trunk(Link):
 
     def __init__(
                  self, 
-                 interface,
                  name, 
                  source, 
-                 destination, 
+                 destination,
+                 interface = "GE",
                  distance = 0., 
                  costSD = 1., 
                  costDS = 1., 
@@ -245,10 +245,9 @@ class WDMFiber(Trunk):
         super().__init__(*args)
         
 class Route(Link):
+    
     type = "route"
-    subtype = type
     dash = (3,5)
-    color = "green"
     layer = 1
     
     def __init__(
@@ -257,8 +256,6 @@ class Route(Link):
                  source, 
                  destination, 
                  distance = 0,
-                 nh_tk = None,
-                 destination_sntw = None,
                  path_constraints = [], 
                  excluded_trunks = set(), 
                  excluded_nodes = set(), 
@@ -279,7 +276,36 @@ class Route(Link):
         self.subnets = subnets
         self.cost = cost
         self.traffic = traffic
-        self.AS = AS
+        
+class DefaultRoute(Route):
+
+    color = "magenta"
+    subtype = "default route"
+    
+    def __init__(self, *args, **kwargs):
+        args = list(args)
+        if len(args) > 4:
+            self.nh_tk = args.pop()
+            self.destination_sntw = args.pop()
+        else:
+            nh_tk = None
+            destination_sntw = None
+        super().__init__(*args)
+        
+class StaticRoute(Route):
+
+    color = "violet"
+    subtype = "static route"
+    
+    def __init__(self, *args, **kwargs):
+        if len(args) > 3:
+            self.nh_tk = args.pop()
+            self.destination_sntw = args.pop()
+        else:
+            nh_tk = None
+            destination_sntw = None
+        super().__init__(*args)
+
         
 class Traffic(Link):
     type = "traffic"
@@ -302,3 +328,19 @@ class Traffic(Link):
         self.throughput = throughput
         self.subnet = subnet
         self.path = path
+        
+class RoutedTraffic(Traffic):
+    
+    color = "forest green"
+    subtype = "routed traffic"
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+class StaticTraffic(Traffic):
+    
+    color = "chartreuse"
+    subtype = "static traffic"
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)

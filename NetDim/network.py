@@ -39,14 +39,31 @@ class Network(object):
     ("wdm", objects.WDMFiber)
     ])
     
-    link_class = OrderedDict([
-    ("trunk", trunk_class),
-    ("route", objects.Route),
-    ("traffic", objects.Traffic)
+    route_class = OrderedDict([
+    ("default route", objects.DefaultRoute),
+    ("static route", objects.StaticRoute)
     ])
     
+    traffic_class = OrderedDict([
+    ("routed traffic", objects.RoutedTraffic),
+    ("static traffic", objects.StaticTraffic)
+    ])
+    
+    link_class = {}
+    for dclass in (trunk_class, route_class, traffic_class):
+        link_class.update(dclass)
+        
+    subtype_to_type = {
+    "ethernet": "trunk",
+    "wdm": "trunk",
+    "default route": "route",
+    "static route": "route",
+    "routed traffic": "traffic",
+    "static traffic": "traffic"
+    }
+    
     node_type = tuple(node_class.keys())
-    link_type = tuple(link_class.keys())
+    link_type = ("trunk", "route", "traffic")
     trunk_type = tuple(trunk_class.keys())
     all_type = node_type + link_type + trunk_type
     
@@ -71,13 +88,12 @@ class Network(object):
     def lf(
            self, 
            *param, 
-           protocol = "ethernet", 
-           interface = "10GE", 
-           link_type = "trunk", 
+           subtype = "ethernet", 
            name = None, 
            s = None, 
            d = None
            ):
+        link_type = self.subtype_to_type[subtype]
         if not name:
             while True:
                 name = link_type + str(self.cpt_link)
@@ -87,11 +103,7 @@ class Network(object):
                     break
         # creation link in the s-d direction if no link at all yet
         if not name in self.pn[link_type]:
-            if link_type == "trunk":
-                new_link = self.link_class[link_type][protocol](interface, 
-                                                            name, s, d, *param)                                             
-            else:
-                new_link = self.link_class[link_type](name, s, d, *param)
+            new_link = self.link_class[subtype](name, s, d, *param)
             self.cpt_link += 1
             self.pn[link_type][name] = new_link
             self.graph[s][link_type].add((d, new_link))

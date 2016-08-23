@@ -40,8 +40,12 @@ class MainMenu(tk.Frame):
             self.type_to_action[obj_type] = cmd
         
         for button_type, cmd in self.type_to_action.items():
+            print(button_type)
             button = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=cmd)
-            if button_type in ("route", "traffic"):
+            if button_type in ("static traffic", "routed traffic"):
+                button.configure(text=button_type.capitalize(), 
+                                            compound="top", font=self.font)
+            elif button_type in ("static route", "default route"):
                 button.configure(text=button_type.capitalize(), 
                                             compound="top", font=self.font)
             elif button_type in ("ethernet", "wdm"):
@@ -93,26 +97,34 @@ class MainMenu(tk.Frame):
         self.type_to_button["antenna"].grid(row=9, column=2, padx=2)
         self.type_to_button["cloud"].grid(row=9, column=3, padx=2)
         
-        self.type_to_button["ethernet"].grid(row=10, column=0, columnspan=2, 
+        sep = ttk.Separator(self, orient=tk.HORIZONTAL)
+        sep.grid(row=10, columnspan=4, sticky="ew")
+        
+        self.type_to_button["ethernet"].grid(row=11, column=0, columnspan=2, 
                                                 pady=5, padx=5, sticky="nsew")
-        self.type_to_button["wdm"].grid(row=10, column=2, columnspan=2, 
+        self.type_to_button["wdm"].grid(row=11, column=2, columnspan=2, 
                                                 pady=5, padx=5, sticky="nsew")
-        self.type_to_button["route"].grid(row=11, column=2, columnspan=2, 
+        self.type_to_button["default route"].grid(row=12, column=0, columnspan=2, 
                                                 pady=5, padx=5, sticky="nsew")
-        self.type_to_button["traffic"].grid(row=11, column=0, columnspan=2, 
+        self.type_to_button["static route"].grid(row=12, column=2, columnspan=2, 
+                                                pady=5, padx=5, sticky="nsew")
+        self.type_to_button["routed traffic"].grid(row=13, column=0, columnspan=2, 
+                                                pady=5, padx=5, sticky="nsew")
+                                                
+        self.type_to_button["static traffic"].grid(row=13, column=2, columnspan=2, 
                                                 pady=5, padx=5, sticky="nsew")
                                                 
         sep = ttk.Separator(self, orient=tk.HORIZONTAL)
-        sep.grid(row=12, columnspan=4, sticky="ew")
+        sep.grid(row=14, columnspan=4, sticky="ew")
         
         # graph generation
         label_graph_generation = tk.Label(self, text="Graph generation", 
                                             bg="#A1DBCD", font=self.font)
-        label_graph_generation.grid(row=16, columnspan=4, sticky="ew")
-        self.type_to_button["tree"].grid(row=17,column=0, sticky="w")
-        self.type_to_button["star"].grid(row=17,column=1, sticky="w")
-        self.type_to_button["full-mesh"].grid(row=17,column=2, sticky="w")
-        self.type_to_button["ring"].grid(row=17,column=3, sticky="w")
+        label_graph_generation.grid(row=17, columnspan=4, sticky="ew")
+        self.type_to_button["tree"].grid(row=18,column=0, sticky="w")
+        self.type_to_button["star"].grid(row=18,column=1, sticky="w")
+        self.type_to_button["full-mesh"].grid(row=18,column=2, sticky="w")
+        self.type_to_button["ring"].grid(row=18,column=3, sticky="w")
 
     def change_selection(self, mode):
         self.ms.cs.obj_selection = mode

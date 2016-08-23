@@ -113,6 +113,20 @@ class NetDim(tk.Tk):
         "AS"
         )
         
+        route_common_properties = (
+        "name",
+        "source", 
+        "destination"
+        )
+        
+        traffic_common_properties = (
+        "name", 
+        "source", 
+        "destination", 
+        "distance", 
+        "throughput"
+        )
+        
         trunk_common_ie_properties = (
         "protocol",
         "interface",
@@ -132,6 +146,19 @@ class NetDim(tk.Tk):
         "interfaceD",
         )
         
+        route_common_ie_properties = (
+        "name",
+        "source", 
+        "destination",
+        )
+        
+        traffic_common_ie_properties = (
+        "name", 
+        "source", 
+        "destination", 
+        "throughput"
+        )
+        
         self.object_properties = collections.OrderedDict([
         ("router", node_common_properties + ("default_route",)),
         ("oxc", node_common_properties),
@@ -145,30 +172,19 @@ class NetDim(tk.Tk):
         ("ethernet", trunk_common_properties),
         ("wdm", trunk_common_properties + ("lambda_capacity",)),
         
-        ("route", (
-        "name",
-        "source", 
-        "destination",
+        ("default route", route_common_properties + (
         "nh_tk",
         "destination_sntw",
-        "distance",
-        "path_constraints", 
-        "excluded_nodes", 
-        "excluded_trunks", 
-        "path", 
-        "subnets", 
-        "cost", 
-        "traffic", 
-        "AS"
+        )),
+        ("static route", route_common_properties + (
+        "nh_tk",
+        "destination_sntw",
         )),
         
-        ("traffic", (
-        "name", 
-        "source", 
-        "destination", 
-        "distance", 
-        "throughput"
-        ))])
+        ("routed traffic", traffic_common_properties),
+        ("static traffic", traffic_common_properties),
+        
+        ])
         
         self.object_label = collections.OrderedDict([
         ("Node", 
@@ -217,6 +233,7 @@ class NetDim(tk.Tk):
         "Subnet", 
         "Traffic"
         )),
+        
         ("Traffic", 
         (
         "None", 
@@ -239,31 +256,25 @@ class NetDim(tk.Tk):
         ("ethernet", trunk_common_ie_properties),
         ("wdm", trunk_common_ie_properties + ("lambda_capacity",)),
         
-        ("route", (
-        "name", 
-        "source", 
-        "destination", 
-        "distance", 
+        ("default route", route_common_ie_properties + (
         "nh_tk",
         "destination_sntw",
-        "path_constraints",
-        "excluded_nodes", 
-        "excluded_trunks", 
-        "cost", 
-        "subnets", 
+        
+        )),
+        ("static route", route_common_ie_properties + (
+        "nh_tk",
+        "destination_sntw",
+        "AD"
         )),
         
-        ("traffic", (
-        "name", 
-        "source", 
-        "destination", 
-        "distance", 
-        "throughput"
-        ))])
+        ("routed traffic", traffic_common_ie_properties),
+        ("static traffic", traffic_common_ie_properties),
+        ])
         
         # ordered dicts are needed to have the same menu order 
         # box properties defines which properties are to be displayed in the
         # upper left corner of the canvas when hoverin over an object
+        
         self.box_properties = {
         "node": (
         "name", 
@@ -346,6 +357,7 @@ class NetDim(tk.Tk):
         "destination": convert_node, 
         "nh_tk": str,
         "destination_sntw": str,
+        "AD": int,
         "path_constraints": convert_nodes_list, 
         "excluded_nodes": self.convert_nodes_set,
         "excluded_trunks": self.convert_links_set, 
@@ -393,6 +405,7 @@ class NetDim(tk.Tk):
         "destination": "Destination",
         "nh_tk": "Next-hop trunk",
         "destination_sntw": "Destination subnetwork",
+        "AD": "Administrative distance",
         "path_constraints": "Path constraints",
         "excluded_nodes": "Excluded nodes",
         "excluded_trunks": "Excluded trunks",
@@ -527,7 +540,7 @@ class NetDim(tk.Tk):
         },
         
         "l_type": {
-        l_type: (85, 15) for l_type in ("ethernet", "wdm", "route", "traffic")
+        l_type: (85, 15) for l_type in ("ethernet", "wdm", "static route", "default route", "routed traffic", "static traffic")
         },
         
         "ntw_topo": {
