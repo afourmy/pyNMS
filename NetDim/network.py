@@ -53,7 +53,7 @@ class Network(object):
     for dclass in (trunk_class, route_class, traffic_class):
         link_class.update(dclass)
         
-    subtype_to_type = {
+    st_to_type = {
     "ethernet": "trunk",
     "wdm": "trunk",
     "default route": "route",
@@ -79,7 +79,7 @@ class Network(object):
         # link dimensioning and failure simulation
         self.fdtks = set()
         
-    # function filtering pn to retrieve all objects of a given subtype
+    # function filtering pn to retrieve all objects of given subtypes
     def ftr(self, type, *subtypes):
         keep = lambda r: r.subtype in subtypes
         return filter(keep, self.pn[type].values())
@@ -93,7 +93,7 @@ class Network(object):
            s = None, 
            d = None
            ):
-        link_type = self.subtype_to_type[subtype]
+        link_type = self.st_to_type[subtype]
         if not name:
             while True:
                 name = link_type + str(self.cpt_link)

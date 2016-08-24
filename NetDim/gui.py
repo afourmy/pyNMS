@@ -77,11 +77,10 @@ class NetDim(tk.Tk):
         node_common_ie_properties = node_common_properties[:-1]
         
         trunk_common_properties = (
-        "protocol",
-        "interface",
         "name", 
         "source", 
         "destination", 
+        "interface",
         "distance", 
         "costSD", 
         "costDS", 
@@ -128,11 +127,10 @@ class NetDim(tk.Tk):
         )
         
         trunk_common_ie_properties = (
-        "protocol",
-        "interface",
         "name", 
         "source", 
         "destination", 
+        "interface",
         "distance", 
         "costSD", 
         "costDS", 
@@ -540,7 +538,7 @@ class NetDim(tk.Tk):
         },
         
         "l_type": {
-        l_type: (85, 15) for l_type in ("ethernet", "wdm", "static route", "default route", "routed traffic", "static traffic")
+        l_type: (85, 15) for l_type in self.cs.ntw.link_class
         },
         
         "ntw_topo": {
@@ -635,18 +633,13 @@ class NetDim(tk.Tk):
                         n, *param = self.str_to_object(
                                     xls_sheet.row_values(row_index), obj_type)
                         self.cs.ntw.nf(*param, node_type=obj_type, name=n)
-                    elif obj_type in ("ethernet", "wdm"):
-                        p, i, n, s, d, *param = self.str_to_object(
-                                    xls_sheet.row_values(row_index), obj_type)
-                        self.cs.ntw.lf(*param, link_type="trunk", 
-                                    interface=i, protocol=p, name=n, s=s, d=d)
                     else:
                         n, s, d, *param = self.str_to_object(
                                     xls_sheet.row_values(row_index), obj_type)
-                        self.cs.ntw.lf(*param, link_type=obj_type, 
+                        self.cs.ntw.lf(*param, subtype=obj_type, 
                                                             name=n, s=s, d=d)
                         
-            AS_sheet, area_sheet = book.sheets()[12], book.sheets()[13]
+            AS_sheet, area_sheet = book.sheets()[14], book.sheets()[15]
         
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):
@@ -793,10 +786,9 @@ class NetDim(tk.Tk):
                     # depending on the subtype, and we want to avoid using 
                     # hasattr() all the time to check if a property exists.
                     ftr = lambda o: o.subtype == obj_type
-                    if obj_type in ("route", "traffic"):
-                        pool_obj = self.cs.ntw.pn[obj_type].values()
-                    elif obj_type in ("ethernet", "wdm"):
-                        pool_obj = filter(ftr, self.cs.ntw.pn["trunk"].values())
+                    if obj_type in self.cs.ntw.link_class:
+                        _type = self.cs.ntw.st_to_type[obj_type]
+                        pool_obj = filter(ftr, self.cs.ntw.pn[_type].values())
                     else:
                         pool_obj = filter(ftr, self.cs.ntw.pn["node"].values())                    
                     for i, t in enumerate(pool_obj, 1):

@@ -506,6 +506,7 @@ class Scenario(tk.Canvas):
                 
     def unhighlight_objects(self, *objects):
         for obj in objects:
+            self.so[obj.class_type].discard(obj)
             if obj.class_type == "node":
                 self.itemconfig(obj.oval, fill=obj.color)
                 self.itemconfig(
@@ -804,6 +805,7 @@ class Scenario(tk.Canvas):
             max_y = max(node.y for node in self.ntw.pn["node"].values())
             self.diff_y = (max_y - min_y) // 2 + 100
             
+        self.unhighlight_all()
         self.draw_all(False)
             
     def planal_move(self, angle=45):

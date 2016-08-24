@@ -40,7 +40,6 @@ class MainMenu(tk.Frame):
             self.type_to_action[obj_type] = cmd
         
         for button_type, cmd in self.type_to_action.items():
-            print(button_type)
             button = tk.Button(self, bg="#A1DBCD", relief=tk.FLAT, command=cmd)
             if button_type in ("static traffic", "routed traffic"):
                 button.configure(text=button_type.capitalize(), 
