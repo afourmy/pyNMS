@@ -187,7 +187,7 @@ class NetDim(tk.Tk):
         "dst_ip"
         )),
         
-        ("OSPF Virtual link", route_common_properties + (
+        ("OSPF virtual link", route_common_properties + (
         "nh_tk",
         "dst_sntw"
         )),

@@ -256,7 +256,7 @@ class Scenario(tk.Canvas):
                                          + " " for property in 
                                         self.ms.box_properties[co.type]
                                          )
-                        x0, y0 = self.ms.winfo_x() + 316, self.ms.winfo_y() + 110
+                        x0, y0 = self.ms.winfo_x() + 800, self.ms.winfo_y() + 110
                         self.pwindow.wm_geometry("+%d+%d" % (x0, y0))
                         try:
                             # mac os compatibility

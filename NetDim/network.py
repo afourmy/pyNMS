@@ -41,7 +41,10 @@ class Network(object):
     
     route_class = OrderedDict([
     ("default route", objects.DefaultRoute),
-    ("static route", objects.StaticRoute)
+    ("static route", objects.StaticRoute),
+    ("BGP peering", objects.BGPPeering),
+    ("OSPF virtual link", objects.VirtualLink),
+    ("Label Switched Path", objects.LSP)
     ])
     
     traffic_class = OrderedDict([
@@ -58,6 +61,9 @@ class Network(object):
     "wdm": "trunk",
     "default route": "route",
     "static route": "route",
+    "BGP peering": "route",
+    "OSPF virtual link": "route",
+    "Label Switched Path": "route",
     "routed traffic": "traffic",
     "static traffic": "traffic"
     }
