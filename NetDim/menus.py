@@ -25,15 +25,13 @@ class RightClickMenu(tk.Menu):
         # the current selection, it means the current selection is no longer
         # to be considered, and only the selected objected is considered 
         # as having been selected by the user
+                
         if selected_obj not in self.cs.so[selected_obj.class_type]:
-            self.cs.so = {"node": set(), "link": set()}
-            self.cs.so[selected_obj.class_type].add(selected_obj)
-            # we also have to unhighlight the current selection 
+            # we empty / unhighlight the selection
             self.cs.unhighlight_all()
+            self.cs.highlight_objects(selected_obj)
+            
         self.all_so = self.cs.so["node"] | self.cs.so["link"]
-        
-        # highlight all to add the selected object to the highlight
-        self.cs.highlight_objects(*self.all_so)
                             
         # exactly one object: property window 
         if len(self.cs.so["node"]) == 1 or len(self.cs.so["link"]) == 1:

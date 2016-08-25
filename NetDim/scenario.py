@@ -236,25 +236,21 @@ class Scenario(tk.Canvas):
                             self.highlight_objects(co, color="purple")
                         self.pwindow = tk.Toplevel(self)
                         self.pwindow.wm_overrideredirect(1)
-                        # we adjust the position of the tipbox depending on 
-                        # what type of object it is: if it is a node, we set it 
-                        # in the upper right corner, if it is a link, we set it
-                        # slightly above the middle
-                        if co.class_type == "node":
-                            text = co.name
-                        else:
-                            src, dest = co.source, co.destination
-                            text = "Name: {name}\nSource: {src}\nDestination: {dest}"\
-                                        .format(
-                                                name = co.name,
-                                                src = co.source,
-                                                dest = co.destination
-                                                )
+                        # if co.class_type == "node":
+                        #     text = co.name
+                        # else:
+                        #     src, dest = co.source, co.destination
+                        #     text = "Name: {name}\nSource: {src}\nDestination: {dest}"\
+                        #                 .format(
+                        #                         name = co.name,
+                        #                         src = co.source,
+                        #                         dest = co.destination
+                        #                         )
                         text = "\n".join(
                                          self.ms.prop_to_nice_name[property] 
                                          + " : " + str(getattr(co, property)) 
                                          + " " for property in 
-                                        self.ms.box_properties[co.type]
+                                        self.ms.box_properties[co.subtype]
                                          )
                         x0, y0 = self.ms.winfo_x() + 800, self.ms.winfo_y() + 110
                         self.pwindow.wm_geometry("+%d+%d" % (x0, y0))

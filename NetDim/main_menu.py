@@ -48,8 +48,8 @@ class MainMenu(tk.Frame):
                                        "default route": "Default route",
                                        "static route": "Static route",
                                        "BGP peering": "BGP peering",
-                                       "OSPF virtual link": "Virtual link",
-                                       "Label Switched Path": "LSP",
+                                       "OSPF virtual link": "OSPF virtual link",
+                                       "Label Switched Path": "MPLS LSP",
                                        "routed traffic": "Routed traffic",
                                        "static traffic": "Static traffic" 
                             }[button_type], compound="top", font=self.font)

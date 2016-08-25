@@ -114,12 +114,14 @@ class NetDim(tk.Tk):
         
         route_common_properties = (
         "name",
+        "subtype",
         "source", 
         "destination"
         )
         
         traffic_common_properties = (
         "name", 
+        "subtype",
         "source", 
         "destination", 
         "distance", 
@@ -300,44 +302,72 @@ class NetDim(tk.Tk):
         )),
         
         ("routed traffic", traffic_common_ie_properties),
-        ("static traffic", traffic_common_ie_properties),
+        ("static traffic", traffic_common_ie_properties)
         ])
         
         # ordered dicts are needed to have the same menu order 
         # box properties defines which properties are to be displayed in the
         # upper left corner of the canvas when hoverin over an object
         
-        self.box_properties = {
-        "node": (
+        node_box_properties = (
         "name", 
+        "subtype",
         "ipaddress", 
         "subnetmask", 
         "LB_paths"
-        ),
+        )
         
-        "trunk": (
+        trunk_box_properties = (
         "name", 
-        "protocol",
+        "subtype",
         "interface",
         "source", 
         "destination",
         "sntw"
-        ),
+        )
         
-        "route": (
-        "name", 
-        "source", 
-        "destination",
+        self.box_properties = collections.OrderedDict([
+        ("router", node_box_properties),
+        ("oxc", node_box_properties),
+        ("host", node_box_properties),
+        ("antenna", node_box_properties),
+        ("regenerator", node_box_properties),
+        ("splitter", node_box_properties),
+        ("cloud", node_box_properties),
+        ("switch", node_box_properties),
+        
+        ("ethernet", trunk_box_properties),
+        ("wdm", trunk_box_properties + ("lambda_capacity",)),
+        
+        ("static route", route_common_properties + (
         "nh_ip",
-        "dst_sntw"
-        ),
+        "dst_ip",
+        "ad"
+        )),
         
-        "traffic": (
-        "name", 
-        "source", 
-        "destination",
-        "throughput",
-        )}
+        ("default route", route_common_properties + (
+        "nh_ip",
+        "ad"
+        )),
+        
+        ("BGP peering", route_common_properties + (
+        "bgp_type",
+        "src_ip",
+        "dst_ip"
+        )),
+        
+        ("OSPF virtual link", route_common_properties + (
+        "nh_tk",
+        "dst_sntw"
+        )),
+        
+        ("Label Switched Path", route_common_properties + (
+        "lsp_type",
+        )),                
+        
+        ("routed traffic", traffic_common_properties),
+        ("static traffic", traffic_common_properties)
+        ])
         
         # methods for string to object conversions
         convert_node = lambda n: self.cs.ntw.nf(name=n)
@@ -393,6 +423,7 @@ class NetDim(tk.Tk):
         "dst_ip": str,
         "dst_sntw": str,
         "ad": int,
+        "subtype": str,
         "bgp_type": str,
         "lsp_type": str,
         "path_constraints": convert_nodes_list, 
@@ -446,6 +477,7 @@ class NetDim(tk.Tk):
         "dst_ip": "Destination IP",
         "dst_sntw": "Destination subnetwork",
         "ad": "Administrative distance",
+        "subtype": "Type",
         "bgp_type": "BGP Type",
         "lsp_type": "LSP Type",
         "path_constraints": "Path constraints",
