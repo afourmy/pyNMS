@@ -267,8 +267,6 @@ class Route(Link):
                  ):
                      
         super().__init__(name, source, destination, distance)
-        self.nh_tk = None
-        self.destination_sntw = None
         self.path_constraints = path_constraints
         self.excluded_nodes = excluded_nodes
         self.excluded_trunks = excluded_trunks
@@ -284,12 +282,12 @@ class DefaultRoute(Route):
     
     def __init__(self, *args, **kwargs):
         args = list(args)
-        if len(args) > 4:
-            self.nh_tk = args.pop()
-            self.destination_sntw = args.pop()
+        if len(args) > 3:
+            self.nh_ip = args.pop()
+            self.ad = args.pop()
         else:
-            nh_tk = None
-            destination_sntw = None
+            self.nh_ip = None
+            self.ad = 1
         super().__init__(*args)
         
 class StaticRoute(Route):
@@ -298,12 +296,61 @@ class StaticRoute(Route):
     subtype = "static route"
     
     def __init__(self, *args, **kwargs):
+        args = list(args)
+        if len(args) > 3:
+            self.nh_ip = args.pop()
+            self.dst_ip = args.pop()
+            self.ad = args.pop()
+        else:
+            self.nh_ip = None
+            self.dst_ip = None
+            self.ad = 1
+        super().__init__(*args)
+        
+class BGPPeering(Route):
+
+    color = "violet"
+    subtype = "BGP peering"
+    
+    def __init__(self, *args, **kwargs):
+        args = list(args)
+        properties = (self.bgp_type, self.src_ip, self.dst_ip)
+        if len(args) > 3:
+            for property in properties:
+                property = args.pop()
+        else:
+            for property in properties:
+                property = None
+        super().__init__(*args)
+        
+class VirtualLink(Route):
+
+    color = "violet"
+    subtype = "OSPF virtual link"
+    
+    def __init__(self, *args, **kwargs):
+        args = list(args)
         if len(args) > 3:
             self.nh_tk = args.pop()
-            self.destination_sntw = args.pop()
+            self.dst_ip = args.pop()
         else:
-            nh_tk = None
-            destination_sntw = None
+            self.nh_tk = None
+            self.dst_ip = None
+        super().__init__(*args)
+        
+class LSP(Route):
+
+    color = "violet"
+    subtype = "Label Switched Path"
+    
+    def __init__(self, *args, **kwargs):
+        args = list(args)
+        if len(args) > 3:
+            self.lsp_type = args.pop()
+            self.path = args.pop()
+        else:
+            self.lsp_type = None
+            self.path = []
         super().__init__(*args)
 
         

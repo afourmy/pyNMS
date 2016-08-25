@@ -35,7 +35,7 @@ class TestExportImport(unittest.TestCase):
         dest.x, src.x = 42, 24
         trunk = cls.netdim.cs.ntw.lf(name="t", s=src, d=dest)
         trunk.distance = 666
-        route = cls.netdim.cs.ntw.lf(link_type="route", s=src, d=dest)
+        route = cls.netdim.cs.ntw.lf(subtype="static route", s=src, d=dest)
         # export in all 3 format: excel, text and csv
         path = "\\Tests\\test_export."
         for extension in ("xls", "csv"):

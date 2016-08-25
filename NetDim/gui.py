@@ -170,13 +170,31 @@ class NetDim(tk.Tk):
         ("ethernet", trunk_common_properties),
         ("wdm", trunk_common_properties + ("lambda_capacity",)),
         
-        ("default route", route_common_properties + (
-        "nh_tk",
-        "destination_sntw",
-        )),
         ("static route", route_common_properties + (
+        "nh_ip",
+        "dst_ip",
+        "ad"
+        )),
+        
+        ("default route", route_common_properties + (
+        "nh_ip",
+        "ad"
+        )),
+        
+        ("BGP peering", route_common_properties + (
+        "bgp_type",
+        "src_ip",
+        "dst_ip"
+        )),
+        
+        ("OSPF Virtual link", route_common_properties + (
         "nh_tk",
-        "destination_sntw",
+        "dst_sntw"
+        )),
+        
+        ("Label Switched Path", route_common_properties + (
+        "lsp_type",
+        "path"
         )),
         
         ("routed traffic", traffic_common_properties),
@@ -254,15 +272,31 @@ class NetDim(tk.Tk):
         ("ethernet", trunk_common_ie_properties),
         ("wdm", trunk_common_ie_properties + ("lambda_capacity",)),
         
-        ("default route", route_common_ie_properties + (
-        "nh_tk",
-        "destination_sntw",
-        
-        )),
         ("static route", route_common_ie_properties + (
+        "nh_ip",
+        "dst_ip",
+        "ad"
+        )),
+        
+        ("default route", route_common_ie_properties + (
+        "nh_ip",
+        "ad"
+        )),
+        
+        ("BGP peering", route_common_ie_properties + (
+        "bgp_type",
+        "src_ip",
+        "dst_ip"
+        )),
+        
+        ("OSPF virtual link", route_common_ie_properties + (
         "nh_tk",
-        "destination_sntw",
-        "AD"
+        "dst_ip"
+        )),
+        
+        ("Label Switched Path", route_common_ie_properties + (
+        "lsp_type",
+        "path"
         )),
         
         ("routed traffic", traffic_common_ie_properties),
@@ -294,8 +328,8 @@ class NetDim(tk.Tk):
         "name", 
         "source", 
         "destination",
-        "nh_tk",
-        "destination_sntw"
+        "nh_ip",
+        "dst_sntw"
         ),
         
         "traffic": (
@@ -354,8 +388,13 @@ class NetDim(tk.Tk):
         "source": convert_node, 
         "destination": convert_node, 
         "nh_tk": str,
-        "destination_sntw": str,
-        "AD": int,
+        "nh_ip": str,
+        "src_ip": str,
+        "dst_ip": str,
+        "dst_sntw": str,
+        "ad": int,
+        "bgp_type": str,
+        "lsp_type": str,
         "path_constraints": convert_nodes_list, 
         "excluded_nodes": self.convert_nodes_set,
         "excluded_trunks": self.convert_links_set, 
@@ -402,8 +441,13 @@ class NetDim(tk.Tk):
         "source": "Source",
         "destination": "Destination",
         "nh_tk": "Next-hop trunk",
-        "destination_sntw": "Destination subnetwork",
-        "AD": "Administrative distance",
+        "nh_ip": "Next-hop IP",
+        "src_ip": "Source IP",
+        "dst_ip": "Destination IP",
+        "dst_sntw": "Destination subnetwork",
+        "ad": "Administrative distance",
+        "bgp_type": "BGP Type",
+        "lsp_type": "LSP Type",
         "path_constraints": "Path constraints",
         "excluded_nodes": "Excluded nodes",
         "excluded_trunks": "Excluded trunks",
@@ -639,7 +683,7 @@ class NetDim(tk.Tk):
                         self.cs.ntw.lf(*param, subtype=obj_type, 
                                                             name=n, s=s, d=d)
                         
-            AS_sheet, area_sheet = book.sheets()[14], book.sheets()[15]
+            AS_sheet, area_sheet = book.sheets()[17], book.sheets()[18]
         
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):
@@ -668,13 +712,9 @@ class NetDim(tk.Tk):
                     if obj_type in self.cs.ntw.node_type:
                         n, *param = self.str_to_object(other, obj_type)
                         self.cs.ntw.nf(*param, node_type="router", name=n)
-                    elif obj_type in ("ethernet", "wdm"):
-                        p, i, n, s, d, *param = self.str_to_object(other, obj_type)
-                        self.cs.ntw.lf(*param, link_type="trunk",
-                                interface=i, protocol=p, name=n, s=s, d=d)
-                    elif obj_type in ("route", "traffic"):
+                    elif obj_type in self.cs.ntw.link_class:
                         n, s, d, *param = self.str_to_object(other, obj_type)
-                        self.cs.ntw.lf(*param, link_type=obj_type, 
+                        self.cs.ntw.lf(*param, subtype=obj_type, 
                                                         name=n, s=s, d=d)
                     elif obj_type == "AS":
                         name, type, id, nodes, trunks, edges = other
@@ -820,10 +860,9 @@ class NetDim(tk.Tk):
             graph_per_line = []
             for obj_type, properties in self.object_ie.items():
                 ftr = lambda o: o.subtype == obj_type
-                if obj_type in ("route", "traffic"):
-                    pool_obj = self.cs.ntw.pn[obj_type].values()
-                elif obj_type in ("ethernet", "wdm"):
-                    pool_obj = filter(ftr, self.cs.ntw.pn["trunk"].values())
+                if obj_type in self.cs.ntw.link_class:
+                    _type = self.cs.ntw.st_to_type[obj_type]
+                    pool_obj = filter(ftr, self.cs.ntw.pn[_type].values())
                 else:
                     pool_obj = filter(ftr, self.cs.ntw.pn["node"].values()) 
                 for obj in pool_obj:

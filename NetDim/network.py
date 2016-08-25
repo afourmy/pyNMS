@@ -685,12 +685,12 @@ class Network(object):
     
     def static_RFT_builder(self, source):
         for _, sroute in self.graph[source]["route"]:
-            if sroute.destination_sntw not in source.rt:
+            if sroute.dst_sntw not in source.rt:
                 nh_tk = self.lf(name=sroute.nh_tk)
                 nb = nh_tk.destination if nh_tk.source == source else nh_tk.source
                 nh_int = nh_tk("interface", source)
                 nh_ip = nh_tk("ipaddress", source)
-                source.rt[sroute.destination_sntw] = {("S", nh_ip, nh_int, 0, 
+                source.rt[sroute.dst_sntw] = {("S", nh_ip, nh_int, 0, 
                                                                     nb, nh_tk)}
                     
         for neighbor, adj_trunk in self.graph[source]["trunk"]:

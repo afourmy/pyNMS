@@ -104,19 +104,20 @@ class RightClickMenu(tk.Menu):
             self.add_separator()
             
             # only one subtype of nodes
-            for subtype in self.cs.ntw.node_type:
-                ftr = lambda o, st=subtype: o.subtype == st
-                if self.cs.so["node"] == set(filter(ftr, self.cs.so["node"])):
-                    self.add_cascade(label="Change property", 
-                                command= lambda: self.change_property(
-                                                        self.cs.so["node"],
-                                                        subtype
-                                                        )
-                                    )
-                    self.add_separator()
+            if self.cs.so["node"]:
+                for subtype in self.cs.ntw.node_type:
+                    ftr = lambda o, st=subtype: o.subtype == st
+                    if self.cs.so["node"] == set(filter(ftr, self.cs.so["node"])):
+                        self.add_cascade(label="Change property", 
+                                    command= lambda: self.change_property(
+                                                            self.cs.so["node"],
+                                                            subtype
+                                                            )
+                                        )
+                        self.add_separator()
             
         # only one subtype of link: property changer
-        if not self.cs.so["node"]:
+        if not self.cs.so["node"] and self.cs.so["link"]:
             for subtype in self.cs.ntw.trunk_type + self.cs.ntw.link_type[1:]:
                 ftr = lambda o, st=subtype: o.subtype == st
                 if self.cs.so["link"] == set(filter(ftr, self.cs.so["link"])):
