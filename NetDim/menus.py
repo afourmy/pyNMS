@@ -9,7 +9,7 @@ import troubleshooting
 import ping
 import routing_table
 import drawing_options_window
-import graph_generation
+import graph_generation.multiple_objects as mobj
 from object_management_window import PropertyChanger
                                 
 class RightClickMenu(tk.Menu):
@@ -191,7 +191,7 @@ class RightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def multiple_links(self, scenario):
-        graph_generation.MultipleLinks(scenario, self.cs.so["node"])
+        mobj.MultipleLinks(scenario, self.cs.so["node"])
         
 class GeneralRightClickMenu(tk.Menu):
     def __init__(self, event, scenario):
@@ -216,7 +216,7 @@ class GeneralRightClickMenu(tk.Menu):
                    
         # multiple nodes creation
         self.add_command(label="Create multiple nodes", 
-                command=lambda: graph_generation.MultipleNodes(self.cs, x, y))
+                command=lambda: mobj.MultipleNodes(self.cs, x, y))
                 
         # find networks
         self.add_command(label="find networks", 

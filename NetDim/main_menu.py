@@ -5,7 +5,7 @@
 import tkinter as tk
 from tkinter import ttk
 from collections import OrderedDict
-from graph_generation import NetworkDimension
+from graph_generation.network_dimension import NetworkDimension
 from miscellaneous import CustomTopLevel, ObjectListbox
 import drawing_options_window
 

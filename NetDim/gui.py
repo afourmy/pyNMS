@@ -14,7 +14,7 @@ import collections
 import object_management_window as omw
 import advanced_graph_options as ago
 import drawing_options_window as dow
-import graph_generation as gg
+import graph_generation.advanced_graph as adv_gr
 import rwa_window as rwaw
 import main_menu
 import scenario
@@ -512,8 +512,8 @@ class NetDim(tk.Tk):
                         command=lambda: dow.DrawingOptions(self))
         menubar.add_cascade(label="Network drawing",menu=menu_drawing)
         menu_routing = tk.Menu(menubar, tearoff=0)
-        menu_routing.add_command(label="Graph generation", 
-                        command=lambda: self.graph_generation.deiconify())
+        menu_routing.add_command(label="Advanced graph", 
+                        command=lambda: self.advanced_graph.deiconify())
         menu_routing.add_command(label="Advanced algorithms", 
                         command=lambda: self.advanced_graph_options.deiconify())
         menu_routing.add_command(label="Network Tree View", 
@@ -585,7 +585,7 @@ class NetDim(tk.Tk):
         self.rwa_window = rwaw.RWAWindow(self)
         
         # graph generation window
-        self.graph_generation = gg.GraphGeneration(self)
+        self.advanced_graph = adv_gr.AdvancedGraph(self)
         
         # create a menu
         self.main_menu = main_menu.MainMenu(self)
