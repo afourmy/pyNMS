@@ -65,3 +65,22 @@ class NetworkDimension(CustomTopLevel):
                                                                     sticky=tk.W)
         self.button_confirmation.grid(row=2, column=0, columnspan=2, pady=5, 
                                                         padx=5, sticky="nsew")
+                                                        
+    def create_graph(self):
+        if self.offset:
+            params = (
+                      int(self.var_dimension.get()),
+                      int(self.entry_k.get()),
+                      self.var_node_type.get()
+                      )
+        else:
+            params = (
+                      int(self.var_dimension.get()),
+                      self.var_node_type.get()
+                      )
+
+        self.dict_type_to_function[self.type](*params)
+        
+        # convergence
+        self.scenario.draw_all(random=False)
+        self.destroy()
