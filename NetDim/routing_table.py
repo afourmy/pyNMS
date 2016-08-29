@@ -88,5 +88,11 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
                         .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)
                 self.ST.insert("insert", route)
                 
+        if node.default_route:
+            def_route = "S*      0.0.0.0/0 [1/0] via {def_route}\n".format(
+                                                def_route = node.default_route,
+                                                )
+            self.ST.insert("insert", def_route)
+                                        
         self.ST.pack(fill=tk.BOTH, expand=tk.YES)
                                             

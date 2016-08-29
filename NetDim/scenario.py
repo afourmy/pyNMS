@@ -236,16 +236,6 @@ class Scenario(tk.Canvas):
                             self.highlight_objects(co, color="purple")
                         self.pwindow = tk.Toplevel(self)
                         self.pwindow.wm_overrideredirect(1)
-                        # if co.class_type == "node":
-                        #     text = co.name
-                        # else:
-                        #     src, dest = co.source, co.destination
-                        #     text = "Name: {name}\nSource: {src}\nDestination: {dest}"\
-                        #                 .format(
-                        #                         name = co.name,
-                        #                         src = co.source,
-                        #                         dest = co.destination
-                        #                         )
                         text = "\n".join(
                                          self.ms.prop_to_nice_name[property] 
                                          + " : " + str(getattr(co, property)) 

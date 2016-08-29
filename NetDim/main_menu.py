@@ -45,7 +45,6 @@ class MainMenu(tk.Frame):
                 button.configure(text={
                                        "ethernet": "Ethernet trunk",
                                        "wdm": "WDM trunk",
-                                       "default route": "Default route",
                                        "static route": "Static route",
                                        "BGP peering": "BGP peering",
                                        "OSPF virtual link": "OSPF virtual link",
@@ -120,41 +119,39 @@ class MainMenu(tk.Frame):
                                             bg="#A1DBCD", font=self.font)
         label_logical_links.grid(row=14, columnspan=4, sticky="ew")
                                                 
-        self.type_to_button["default route"].grid(row=15, column=0, columnspan=2, 
+        self.type_to_button["static route"].grid(row=15, column=0, columnspan=2, 
                                                 pady=5, padx=5, sticky="nsew")
-        self.type_to_button["static route"].grid(row=15, column=2, columnspan=2, 
+        self.type_to_button["BGP peering"].grid(row=15, column=2, columnspan=2, 
                                                 pady=5, padx=5, sticky="nsew")
-        self.type_to_button["BGP peering"].grid(row=16, column=0, columnspan=2, 
+        self.type_to_button["OSPF virtual link"].grid(row=16, column=0, columnspan=2, 
                                                 pady=5, padx=5, sticky="nsew")
-        self.type_to_button["OSPF virtual link"].grid(row=16, column=2, columnspan=2, 
-                                                pady=5, padx=5, sticky="nsew")
-        self.type_to_button["Label Switched Path"].grid(row=17, column=0, columnspan=2, 
+        self.type_to_button["Label Switched Path"].grid(row=16, column=2, columnspan=2, 
                                                 pady=5, padx=5, sticky="nsew")
                                                 
         sep = ttk.Separator(self, orient=tk.HORIZONTAL)
-        sep.grid(row=18, columnspan=4, sticky="ew")
+        sep.grid(row=17, columnspan=4, sticky="ew")
         
         label_logical_links = tk.Label(self, text="Traffic links", 
                                             bg="#A1DBCD", font=self.font)
-        label_logical_links.grid(row=19, columnspan=4, sticky="ew")
+        label_logical_links.grid(row=18, columnspan=4, sticky="ew")
         
-        self.type_to_button["routed traffic"].grid(row=20, column=0, columnspan=2, 
+        self.type_to_button["routed traffic"].grid(row=19, column=0, columnspan=2, 
                                                 pady=5, padx=5, sticky="nsew")
                                                 
-        self.type_to_button["static traffic"].grid(row=20, column=2, columnspan=2, 
+        self.type_to_button["static traffic"].grid(row=19, column=2, columnspan=2, 
                                                 pady=5, padx=5, sticky="nsew")
                                                 
         sep = ttk.Separator(self, orient=tk.HORIZONTAL)
-        sep.grid(row=21, columnspan=4, sticky="ew")
+        sep.grid(row=20, columnspan=4, sticky="ew")
         
         # graph generation
         label_graph_generation = tk.Label(self, text="Graph generation", 
                                             bg="#A1DBCD", font=self.font)
-        label_graph_generation.grid(row=22, columnspan=4, sticky="ew")
-        self.type_to_button["tree"].grid(row=23, column=0, sticky="w")
-        self.type_to_button["star"].grid(row=23, column=1, sticky="w")
-        self.type_to_button["full-mesh"].grid(row=23, column=2, sticky="w")
-        self.type_to_button["ring"].grid(row=23, column=3, sticky="w")
+        label_graph_generation.grid(row=21, columnspan=4, sticky="ew")
+        self.type_to_button["tree"].grid(row=22, column=0, sticky="w")
+        self.type_to_button["star"].grid(row=22, column=1, sticky="w")
+        self.type_to_button["full-mesh"].grid(row=22, column=2, sticky="w")
+        self.type_to_button["ring"].grid(row=22, column=3, sticky="w")
 
     def change_selection(self, mode):
         self.ms.cs.obj_selection = mode

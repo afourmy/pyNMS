@@ -166,7 +166,14 @@ class ObjectManagementWindow(FocusTopLevel):
                 combobox, var = str_var
                 attached_ints = (None,) + tuple(filter(None, 
                             (trunk("ipaddress", neighbor) for neighbor, trunk
-                            in self.ms.cs.ntw.graph[self.current_obj]["trunk"])))
+                            in self.ms.cs.ntw.graph[self.current_obj]["trunk"]
+                            ))) + tuple(filter(None, 
+                            (neighbor.ipaddress for neighbor, _
+                            in self.ms.cs.ntw.graph[self.current_obj]["trunk"]
+                            ))) + tuple(filter(None, 
+                            (trunk("interface", self.current_obj) for _, trunk
+                            in self.ms.cs.ntw.graph[self.current_obj]["trunk"]
+                            )))
                 combobox["values"] = attached_ints
                 var.set(obj_prop)
             elif property == "nh_tk":
@@ -184,6 +191,8 @@ class ObjectManagementWindow(FocusTopLevel):
                             in self.ms.cs.ntw.graph[dest_route]["trunk"])))
                 combobox["values"] = attached_ints
                 var.set(obj_prop)
+            elif property == "AS":
+                str_var.set(",".join(map(str, obj_prop.keys())))
             elif type(obj_prop) in (list, set):
                 str_var.set(",".join(map(str, obj_prop)))
             else:
@@ -230,9 +239,3 @@ class PropertyChanger(FocusTopLevel):
             setattr(object, self.property, value)
         self.destroy()
         
-    
-
-        
-
-                
-

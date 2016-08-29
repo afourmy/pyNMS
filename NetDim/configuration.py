@@ -186,6 +186,12 @@ class Configuration(tk.Toplevel):
                         
                 end = " {name}(config-if)# end\n".format(name=node.name)
                 st_config.insert("insert", end)
+                
+        # configuration of the static routes, including the default one
+        if node.default_route:
+            def_route = " {name}(config)# ip route 0.0.0.0 0.0.0.0 {def_route}\n"\
+                    .format(name=node.name, def_route=node.default_route)
+            st_config.insert("insert", def_route)
 
         # disable the scrolledtext so that it cannot be edited
         st_config.config(state=tk.DISABLED)

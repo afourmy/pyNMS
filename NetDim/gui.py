@@ -178,11 +178,6 @@ class NetDim(tk.Tk):
         "ad"
         )),
         
-        ("default route", route_common_properties + (
-        "nh_ip",
-        "ad"
-        )),
-        
         ("BGP peering", route_common_properties + (
         "bgp_type",
         "src_ip",
@@ -219,9 +214,8 @@ class NetDim(tk.Tk):
         ("Trunk", 
         (
         "None", 
-        "Protocol",
-        "Interface",
         "Name", 
+        "Type",
         "Distance", 
         "Traffic", 
         "WCTraffic",
@@ -277,11 +271,6 @@ class NetDim(tk.Tk):
         ("static route", route_common_ie_properties + (
         "nh_ip",
         "dst_ip",
-        "ad"
-        )),
-        
-        ("default route", route_common_ie_properties + (
-        "nh_ip",
         "ad"
         )),
         
@@ -342,11 +331,6 @@ class NetDim(tk.Tk):
         ("static route", route_common_properties + (
         "nh_ip",
         "dst_ip",
-        "ad"
-        )),
-        
-        ("default route", route_common_properties + (
-        "nh_ip",
         "ad"
         )),
         
@@ -715,7 +699,7 @@ class NetDim(tk.Tk):
                         self.cs.ntw.lf(*param, subtype=obj_type, 
                                                             name=n, s=s, d=d)
                         
-            AS_sheet, area_sheet = book.sheets()[17], book.sheets()[18]
+            AS_sheet, area_sheet = book.sheets()[16], book.sheets()[17]
         
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):

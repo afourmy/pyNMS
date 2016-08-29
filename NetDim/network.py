@@ -40,7 +40,6 @@ class Network(object):
     ])
     
     route_class = OrderedDict([
-    ("default route", objects.DefaultRoute),
     ("static route", objects.StaticRoute),
     ("BGP peering", objects.BGPPeering),
     ("OSPF virtual link", objects.VirtualLink),
@@ -59,7 +58,6 @@ class Network(object):
     st_to_type = {
     "ethernet": "trunk",
     "wdm": "trunk",
-    "default route": "route",
     "static route": "route",
     "BGP peering": "route",
     "OSPF virtual link": "route",
@@ -80,6 +78,12 @@ class Network(object):
         self.cs = scenario
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link = self.cpt_node = self.cpt_AS = 1
+        
+        # dicts used for IP networks: the first one associate a subnetwork
+        # to a set of IP addresses while the second one associate each IP
+        # to its subnet mask
+        self.sntw_to_ip = {}
+        self.ip_to_mask = {}
         
         # set of all trunks in failure: this parameter is used for
         # link dimensioning and failure simulation
@@ -331,6 +335,7 @@ class Network(object):
                 visited_trunks.add(trunk)
                 # we update the set of trunks of the network as we discover them
                 current_network = {(trunk, router)}
+                print(neighbor, neighbor.subtype)
                 if neighbor.subtype not in ("router", "host"):
                     # we add the neighbor of the router in the stack: we'll fill 
                     # the stack with nodes as we discover them, provided that 
@@ -340,9 +345,9 @@ class Network(object):
                     while stack_network:
                         curr_node = stack_network.pop()
                         for node, adj_trunk in self.graph[curr_node]["trunk"]:
-                            visited_trunks.add(adj_trunk)
                             if node in visited_nodes:
                                 continue
+                            visited_trunks.add(adj_trunk)
                             visited_nodes.add(node)
                             if node.subtype not in ("router", "host"):
                                 stack_network.append(node)
@@ -1875,5 +1880,8 @@ class Network(object):
     def multiple_links(self, source_nodes, destination_node):
         # create a link between the destination node and all source nodes
         for src_node in source_nodes:
-            self.lf(s=src_node, d=destination_node)
+            # in the multiple link window, the source nodes are not excluded,
+            # so we check that both nodes are different before creating the link
+            if src_node != destination_node:
+                self.lf(s=src_node, d=destination_node)
             

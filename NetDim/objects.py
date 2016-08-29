@@ -16,8 +16,8 @@ class Node(object):
                  y = 100, 
                  longitude = 0, 
                  latitude = 0, 
-                 ipaddress = "0.0.0.0",
-                 subnetmask = "255.255.255.255",
+                 ipaddress = None,
+                 subnetmask = None,
                  LB_paths = 1
                  ):
         self.name = name
