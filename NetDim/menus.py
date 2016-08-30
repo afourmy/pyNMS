@@ -230,7 +230,7 @@ class GeneralRightClickMenu(tk.Menu):
         self.destroy()
         
     def network(self):
-        self.cs.ntw.network_finder()
+        self.cs.ntw.subnetwork_allocation()
         self.destroy()
         
 class DrawingMenu(tk.Menu):

@@ -69,7 +69,7 @@ class Router(Node):
     def __init__(self, *args):
         self.rt = {}
         # the default route is the gateway of last resort: 
-        # it is a default exit interface.
+        # it is the IP address of the next-hop (either loopback or interface)
         self.default_route = None
         super().__init__(*args)
         
@@ -219,8 +219,8 @@ class Trunk(Link):
         dir = (node == self.source)*"SD" or "DS"
         if property in ("subnetmask", "interface", "ipaddress"):
             dir = dir[:-1]
-        # returning __dict__ and not just getattr(property) allows to use
-        # this function both as a getter and a setter
+        # returning __dict__ and not just getattr(property), which allows 
+        # using this function both as a getter and a setter
         return self.__dict__[property + dir]
         
 class Ethernet(Trunk):

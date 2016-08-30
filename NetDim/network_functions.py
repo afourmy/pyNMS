@@ -19,5 +19,8 @@ def compute_network(ip, mask):
 def masktosubnet(ip):
     return "".join(map(bin, map(int, ip.split(".")))).count("1")
     
-def mac_incrementer(mac_address):
-    return "{:012X}".format(int(mac_address, 16) + 1)
+def mac_incrementer(mac_address, nb):
+    return "{:012X}".format(int(mac_address, 16) + nb)
+    
+def ip_incrementer(ip_address, nb):
+    return tostring(toip(ip_address) + nb)

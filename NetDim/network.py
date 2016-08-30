@@ -8,8 +8,8 @@ import AS
 import random
 import warnings
 import tkinter as tk
-from network_functions import compute_network
-from math import cos, sin, asin, radians, sqrt
+from network_functions import compute_network, ip_incrementer
+from math import cos, sin, asin, radians, sqrt, ceil, log
 from collections import defaultdict, deque, OrderedDict
 from heapq import heappop, heappush
 from operator import getitem, itemgetter
@@ -82,7 +82,7 @@ class Network(object):
         # dicts used for IP networks: the first one associate a subnetwork
         # to a set of IP addresses while the second one associate each IP
         # to its subnet mask
-        self.sntw_to_ip = {}
+        self.sntw_to_ip = defaultdict(set)
         self.ip_to_mask = {}
         
         # set of all trunks in failure: this parameter is used for
@@ -222,46 +222,65 @@ class Network(object):
             # update trunk area based on nodes area (ISIS) and vice-versa (OSPF)
             AS.management.update_AS_topology()
             
-    def ip_allocation(self):
-        # we use 10.0.0.0/8 to allocate IP addresses for all interfaces in
-        # an AS. we use the format 10.x.y.z where
-        # - x defines the autonomous system
-        # - y defines the area in that autonomous
-        # - z defines the network device in that area
-        address = "10.0.0."
-        # we use a /30 subnet mask for all trunks
-        mask = "255.255.255.252"
-        for id_AS, AS in enumerate(self.pnAS.values()):
-            for id_area, area in enumerate(AS.areas.values()):
-                address = "10.{AS}.{area}.".format(AS=id_AS, area=id_area)
-                cpt_ip = 1
-                for id_trunk, trunk in enumerate(area.pa["trunk"]):
-                    trunk.subnetmaskS = trunk.subnetmaskD = mask
-                    trunk.ipaddressS = address + str(cpt_ip)
-                    trunk.ipaddressD = address + str(cpt_ip + 1)
-                    # with /30, there are two unused IP address per subnetwork
-                    # we could use /31 but this isn't a common practice
-                    cpt_ip += 4
-        
-        # we use 192.168.0.0/16 to allocate loopback addresses to all routers
-        for id, router in enumerate(self.ftr("node", "router"), 1):
-            router.ipaddress = "192.168." + str(id // 255) + "." + str(id % 255)
-            router.subnetmask = "255.255.255.255"
-            
-        # finally, we use 172.16.0.0/16 for all AS-free trunks
-        cpt_ip, address = 1, "172.16.0."
-        for trunk in filter(lambda t: not t.AS, self.pn["trunk"].values()):
-            trunk.subnetmaskS = trunk.subnetmaskD = mask
-            trunk.ipaddressS = address + str(cpt_ip)
-            trunk.ipaddressD = address + str(cpt_ip + 1)
-            cpt_ip += 4
+    def network_finder(self):
+        # we associate a set of trunks to each layer-3 segment.
+        # at this point, there isn't any IP allocated yet: we cannot assign
+        # IP addresses until we know the network layer-3 segment topology.
+        network_to_trunk = set()
+        # we keep the set of all trunks we've already visited 
+        visited_trunks = set()
+        # we loop through all the layer-3-networks boundaries: routers.
+        for router in self.ftr("node", "router"):
+            # we start by looking at all attached trunks, and when we find one
+            # that hasn't been visited yet, we don't stop until we've discovered
+            # all network's trunks (i.e until we've reached all boundaries 
+            # of that networks: routers or host).
+            for neighbor, trunk in self.graph[router]["trunk"]:
+                if trunk in visited_trunks:
+                    continue
+                visited_trunks.add(trunk)
+                # we update the set of trunks of the network as we discover them
+                current_network = {(trunk, router)}
+                if neighbor.subtype not in ("router", "host"):
+                    # we add the neighbor of the router in the stack: we'll fill 
+                    # the stack with nodes as we discover them, provided that 
+                    # these nodes are not boundaries, i.e not router or host
+                    stack_network = [neighbor]
+                    visited_nodes = {router}
+                    while stack_network:
+                        curr_node = stack_network.pop()
+                        for node, adj_trunk in self.graph[curr_node]["trunk"]:
+                            if node in visited_nodes:
+                                continue
+                            visited_trunks.add(adj_trunk)
+                            visited_nodes.add(node)
+                            if node.subtype not in ("router", "host"):
+                                stack_network.append(node)
+                            else:
+                                current_network.add((adj_trunk, node))
+                else:
+                    current_network.add((trunk, neighbor))
+                network_to_trunk.add(frozenset(current_network))
+        return network_to_trunk
     
-    def subnetwork_allocation(self):
-        # we update the subnetwork property for all trunks
-        for trunk in self.pn["trunk"].values():
-            src = trunk.source
-            ip, mask = trunk("ipaddress", src), trunk("subnetmask", src)
-            trunk.sntw = compute_network(ip, mask)
+    def ip_allocation(self):
+        # we will perform the IP addressing of all subnetworks with VLSM
+        # we first sort all subnetworks in decreasing order of size, then
+        # compute which subnet is needed
+        sntws = sorted(list(self.network_finder()), key=len)
+        sntw_ip = "10.0.0.0"
+        while sntws:
+            sntw = sntws.pop()
+            # both network and broadcast addresses are excluded:
+            # we add 2 to the size of the subnetwork
+            size = ceil(log(len(sntw) + 2, 2))
+            subnet = "/{}".format(32 - size)
+            for idx, (trunk, node) in enumerate(sntw, 1):
+                trunk.sntw = sntw_ip + subnet
+                direction = "S"*(trunk.source == node) or "D"
+                ip = ip_incrementer(sntw_ip, idx)
+                setattr(trunk, "ipaddress" + direction, ip)
+            sntw_ip = ip_incrementer(sntw_ip, 2**size)
 
     def interface_allocation(self):
         for node in self.graph:
@@ -315,49 +334,6 @@ class Network(object):
                 _, traffic.path = self.A_star(src, dest)
             if not traffic.path:
                 print("no path found for {}".format(traffic))
-                
-    def network_finder(self):
-        # we associate a set of trunks to each layer-3 segment.
-        # at this point, there isn't any IP allocated yet: we cannot assign
-        # IP addresses until we know the network layer-3 segment topology.
-        network_to_trunk = set()
-        # we keep the set of all trunks we've already visited 
-        visited_trunks = set()
-        # we loop through all the layer-3-networks boundaries: routers.
-        for router in self.ftr("node", "router"):
-            # we start by looking at all attached trunks, and when we find one
-            # that hasn't been visited yet, we don't stop until we've discovered
-            # all network's trunks (i.e until we've reached all boundaries 
-            # of that networks: routers or host).
-            for neighbor, trunk in self.graph[router]["trunk"]:
-                if trunk in visited_trunks:
-                    continue
-                visited_trunks.add(trunk)
-                # we update the set of trunks of the network as we discover them
-                current_network = {(trunk, router)}
-                print(neighbor, neighbor.subtype)
-                if neighbor.subtype not in ("router", "host"):
-                    # we add the neighbor of the router in the stack: we'll fill 
-                    # the stack with nodes as we discover them, provided that 
-                    # these nodes are not boundaries, i.e not router or host
-                    stack_network = [neighbor]
-                    visited_nodes = {router}
-                    while stack_network:
-                        curr_node = stack_network.pop()
-                        for node, adj_trunk in self.graph[curr_node]["trunk"]:
-                            if node in visited_nodes:
-                                continue
-                            visited_trunks.add(adj_trunk)
-                            visited_nodes.add(node)
-                            if node.subtype not in ("router", "host"):
-                                stack_network.append(node)
-                            else:
-                                current_network.add((adj_trunk, node))
-                else:
-                    current_network.add((trunk, neighbor))
-                network_to_trunk.add(frozenset(current_network))
-        print(network_to_trunk)
-                
                 
     def calculate_all(self):
         self.update_AS_topology()
@@ -695,6 +671,11 @@ class Network(object):
     # TODO and default / static route too
     
     def static_RFT_builder(self, source):
+        
+        if source.default_route:
+            source.rt["0.0.0.0"] = {("S*", source.default_route, 
+                                                        None, 0, None, None)}
+        
         for _, sroute in self.graph[source]["route"]:
             if sroute.dst_sntw not in source.rt:
                 nh_tk = self.lf(name=sroute.nh_tk)
