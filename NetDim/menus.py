@@ -11,6 +11,7 @@ import routing_table
 import drawing_options_window
 import graph_generation.multiple_objects as mobj
 from object_management_window import PropertyChanger
+from collections import OrderedDict
                                 
 class RightClickMenu(tk.Menu):
     def __init__(self, event, scenario):
@@ -238,7 +239,7 @@ class GeneralRightClickMenu(tk.Menu):
         self.destroy()
         
 class DrawingMenu(tk.Menu):
-    
+    #TODO does the menu destroy itself ? I don't thing so
     def __init__(self, scenario, nodes):
         super().__init__(tearoff=0)
         self.cs = scenario
@@ -263,10 +264,12 @@ class AlignMenu(tk.Menu):
         super().__init__(tearoff=0)
         self.cs = scenario
         
-        cmds = {
-        "Horizontal alignment": lambda: self.cs.align(nodes),
-        "Vertical alignment": lambda: self.cs.align(nodes, False)
-        }
+        cmds = OrderedDict([
+        ("Horizontal alignment", lambda: self.cs.align(nodes)),
+        ("Vertical alignment", lambda: self.cs.align(nodes, False)),
+        ("Horizontal distribution", lambda: self.cs.distribute(nodes)),
+        ("Vertical distribution", lambda: self.cs.distribute(nodes, False)),
+        ])
     
         for label, cmd in cmds.items():
             self.add_command(label=label, command=cmd)

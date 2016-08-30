@@ -760,7 +760,7 @@ class Scenario(tk.Canvas):
             coords = link_to_coords[link]
             if not link.line:
                 link.line = self.create_line(*coords, tags=(link.subtype, 
-                        link.class_type, "object"), fill=link.color, 
+                        link.type, link.class_type, "object"), fill=link.color, 
                         width=self.LINK_WIDTH, dash=link.dash, smooth=True)
             else:
                 self.coords(link.line, *coords)
@@ -854,7 +854,8 @@ class Scenario(tk.Canvas):
                     obj.x, obj.y = randint(100,700), randint(100,700)
                 if not obj.image[0]: 
                     self.create_node(obj)
-                self.move_node(obj)
+                else:
+                    self.move_node(obj)
             else:
                 self.create_link(obj)
              
@@ -874,6 +875,18 @@ class Scenario(tk.Canvas):
         minimum = min(node.y if horizontal else node.x for node in nodes)
         for node in nodes:
             setattr(node, "y"*horizontal or "x", minimum)
+        self.draw_objects(nodes, False)
+        
+    def distribute(self, nodes, horizontal=True):
+        # uniformly distribute the nodes between the minimum and
+        # the maximum lontitude/latitude of the selection
+        minimum = min(node.x if horizontal else node.y for node in nodes)
+        maximum = max(node.x if horizontal else node.y for node in nodes)
+        # we'll use a sorted list to keep the same order after distribution
+        nodes = sorted(nodes, key=lambda n: getattr(n, "x"*horizontal or "y"))
+        offset = (maximum - minimum)/(len(nodes) - 1)
+        for idx, node in enumerate(nodes):
+            setattr(node, "x"*horizontal or "y", minimum + idx*offset)
         self.draw_objects(nodes, False)
             
     def spring_based_drawing(self, nodes):
