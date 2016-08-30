@@ -187,7 +187,6 @@ class Computation(CustomTopLevel):
         ("Update AS topology", self.ms.cs.ntw.update_AS_topology),
         ("Interface allocation", self.ms.cs.ntw.interface_allocation),
         ("IP addressing", self.ms.cs.ntw.ip_allocation),
-        ("Subnetwork allocation", self.ms.cs.ntw.subnetwork_allocation),
         ("Create routing tables", self.ms.cs.ntw.rt_creation),
         ("Route traffic links", self.ms.cs.ntw.path_finder),
         ("Refresh labels", self.ms.cs.refresh_all_labels)

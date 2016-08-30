@@ -164,14 +164,16 @@ class ObjectManagementWindow(FocusTopLevel):
             obj_prop = getattr(self.current_obj, property)
             if property == "default_route":
                 combobox, var = str_var
+                # in practice, the default route can also be set as an outgoing
+                # interface, but the router has to do an ARP request for each
+                # unknown destination IP address to fill the destination 
+                # MAC field of the Ethernet frame, which may result in 
+                # ARP table being overloaded: to be avoided.
                 attached_ints = (None,) + tuple(filter(None, 
                             (trunk("ipaddress", neighbor) for neighbor, trunk
                             in self.ms.cs.ntw.graph[self.current_obj]["trunk"]
                             ))) + tuple(filter(None, 
                             (neighbor.ipaddress for neighbor, _
-                            in self.ms.cs.ntw.graph[self.current_obj]["trunk"]
-                            ))) + tuple(filter(None, 
-                            (trunk("interface", self.current_obj) for _, trunk
                             in self.ms.cs.ntw.graph[self.current_obj]["trunk"]
                             )))
                 combobox["values"] = attached_ints

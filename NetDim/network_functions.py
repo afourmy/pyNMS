@@ -16,11 +16,20 @@ def tostring(ip):
 def compute_network(ip, mask):
     return tostring(toip(ip) & toip(mask))
 
-def masktosubnet(ip):
+def tosubnet(ip):
+    # convert a subnet mask to a subnet
+    # ex: tosubnet("255.255.255.252") = 30
     return "".join(map(bin, map(int, ip.split(".")))).count("1")
     
+def tomask(subnet):
+    # convert a subnet to a subnet mask
+    # ex: tomask(30) = "255.255.255.252"
+    return tostring(int("1"*subnet + "0"*(32 - subnet), 2))
+    
 def mac_incrementer(mac_address, nb):
+    # increment a mac address by "nb"
     return "{:012X}".format(int(mac_address, 16) + nb)
     
 def ip_incrementer(ip_address, nb):
+    # increment an ip address by "nb"
     return tostring(toip(ip_address) + nb)

@@ -92,8 +92,12 @@ class RightClickMenu(tk.Menu):
         # only nodes: 
         if not self.cs.so["link"]:
             # drawing submenu
-            self.add_cascade(label="Drawing", 
+            self.add_cascade(label="Automatic layout", 
                             menu=DrawingMenu(self.cs, self.cs.so["node"]))
+            
+            # alignment submenu
+            self.add_cascade(label="Align nodes", 
+                            menu=AlignMenu(self.cs, self.cs.so["node"]))
             self.add_separator()
             
             # multiple links creation menu
@@ -201,7 +205,7 @@ class GeneralRightClickMenu(tk.Menu):
         
         # drawing mode selection
         nodes = self.cs.ntw.pn["node"].values()
-        self.add_cascade(label="Drawing", menu=DrawingMenu(self.cs, nodes))
+        self.add_cascade(label="Automatic layout", menu=DrawingMenu(self.cs, nodes))
         
         # stop drawing entry
         self.add_command(label="Stop drawing", command=lambda: self.cs._cancel())
@@ -219,7 +223,7 @@ class GeneralRightClickMenu(tk.Menu):
                 command=lambda: mobj.MultipleNodes(self.cs, x, y))
                 
         # find networks
-        self.add_command(label="find networks", 
+        self.add_command(label="Calculate", 
                 command=lambda: self.network())
                 
         # make the menu appear    
@@ -230,7 +234,7 @@ class GeneralRightClickMenu(tk.Menu):
         self.destroy()
         
     def network(self):
-        self.cs.ntw.subnetwork_allocation()
+        self.cs.ntw.ip_allocation()
         self.destroy()
         
 class DrawingMenu(tk.Menu):
@@ -252,3 +256,18 @@ class DrawingMenu(tk.Menu):
     def both(self, nodes):
         self.cs.draw_objects(nodes, True)
         self.cs.automatic_drawing(nodes)
+        
+class AlignMenu(tk.Menu):
+    
+    def __init__(self, scenario, nodes):
+        super().__init__(tearoff=0)
+        self.cs = scenario
+        
+        cmds = {
+        "Horizontal alignment": lambda: self.cs.align(nodes),
+        "Vertical alignment": lambda: self.cs.align(nodes, False)
+        }
+    
+        for label, cmd in cmds.items():
+            self.add_command(label=label, command=cmd)
+                                            

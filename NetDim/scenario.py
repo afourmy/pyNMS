@@ -852,9 +852,9 @@ class Scenario(tk.Canvas):
             if obj.type == "node":
                 if random_drawing:
                     obj.x, obj.y = randint(100,700), randint(100,700)
-                    self.move_node(obj)
                 if not obj.image[0]: 
                     self.create_node(obj)
+                self.move_node(obj)
             else:
                 self.create_link(obj)
              
@@ -868,6 +868,13 @@ class Scenario(tk.Canvas):
             self.spring_based_drawing(nodes)
         else:
             self.FR_drawing(nodes)
+            
+    def align(self, nodes, horizontal=True):
+        # alignment can be either horizontal (horizontal = True) or vertical
+        minimum = min(node.y if horizontal else node.x for node in nodes)
+        for node in nodes:
+            setattr(node, "y"*horizontal or "x", minimum)
+        self.draw_objects(nodes, False)
             
     def spring_based_drawing(self, nodes):
         if not self._job:

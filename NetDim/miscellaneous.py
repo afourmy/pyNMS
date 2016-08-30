@@ -57,6 +57,7 @@ class CustomTopLevel(tk.Toplevel):
         ttk.Style().configure('TCheckbutton', background="#A1DBCD")
         
 class FocusTopLevel(CustomTopLevel):
+    
     def __init__(self):
         super().__init__()
         

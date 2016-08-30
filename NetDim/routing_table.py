@@ -29,7 +29,11 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
         
         self.ST.insert("insert", codes)
         
-        gateway = "Gateway of last resort is not set\n\n"
+        if node.default_route:
+            gateway = "Gateway of last resort is {gw} to network 0.0.0.0\n\n"\
+                                        .format(gw=node.default_route)
+        else:
+            gateway = "Gateway of last resort is not set\n\n"
         self.ST.insert("insert", gateway)
                 
         list_RT = sorted(node.rt.items(), key=itemgetter(1))

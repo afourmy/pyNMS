@@ -8,7 +8,7 @@ import AS
 import random
 import warnings
 import tkinter as tk
-from network_functions import compute_network, ip_incrementer
+from network_functions import compute_network, ip_incrementer, tomask
 from math import cos, sin, asin, radians, sqrt, ceil, log
 from collections import defaultdict, deque, OrderedDict
 from heapq import heappop, heappush
@@ -265,29 +265,30 @@ class Network(object):
     
     def ip_allocation(self):
         # we will perform the IP addressing of all subnetworks with VLSM
-        # we first sort all subnetworks in decreasing order of size, then
+        # we first sort all subnetworks in increasing order of size, then
         # compute which subnet is needed
         sntws = sorted(list(self.network_finder()), key=len)
         sntw_ip = "10.0.0.0"
         while sntws:
+            # we retrieve the biggest subnetwork not yet treated
             sntw = sntws.pop()
             # both network and broadcast addresses are excluded:
             # we add 2 to the size of the subnetwork
             size = ceil(log(len(sntw) + 2, 2))
-            subnet = "/{}".format(32 - size)
+            subnet, mask = "/{}".format(32 - size), tomask(32 - size)
             for idx, (trunk, node) in enumerate(sntw, 1):
                 trunk.sntw = sntw_ip + subnet
-                direction = "S"*(trunk.source == node) or "D"
-                ip = ip_incrementer(sntw_ip, idx)
-                setattr(trunk, "ipaddress" + direction, ip)
+                trunk("subnetmask", node, mask)
+                curr_ip = ip_incrementer(sntw_ip, idx)
+                trunk("ipaddress", node, curr_ip)
+                self.sntw_to_ip[sntw_ip + subnet].add(curr_ip)
+                self.ip_to_mask[curr_ip] = mask
             sntw_ip = ip_incrementer(sntw_ip, 2**size)
 
     def interface_allocation(self):
         for node in self.graph:
             for idx, (_, adj_trunk) in enumerate(self.graph[node]["trunk"]):
-                direction = "S"*(adj_trunk.source == node) or "D"
-                interface = "Ethernet0/{}".format(idx)
-                setattr(adj_trunk, "interface" + direction, interface)
+                adj_trunk("interface", node, "Ethernet0/{}".format(idx))
                 
     def trunk_dimensioning(self):
         # we need to remove all failures before dimensioning the trunks:
@@ -338,7 +339,6 @@ class Network(object):
     def calculate_all(self):
         self.update_AS_topology()
         self.ip_allocation()
-        self.subnetwork_allocation()
         self.interface_allocation()
         self.rt_creation()
         self.path_finder()
