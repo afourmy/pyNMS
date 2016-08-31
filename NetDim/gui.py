@@ -19,11 +19,14 @@ import rwa_window as rwaw
 import main_menu
 import scenario
 import csv
-import xlrd
-import xlwt
 import xml.etree.ElementTree as etree
 import warnings
 from PIL import ImageTk
+try:
+    import xlrd
+    import xlwt
+except ImportError:
+    warnings.warn("Excel library missing: excel import/export disabled")
 
 class NetDim(tk.Tk):
     

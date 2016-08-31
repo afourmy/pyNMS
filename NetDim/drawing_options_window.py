@@ -40,7 +40,7 @@ class DrawingOptions(FocusTopLevel):
                                        "Spring layout", 
                                        "F-R layout"
                                        )
-        self.drawing_type_list.set("Spring layout")
+        self.drawing_type_list.set(self.ms.drawing_algorithm)
         self.drawing_type_list.grid(row=0, column=2, pady=5, padx=5, sticky=tk.W)
         
         # parameters labels and entries

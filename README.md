@@ -5,14 +5,32 @@ NetDim is a network design and planning software.
 A network in NetDim is made of:
 - devices (router, optical switch, host machine, etc)
 - physical links (<a href="https://en.wikipedia.org/wiki/Link_aggregation">trunks</a>)
-- routes
-- traffic links
+- logical links (MPLS LSP, BGP peer relationships, etc)
+- traffic links (demands in Mbps)
 - [autonomous systems] (https://en.wikipedia.org/wiki/Autonomous_system_%28Internet%29) (AS)
 
 A physical link in NetDim is called a trunk: it represents a set of physical links aggregated together.
 An autonomous system is a set of devices exchanging routing and signalization messages to carry the incoming traffic.
 The path of a traffic flow inside an AS depends on the [protocol] (https://en.wikipedia.org/wiki/Communications_protocol) used
 in the AS.
+
+# Getting started
+
+The following modules are used in NetDim:
+```
+PIL / Pillow (mandatory)
+xlrd, xlwt (desirable: used for saving projects)
+numpy, cvxopt (optional: used for linear programming)
+```
+
+In order to use NetDim, you need to run **main.py**.
+```
+python main.py
+```
+
+What you should see after running main.py:
+
+![NetDim](https://github.com/mintoo/networks/raw/master/Readme/netdim_app.png)
 
 # Features
 
@@ -29,7 +47,7 @@ On a 4-layer deep tree which nodes are initially drawn at a random position on t
 
 ## Saving and import/export
 
-Projects can be saved to an excel or a csv format. This can also be used to import an existing network into NetDim.
+Projects can be imported from / exported to an excel or a csv file. This allows to import an existing network into NetDim.
 
 ![Excel project](https://github.com/mintoo/networks/raw/master/Readme/xls_import.PNG)
 
@@ -41,9 +59,15 @@ As an example, this is the topology of the RENATER network in France, in 2010:
 ## AS Management
 
 Nodes and trunks can be added to an AS by selecting them on the canvas, with the right-click menu. The AS topology is displayed in the "AS Management" panel. This window is also used to create and manage areas.
-Routes are created between every couple of "edge nodes", in order to prevent the creation of too many routes.
 
 ![AS Management](https://github.com/mintoo/networks/raw/master/Readme/domain_management.PNG)
+
+## Automatic device configuration
+
+After an AS is created, NetDim shows all Cisco commands required to properly configure the protocol on the device. 
+This information can in turn be used along with network emulator like GNS3 to learn how to configure a network.
+
+![Automatic configuration](https://github.com/mintoo/networks/raw/master/Readme/config.PNG)
 
 ## Routing algorithms
 
@@ -59,18 +83,11 @@ However, a shortest path algorithm is not enough to find the path of a traffic f
   * In IS-IS, an L1 router sends all traffic to the closest L1/L2 router, even though there could be a shorter path (in terms of metric) if there are multiple L1/L2 routers in the starting area.
   * In OSPF, intra-area routes are always favored over inter-area routes, even when inter-area routes happen to be the shortest. An ABR can advertize the wrong cost to other routers, which results in "area hijacking".
 
-I've come to the conclusion that the only way to properly route flows in a network is to bring the model as close to real-life routing as possible: 
-  1. First, Netdim automatically assigns IP addresses and interfaces to all routers.
+The only way to properly route flows in a network is to bring the model as close to real-life routing as possible: 
+  1. First, NetDim automatically assigns IP addresses and interfaces to all routers.
   2. For each device, a switching / routing table is created to associate a destination address to an exit interface.
 
 ![Routing table](https://github.com/mintoo/networks/raw/master/Readme/routing_table.png)
-
-## Automatic device configuration
-
-After an AS is created, Netdim shows all Cisco commands required to properly configure the protocol on the device. 
-This information can in turn be used along with network emulator like GNS3 to learn how to configure a network.
-
-![Automatic configuration](https://github.com/mintoo/networks/raw/master/Readme/config.PNG)
 
 ## Troubleshooting commands
 
@@ -83,7 +100,7 @@ NetDim also provides an help with troubleshooting. You can right-click on a rout
 
 ## 3D display
 
-There are 3 layers in NetDim: the physical layer (Ethernet and WDM fiber trunks), the logical layer (routes), and the traffic layer (traffic links).
+There are 3 layers in NetDim: the physical layer (Ethernet and WDM fiber trunks), the logical layer ("routes", i.e logical links), and the traffic layer (traffic links).
 In order to enhance network visualization, it is possible to have a per-layer view of the network.
 Nodes are drawn at all 3 layers, and connected with a dashed line to further improve the display.
 
@@ -91,7 +108,7 @@ Nodes are drawn at all 3 layers, and connected with a dashed line to further imp
 
 ## Capacity planning 
 
-Once traffic links are created, they are routed on the trunks. The resulting traffic flow is computed for all for all interfaces. In the following example, the router load-balance the traffic on four equal-cost multi-path.
+Once traffic links are created, they are routed on the trunks. The resulting traffic flow is computed for all for all interfaces. In the following example, the router load-balance the traffic on four equal-cost paths.
 
 ![Capacity planning](https://github.com/mintoo/networks/raw/master/Readme/capacity_planning.PNG)
 
@@ -159,26 +176,27 @@ Choose one of them in the list and click on "Run algorithm": NetDim will find ou
 
 ## Create the tessaract
 
-Go to the "Network routing" menu, and select the entry "Graph generation". Click on the "Hypercube" button and leave the dimension to 4.
+Go to the "Network routing" menu, and select the entry "Graph generation". Click on the "Hypercube" button, leave the dimension to 4 and click on "OK".
 
 ![Graph creation](https://github.com/mintoo/networks/raw/master/Readme/use_case_step1.PNG)
 
 ## Visualize the graph
 When the graph is created, all nodes are colocated. Right-click on the canvas, and select the "Drawing > Both" entry. 
 Nodes will first be randomly spread accross the canvas, after what the force-directed layout is applied.
+The network is continuously drawing itself until you right-click again and select the "Stop drawing" entry.
 You can use the mouse scroll wheel to center the display on the nodes.
 
 ![Graph visualization](https://github.com/mintoo/networks/raw/master/Readme/use_case_step2.PNG)
 
 ## Create the AS
-Select all 4 nodes and right-click on one of them. Choose "OSPF" in the "Type" list, and click on "Create AS". The "Manage AS" panel pops up.
+Select all nodes and right-click on one of them. Click on "Create AS" and choose "OSPF" in the "Type" list, then click on "Create AS". The "Manage AS" panel pops up.
 
 ![AS creation](https://github.com/mintoo/networks/raw/master/Readme/use_case_step3.PNG)
 
 ## Add trunks to the AS
 The AS was created as a set of nodes: it has no trunk yet. Click on the "Find trunks" button.
 This will automatically add all trunks which both ends belong the AS.
-Add a few edge nodes. Click on the "Create traffic" button: traffic flows will be automatically created between edge nodes.
+Add a few edge nodes. Click on the "Create traffic" button: traffic links will be automatically created between all pairs of edge nodes.
 This AS management panel also display the area topology. In our case, all nodes and trunks are part of the backbone, there is no other area.
 
 ![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step4.PNG)
@@ -189,7 +207,6 @@ Click on "Netdim" logo. This will open a menu where you can choose which action 
 - Interface allocation: assign Ethernet interfaces to all trunks: these interfaces are used to create the routing table of the attached routers, as well as for the configuration panel.
 - IP addressing: assign IP addressing to all interfaces.
 - Subnetwork allocation: compute a subnetwork address for all trunks. Subnetworks depend on the IP addresses of both interfaces of the trunk. For example, if the IP addresses are 10.0.0.1/24 and 10.0.0.2/24, the "subnetwork" advertised by the router will be 10.0.0.0/24.
-- WC trunk dimensioning: this computes the maximum traffic the trunk may have to carry considering all possible trunk failure. NetDim fails all trunks of the network one by one, and evaluates the impact in terms of bandwidth for each trunk. The highest value is kept in memory, as well as the trunk which failure induces this value.
 - Create routing tables.
 - Route traffic links: based on the routing tables that were created in the previous step, NetDim finds the path of each traffic flows and map the traffic on physical trunks, just like it's done in real-world networks.
 - Refresh labels: update all label values.

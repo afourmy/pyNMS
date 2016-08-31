@@ -290,6 +290,12 @@ class Network(object):
             for idx, (_, adj_trunk) in enumerate(self.graph[node]["trunk"]):
                 adj_trunk("interface", node, "Ethernet0/{}".format(idx))
                 
+    # WC trunk dimensioning: this computes the maximum traffic the trunk may 
+    # have to carry considering all possible trunk failure. 
+    # NetDim fails all trunks of the network one by one, and evaluates 
+    # the impact in terms of bandwidth for each trunk. 
+    # The highest value is kept in memory, as well as the trunk which failure 
+    # induces this value.
     def trunk_dimensioning(self):
         # we need to remove all failures before dimensioning the trunks:
         # the set of failed trunk will be redefined, but we also need the

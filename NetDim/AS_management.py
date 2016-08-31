@@ -220,7 +220,7 @@ class ASManagement(FocusTopLevel):
                 if eA != eB:
                     name = "->".join((str(eA), str(eB)))
                     # creation of the traffic and path finding procedure
-                    tl = self.cs.ntw.lf(link_type="traffic", 
+                    tl = self.cs.ntw.lf(subtype="routed traffic", 
                                                         name=name, s=eA, d=eB)
                     self.cs.create_link(tl)
                                                     
