@@ -1648,7 +1648,7 @@ class Network(object):
         return (-c*dx, -c*dy)
         
     def hooke_force(self, dx, dy, dist, L0, k):
-        const = k*(dist - L0)/dist
+        const = dist and k*(dist - L0)/dist
         return (const*dx, const*dy)
             
     def spring_layout(self, nodes, cf, k, sf, L0):
