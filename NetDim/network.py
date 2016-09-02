@@ -1469,7 +1469,7 @@ class Network(object):
     def ncr_computation(self, AS_links):
         # ct_id is the index of the congested trunk bandwidth in AS_links
         # cd indicates which is the congested direction: SD or DS
-        ncr, ct_id, cd = 1, None, None
+        ncr, ct_id, cd = 0, None, None
         for idx, trunk in enumerate(AS_links):
             for direction in ("SD", "DS"):
                 tf, cap = "traffic" + direction, "capacity" + direction 
@@ -1503,7 +1503,7 @@ class Network(object):
         best_solution = None
         
         # for each solution, we compute the "network congestion ratio":
-        # ncr_argmax is the best network congestion ratio that has been found
+        # best_ncr is the best network congestion ratio that has been found
         # so far, i.e the network congestion ratio of the best solution. 
         best_ncr = float("inf")
         
@@ -1513,8 +1513,10 @@ class Network(object):
         for trunk in AS.pAS["trunk"]:
             trunk.flowSD = trunk.costSD
             trunk.flowDS = trunk.costDS
+        o = False
         
         for i in range(iteration_nb):
+            
             curr_solution = [random.randint(1, n) for _ in range(n)]
             
             # don't do anything if the newly created solution is 
@@ -1527,7 +1529,7 @@ class Network(object):
             tabu_list.append(curr_solution)
             # we assign the costs to the trunks
             for id, cost in enumerate(curr_solution):
-                setattr(AS_links[id//2], "cost" + "DS"*(id%2) or "SD", cost)
+                setattr(AS_links[id//2], "cost" + ("DS"*(id%2) or "SD"), cost)
                 
             # create the routing tables with the newly allocated costs,
             # route all traffic flows and find the network congestion ratio
@@ -1536,11 +1538,21 @@ class Network(object):
             
             # if we have to look for the most congested trunk more than 
             # C_max times, and still can't have a network congestion 
-            # ratio lower than ncr_max, we stop
+            # ratio lower than best_ncr, we stop
             C_max = 5
             C = 0
             
+            # this boolean is used to exit both loops when we've raised
+            # the cost of a trunk up to the bound (n)
+            exit = False
+            
             while True:
+                
+                if exit:
+                    break
+                    
+                self.rt_creation()
+                self.path_finder()
                     
                 curr_ncr, ct_id, cd = self.ncr_computation(AS_links)
 
@@ -1550,11 +1562,10 @@ class Network(object):
                     print(curr_ncr)
                     best_ncr = curr_ncr
                     best_solution = curr_solution[:]
-                    print(best_solution)
+                    print(best_solution, AS_links)
                 else:
                     C += 1
                     if C == C_max:
-                        C = 0
                         break
                     
                 # we store the bandwidth of the trunk with the highest
@@ -1564,8 +1575,8 @@ class Network(object):
                 # we'll increase the cost of the congested trunk, until
                 # at least one traffic is rerouted (in such a way that it will
                 # no longer use the congested trunk)
-                for k in range(n):
-                    # we increase the cost of the congested link by 1
+                for k in range(n - getattr(AS_links[ct_id], "cost" + cd)):
+                        
                     AS_links[ct_id].__dict__["cost" + cd] += 1
                     # we update the solution being evaluated and append
                     # it to the tabu list
@@ -1579,15 +1590,19 @@ class Network(object):
                     
                     if new_bw != initial_bw:
                         break
+                else:
+                    exit = True
 
         for id, cost in enumerate(best_solution):
             setattr(AS_links[id//2], "cost" + ("DS"*(id%2) or "SD"), cost)
             
-        ncr, ct_id, cd = self.ncr_computation(AS_links)
-        print(ncr, best_solution)
-        
         self.rt_creation()
         self.path_finder()
+            
+        ncr, ct_id, cd = self.ncr_computation(AS_links)
+        print(ncr, best_solution, AS_links)
+        
+
                 
         
     ## Optical networks: routing and wavelength assignment
