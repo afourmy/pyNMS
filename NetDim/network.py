@@ -66,10 +66,10 @@ class Network(object):
     "static traffic": "traffic"
     }
     
-    node_type = tuple(node_class.keys())
+    node_subtype = tuple(node_class.keys())
     link_type = ("trunk", "route", "traffic")
-    trunk_type = tuple(trunk_class.keys())
-    all_type = node_type + link_type + trunk_type
+    link_subtype = tuple(link_class.keys())
+    all_subtypes = node_subtype + link_subtype
     
     def __init__(self, scenario):
         # pn for "pool network"
@@ -1459,6 +1459,137 @@ class Network(object):
             
         return sum(x)
         
+    ## IP network cost optimization: tabu search algorithm
+    
+    # compute the network congestion ratio of an autonomous system
+    # it is defined as max( link bw / link capacity for all links):
+    # it is the maximum utilization ratio among all AS links.
+    # we also use this function to retrieve the argmax, that is, 
+    # the trunk with the highlight bandwidth / capacity ratio.
+    def ncr_computation(self, AS_links):
+        # ct_id is the index of the congested trunk bandwidth in AS_links
+        # cd indicates which is the congested direction: SD or DS
+        ncr, ct_id, cd = 1, None, None
+        for idx, trunk in enumerate(AS_links):
+            for direction in ("SD", "DS"):
+                tf, cap = "traffic" + direction, "capacity" + direction 
+                curr_ncr = getattr(trunk, tf) / getattr(trunk, cap)
+                if curr_ncr > ncr:
+                    ncr = curr_ncr
+                    ct_id = idx
+                    cd = direction
+        return ncr, ct_id, cd
+                   
+    def OSPF_tabu_search(self, AS):
+        
+        self.update_AS_topology()
+        self.ip_allocation()
+        self.interface_allocation()
+        
+        AS_links = list(AS.pAS["trunk"])
+        
+        # a cost assignment solution is a vector of 2*n value where n is
+        # the number of trunks in the AS, because each trunk has two costs:
+        # one per direction (SD and DS).
+        n = 2*len(AS_links)
+        
+        iteration_nb = 50
+        
+        # the tabu list is an empty: it will contain all the solutions, so that
+        # we don't evaluate a solution more than once (we don't go "backward")
+        tabu_list = []
+        
+        # the current optimal solution found
+        best_solution = None
+        
+        # for each solution, we compute the "network congestion ratio":
+        # ncr_argmax is the best network congestion ratio that has been found
+        # so far, i.e the network congestion ratio of the best solution. 
+        best_ncr = float("inf")
+        
+        # we store the cost value in the flow parameters, since we'll change
+        # the links' costs to evaluate each solution
+        # at the end, we will revert the cost to their original value
+        for trunk in AS.pAS["trunk"]:
+            trunk.flowSD = trunk.costSD
+            trunk.flowDS = trunk.costDS
+        
+        for i in range(iteration_nb):
+            curr_solution = [random.randint(1, n) for _ in range(n)]
+            
+            # don't do anything if the newly created solution is 
+            # already in the tabu list
+            # TODO refactor with a while
+            if curr_solution in tabu_list:
+                continue
+                
+            # we create an cost assignment and add it to the tabu list
+            tabu_list.append(curr_solution)
+            # we assign the costs to the trunks
+            for id, cost in enumerate(curr_solution):
+                setattr(AS_links[id//2], "cost" + "DS"*(id%2) or "SD", cost)
+                
+            # create the routing tables with the newly allocated costs,
+            # route all traffic flows and find the network congestion ratio
+            self.rt_creation()
+            self.path_finder()
+            
+            # if we have to look for the most congested trunk more than 
+            # C_max times, and still can't have a network congestion 
+            # ratio lower than ncr_max, we stop
+            C_max = 5
+            C = 0
+            
+            while True:
+                    
+                curr_ncr, ct_id, cd = self.ncr_computation(AS_links)
+
+                # update the best solution found if the network congestion ratio
+                # is the lowest one found so far
+                if curr_ncr < best_ncr:
+                    print(curr_ncr)
+                    best_ncr = curr_ncr
+                    best_solution = curr_solution[:]
+                    print(best_solution)
+                else:
+                    C += 1
+                    if C == C_max:
+                        C = 0
+                        break
+                    
+                # we store the bandwidth of the trunk with the highest
+                # congestion (in the congested direction)
+                initial_bw = getattr(AS_links[ct_id], "traffic" + cd)
+                    
+                # we'll increase the cost of the congested trunk, until
+                # at least one traffic is rerouted (in such a way that it will
+                # no longer use the congested trunk)
+                for k in range(n):
+                    # we increase the cost of the congested link by 1
+                    AS_links[ct_id].__dict__["cost" + cd] += 1
+                    # we update the solution being evaluated and append
+                    # it to the tabu list
+                    curr_solution[ct_id*2 + (cd == "DS")] += 1
+                    tabu_list.append(curr_solution)
+                    
+                    self.rt_creation()
+                    self.path_finder()
+                    
+                    new_bw = getattr(AS_links[ct_id], "traffic" + cd)
+                    
+                    if new_bw != initial_bw:
+                        break
+
+        for id, cost in enumerate(best_solution):
+            setattr(AS_links[id//2], "cost" + ("DS"*(id%2) or "SD"), cost)
+            
+        ncr, ct_id, cd = self.ncr_computation(AS_links)
+        print(ncr, best_solution)
+        
+        self.rt_creation()
+        self.path_finder()
+                
+        
     ## Optical networks: routing and wavelength assignment
     
     def RWA_graph_transformation(self, name=None):
@@ -1506,9 +1637,9 @@ class Network(object):
         # and a list that contains all vertices that we have yet to color
         uncolored_nodes = list(oxc_color)
         # we will use a function that returns the degree of a node to sort
-        # the list in ascending order, and pop nodes one by one
+        # the list in ascending order
         uncolored_nodes.sort(key = lambda node: len(self.graph[node]["trunk"]))
-        
+        # and pop nodes one by one
         while uncolored_nodes:
             largest_degree = uncolored_nodes.pop()
             # we compute the set of colors used by adjacent vertices

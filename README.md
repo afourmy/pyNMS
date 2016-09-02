@@ -5,7 +5,7 @@ NetDim is a network design and planning software.
 A network in NetDim is made of:
 - devices (router, optical switch, host machine, etc)
 - physical links (<a href="https://en.wikipedia.org/wiki/Link_aggregation">trunks</a>)
-- logical links (MPLS LSP, BGP peer relationships, etc)
+- logical links (static route, pseudowires, BGP peer relationship, OSPF virtual link)
 - traffic links (demands in Mbps)
 - [autonomous systems] (https://en.wikipedia.org/wiki/Autonomous_system_%28Internet%29) (AS)
 

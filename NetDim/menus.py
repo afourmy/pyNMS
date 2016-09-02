@@ -108,7 +108,7 @@ class RightClickMenu(tk.Menu):
             
             # only one subtype of nodes
             if self.cs.so["node"]:
-                for subtype in self.cs.ntw.node_type:
+                for subtype in self.cs.ntw.node_subtype:
                     ftr = lambda o, st=subtype: o.subtype == st
                     if self.cs.so["node"] == set(filter(ftr, self.cs.so["node"])):
                         self.add_cascade(label="Change property", 
@@ -121,7 +121,7 @@ class RightClickMenu(tk.Menu):
             
         # only one subtype of link: property changer
         if not self.cs.so["node"] and self.cs.so["link"]:
-            for subtype in self.cs.ntw.trunk_type + self.cs.ntw.link_type[1:]:
+            for subtype in self.cs.ntw.link_subtype:
                 ftr = lambda o, st=subtype: o.subtype == st
                 if self.cs.so["link"] == set(filter(ftr, self.cs.so["link"])):
                     self.add_cascade(label="Change property", 
@@ -235,7 +235,8 @@ class GeneralRightClickMenu(tk.Menu):
         self.destroy()
         
     def network(self):
-        self.cs.ntw.ip_allocation()
+        ts = self.cs.ntw.pnAS["tabu_search"]
+        self.cs.ntw.OSPF_tabu_search(ts)
         self.destroy()
         
 class DrawingMenu(tk.Menu):

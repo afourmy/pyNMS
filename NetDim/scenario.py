@@ -57,7 +57,7 @@ class Scenario(tk.Canvas):
         self.diff_y = 0
         
         # display state per type of objects
-        self.display_per_type = dict.fromkeys(self.ntw.all_type, True)
+        self.display_per_type = dict.fromkeys(self.ntw.all_subtypes, True)
         
         # indexes of the failure icons: dictionnary that bins
         # trunks item to the id of the associated icon
@@ -588,12 +588,12 @@ class Scenario(tk.Canvas):
         new_label = self.display_per_type[type]*"Hide" or "Show"
         menu.entryconfigure(index, label=" ".join((new_label, type)))
         new_state = tk.NORMAL if self.display_per_type[type] else tk.HIDDEN
-        if type in self.ntw.node_type:
+        if type in self.ntw.node_subtype:
             for node in self.ntw.ftr("node", type):
                 self.itemconfig(node.image[0] if self.display_image 
                                             else node.oval, state=new_state)
                 self.itemconfig(node.lid, state=new_state)
-        elif type in self.ntw.trunk_type:
+        elif type in self.ntw.trunk_subtype:
             for trunk in self.ntw.ftr("trunk", type):
                 self.itemconfig(trunk.line, state=new_state)
                 self.itemconfig(trunk.lid, state=new_state)
@@ -732,6 +732,7 @@ class Scenario(tk.Canvas):
         
     def create_link(self, new_link):
         edges = (new_link.source, new_link.destination)
+        print(new_link.type)
         for node in edges:
             # we always have to create the nodes at layer 0, no matter whether
             # the layered display option is activated or not.
@@ -849,13 +850,12 @@ class Scenario(tk.Canvas):
     def draw_objects(self, objects, random_drawing):
         self._cancel()
         for obj in objects:
+            print(obj)
             if obj.type == "node":
                 if random_drawing:
                     obj.x, obj.y = randint(100,700), randint(100,700)
                 if not obj.image[0]: 
                     self.create_node(obj)
-                else:
-                    self.move_node(obj)
             else:
                 self.create_link(obj)
              

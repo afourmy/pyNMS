@@ -612,7 +612,7 @@ class NetDim(tk.Tk):
         }}
         
         for color in colors:
-            for node_type in self.cs.ntw.node_type:
+            for node_type in self.cs.ntw.node_subtype:
                 img_path = join(self.path_icon, "".join(
                                             (color, "_", node_type, ".gif")))
                 img_pil = ImageTk.Image.open(img_path).resize(
@@ -692,7 +692,7 @@ class NetDim(tk.Tk):
             for id, obj_type in enumerate(self.object_ie):
                 xls_sheet = book.sheets()[id]
                 for row_index in range(1, xls_sheet.nrows):
-                    if obj_type in self.cs.ntw.node_type:
+                    if obj_type in self.cs.ntw.node_subtype:
                         n, *param = self.str_to_object(
                                     xls_sheet.row_values(row_index), obj_type)
                         self.cs.ntw.nf(*param, node_type=obj_type, name=n)
@@ -728,7 +728,7 @@ class NetDim(tk.Tk):
                 reader = csv.reader(file_to_import)
                 for row in filter(None, reader):
                     obj_type, *other = row
-                    if obj_type in self.cs.ntw.node_type:
+                    if obj_type in self.cs.ntw.node_subtype:
                         n, *param = self.str_to_object(other, obj_type)
                         self.cs.ntw.nf(*param, node_type="router", name=n)
                     elif obj_type in self.cs.ntw.link_class:
