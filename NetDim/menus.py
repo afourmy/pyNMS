@@ -235,7 +235,7 @@ class GeneralRightClickMenu(tk.Menu):
         self.destroy()
         
     def network(self):
-        ts = self.cs.ntw.pnAS["tabu_search"]
+        ts = self.cs.ntw.pnAS["AS1"]
         self.cs.ntw.OSPF_tabu_search(ts)
         self.destroy()
         

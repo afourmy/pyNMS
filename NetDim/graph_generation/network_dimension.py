@@ -49,7 +49,7 @@ class NetworkDimension(CustomTopLevel):
         self.var_node_type = tk.StringVar()
         self.node_type_list = ttk.Combobox(self, textvariable=self.var_node_type, 
                                                                     width=7)
-        self.node_type_list["values"] = scenario.ntw.node_type
+        self.node_type_list["values"] = scenario.ntw.node_subtype
         self.node_type_list.current(0)
     
         # confirmation button

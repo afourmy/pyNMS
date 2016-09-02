@@ -1516,7 +1516,7 @@ class Network(object):
         o = False
         
         for i in range(iteration_nb):
-            
+            print(i)
             curr_solution = [random.randint(1, n) for _ in range(n)]
             
             # don't do anything if the newly created solution is 
@@ -1539,7 +1539,7 @@ class Network(object):
             # if we have to look for the most congested trunk more than 
             # C_max times, and still can't have a network congestion 
             # ratio lower than best_ncr, we stop
-            C_max = 5
+            C_max = 20
             C = 0
             
             # this boolean is used to exit both loops when we've raised
@@ -1551,8 +1551,8 @@ class Network(object):
                 if exit:
                     break
                     
-                self.rt_creation()
-                self.path_finder()
+                # self.rt_creation()
+                # self.path_finder()
                     
                 curr_ncr, ct_id, cd = self.ncr_computation(AS_links)
 
@@ -1562,7 +1562,6 @@ class Network(object):
                     print(curr_ncr)
                     best_ncr = curr_ncr
                     best_solution = curr_solution[:]
-                    print(best_solution, AS_links)
                 else:
                     C += 1
                     if C == C_max:
@@ -1575,12 +1574,12 @@ class Network(object):
                 # we'll increase the cost of the congested trunk, until
                 # at least one traffic is rerouted (in such a way that it will
                 # no longer use the congested trunk)
-                for k in range(n - getattr(AS_links[ct_id], "cost" + cd)):
-                        
-                    AS_links[ct_id].__dict__["cost" + cd] += 1
+                for k in range(5):
+
+                    AS_links[ct_id].__dict__["cost" + cd] += n // 5
                     # we update the solution being evaluated and append
                     # it to the tabu list
-                    curr_solution[ct_id*2 + (cd == "DS")] += 1
+                    curr_solution[ct_id*2 + (cd == "DS")] += n // 5
                     tabu_list.append(curr_solution)
                     
                     self.rt_creation()
