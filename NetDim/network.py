@@ -1459,7 +1459,9 @@ class Network(object):
             
         return sum(x)
         
-    ## IP network cost optimization: tabu search algorithm
+    ## IP network cost optimization: Weight Setting Problem
+    
+    
     
     # compute the network congestion ratio of an autonomous system
     # it is defined as max( link bw / link capacity for all links):
@@ -1479,8 +1481,58 @@ class Network(object):
                     ct_id = idx
                     cd = direction
         return ncr, ct_id, cd
+        
+    # 1) Genetic algorithm
+    
+    def WSP_GA(self, AS):
+        
+        self.update_AS_topology()
+        self.ip_allocation()
+        self.interface_allocation()
+        
+        best_ncr = float("inf")
+        best_solution = None
+        
+        AS_links = list(AS.pAS["trunk"])
+        
+        # a cost assignment solution is a vector of 2*n value where n is
+        # the number of trunks in the AS, because each trunk has two costs:
+        # one per direction (SD and DS).
+        n = 2*len(AS_links)
+        generation_size = 50
+        
+        parents = []
+        best_candidates = []
+        
+        for i in range(generation_size):
+            print(i)
+            curr_solution = [random.randint(1, 2**16 - 1) for _ in range(n)]
+                
+            # we assign the costs to the trunks
+            for id, cost in enumerate(curr_solution):
+                setattr(AS_links[id//2], "cost" + ("DS"*(id%2) or "SD"), cost)
+                
+            # create the routing tables with the newly allocated costs,
+            # route all traffic flows and find the network congestion ratio
+            self.rt_creation()
+            self.path_finder()
+            
+            curr_ncr, *_ = self.ncr_computation(AS_links)
+            parents.append(curr_solution)
+
+            # update the best solution found if the network congestion ratio
+            # is the lowest one found so far
+            if curr_ncr <= best_ncr:
+                if curr_ncr == best_ncr:
+                    best_candidates.clear()
+                print(curr_ncr)
+                best_ncr = curr_ncr
+                best_candidates.append(curr_solution[:])
+                
+        
+    # 2) Tabu search heuristic
                    
-    def OSPF_tabu_search(self, AS):
+    def WSP_TS(self, AS):
         
         self.update_AS_topology()
         self.ip_allocation()
@@ -1513,11 +1565,36 @@ class Network(object):
         for trunk in AS.pAS["trunk"]:
             trunk.flowSD = trunk.costSD
             trunk.flowDS = trunk.costDS
-        o = False
+            
+        generation_size = 50
+        best_candidates = []
         
-        for i in range(iteration_nb):
+        for i in range(generation_size):
             print(i)
             curr_solution = [random.randint(1, n) for _ in range(n)]
+                
+            # we assign the costs to the trunks
+            for id, cost in enumerate(curr_solution):
+                setattr(AS_links[id//2], "cost" + ("DS"*(id%2) or "SD"), cost)
+                
+            # create the routing tables with the newly allocated costs,
+            # route all traffic flows and find the network congestion ratio
+            self.rt_creation()
+            self.path_finder()
+            
+            curr_ncr, *_ = self.ncr_computation(AS_links)
+
+            # update the best solution found if the network congestion ratio
+            # is the lowest one found so far
+            if curr_ncr <= best_ncr:
+                if curr_ncr < best_ncr:
+                    best_candidates.clear()
+                #print(curr_ncr)
+                best_ncr = curr_ncr
+                best_candidates.append(curr_solution[:])
+                    
+        for i, curr_solution in enumerate(best_candidates):
+            print(i)
             
             # don't do anything if the newly created solution is 
             # already in the tabu list
@@ -1539,7 +1616,7 @@ class Network(object):
             # if we have to look for the most congested trunk more than 
             # C_max times, and still can't have a network congestion 
             # ratio lower than best_ncr, we stop
-            C_max = 20
+            C_max = 30
             C = 0
             
             # this boolean is used to exit both loops when we've raised
@@ -1558,8 +1635,9 @@ class Network(object):
 
                 # update the best solution found if the network congestion ratio
                 # is the lowest one found so far
-                if curr_ncr < best_ncr:
-                    print(curr_ncr)
+                if curr_ncr <= best_ncr:
+                    if curr_ncr < best_ncr:
+                        print(curr_ncr)
                     best_ncr = curr_ncr
                     best_solution = curr_solution[:]
                 else:
@@ -1599,7 +1677,7 @@ class Network(object):
         self.path_finder()
             
         ncr, ct_id, cd = self.ncr_computation(AS_links)
-        print(ncr, best_solution, AS_links)
+        print(ncr)
         
 
                 
