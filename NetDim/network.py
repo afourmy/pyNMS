@@ -11,7 +11,7 @@ import tkinter as tk
 from network_functions import compute_network, ip_incrementer, tomask
 from math import cos, sin, asin, radians, sqrt, ceil, log
 from collections import defaultdict, deque, OrderedDict
-from heapq import heappop, heappush
+from heapq import heappop, heappush, nsmallest
 from operator import getitem, itemgetter
 from itertools import combinations
 try:
@@ -349,6 +349,11 @@ class Network(object):
         self.rt_creation()
         self.path_finder()
         self.cs.refresh_all_labels()
+        
+    def route(self):
+        # create the routing tables and route all traffic flows
+        self.rt_creation()
+        self.path_finder()
             
     def bfs(self, source):
         visited = set()
@@ -1566,7 +1571,7 @@ class Network(object):
             trunk.flowSD = trunk.costSD
             trunk.flowDS = trunk.costDS
             
-        generation_size = 50
+        generation_size = 10
         best_candidates = []
         
         for i in range(generation_size):
@@ -1583,66 +1588,49 @@ class Network(object):
             self.path_finder()
             
             curr_ncr, *_ = self.ncr_computation(AS_links)
-
-            # update the best solution found if the network congestion ratio
-            # is the lowest one found so far
-            if curr_ncr <= best_ncr:
-                if curr_ncr < best_ncr:
-                    best_candidates.clear()
-                #print(curr_ncr)
-                best_ncr = curr_ncr
-                best_candidates.append(curr_solution[:])
+            best_candidates.append((curr_ncr, curr_solution)) 
                     
-        for i, curr_solution in enumerate(best_candidates):
+        best_candidates = nsmallest(5, best_candidates)
+                    
+        for i, (_, curr_solution) in enumerate(best_candidates):
             print(i)
             
-            # don't do anything if the newly created solution is 
-            # already in the tabu list
-            # TODO refactor with a while
             if curr_solution in tabu_list:
                 continue
                 
             # we create an cost assignment and add it to the tabu list
             tabu_list.append(curr_solution)
+            
             # we assign the costs to the trunks
             for id, cost in enumerate(curr_solution):
                 setattr(AS_links[id//2], "cost" + ("DS"*(id%2) or "SD"), cost)
-                
-            # create the routing tables with the newly allocated costs,
-            # route all traffic flows and find the network congestion ratio
-            self.rt_creation()
-            self.path_finder()
+            
+            self.route()
             
             # if we have to look for the most congested trunk more than 
             # C_max times, and still can't have a network congestion 
             # ratio lower than best_ncr, we stop
-            C_max = 30
-            C = 0
-            
-            # this boolean is used to exit both loops when we've raised
-            # the cost of a trunk up to the bound (n)
-            exit = False
+            C_max, C = 10, 0
+            local_best_ncr = float("inf")
             
             while True:
-                
-                if exit:
-                    break
-                    
-                # self.rt_creation()
-                # self.path_finder()
+                self.route()
                     
                 curr_ncr, ct_id, cd = self.ncr_computation(AS_links)
 
                 # update the best solution found if the network congestion ratio
                 # is the lowest one found so far
-                if curr_ncr <= best_ncr:
+                if curr_ncr < local_best_ncr:
+                    print(curr_ncr)
+                    C = 0
+                    local_best_ncr = curr_ncr
                     if curr_ncr < best_ncr:
-                        print(curr_ncr)
-                    best_ncr = curr_ncr
-                    best_solution = curr_solution[:]
+                        best_ncr = curr_ncr
+                        best_solution = curr_solution[:]
                 else:
                     C += 1
                     if C == C_max:
+                        print(best_ncr)
                         break
                     
                 # we store the bandwidth of the trunk with the highest
@@ -1653,34 +1641,30 @@ class Network(object):
                 # at least one traffic is rerouted (in such a way that it will
                 # no longer use the congested trunk)
                 for k in range(5):
-
+                    #print(k)
                     AS_links[ct_id].__dict__["cost" + cd] += n // 5
                     # we update the solution being evaluated and append
                     # it to the tabu list
                     curr_solution[ct_id*2 + (cd == "DS")] += n // 5
+                    
                     tabu_list.append(curr_solution)
                     
-                    self.rt_creation()
-                    self.path_finder()
+                    self.route()
                     
                     new_bw = getattr(AS_links[ct_id], "traffic" + cd)
                     
                     if new_bw != initial_bw:
                         break
                 else:
-                    exit = True
+                    print("test")
+                    C = C_max - 1
+                
 
         for id, cost in enumerate(best_solution):
             setattr(AS_links[id//2], "cost" + ("DS"*(id%2) or "SD"), cost)
-            
-        self.rt_creation()
-        self.path_finder()
-            
+        self.route()
         ncr, ct_id, cd = self.ncr_computation(AS_links)
         print(ncr)
-        
-
-                
         
     ## Optical networks: routing and wavelength assignment
     

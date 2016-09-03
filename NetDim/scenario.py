@@ -732,7 +732,6 @@ class Scenario(tk.Canvas):
         
     def create_link(self, new_link):
         edges = (new_link.source, new_link.destination)
-        print(new_link.type)
         for node in edges:
             # we always have to create the nodes at layer 0, no matter whether
             # the layered display option is activated or not.
@@ -850,7 +849,6 @@ class Scenario(tk.Canvas):
     def draw_objects(self, objects, random_drawing):
         self._cancel()
         for obj in objects:
-            print(obj)
             if obj.type == "node":
                 if random_drawing:
                     obj.x, obj.y = randint(100,700), randint(100,700)
