@@ -1487,54 +1487,6 @@ class Network(object):
                     cd = direction
         return ncr, ct_id, cd
         
-    # 1) Genetic algorithm
-    
-    def WSP_GA(self, AS):
-        
-        self.update_AS_topology()
-        self.ip_allocation()
-        self.interface_allocation()
-        
-        best_ncr = float("inf")
-        best_solution = None
-        
-        AS_links = list(AS.pAS["trunk"])
-        
-        # a cost assignment solution is a vector of 2*n value where n is
-        # the number of trunks in the AS, because each trunk has two costs:
-        # one per direction (SD and DS).
-        n = 2*len(AS_links)
-        generation_size = 50
-        
-        parents = []
-        best_candidates = []
-        
-        for i in range(generation_size):
-            print(i)
-            curr_solution = [random.randint(1, 2**16 - 1) for _ in range(n)]
-                
-            # we assign the costs to the trunks
-            for id, cost in enumerate(curr_solution):
-                setattr(AS_links[id//2], "cost" + ("DS"*(id%2) or "SD"), cost)
-                
-            # create the routing tables with the newly allocated costs,
-            # route all traffic flows and find the network congestion ratio
-            self.rt_creation()
-            self.path_finder()
-            
-            curr_ncr, *_ = self.ncr_computation(AS_links)
-            parents.append(curr_solution)
-
-            # update the best solution found if the network congestion ratio
-            # is the lowest one found so far
-            if curr_ncr <= best_ncr:
-                if curr_ncr == best_ncr:
-                    best_candidates.clear()
-                print(curr_ncr)
-                best_ncr = curr_ncr
-                best_candidates.append(curr_solution[:])
-                
-        
     # 2) Tabu search heuristic
                    
     def WSP_TS(self, AS):
