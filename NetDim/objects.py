@@ -268,7 +268,6 @@ class Route(Link):
                  subnets = set(), 
                  cost = 1.,
                  traffic = 0,
-                 AS = None
                  ):
                      
         super().__init__(name, source, destination, distance)

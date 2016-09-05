@@ -242,7 +242,7 @@ class Scenario(tk.Canvas):
                                          + " " for property in 
                                         self.ms.box_properties[co.subtype]
                                          )
-                        x0, y0 = self.ms.winfo_x() + 800, self.ms.winfo_y() + 110
+                        x0, y0 = self.ms.winfo_x() + 250, self.ms.winfo_y() + 75
                         self.pwindow.wm_geometry("+%d+%d" % (x0, y0))
                         try:
                             # mac os compatibility
@@ -856,6 +856,10 @@ class Scenario(tk.Canvas):
                     self.create_node(obj)
             else:
                 self.create_link(obj)
+    
+    def move_nodes(self, nodes):
+        for node in nodes:
+            self.move_node(node)
              
     def draw_all(self, random=True):
         self.erase_all()
@@ -873,7 +877,7 @@ class Scenario(tk.Canvas):
         minimum = min(node.y if horizontal else node.x for node in nodes)
         for node in nodes:
             setattr(node, "y"*horizontal or "x", minimum)
-        self.draw_objects(nodes, False)
+        self.move_nodes(nodes)
         
     def distribute(self, nodes, horizontal=True):
         # uniformly distribute the nodes between the minimum and
@@ -885,7 +889,7 @@ class Scenario(tk.Canvas):
         offset = (maximum - minimum)/(len(nodes) - 1)
         for idx, node in enumerate(nodes):
             setattr(node, "x"*horizontal or "y", minimum + idx*offset)
-        self.draw_objects(nodes, False)
+        self.move_nodes(nodes)
             
     def spring_based_drawing(self, nodes):
         if not self._job:

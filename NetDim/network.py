@@ -79,11 +79,19 @@ class Network(object):
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link = self.cpt_node = self.cpt_AS = 1
         
-        # dicts used for IP networks: the first one associate a subnetwork
-        # to a set of IP addresses while the second one associate each IP
-        # to its subnet mask
+        # dicts used for IP networks 
+        # - associates a subnetwork to a set of IP addresses while the 
+        # second one associate each IP to its subnet mask
         self.sntw_to_ip = defaultdict(set)
+        # - associates an IP to its mask
         self.ip_to_mask = {}
+        # - finds all L3 networks, i.e all IP-capable interfaces 
+        # that communicate via a L2 device
+        self.ma_networks = set()
+        # - associates a trunk to its L3 neighbors, different from 
+        # the "graph neighbor" which, in case of a multi-access network,
+        # is a L2 device like a switch or a bridge.
+        self.trunk_to_neighbor = defaultdict(set)
         
         # set of all trunks in failure: this parameter is used for
         # link dimensioning and failure simulation
@@ -226,7 +234,7 @@ class Network(object):
         # we associate a set of trunks to each layer-3 segment.
         # at this point, there isn't any IP allocated yet: we cannot assign
         # IP addresses until we know the network layer-3 segment topology.
-        network_to_trunk = set()
+        # this topology will be stored in the network_to_trunk set.
         # we keep the set of all trunks we've already visited 
         visited_trunks = set()
         # we loop through all the layer-3-networks boundaries: routers.
@@ -260,14 +268,23 @@ class Network(object):
                                 current_network.add((adj_trunk, node))
                 else:
                     current_network.add((trunk, neighbor))
-                network_to_trunk.add(frozenset(current_network))
-        return network_to_trunk
+                self.ma_networks.add(frozenset(current_network))
+        
+    def multi_access_network(self):
+        # in order to create the routing table of an IP domain that 
+        # contains multi-access networks, we need for each trunk to 
+        # associate the list of neighbors, i.e the IP-capable devices
+        # that are connected to the graph neighbor, a L2 device (switch, ...)
+        for ma_network in self.ma_networks:
+            for trunk, node in ma_network:
+                for _, neighbor in ma_network - {(trunk, node)}:
+                    self.trunk_to_neighbor[trunk].add(neighbor)
     
     def ip_allocation(self):
         # we will perform the IP addressing of all subnetworks with VLSM
         # we first sort all subnetworks in increasing order of size, then
         # compute which subnet is needed
-        sntws = sorted(list(self.network_finder()), key=len)
+        sntws = sorted(list(self.ma_networks), key=len)
         sntw_ip = "10.0.0.0"
         while sntws:
             # we retrieve the biggest subnetwork not yet treated
@@ -344,11 +361,14 @@ class Network(object):
                 
     def calculate_all(self):
         self.update_AS_topology()
+        self.network_finder()
         self.ip_allocation()
+        self.multi_access_network()
         self.interface_allocation()
         self.rt_creation()
         self.path_finder()
         self.cs.refresh_all_labels()
+        print(self.trunk_to_neighbor)
         
     def route(self):
         # create the routing tables and route all traffic flows
@@ -729,7 +749,6 @@ class Network(object):
         SP_cost = {}
                 
         if AS.type == "ISIS":
-            
             # if source is an L1 there will be a default route to
             # 0.0.0.0 heading to the closest L1/L2 node.
             src_area ,= source.AS[AS]
@@ -743,23 +762,24 @@ class Network(object):
             dist, node, path_trunk, ex_int = heappop(heap)  
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
-                for neighbor, adj_trunk in self.graph[node]["trunk"]:
-                    if adj_trunk in path_trunk:
-                        continue
-                    # excluded and allowed nodes
-                    if neighbor not in allowed_nodes:
-                        continue
-                    # excluded and allowed trunks
-                    if adj_trunk not in allowed_trunks: 
-                        continue
-                    if node == source:
-                        ex_ip = adj_trunk("ipaddress", neighbor)
-                        ex_int = adj_trunk("interface", source)
-                        source.rt[adj_trunk.sntw] = {("C", ex_ip, ex_int, 
-                                                    dist, neighbor, adj_trunk)}
-                        SP_cost[adj_trunk.sntw] = 0
-                    heappush(heap, (dist + adj_trunk("cost", node), neighbor, 
-                                            path_trunk + [adj_trunk], ex_int))
+                for graph_neighbor, adj_trunk in self.graph[node]["trunk"]:
+                    for L3_neighbor in self.trunk_to_neighbor[adj_trunk]:
+                        if adj_trunk in path_trunk:
+                            continue
+                        # excluded and allowed nodes
+                        if L3_neighbor not in allowed_nodes:
+                            continue
+                        # excluded and allowed trunks
+                        if adj_trunk not in allowed_trunks: 
+                            continue
+                        if node == source:
+                            ex_ip = adj_trunk("ipaddress", graph_neighbor)
+                            ex_int = adj_trunk("interface", source)
+                            source.rt[adj_trunk.sntw] = {("C", ex_ip, ex_int, 
+                                                dist, L3_neighbor, adj_trunk)}
+                            SP_cost[adj_trunk.sntw] = 0
+                        heappush(heap, (dist + adj_trunk("cost", node), 
+                                L3_neighbor, path_trunk + [adj_trunk], ex_int))
                     
             if path_trunk:
                 trunk = path_trunk[-1]

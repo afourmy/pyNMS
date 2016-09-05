@@ -662,6 +662,7 @@ class NetDim(tk.Tk):
                 
     def str_to_object(self, obj_param, type):
         object_list = []
+        print(obj_param, type)
         for id, p in enumerate(self.object_ie[type]):
             object_list.append(self.prop_to_type[p](obj_param[id]))
         return object_list
