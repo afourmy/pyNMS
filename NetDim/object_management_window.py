@@ -24,7 +24,9 @@ class ObjectManagementWindow(FocusTopLevel):
     property_var_list = {
     "default_route": (None,),
     "nh_tk": (None,),
-    "destination_sntw": (None,)
+    "nh_ip": (None,),
+    "src_ip": (None,),
+    "dst_sntw": (None,)
     }
                 
     def __init__(self, master, type):
@@ -139,7 +141,7 @@ class ObjectManagementWindow(FocusTopLevel):
                         self.ms.cs.ntw.graph[self.current_obj] = adj_links
             elif property == "path":
                 setattr(self.current_obj, property, self.current_path)
-            elif property in ("default_route", "nh_tk", "destination_sntw"):
+            elif property in self.property_var_list:
                 combobox, var = str_var
                 setattr(self.current_obj, property, var.get())
             else:
@@ -168,7 +170,8 @@ class ObjectManagementWindow(FocusTopLevel):
                 # interface, but the router has to do an ARP request for each
                 # unknown destination IP address to fill the destination 
                 # MAC field of the Ethernet frame, which may result in 
-                # ARP table being overloaded: to be avoided.
+                # ARP table being overloaded: to be avoided in real-life and
+                # forbidden here.
                 attached_ints = (None,) + tuple(filter(None, 
                             (trunk("ipaddress", neighbor) for neighbor, trunk
                             in self.ms.cs.ntw.graph[self.current_obj]["trunk"]
@@ -185,13 +188,26 @@ class ObjectManagementWindow(FocusTopLevel):
                                 in self.ms.cs.ntw.graph[src_route]["trunk"])))
                 combobox["values"] = attached_ints
                 var.set(obj_prop)
-            elif property == "destination_sntw":
+            elif property == "dst_sntw":
                 combobox, var = str_var
-                dest_route = self.current_obj.destination
-                attached_ints = tuple(filter(None, 
+                dest_node = self.current_obj.destination
+                attached_ips = (None,) + tuple(filter(None, 
                             (trunk.sntw for _, trunk
-                            in self.ms.cs.ntw.graph[dest_route]["trunk"])))
-                combobox["values"] = attached_ints
+                            in self.ms.cs.ntw.graph[dest_node]["trunk"]
+                            ))) 
+                combobox["values"] = attached_ips
+                var.set(obj_prop)
+            elif property == "nh_ip":
+                combobox, var = str_var
+                src_node = self.current_obj.source
+                attached_ips = (None,) + tuple(filter(None, 
+                            (trunk("ipaddress", neighbor) for neighbor, trunk
+                            in self.ms.cs.ntw.graph[src_node]["trunk"]
+                            ))) + tuple(filter(None, 
+                            (neighbor.ipaddress for neighbor, _
+                            in self.ms.cs.ntw.graph[src_node]["trunk"]
+                            )))
+                combobox["values"] = attached_ips
                 var.set(obj_prop)
             elif property == "AS":
                 str_var.set(",".join(map(str, obj_prop.keys())))

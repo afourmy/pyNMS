@@ -279,21 +279,6 @@ class Route(Link):
         self.cost = cost
         self.traffic = traffic
         
-class DefaultRoute(Route):
-
-    color = "magenta"
-    subtype = "default route"
-    
-    def __init__(self, *args, **kwargs):
-        args = list(args)
-        if len(args) > 3:
-            self.nh_ip = args.pop()
-            self.ad = args.pop()
-        else:
-            self.nh_ip = None
-            self.ad = 1
-        super().__init__(*args)
-        
 class StaticRoute(Route):
 
     color = "violet"
@@ -303,11 +288,11 @@ class StaticRoute(Route):
         args = list(args)
         if len(args) > 3:
             self.nh_ip = args.pop()
-            self.dst_ip = args.pop()
+            self.dst_sntw = args.pop()
             self.ad = args.pop()
         else:
             self.nh_ip = None
-            self.dst_ip = None
+            self.dst_sntw = None
             self.ad = 1
         super().__init__(*args)
         
