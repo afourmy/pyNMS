@@ -146,7 +146,7 @@ class NetDim(tk.Tk):
         "interfaceS",
         "ipaddressD", 
         "subnetmaskD", 
-        "interfaceD",
+        "interfaceD"
         )
         
         route_common_ie_properties = (
@@ -663,7 +663,12 @@ class NetDim(tk.Tk):
     def str_to_object(self, obj_param, type):
         object_list = []
         for id, p in enumerate(self.object_ie[type]):
-            object_list.append(self.prop_to_type[p](obj_param[id]))
+            # since None evaluates to False and "None" to True, it matters
+            # that None stays None after import.
+            if obj_param[id] == "None":
+                object_list.append(None)
+            else:
+                object_list.append(self.prop_to_type[p](obj_param[id]))
         return object_list
                 
     def import_graph(self, filepath=None):

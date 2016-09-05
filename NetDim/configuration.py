@@ -1,10 +1,12 @@
+import tkinter as tk
 from tkinter import ttk
 from miscellaneous import CustomScrolledText
-import tkinter as tk
+from network_functions import tomask
 
 class Configuration(tk.Toplevel):
     def __init__(self, node, scenario):
         super().__init__() 
+        self.cs = scenario
         
         notebook = ttk.Notebook(self)
         config_frame = ttk.Frame(notebook)
@@ -29,7 +31,19 @@ class Configuration(tk.Toplevel):
         exit = " {name}(config-if)# exit\n".format(name=node.name)
         st_config.insert("insert", exit)
         
-        for neighbor, adj_trunk in scenario.ntw.graph[node]["trunk"]:
+        for _, sr in self.cs.ntw.gftr(node, "route", "static route", False):
+            sntw, mask = sr.dst_sntw.split("/")
+            mask = tomask(int(mask))
+            sr_conf = " {name}(config)# ip route {sntw} {mask} {nh_ip}\n"\
+                                    .format(
+                                            name = node.name, 
+                                            sntw = sntw,
+                                            mask = mask,
+                                            nh_ip = sr.nh_ip
+                                            )
+            st_config.insert("insert", sr_conf)
+        
+        for neighbor, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
             direction = "S"*(adj_trunk.source == node) or "D"
             interface = getattr(adj_trunk, "interface" + direction)
             ip = getattr(adj_trunk, "ipaddress" + direction)
@@ -96,7 +110,7 @@ class Configuration(tk.Toplevel):
                                                 .format(name=node.name)
                 st_config.insert("insert", activate_rip)
                 
-                for _, adj_trunk in scenario.ntw.graph[node]["trunk"]:
+                for _, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
                     direction = "S"*(adj_trunk.source == node) or "D"
                     if adj_trunk in AS.pAS["trunk"]:
                         ip = getattr(adj_trunk, "ipaddress" + direction)
@@ -116,7 +130,7 @@ class Configuration(tk.Toplevel):
                                                     .format(name=node.name)
                 st_config.insert("insert", activate_ospf)
                 
-                for _, adj_trunk in scenario.ntw.graph[node]["trunk"]:
+                for _, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
                     direction = "S"*(adj_trunk.source == node) or "D"
                     if adj_trunk in AS.pAS["trunk"]:
                         ip = getattr(adj_trunk, "ipaddress" + direction)

@@ -85,6 +85,10 @@ class Network(object):
         self.sntw_to_ip = defaultdict(set)
         # - associates an IP to its mask
         self.ip_to_mask = {}
+        # - associates an IP to a node. when a default / static route is 
+        # defined, only the next-hop ip is specified: we need to translate it 
+        # into a next-hop node to properly fill the routing table.
+        self.ip_to_node = {}
         # - finds all L3 networks, i.e all IP-capable interfaces 
         # that communicate via a L2 device
         self.ma_networks = set()
@@ -98,9 +102,17 @@ class Network(object):
         self.fdtks = set()
         
     # function filtering pn to retrieve all objects of given subtypes
-    def ftr(self, type, *subtypes):
-        keep = lambda r: r.subtype in subtypes
+    def ftr(self, type, *sts):
+        keep = lambda r: r.subtype in sts
         return filter(keep, self.pn[type].values())
+        
+    # function filtering graph to retrieve all links of given subtypes
+    # attached to the source node. 
+    # if ud (undirected) is set to True, we retrieve all links of the 
+    # corresponding subtypes, else we check that "src" is the source
+    def gftr(self, src, type, *sts, ud=True):
+        keep = lambda r: r[1].subtype in sts and (ud or r[1].source == src)
+        return filter(keep, self.graph[src][type])
           
     # "lf" is the link factory. Creates or retrieves any type of link
     def lf(
@@ -300,6 +312,7 @@ class Network(object):
                 trunk("ipaddress", node, curr_ip)
                 self.sntw_to_ip[sntw_ip + subnet].add(curr_ip)
                 self.ip_to_mask[curr_ip] = mask
+                self.ip_to_node[curr_ip] = node
             sntw_ip = ip_incrementer(sntw_ip, 2**size)
 
     def interface_allocation(self):
@@ -636,25 +649,22 @@ class Network(object):
     ## 0) Ping / traceroute
     
     def ping(self, source, dest_sntw):
-        curr_router = source
+        node = source
         while True:
-            print(curr_router)
-            attached_sntw = [tk.sntw for _, tk in self.graph[curr_router]["trunk"]]
-            print(attached_sntw)
-            if dest_sntw in attached_sntw:
+            if any(tk.sntw == dest_sntw for _, tk in self.graph[node]["trunk"]):
                 break
-            if dest_sntw in curr_router.rt:
-                routes = curr_router.rt[dest_sntw]
+            if dest_sntw in node.rt:
+                routes = node.rt[dest_sntw]
             # if we wannot find the destination address in the routing table, 
             # and there is a default route, we use it.
-            elif "0.0.0.0" in curr_router.rt:
-                routes = curr_router.rt["0.0.0.0"]
+            elif "0.0.0.0" in node.rt:
+                routes = node.rt["0.0.0.0"]
             else:
-                warnings.warn("Packet discarded by {}:".format(curr_router))
+                warnings.warn("Packet discarded by {}:".format(node))
                 break
             for route in routes:
                 yield route
-                *_, curr_router, _ = route
+                *_, node, _ = route
                 break
     
     ## 1) RFT-based routing and dimensioning
@@ -703,12 +713,22 @@ class Network(object):
     def static_RFT_builder(self, source):
         
         if source.default_route:
-            source.rt["0.0.0.0"] = {("S*", source.default_route, 
-                                                        None, 0, None, None)}
-        
-        for _, sr in self.graph[source]["route"]:
-            if sr.subtype == "static route":
-                source.rt[sr.dst_sntw] = {("S", sr.nh_ip, None, 0, None, None)}
+            try:
+                nh_node = self.ip_to_node[source.default_route]
+                source.rt["0.0.0.0"] = {("S*", source.default_route, 
+                                                    None, 0, nh_node, None)}
+            except KeyError:
+                pass
+            
+
+        for _, sr in self.gftr(source, "route", "static route", False):
+            # if the static route next-hop ip is not properly configured, 
+            # we ignore it.
+            try:
+                nh_node = self.ip_to_node[sr.nh_ip]
+            except KeyError:
+                continue
+            source.rt[sr.dst_sntw] = {("S", sr.nh_ip, None, 0, nh_node, None)}
                                                                 
                     
         for neighbor, adj_trunk in self.graph[source]["trunk"]:

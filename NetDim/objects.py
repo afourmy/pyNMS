@@ -287,9 +287,9 @@ class StaticRoute(Route):
     def __init__(self, *args, **kwargs):
         args = list(args)
         if len(args) > 3:
-            self.nh_ip = args.pop()
-            self.dst_sntw = args.pop()
             self.ad = args.pop()
+            self.dst_sntw = args.pop()
+            self.nh_ip = args.pop()
         else:
             self.nh_ip = None
             self.dst_sntw = None
