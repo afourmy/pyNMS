@@ -304,13 +304,19 @@ class BGPPeering(Route):
     def __init__(self, *args, **kwargs):
         args = list(args)
         if len(args) > 3:
-            self.bgp_type = args.pop()
-            self.src_ip = args.pop()
+            self.dst_AS = args.pop()
+            self.src_AS = args.pop()
             self.dst_ip = args.pop()
+            self.src_ip = args.pop()
+            self.bgp_type = args.pop()
+            
         else:
-            self.bgp_type = None
-            self.src_ip = None
+            self.dst_AS = None
+            self.src_AS = None
             self.dst_ip = None
+            self.src_ip = None
+            self.bgp_type = None
+            
         super().__init__(*args)
         
 class VirtualLink(Route):

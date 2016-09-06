@@ -23,12 +23,12 @@ class AutonomousSystem(object):
                  nodes = set(), 
                  edges = set(), 
                  routes = set(), 
-                 imp=False
+                 imp = False
                  ):
         self.name = name
         self.type = type
         self.id = id
-        
+
         # pAS as in "pool AS": same as pool network
         self.pAS = {
         "trunk": trunks, 

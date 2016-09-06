@@ -26,6 +26,9 @@ class ObjectManagementWindow(FocusTopLevel):
     "nh_tk": (None,),
     "nh_ip": (None,),
     "src_ip": (None,),
+    "dst_ip": (None,),
+    "src_AS": (None,),
+    "dst_AS": (None,),
     "dst_sntw": (None,)
     }
                 
@@ -125,31 +128,38 @@ class ObjectManagementWindow(FocusTopLevel):
         
     def save_obj(self):
         for property, str_var in self.dict_var.items():
+            # retrieve the value
+            if property in self.property_var_list:
+                combobox, var = str_var
+                value = var.get()
+            else:
+                value = str_var.get()
+            # convert "None" to None if necessary
+            value = None if value == "None" else value
             # update dict when the object is renamed
             # if it is a node, we need to remove and read the entry in the graph dict
             # for all objects, we need to update pn
             if property == "name":
                 name = getattr(self.current_obj, property)
-                if name != str_var.get():
+                if name != value:
                     if self.current_obj.type == "node":
                         adj_links = self.ms.cs.ntw.graph.pop(self.current_obj, None)
                     old_name = name
                     del self.ms.cs.ntw.pn[self.current_obj.type][old_name]
-                    setattr(self.current_obj, property, str_var.get())
-                    self.ms.cs.ntw.pn[self.current_obj.type][str_var.get()] = self.current_obj
+                    setattr(self.current_obj, property, value)
+                    self.ms.cs.ntw.pn[self.current_obj.type][value] = self.current_obj
                     if self.current_obj.type == "node":
                         self.ms.cs.ntw.graph[self.current_obj] = adj_links
             elif property == "path":
                 setattr(self.current_obj, property, self.current_path)
             elif property in self.property_var_list:
-                combobox, var = str_var
-                setattr(self.current_obj, property, var.get())
+                setattr(self.current_obj, property, value)
             else:
                 if property not in self.read_only:
                     if property in ("path_constraints", "excluded_nodes", "excluded_trunks"): 
                         value = self.conv(property)
                     else:
-                        value = self.ms.prop_to_type[property](str_var.get())
+                        value = self.ms.prop_to_type[property](value)
                     setattr(self.current_obj, property, value)
             # refresh the label if it was changed
             self.ms.cs.refresh_label(self.current_obj)
@@ -197,7 +207,7 @@ class ObjectManagementWindow(FocusTopLevel):
                             ))) 
                 combobox["values"] = attached_ips
                 var.set(obj_prop)
-            elif property == "nh_ip":
+            elif property in ("nh_ip", "src_ip"):
                 combobox, var = str_var
                 src_node = self.current_obj.source
                 attached_ips = (None,) + tuple(filter(None, 
@@ -209,8 +219,32 @@ class ObjectManagementWindow(FocusTopLevel):
                             )))
                 combobox["values"] = attached_ips
                 var.set(obj_prop)
+            elif property == "dst_ip":
+                combobox, var = str_var
+                dst_node = self.current_obj.destination
+                attached_ips = (None,) + tuple(filter(None, 
+                            (trunk("ipaddress", dst_node) for _, trunk
+                            in self.ms.cs.ntw.graph[dst_node]["trunk"]
+                            ))) + tuple(filter(None, 
+                            (neighbor.ipaddress for neighbor, _
+                            in self.ms.cs.ntw.graph[dst_node]["trunk"]
+                            )))
+                combobox["values"] = attached_ips
+                var.set(obj_prop)
             elif property == "AS":
                 str_var.set(",".join(map(str, obj_prop.keys())))
+            elif property == "src_AS":
+                combobox, var = str_var
+                src_node = self.current_obj.source
+                attached_AS = (None,) + tuple(src_node.AS.keys())
+                combobox["values"] = attached_AS
+                var.set(obj_prop)
+            elif property == "dst_AS":
+                combobox, var = str_var
+                dst_node = self.current_obj.destination
+                attached_AS = (None,) + tuple(dst_node.AS.keys())
+                combobox["values"] = attached_AS
+                var.set(obj_prop)
             elif type(obj_prop) in (list, set):
                 str_var.set(",".join(map(str, obj_prop)))
             else:
@@ -233,7 +267,7 @@ class PropertyChanger(FocusTopLevel):
                                     textvariable=self.var_property, width=6)
         self.property_list["values"] = self.ms.object_properties[type]
         self.property_list.current(0)
-        self.property_list.bind('<<ComboboxSelected>>', 
+        self.property_list.bind('<<ComboboxSelected>>',
                                         lambda e: self.update_property())
         self.property_list.grid(row=0, column=0, pady=5, padx=5)
                             

@@ -16,7 +16,7 @@ from operator import getitem, itemgetter
 from itertools import combinations
 try:
     import numpy as np
-    from cvxopt import matrix, glpk
+    from cvxopt import matrix, glpk, solvers
 except ImportError:
     warnings.warn("Package missing: linear programming functions will fail")
 

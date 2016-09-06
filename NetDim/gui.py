@@ -184,7 +184,9 @@ class NetDim(tk.Tk):
         ("BGP peering", route_common_properties + (
         "bgp_type",
         "src_ip",
-        "dst_ip"
+        "dst_ip",
+        "src_AS",
+        "dst_AS"
         )),
         
         ("OSPF virtual link", route_common_properties + (
@@ -280,7 +282,9 @@ class NetDim(tk.Tk):
         ("BGP peering", route_common_ie_properties + (
         "bgp_type",
         "src_ip",
-        "dst_ip"
+        "dst_ip",
+        "src_AS",
+        "dst_AS"
         )),
         
         ("OSPF virtual link", route_common_ie_properties + (
@@ -340,7 +344,9 @@ class NetDim(tk.Tk):
         ("BGP peering", route_common_properties + (
         "bgp_type",
         "src_ip",
-        "dst_ip"
+        "dst_ip",
+        "src_AS",
+        "dst_AS"
         )),
         
         ("OSPF virtual link", route_common_properties + (
@@ -408,6 +414,8 @@ class NetDim(tk.Tk):
         "nh_ip": str,
         "src_ip": str,
         "dst_ip": str,
+        "dst_AS": str,
+        "src_AS": str,
         "dst_sntw": str,
         "ad": int,
         "subtype": str,
@@ -462,6 +470,8 @@ class NetDim(tk.Tk):
         "nh_ip": "Next-hop IP",
         "src_ip": "Source IP",
         "dst_ip": "Destination IP",
+        "src_AS": "Source AS",
+        "dst_AS": "Destination AS",
         "dst_sntw": "Destination subnetwork",
         "ad": "Administrative distance",
         "subtype": "Type",
@@ -716,6 +726,7 @@ class NetDim(tk.Tk):
                 nodes = self.convert_nodes_set(nodes)
                 trunks = self.convert_links_set(trunks)
                 edges = self.convert_nodes_set(edges)
+                print(id)
                 self.cs.ntw.AS_factory(name, type, id, trunks, nodes, 
                                                         edges, set(), True)
             
