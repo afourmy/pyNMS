@@ -183,10 +183,14 @@ class NetDim(tk.Tk):
         
         ("BGP peering", route_common_properties + (
         "bgp_type",
-        "src_ip",
-        "dst_ip",
-        "src_AS",
-        "dst_AS"
+        "ipS",
+        "ipD",
+        "ASS",
+        "ASD",
+        "local_prefS",
+        "local_prefD",
+        "weightS",
+        "weightD"
         )),
         
         ("OSPF virtual link", route_common_properties + (
@@ -281,10 +285,14 @@ class NetDim(tk.Tk):
         
         ("BGP peering", route_common_ie_properties + (
         "bgp_type",
-        "src_ip",
-        "dst_ip",
-        "src_AS",
-        "dst_AS"
+        "ipS",
+        "ipD",
+        "ASS",
+        "ASD",
+        "local_prefS",
+        "local_prefD",
+        "weightS",
+        "weightD"
         )),
         
         ("OSPF virtual link", route_common_ie_properties + (
@@ -343,10 +351,14 @@ class NetDim(tk.Tk):
         
         ("BGP peering", route_common_properties + (
         "bgp_type",
-        "src_ip",
-        "dst_ip",
-        "src_AS",
-        "dst_AS"
+        "ipS",
+        "ipD",
+        "ASS",
+        "ASD",
+        "local_prefS",
+        "local_prefD",
+        "weightS",
+        "weightD"
         )),
         
         ("OSPF virtual link", route_common_properties + (
@@ -412,10 +424,14 @@ class NetDim(tk.Tk):
         "destination": convert_node, 
         "nh_tk": str,
         "nh_ip": str,
-        "src_ip": str,
-        "dst_ip": str,
-        "dst_AS": str,
-        "src_AS": str,
+        "ipS": str,
+        "ipD": str,
+        "ASS": str,
+        "ASD": str,
+        "local_prefS": int,
+        "local_prefD": int,
+        "weightS": int,
+        "weightD": int,
         "dst_sntw": str,
         "ad": int,
         "subtype": str,
@@ -461,6 +477,10 @@ class NetDim(tk.Tk):
         "subnetmaskD": "Subnet mask (destination)",
         "interfaceS": "Interface (source)",
         "interfaceD": "Interface (destination)",
+        "local_prefS": "Local preference (source)",
+        "local_prefD": "Local preference (destination)",
+        "weightS": "Weight (source)",
+        "weightD": "Weight (destination)",
         "sntw": "Subnetwork",
         "throughput": "Throughput",
         "lambda_capacity": "Lambda capacity",
@@ -468,10 +488,10 @@ class NetDim(tk.Tk):
         "destination": "Destination",
         "nh_tk": "Next-hop trunk",
         "nh_ip": "Next-hop IP",
-        "src_ip": "Source IP",
-        "dst_ip": "Destination IP",
-        "src_AS": "Source AS",
-        "dst_AS": "Destination AS",
+        "ipS": "Source IP",
+        "ipD": "Destination IP",
+        "ASS": "Source AS",
+        "ASD": "Destination AS",
         "dst_sntw": "Destination subnetwork",
         "ad": "Administrative distance",
         "subtype": "Type",

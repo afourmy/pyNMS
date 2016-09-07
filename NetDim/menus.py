@@ -52,6 +52,8 @@ class RightClickMenu(tk.Menu):
                         command=lambda: self.troubleshoot(node))
             self.add_command(label="Ping", 
                         command=lambda: self.ping(node))
+            self.add_command(label="BGP", 
+                        command=lambda: self.bgp(node))
                         
             self.add_separator()
         
@@ -197,6 +199,11 @@ class RightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def multiple_links(self, scenario):
         mobj.MultipleLinks(scenario, self.cs.so["node"])
+        
+    #TODO temporary
+    @empty_selection_and_destroy_menu
+    def bgp(self, node):
+        self.cs.ntw.BGPT_builder(node)
         
 class GeneralRightClickMenu(tk.Menu):
     def __init__(self, event, scenario):

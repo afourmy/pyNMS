@@ -45,7 +45,7 @@ class Configuration(tk.Toplevel):
             
         for _, bgp_pr in self.cs.ntw.gftr(node, "route", "BGP peering"):
             end = "src" if node == bgp_pr.source else "dst"
-            bgp_AS = self.cs.ntw.pnAS[getattr(bgp_pr, end + "_AS")]
+            bgp_AS = self.cs.ntw.pnAS[bgp_pr("AS", node)]
             activate_bgp = " {name}(config)# router bgp {AS_id}\n"\
                                     .format(name=node.name, AS_id=bgp_AS.id)
             st_config.insert("insert", activate_bgp)

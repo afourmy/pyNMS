@@ -67,7 +67,10 @@ class Router(Node):
     imagex, imagey = 33, 25
     
     def __init__(self, *args):
+        # routing table: binds an IP address to a cost / next-hop
         self.rt = {}
+        # bgp table
+        self.bgpt = {}
         # the default route is the gateway of last resort: 
         # it is the IP address of the next-hop (either loopback or interface)
         self.default_route = None
@@ -279,6 +282,15 @@ class Route(Link):
         self.cost = cost
         self.traffic = traffic
         
+    def __call__(self, property, node, value=None):
+        # can be used both as a getter and a setter, depending on 
+        # whether a value is provided or not
+        dir = (node == self.source)*"S" or "D"
+        if value:
+            setattr(self, property + dir, value)
+        else:
+            return getattr(self, property + dir)
+        
 class StaticRoute(Route):
 
     color = "violet"
@@ -304,19 +316,26 @@ class BGPPeering(Route):
     def __init__(self, *args, **kwargs):
         args = list(args)
         if len(args) > 3:
-            self.dst_AS = args.pop()
-            self.src_AS = args.pop()
-            self.dst_ip = args.pop()
-            self.src_ip = args.pop()
+            self.weightD = args.pop()
+            self.weightS = args.pop()
+            self.local_prefD = args.pop()
+            self.local_prefS = args.pop()
+            self.ASS = args.pop()
+            self.ASD = args.pop()
+            self.ipS = args.pop()
+            self.ipD = args.pop()
             self.bgp_type = args.pop()
             
         else:
-            self.dst_AS = None
-            self.src_AS = None
-            self.dst_ip = None
-            self.src_ip = None
-            self.bgp_type = None
-            
+            self.weightD = 32768
+            self.weightS = 32768
+            self.local_prefD = 100
+            self.local_prefS = 100
+            self.ASS = None
+            self.ASD = None
+            self.ipS = None
+            self.ipD = None
+            self.bgp_type = "eBGP"
         super().__init__(*args)
         
 class VirtualLink(Route):
