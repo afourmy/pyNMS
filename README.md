@@ -247,13 +247,12 @@ Finally, you can trigger the multi-layer display to dissociate traffic links fro
 - [x] Dinic algorithm to find the maximum flow
 - [x] Suurbale algorithm to find the shortest edge-disjoint pair
 - [x] Use LP to solve RWA simple version
+- [x] Algorithm to determine link weight in order to optimize load sharing (is-is/ospf optimization)
 - [ ] Improved Suurbale/Bhandari to find the K (maximally) edge/edge&nodes disjoint paths
 - [ ] Prim algorithm to find the minimum spanning tree
 - [ ] Minimum cut.
-- [ ] Loop detection algorithm with BFS
 - [ ] Use a genetic algorithm to solve RWA, compare with LP
 - [ ] Degree centrality. number of neighbor of each node (graph + make node size depend on it)
-- [ ] Algorithm to determine link weight in order to optimize load sharing (is-is/ospf optimization)
 - [ ] Protection-based link dimensioning: IGP reconvergence, FRR, etc
 
 ## Links
@@ -278,7 +277,6 @@ Finally, you can trigger the multi-layer display to dissociate traffic links fro
 - [ ] Add arrows on trunks for route highlight
 - [ ] Change the mouse pointeur when going over an object
 - [ ] Modified Dijkstra to find the longest path/widest path
-- [ ] Capacity label display: should be with an arrow
 - [ ] Generate text and shapes on the canvas
 - [ ] Label position issue + label deletion for routes after calculate all
 - [ ] Highlight should include the nodes too
@@ -291,13 +289,11 @@ Finally, you can trigger the multi-layer display to dissociate traffic links fro
 - [x] ISIS routing
 - [x] OSPF routing. 
 - [x] Traffic link routing. All nodes that belongs to an AS should be excluded.
-- [ ] subnet and filtering system on routes/traffic link
 - [ ] G8032 ring with RPL protection
 - [ ] Ring AS with steering/wrapping protection mode
 - [ ] Dimensioning with Maximally redundant tree
 - [ ] OSPF options: route leaking, multi-ABR, multi-area links, etc (RFC 5086, ...)
 - [ ] IS-IS improvement: route leaking option (RFC 2966)
-- [ ] Load balancing for the edges of an AS.
 
 ## Protection
 - [x] Failure simulation system to see where the traffic is going. Route's protection path highlight.
@@ -310,7 +306,6 @@ Finally, you can trigger the multi-layer display to dissociate traffic links fro
 - [x] Add to/remove from AS should be done graphically only: no need for buttons.
 - [ ] Highlight all elements of a domain
 - [ ] Improve the AS management window. Button with arrows instead of add/remove edge
-- [ ] Use the K-shortest paths for load-balancing at the edge of an AS
 - [ ] Delete AS button. Rename AS. Delete area. Rename area.
 - [ ] Interaction between rename an object and the AS management. 
 - [ ] Find a way to make the network tree view work, by retrieving the name of the category
@@ -338,11 +333,10 @@ Finally, you can trigger the multi-layer display to dissociate traffic links fro
 - [x] Add switch
 - [x] Dict reset from keys
 - [x] IP address management on interface.
-- [ ] Menu for graph drawing: save all parameters
+- [x] Menu for graph drawing: save all parameters
 - [ ] Selection dict should include all type of link: trunk, route, traffic
 - [ ] Check box in the frame to hide/show nodes
 - [ ] Filter route display depending on whether a traffic link is using them
-- [ ] Find a way to silence GLPK
 - [ ] Remove all Var() when not necessary (set, get can be used instead)
 - [ ] Scenario duplication
 - [ ] Drawing for a selection of nodes only
