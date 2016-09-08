@@ -202,7 +202,7 @@ This AS management panel also display the area topology. In our case, all nodes 
 ![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step4.PNG)
 
 ## Assign IP address and look at the configuration panel
-Click on "Netdim" logo. This will open a menu where you can choose which action to perform:
+Right-click on the canvas, and select the "Calculate" entry. NetDim will perform the following actions:
 - Update AS topology
 - Interface allocation: assign Ethernet interfaces to all trunks: these interfaces are used to create the routing table of the attached routers, as well as for the configuration panel.
 - IP addressing: assign IP addressing to all interfaces.
@@ -210,10 +210,6 @@ Click on "Netdim" logo. This will open a menu where you can choose which action 
 - Create routing tables.
 - Route traffic links: based on the routing tables that were created in the previous step, NetDim finds the path of each traffic flows and map the traffic on physical trunks, just like it's done in real-world networks.
 - Refresh labels: update all label values.
-
-In our case, select all actions and confirm.
-
-![Calculate all](https://github.com/mintoo/networks/raw/master/Readme/use_case_step5.PNG)
 
 From this point on, you can:
 - Choose which label to display from the "Options" menu (IP address, interface, etc)
