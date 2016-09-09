@@ -889,26 +889,44 @@ class Network(object):
         visited = {source}
 
         heap = []
-        for src_nb, bgp_pr in self.gftr(source, "route", "BGP peering"):
-            print(src_nb, bgp_pr, bgp_pr.source)
-            first_AS = [bgp_pr("AS", source), bgp_pr("AS", src_nb)]
-            heap.append((1 / bgp_pr("weight", source), src_nb, [], first_AS))
         
-        print(heap)
+        # bgp table
+        bgpt = defaultdict(set)
+        
+        # we fill the heap so that 
+        for src_nb, bgp_pr in self.gftr(source, "route", "BGP peering"):
+            first_AS = [bgp_pr("AS", source), bgp_pr("AS", src_nb)]
+            heappush(heap, (
+                            1/bgp_pr("weight", source), # weight 
+                            2, # length of the AS_PATH vector
+                            bgp_pr("ip", src_nb), # next-hop IP address
+                            src_nb, # current node
+                            [], # path as a list of BGP peering connections
+                            first_AS # path as a list of AS
+                            ))
+        
         while heap:
-            cost, node, route_path, AS_path = heappop(heap)
+            weight, length, nh, node, route_path, AS_path = heappop(heap)
             if node not in visited:
+                for ip, routes in node.rt.items():
+                    source.bgpt[ip] |= {(1/weight, nh, node, tuple(AS_path))}
+                print(node, AS_path)
                 visited.add(node)
                 for bgp_nb, bgp_pr in self.gftr(node, "route", "BGP peering"):
-                    print(bgp_nb, bgp_pr)
                     # excluded and allowed nodes
                     if bgp_nb in visited:
                         continue
                     # we append a new AS if we use an external BGP peering
-                    new_AS = [bgp_pr("AS", bgp_nb)] * (bgp_pr.bgp_type == "eBGP")
-                    heappush(heap, (cost + (bgp_pr.bgp_type == "eBGP"), bgp_nb,
-                                    route_path + [bgp_pr], AS_path + new_AS))
-                    
+                    new_AS = [bgp_pr("AS", bgp_nb)]*(bgp_pr.bgp_type == "eBGP")
+                    heappush(heap, (
+                                    weight, 
+                                    length + (bgp_pr.bgp_type == "eBGP"), 
+                                    nh, 
+                                    bgp_nb,
+                                    route_path + [bgp_pr], 
+                                    AS_path + new_AS
+                                    ))
+        print(source.bgpt)
 
         
     ## Link-disjoint / link-and-node-disjoint shortest pair algorithms

@@ -70,7 +70,7 @@ class Router(Node):
         # routing table: binds an IP address to a cost / next-hop
         self.rt = {}
         # bgp table
-        self.bgpt = {}
+        self.bgpt = defaultdict(set)
         # the default route is the gateway of last resort: 
         # it is the IP address of the next-hop (either loopback or interface)
         self.default_route = None
@@ -286,11 +286,13 @@ class Route(Link):
         # can be used both as a getter and a setter, depending on 
         # whether a value is provided or not
         dir = (node == self.source)*"S" or "D"
-        print(self, node, node == self.source, dir)
         if value:
             setattr(self, property + dir, value)
         else:
             return getattr(self, property + dir)
+            
+    def __lt__(self, other):
+        return hash(self.name)
         
 class StaticRoute(Route):
 
