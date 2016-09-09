@@ -887,25 +887,25 @@ class Network(object):
                     
     def BGPT_builder(self, source):
         visited = {source}
-        allowed_nodes = self.ftr("node", "router")
+
         heap = []
         for src_nb, bgp_pr in self.gftr(source, "route", "BGP peering"):
-            print(src_nb)
-            heap.append((1 / bgp_pr("weight", source), src_nb, [], []))
+            print(src_nb, bgp_pr, bgp_pr.source)
+            first_AS = [bgp_pr("AS", source), bgp_pr("AS", src_nb)]
+            heap.append((1 / bgp_pr("weight", source), src_nb, [], first_AS))
         
         print(heap)
         while heap:
             cost, node, route_path, AS_path = heappop(heap)
-            print(node, AS_path)
             if node not in visited:
                 visited.add(node)
                 for bgp_nb, bgp_pr in self.gftr(node, "route", "BGP peering"):
+                    print(bgp_nb, bgp_pr)
                     # excluded and allowed nodes
-                    if bgp_nb not in allowed_nodes:
+                    if bgp_nb in visited:
                         continue
                     # we append a new AS if we use an external BGP peering
                     new_AS = [bgp_pr("AS", bgp_nb)] * (bgp_pr.bgp_type == "eBGP")
-                    print(route_path + [bgp_pr], AS_path + new_AS)
                     heappush(heap, (cost + (bgp_pr.bgp_type == "eBGP"), bgp_nb,
                                     route_path + [bgp_pr], AS_path + new_AS))
                     

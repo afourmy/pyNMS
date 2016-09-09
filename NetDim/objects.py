@@ -286,6 +286,7 @@ class Route(Link):
         # can be used both as a getter and a setter, depending on 
         # whether a value is provided or not
         dir = (node == self.source)*"S" or "D"
+        print(self, node, node == self.source, dir)
         if value:
             setattr(self, property + dir, value)
         else:
@@ -320,8 +321,8 @@ class BGPPeering(Route):
             self.weightS = args.pop()
             self.local_prefD = args.pop()
             self.local_prefS = args.pop()
-            self.ASS = args.pop()
             self.ASD = args.pop()
+            self.ASS = args.pop()
             self.ipS = args.pop()
             self.ipD = args.pop()
             self.bgp_type = args.pop()

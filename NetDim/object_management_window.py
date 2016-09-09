@@ -25,10 +25,10 @@ class ObjectManagementWindow(FocusTopLevel):
     "default_route": (None,),
     "nh_tk": (None,),
     "nh_ip": (None,),
-    "src_ip": (None,),
-    "dst_ip": (None,),
-    "src_AS": (None,),
-    "dst_AS": (None,),
+    "ipS": (None,),
+    "ipD": (None,),
+    "ASS": (None,),
+    "ASD": (None,),
     "dst_sntw": (None,)
     }
                 
@@ -207,7 +207,7 @@ class ObjectManagementWindow(FocusTopLevel):
                             ))) 
                 combobox["values"] = attached_ips
                 var.set(obj_prop)
-            elif property in ("nh_ip", "src_ip"):
+            elif property in ("nh_ip", "ipS"):
                 combobox, var = str_var
                 src_node = self.current_obj.source
                 attached_ips = (None,) + tuple(filter(None, 
@@ -219,7 +219,7 @@ class ObjectManagementWindow(FocusTopLevel):
                             )))
                 combobox["values"] = attached_ips
                 var.set(obj_prop)
-            elif property == "dst_ip":
+            elif property == "ipD":
                 combobox, var = str_var
                 dst_node = self.current_obj.destination
                 attached_ips = (None,) + tuple(filter(None, 
@@ -233,13 +233,13 @@ class ObjectManagementWindow(FocusTopLevel):
                 var.set(obj_prop)
             elif property == "AS":
                 str_var.set(",".join(map(str, obj_prop.keys())))
-            elif property == "src_AS":
+            elif property == "ASS":
                 combobox, var = str_var
                 src_node = self.current_obj.source
                 attached_AS = (None,) + tuple(src_node.AS.keys())
                 combobox["values"] = attached_AS
                 var.set(obj_prop)
-            elif property == "dst_AS":
+            elif property == "ASD":
                 combobox, var = str_var
                 dst_node = self.current_obj.destination
                 attached_AS = (None,) + tuple(dst_node.AS.keys())
