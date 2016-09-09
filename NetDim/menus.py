@@ -8,6 +8,7 @@ import configuration
 import troubleshooting
 import ping
 import routing_table
+import bgp_table
 import drawing_options_window
 import graph_generation.multiple_objects as mobj
 from object_management_window import PropertyChanger
@@ -46,14 +47,14 @@ class RightClickMenu(tk.Menu):
             node ,= self.cs.so["node"]
             self.add_command(label="Routing table", 
                         command=lambda: self.routing_table(node))
+            self.add_command(label="BGP table", 
+                        command=lambda: self.bgp_table(node))
             self.add_command(label="Configuration", 
                         command=lambda: self.configure(node))
             self.add_command(label="Troubleshooting", 
                         command=lambda: self.troubleshoot(node))
             self.add_command(label="Ping", 
                         command=lambda: self.ping(node))
-            self.add_command(label="BGP", 
-                        command=lambda: self.bgp(node))
                         
             self.add_separator()
         
@@ -172,6 +173,10 @@ class RightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def routing_table(self, node):
         routing_table.RoutingTable(node, self.cs)
+        
+    @empty_selection_and_destroy_menu
+    def bgp_table(self, node):
+        bgp_table.BGPTable(node, self.cs)
         
     @empty_selection_and_destroy_menu
     def configure(self, node):

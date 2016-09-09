@@ -379,6 +379,7 @@ class Network(object):
         self.multi_access_network()
         self.interface_allocation()
         self.rt_creation()
+        self.BGPT_builder()
         self.path_finder()
         self.cs.refresh_all_labels()
         
@@ -885,49 +886,59 @@ class Network(object):
                     # primary path cost defines which paths can be used
                     # (up to 9).
                     
-    def BGPT_builder(self, source):
-        visited = {source}
-
-        heap = []
-        
-        # bgp table
-        bgpt = defaultdict(set)
-        
-        # we fill the heap so that 
-        for src_nb, bgp_pr in self.gftr(source, "route", "BGP peering"):
-            first_AS = [bgp_pr("AS", source), bgp_pr("AS", src_nb)]
-            heappush(heap, (
-                            1/bgp_pr("weight", source), # weight 
-                            2, # length of the AS_PATH vector
-                            bgp_pr("ip", src_nb), # next-hop IP address
-                            src_nb, # current node
-                            [], # path as a list of BGP peering connections
-                            first_AS # path as a list of AS
-                            ))
-        
-        while heap:
-            weight, length, nh, node, route_path, AS_path = heappop(heap)
-            if node not in visited:
-                for ip, routes in node.rt.items():
-                    source.bgpt[ip] |= {(1/weight, nh, node, tuple(AS_path))}
-                print(node, AS_path)
-                visited.add(node)
-                for bgp_nb, bgp_pr in self.gftr(node, "route", "BGP peering"):
-                    # excluded and allowed nodes
-                    if bgp_nb in visited:
-                        continue
-                    # we append a new AS if we use an external BGP peering
-                    new_AS = [bgp_pr("AS", bgp_nb)]*(bgp_pr.bgp_type == "eBGP")
-                    heappush(heap, (
-                                    weight, 
-                                    length + (bgp_pr.bgp_type == "eBGP"), 
-                                    nh, 
-                                    bgp_nb,
-                                    route_path + [bgp_pr], 
-                                    AS_path + new_AS
-                                    ))
-        print(source.bgpt)
-
+    def BGPT_builder(self):
+        for source in self.ftr("node", "router"):
+            source.bgpt.clear()
+            visited = {source}
+            heap = []
+            # bgp table
+            bgpt = defaultdict(set)
+            
+            # populate the BGP table with the routes sourced by the source node,
+            # with a default weight of 32768
+            for ip, routes in source.rt.items():
+                for route in routes:
+                    _, nh, *_ = route
+                    source.bgpt[ip] |= {(32768, nh, source, ())}
+            
+            # we fill the heap so that 
+            for src_nb, bgp_pr in self.gftr(source, "route", "BGP peering"):
+                first_AS = [bgp_pr("AS", source), bgp_pr("AS", src_nb)]
+                if bgp_pr("weight", source):
+                    weight = 1 / bgp_pr("weight", source)
+                else: 
+                    weight = float("inf")
+                print(source, src_nb,bgp_pr, bgp_pr("ip", src_nb))
+                heappush(heap, (
+                                weight, # weight 
+                                2, # length of the AS_PATH vector
+                                bgp_pr("ip", src_nb), # next-hop IP address
+                                src_nb, # current node
+                                [], # path as a list of BGP peering connections
+                                first_AS # path as a list of AS
+                                ))
+            
+            while heap:
+                weight, length, nh, node, route_path, AS_path = heappop(heap)
+                if node not in visited:
+                    for ip, routes in node.rt.items():
+                        real_weight = 0 if weight == float("inf") else 1/weight
+                        source.bgpt[ip] |= {(real_weight, nh, node, tuple(AS_path))}
+                    visited.add(node)
+                    for bgp_nb, bgp_pr in self.gftr(node, "route", "BGP peering"):
+                        # excluded and allowed nodes
+                        if bgp_nb in visited:
+                            continue
+                        # we append a new AS if we use an external BGP peering
+                        new_AS = [bgp_pr("AS", bgp_nb)]*(bgp_pr.bgp_type == "eBGP")
+                        heappush(heap, (
+                                        weight, 
+                                        length + (bgp_pr.bgp_type == "eBGP"), 
+                                        nh, 
+                                        bgp_nb,
+                                        route_path + [bgp_pr], 
+                                        AS_path + new_AS
+                                        ))
         
     ## Link-disjoint / link-and-node-disjoint shortest pair algorithms
     
