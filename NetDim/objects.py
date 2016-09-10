@@ -67,13 +67,19 @@ class Router(Node):
     imagex, imagey = 33, 25
     
     def __init__(self, *args):
+        args = list(args)
+        if len(args) > 3:
+            self.bgp_AS = args.pop()
+            self.default_route = args.pop()
+        else:
+            self.bgp_AS = None
+            self.default_route = None
         # routing table: binds an IP address to a cost / next-hop
         self.rt = {}
         # bgp table
         self.bgpt = defaultdict(set)
         # the default route is the gateway of last resort: 
         # it is the IP address of the next-hop (either loopback or interface)
-        self.default_route = None
         super().__init__(*args)
         
 class Switch(Node):
@@ -321,8 +327,6 @@ class BGPPeering(Route):
         if len(args) > 3:
             self.weightD = args.pop()
             self.weightS = args.pop()
-            self.ASD = args.pop()
-            self.ASS = args.pop()
             self.ipS = args.pop()
             self.ipD = args.pop()
             self.bgp_type = args.pop()
@@ -330,8 +334,6 @@ class BGPPeering(Route):
         else:
             self.weightD = 0
             self.weightS = 0
-            self.ASS = None
-            self.ASD = None
             self.ipS = None
             self.ipD = None
             self.bgp_type = "eBGP"

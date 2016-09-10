@@ -113,6 +113,20 @@ class Network(object):
     def gftr(self, src, type, *sts, ud=True):
         keep = lambda r: r[1].subtype in sts and (ud or r[1].source == src)
         return filter(keep, self.graph[src][type])
+        
+    # function that retrieves all IP addresses attached to a node, including
+    # it's loopback IP.
+    def attached_ips(self, src):
+        for _, trunk in self.graph[src]["trunk"]:
+            yield trunk("ipaddress", src)
+        yield src.ipaddress
+        
+    # function that retrieves all next-hop IP addresses attached to a node, 
+    # including the loopback addresses of its neighbors
+    def nh_ips(self, src):
+        for nb, trunk in self.graph[src]["trunk"]:
+            yield trunk("ipaddress", nb)
+            yield nb.ipaddress
           
     # "lf" is the link factory. Creates or retrieves any type of link
     def lf(
@@ -237,6 +251,16 @@ class Network(object):
                     yield trunk
                     
     def update_AS_topology(self):
+        # update all BGP AS property of nodes in a BGP AS
+        for AS in filter(lambda a: a.type == "BGP", self.pnAS.values()):
+            for node in AS.pAS["node"]:
+                node.bgp_AS = AS
+                
+        # update all BGP peering type based on the source and destination AS
+        for bgp_pr in self.ftr("route", "BGP peering"):
+            same_AS = bgp_pr.source.bgp_AS == bgp_pr.destination.bgp_AS
+            bgp_pr.bgp_type = "iBGP" if same_AS else "eBGP"
+        
         for AS in self.pnAS.values():
             # for all OSPF and IS-IS AS, fill the ABR/L1L2 sets
             # update trunk area based on nodes area (ISIS) and vice-versa (OSPF)
@@ -903,7 +927,7 @@ class Network(object):
             
             # we fill the heap so that 
             for src_nb, bgp_pr in self.gftr(source, "route", "BGP peering"):
-                first_AS = [bgp_pr("AS", source), bgp_pr("AS", src_nb)]
+                first_AS = [source.bgp_AS, src_nb.bgp_AS]
                 if bgp_pr("weight", source):
                     weight = 1 / bgp_pr("weight", source)
                 else: 
@@ -930,7 +954,7 @@ class Network(object):
                         if bgp_nb in visited:
                             continue
                         # we append a new AS if we use an external BGP peering
-                        new_AS = [bgp_pr("AS", bgp_nb)]*(bgp_pr.bgp_type == "eBGP")
+                        new_AS = [bgp_nb.bgp_AS]*(bgp_pr.bgp_type == "eBGP")
                         heappush(heap, (
                                         weight, 
                                         length + (bgp_pr.bgp_type == "eBGP"), 

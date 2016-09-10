@@ -183,12 +183,7 @@ class ObjectManagementWindow(FocusTopLevel):
                 # ARP table being overloaded: to be avoided in real-life and
                 # forbidden here.
                 attached_ints = (None,) + tuple(filter(None, 
-                            (trunk("ipaddress", neighbor) for neighbor, trunk
-                            in self.ms.cs.ntw.graph[self.current_obj]["trunk"]
-                            ))) + tuple(filter(None, 
-                            (neighbor.ipaddress for neighbor, _
-                            in self.ms.cs.ntw.graph[self.current_obj]["trunk"]
-                            )))
+                                    self.ms.cs.ntw.nh_ips(self.current_obj)))
                 combobox["values"] = attached_ints
                 var.set(obj_prop)
             elif property == "nh_tk":
@@ -207,44 +202,28 @@ class ObjectManagementWindow(FocusTopLevel):
                             ))) 
                 combobox["values"] = attached_ips
                 var.set(obj_prop)
-            elif property in ("nh_ip", "ipS"):
+            elif property == "ipS":
                 combobox, var = str_var
-                src_node = self.current_obj.source
+                src = self.current_obj.source
                 attached_ips = (None,) + tuple(filter(None, 
-                            (trunk("ipaddress", neighbor) for neighbor, trunk
-                            in self.ms.cs.ntw.graph[src_node]["trunk"]
-                            ))) + tuple(filter(None, 
-                            (neighbor.ipaddress for neighbor, _
-                            in self.ms.cs.ntw.graph[src_node]["trunk"]
-                            )))
+                                    self.ms.cs.ntw.attached_ips(src)))
                 combobox["values"] = attached_ips
+                var.set(obj_prop)
+            elif property == "nh_ip":
+                combobox, var = str_var
+                nh_ips = (None,) + tuple(filter(None, 
+                                    self.ms.cs.ntw.nh_ips(self.current_obj)))
+                combobox["values"] = nh_ips
                 var.set(obj_prop)
             elif property == "ipD":
                 combobox, var = str_var
-                dst_node = self.current_obj.destination
+                dest = self.current_obj.destination
                 attached_ips = (None,) + tuple(filter(None, 
-                            (trunk("ipaddress", dst_node) for _, trunk
-                            in self.ms.cs.ntw.graph[dst_node]["trunk"]
-                            ))) + tuple(filter(None, 
-                            (neighbor.ipaddress for neighbor, _
-                            in self.ms.cs.ntw.graph[dst_node]["trunk"]
-                            )))
+                                    self.ms.cs.ntw.attached_ips(dest)))
                 combobox["values"] = attached_ips
                 var.set(obj_prop)
             elif property == "AS":
                 str_var.set(",".join(map(str, obj_prop.keys())))
-            elif property == "ASS":
-                combobox, var = str_var
-                src_node = self.current_obj.source
-                attached_AS = (None,) + tuple(src_node.AS.keys())
-                combobox["values"] = attached_AS
-                var.set(obj_prop)
-            elif property == "ASD":
-                combobox, var = str_var
-                dst_node = self.current_obj.destination
-                attached_AS = (None,) + tuple(dst_node.AS.keys())
-                combobox["values"] = attached_AS
-                var.set(obj_prop)
             elif type(obj_prop) in (list, set):
                 str_var.set(",".join(map(str, obj_prop)))
             else:

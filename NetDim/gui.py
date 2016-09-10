@@ -163,7 +163,7 @@ class NetDim(tk.Tk):
         )
         
         self.object_properties = collections.OrderedDict([
-        ("router", node_common_properties + ("default_route",)),
+        ("router", node_common_properties + ("default_route", "bgp_AS")),
         ("oxc", node_common_properties),
         ("host", node_common_properties),
         ("antenna", node_common_properties),
@@ -185,8 +185,6 @@ class NetDim(tk.Tk):
         "bgp_type",
         "ipS",
         "ipD",
-        "ASS",
-        "ASD",
         "weightS",
         "weightD"
         )),
@@ -263,7 +261,7 @@ class NetDim(tk.Tk):
         
         # object import export (properties)
         self.object_ie = collections.OrderedDict([
-        ("router", node_common_ie_properties),
+        ("router", node_common_ie_properties + ("default_route", "bgp_AS")),
         ("oxc", node_common_ie_properties),
         ("host", node_common_ie_properties),
         ("antenna", node_common_ie_properties),
@@ -285,8 +283,6 @@ class NetDim(tk.Tk):
         "bgp_type",
         "ipS",
         "ipD",
-        "ASS",
-        "ASD",
         "weightS",
         "weightD"
         )),
@@ -327,7 +323,7 @@ class NetDim(tk.Tk):
         )
         
         self.box_properties = collections.OrderedDict([
-        ("router", node_box_properties),
+        ("router", node_box_properties + ("default_route", "bgp_AS")),
         ("oxc", node_box_properties),
         ("host", node_box_properties),
         ("antenna", node_box_properties),
@@ -349,8 +345,6 @@ class NetDim(tk.Tk):
         "bgp_type",
         "ipS",
         "ipD",
-        "ASS",
-        "ASD",
         "weightS",
         "weightD"
         )),
@@ -420,8 +414,7 @@ class NetDim(tk.Tk):
         "nh_ip": str,
         "ipS": str,
         "ipD": str,
-        "ASS": str,
-        "ASD": str,
+        "bgp_AS": str,
         "weightS": int,
         "weightD": int,
         "dst_sntw": str,
@@ -480,8 +473,7 @@ class NetDim(tk.Tk):
         "nh_ip": "Next-hop IP",
         "ipS": "Source IP",
         "ipD": "Destination IP",
-        "ASS": "Source AS",
-        "ASD": "Destination AS",
+        "bgp_AS": "BGP AS",
         "dst_sntw": "Destination subnetwork",
         "ad": "Administrative distance",
         "subtype": "Type",

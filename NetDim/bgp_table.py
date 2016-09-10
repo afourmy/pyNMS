@@ -34,22 +34,22 @@ RPKI validation codes: V valid, I invalid, N Not found"""\
                     rtype = "N*" + " "*8
                     if not idx:
                         line = "{rtype} {sntw} {nh}    0    , {weight} {path}\n"\
-                                        .format(
-                                                rtype = rtype, 
-                                                sntw = sntw, 
-                                                nh = nh,
-                                                weight = weight,
-                                                path = "".join(map(str, AS_path))
-                                                )
+                                    .format(
+                                            rtype = rtype, 
+                                            sntw = sntw, 
+                                            nh = nh,
+                                            weight = weight,
+                                            path = "".join(map(str, AS_path))
+                                            )
                     else:
                         spaces = " "*(len(rtype) + len(sntw))
                         line = "{spaces} {nh}    0    , {weight} {path}\n"\
-                                        .format(
-                                                spaces = spaces,
-                                                nh = nh,
-                                                weight = weight,
-                                                path = "".join(map(str, AS_path))
-                                                )
+                                    .format(
+                                            spaces = spaces,
+                                            nh = nh,
+                                            weight = weight,
+                                            path = "".join(map(str, AS_path))
+                                            )
                     self.ST.insert("insert", line)
                         
             # else:

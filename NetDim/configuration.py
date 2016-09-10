@@ -43,18 +43,12 @@ class Configuration(tk.Toplevel):
                                             )
             st_config.insert("insert", sr_conf)
             
-        if node.bgp_AS:
+        for _, bgp_pr in self.cs.ntw.gftr(node, "route", "BGP peering"):
+            end = "src" if node == bgp_pr.source else "dst"
+            bgp_AS = self.cs.ntw.pnAS[bgp_pr("AS", node)]
             activate_bgp = " {name}(config)# router bgp {AS_id}\n"\
-                                .format(name=node.name, AS_id=node.bgp_AS.id)
+                                    .format(name=node.name, AS_id=bgp_AS.id)
             st_config.insert("insert", activate_bgp)
-        for bgp_nb, bgp_pr in self.cs.ntw.gftr(node, "route", "BGP peering"):
-            neighbor = " {name}(config-router)# neighbor {ip} remote-as {AS}\n"\
-                                    .format(
-                                            name = node.name, 
-                                            ip = bgp_pr("ip", bgp_nb),
-                                            AS = bgp_nb.bgp_AS.id
-                                            )
-            st_config.insert("insert", neighbor)
         
         for neighbor, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
             direction = "S"*(adj_trunk.source == node) or "D"

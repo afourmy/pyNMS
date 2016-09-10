@@ -60,7 +60,8 @@ class AutonomousSystem(object):
         self.metric = {
         "RIP": "hop count",
         "ISIS": "bandwidth",
-        "OSPF": "bandwidth"
+        "OSPF": "bandwidth",
+        "BGP": None
         }[type]
         self.ref_bw = 10**8
         
@@ -206,7 +207,7 @@ class ASCreation(CustomTopLevel):
         self.var_AS_type = tk.StringVar()
         self.AS_type_list = ttk.Combobox(self, 
                                     textvariable=self.var_AS_type, width=6)
-        self.AS_type_list["values"] = ("RIP", "ISIS", "OSPF", "MPLS", "RSTP")
+        self.AS_type_list["values"] = ("RIP", "ISIS", "OSPF", "RSTP", "BGP")
         self.AS_type_list.current(0)
 
         # retrieve and save node data
