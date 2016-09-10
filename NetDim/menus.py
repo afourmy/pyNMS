@@ -4,11 +4,11 @@
 
 import tkinter as tk
 import AS
-import configuration
-import troubleshooting
-import ping
-import routing_table
-import bgp_table
+import ip_networks.configuration as ip_conf
+import ip_networks.troubleshooting as ip_ts
+import ip_networks.ping as ip_ping
+import ip_networks.routing_table as ip_rt
+import ip_networks.bgp_table as ip_bgpt
 import drawing_options_window
 import graph_generation.multiple_objects as mobj
 from object_management_window import PropertyChanger
@@ -172,23 +172,23 @@ class RightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def routing_table(self, node):
-        routing_table.RoutingTable(node, self.cs)
+        ip_rt.RoutingTable(node, self.cs)
         
     @empty_selection_and_destroy_menu
     def bgp_table(self, node):
-        bgp_table.BGPTable(node, self.cs)
+        ip_bgpt.BGPTable(node, self.cs)
         
     @empty_selection_and_destroy_menu
     def configure(self, node):
-        configuration.Configuration(node, self.cs)
+        ip_conf.Configuration(node, self.cs)
         
     @empty_selection_and_destroy_menu
     def troubleshoot(self, node):
-        troubleshooting.Troubleshooting(node, self.cs)
+        ip_ts.Troubleshooting(node, self.cs)
         
     @empty_selection_and_destroy_menu
     def ping(self, node):
-        ping.Ping(node, self.cs)
+        ip_ping.Ping(node, self.cs)
     
     @empty_selection_and_destroy_menu
     def show_object_properties(self):

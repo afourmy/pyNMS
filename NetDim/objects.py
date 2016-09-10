@@ -321,8 +321,6 @@ class BGPPeering(Route):
         if len(args) > 3:
             self.weightD = args.pop()
             self.weightS = args.pop()
-            self.local_prefD = args.pop()
-            self.local_prefS = args.pop()
             self.ASD = args.pop()
             self.ASS = args.pop()
             self.ipS = args.pop()
@@ -330,10 +328,8 @@ class BGPPeering(Route):
             self.bgp_type = args.pop()
             
         else:
-            self.weightD = 32768
-            self.weightS = 32768
-            self.local_prefD = 100
-            self.local_prefS = 100
+            self.weightD = 0
+            self.weightS = 0
             self.ASS = None
             self.ASD = None
             self.ipS = None
