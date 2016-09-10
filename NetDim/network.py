@@ -2,7 +2,6 @@
 # Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
 # Released under the GNU General Public License GPLv3
 
-import miscellaneous
 import objects
 from autonomous_system import AS
 from objects import objects
@@ -15,6 +14,7 @@ from collections import defaultdict, deque, OrderedDict
 from heapq import heappop, heappush, nsmallest
 from operator import getitem, itemgetter
 from itertools import combinations
+from miscellaneous.union_find import UnionFind
 try:
     import numpy as np
     from cvxopt import matrix, glpk, solvers
@@ -1265,7 +1265,7 @@ class Network(object):
     ## 1) Kruskal algorithm
         
     def kruskal(self, allowed_nodes):
-        uf = miscellaneous.UnionFind(allowed_nodes)
+        uf = UnionFind(allowed_nodes)
         edges = []
         for node in allowed_nodes:
             for neighbor, adj_trunk in self.graph[node]["trunk"]:
