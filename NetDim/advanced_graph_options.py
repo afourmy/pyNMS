@@ -4,7 +4,7 @@
 
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous import FocusTopLevel
+from miscellaneous.custom_toplevel import FocusTopLevel
 from collections import OrderedDict
 
 class AdvancedGraphOptionsWindow(FocusTopLevel):

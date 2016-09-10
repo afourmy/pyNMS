@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous import FocusTopLevel
+from miscellaneous.custom_toplevel import FocusTopLevel
 from os.path import join
 from PIL import ImageTk
 from graph_generation.network_dimension import NetworkDimension

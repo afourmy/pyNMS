@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous import CustomScrolledText
-from network_functions import tomask
+from miscellaneous.custom_scrolledtext import CustomScrolledText
+from miscellaneous.network_functions import tomask
 
 class Configuration(tk.Toplevel):
     def __init__(self, node, scenario):

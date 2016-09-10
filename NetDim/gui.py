@@ -8,15 +8,15 @@ import os
 import copy
 from os.path import abspath, pardir, join
 from tkinter import ttk, filedialog
-from miscellaneous import CustomTopLevel
+from miscellaneous.custom_toplevel import CustomTopLevel
 import network
 import collections
-import object_management_window as omw
-import advanced_graph_options as ago
-import drawing_options_window as dow
+from objects import object_management_window as omw
+from miscellaneous import graph_algorithms as galg
+from drawing import drawing_options_window as dow
 import graph_generation.advanced_graph as adv_gr
-import rwa_window as rwaw
-import main_menu
+from optical_networks import rwa_window as rwaw
+from menus import main_menu
 import scenario
 import csv
 import xml.etree.ElementTree as etree
@@ -578,7 +578,7 @@ class NetDim(tk.Tk):
         ])}
         
         # advanced graph options
-        self.advanced_graph_options = ago.AdvancedGraphOptionsWindow(self)
+        self.advanced_graph_options = galg.GraphAlgorithmWindow(self)
         
         # routing and wavelength assignment window
         self.rwa_window = rwaw.RWAWindow(self)

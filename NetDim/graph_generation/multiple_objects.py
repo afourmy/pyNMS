@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous import CustomTopLevel, ObjectListbox
+from miscellaneous.custom_toplevel import CustomTopLevel
+from miscellaneous.custom_listbox import ObjectListbox
 
 class MultipleNodes(CustomTopLevel):    
     def __init__(self, scenario, x, y):

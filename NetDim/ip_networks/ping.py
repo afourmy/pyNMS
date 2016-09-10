@@ -1,8 +1,8 @@
-from miscellaneous import FocusTopLevel
+from miscellaneous.custom_toplevel import FocusTopLevel
 from tkinter.scrolledtext import ScrolledText
 import tkinter as tk
 from tkinter import ttk
-from network_functions import compute_network
+from miscellaneous.network_functions import compute_network
 
 class Ping(FocusTopLevel):
     def __init__(self, source, scenario):

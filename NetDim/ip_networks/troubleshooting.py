@@ -1,5 +1,5 @@
 from tkinter import ttk
-from miscellaneous import CustomScrolledText
+from miscellaneous.custom_scrolledtext import CustomScrolledText
 import tkinter as tk
 
 class Troubleshooting(tk.Toplevel):

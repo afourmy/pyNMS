@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous import CustomTopLevel
+from miscellaneous.custom_toplevel import CustomTopLevel
 
 class NetworkDimension(CustomTopLevel):    
     def __init__(self, scenario, type):

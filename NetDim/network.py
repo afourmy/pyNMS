@@ -4,11 +4,12 @@
 
 import miscellaneous
 import objects
-import AS
+from autonomous_system import AS
+from objects import objects
 import random
 import warnings
 import tkinter as tk
-from network_functions import compute_network, ip_incrementer, tomask
+from miscellaneous.network_functions import compute_network, ip_incrementer, tomask
 from math import cos, sin, asin, radians, sqrt, ceil, log
 from collections import defaultdict, deque, OrderedDict
 from heapq import heappop, heappush, nsmallest

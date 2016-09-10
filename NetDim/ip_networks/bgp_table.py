@@ -1,4 +1,4 @@
-from network_functions import compute_network
+from miscellaneous.network_functions import compute_network
 from tkinter.scrolledtext import ScrolledText
 from operator import itemgetter
 import tkinter as tk

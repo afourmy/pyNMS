@@ -4,7 +4,8 @@
 
 import tkinter as tk
 import network
-import menus
+from menus.general_rightclick_menu import GeneralRightClickMenu
+from menus.selection_rightclick_menu import SelectionRightClickMenu
 from random import randint
 from math import cos, sin, atan2, sqrt, radians
 
@@ -83,7 +84,7 @@ class Scenario(tk.Canvas):
         
         # add binding for right-click menu 
         self.tag_bind("object", "<ButtonPress-3>",
-                                    lambda e: menus.RightClickMenu(e, self))
+                                    lambda e: SelectionRightClickMenu(e, self))
         
         # use the right-click to move the background
         self.bind("<ButtonPress-3>", self.scroll_start)
@@ -407,7 +408,7 @@ class Scenario(tk.Canvas):
         # canvas when the button is released hasn't changed, we create
         # the general right-click menu
         if (x, y) == (event.x, event.y):
-            menus.GeneralRightClickMenu(event, self)
+            GeneralRightClickMenu(event, self)
 
     ## Zoom / unzoom on the canvas
     
