@@ -847,7 +847,7 @@ class Scenario(tk.Canvas):
                             self.delete(edge.layer_line[obj.layer])
                             edge.layer_line[obj.layer] = None
                         
-    def draw_objects(self, objects, random_drawing):
+    def draw_objects(self, objects, random_drawing=True):
         self._cancel()
         for obj in objects:
             if obj.type == "node":

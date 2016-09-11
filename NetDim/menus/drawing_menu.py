@@ -7,7 +7,7 @@ class DrawingMenu(tk.Menu):
         self.cs = scenario
         
         cmds = {
-        "Random": lambda: scenario.draw_objects(nodes, True),
+        "Random": lambda: self.random(nodes),
         "FBA": lambda: scenario.automatic_drawing(nodes),
         "Both": lambda: self.both(nodes)
         }
@@ -19,3 +19,8 @@ class DrawingMenu(tk.Menu):
     def both(self, nodes):
         self.cs.draw_objects(nodes, True)
         self.cs.automatic_drawing(nodes)
+        
+    def random(self, nodes):
+        self.cs.draw_objects(nodes)
+        self.cs.move_nodes(nodes)
+        
