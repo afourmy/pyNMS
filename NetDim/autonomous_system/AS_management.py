@@ -182,8 +182,9 @@ class ASManagement(FocusTopLevel):
     ## saving function: used when closing the window
     
     def save_parameters(self):
-        exit_asbr = self.cs.ntw.pn["node"][self.exit_asbr.get()]
-        self.AS.exit_point = exit_asbr
+        if self.exit_asbr.get() != "None":
+            exit_asbr = self.cs.ntw.pn["node"][self.exit_asbr.get()]
+            self.AS.exit_point = exit_asbr
         self.withdraw()
         
     ## Functions used directly from the AS Management window
