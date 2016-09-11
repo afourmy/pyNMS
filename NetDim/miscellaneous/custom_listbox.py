@@ -15,6 +15,10 @@ class ObjectListbox(tk.Listbox):
     def __contains__(self, obj):
         return obj in self.get(0, "end")
         
+    def yield_all(self):
+        for obj in self.get(0, "end"):
+            yield obj
+        
     def selected(self):
         for selected_line in self.curselection():
             yield self.get(selected_line)

@@ -14,6 +14,7 @@ class ObjectManagementWindow(FocusTopLevel):
                  "path",
                  "flowSD",
                  "flowDS", 
+                 "bgp_AS",
                  "AS"
                 )
                 
@@ -27,8 +28,6 @@ class ObjectManagementWindow(FocusTopLevel):
     "nh_ip": (None,),
     "ipS": (None,),
     "ipD": (None,),
-    "ASS": (None,),
-    "ASD": (None,),
     "dst_sntw": (None,)
     }
                 
@@ -135,7 +134,9 @@ class ObjectManagementWindow(FocusTopLevel):
             else:
                 value = str_var.get()
             # convert "None" to None if necessary
+            print(property, value, type(value))
             value = None if value == "None" else value
+            print(property, value, type(value))
             # update dict when the object is renamed
             # if it is a node, we need to remove and read the entry in the graph dict
             # for all objects, we need to update pn

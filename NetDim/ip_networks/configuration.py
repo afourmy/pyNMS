@@ -44,15 +44,18 @@ class Configuration(tk.Toplevel):
             st_config.insert("insert", sr_conf)
             
         if node.bgp_AS:
+            AS = self.cs.ntw.pnAS[node.bgp_AS]
             activate_bgp = " {name}(config)# router bgp {AS_id}\n"\
-                                .format(name=node.name, AS_id=node.bgp_AS.id)
+                                        .format(name=node.name, AS_id=AS.id)
             st_config.insert("insert", activate_bgp)
+            
         for bgp_nb, bgp_pr in self.cs.ntw.gftr(node, "route", "BGP peering"):
+            nb_AS = self.cs.ntw.pnAS[bgp_nb.bgp_AS]
             neighbor = " {name}(config-router)# neighbor {ip} remote-as {AS}\n"\
                                     .format(
                                             name = node.name, 
                                             ip = bgp_pr("ip", bgp_nb),
-                                            AS = bgp_nb.bgp_AS.id
+                                            AS = nb_AS.id
                                             )
             st_config.insert("insert", neighbor)
         
@@ -158,6 +161,11 @@ class Configuration(tk.Toplevel):
                         pi = " {name}(config-router)# passive-interface {i}\n"\
                                 .format(name=node.name, i=interface)
                         st_config.insert("insert", pi)
+                        
+                if AS.exit_point == node:
+                    d = " {name}(config-router)# default-information originate\n"\
+                                                        .format(name=node.name)
+                    st_config.insert("insert", d)
                 
             elif AS.type == "ISIS":
                 

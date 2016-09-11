@@ -6,21 +6,21 @@ import sys
 import tkinter as tk
 import os
 import copy
-from os.path import abspath, pardir, join
-from tkinter import ttk, filedialog
-from miscellaneous.custom_toplevel import CustomTopLevel
-import network
-import collections
-from objects import object_management_window as omw
-from miscellaneous import graph_algorithms as galg
-from drawing import drawing_options_window as dow
-import graph_generation.advanced_graph as adv_gr
-from optical_networks import rwa_window as rwaw
-from menus import main_menu
-import scenario
 import csv
 import xml.etree.ElementTree as etree
 import warnings
+import collections
+import network
+import scenario
+from os.path import abspath, pardir, join
+from tkinter import ttk, filedialog
+from miscellaneous.custom_toplevel import CustomTopLevel
+from objects import object_management_window as omw
+from miscellaneous import graph_algorithms as galg
+from drawing import drawing_options_window as dow
+from graph_generation import advanced_graph as adv_gr
+from optical_networks import rwa_window as rwaw
+from menus import main_menu
 from PIL import ImageTk
 try:
     import xlrd

@@ -255,7 +255,7 @@ class Network(object):
         # update all BGP AS property of nodes in a BGP AS
         for AS in filter(lambda a: a.type == "BGP", self.pnAS.values()):
             for node in AS.pAS["node"]:
-                node.bgp_AS = AS
+                node.bgp_AS = AS.name
                 
         # update all BGP peering type based on the source and destination AS
         for bgp_pr in self.ftr("route", "BGP peering"):

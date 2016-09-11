@@ -138,6 +138,14 @@ class ASManagement(FocusTopLevel):
                                        )
         self.var_pct_type.set("IGP convergence")
         
+        # combobox to choose the exit ASBR
+        self.exit_asbr = tk.StringVar()
+        self.router_list = ttk.Combobox(self, 
+                                    textvariable=self.exit_asbr, width=10)
+        self.router_list["values"] = (None,) + tuple(
+                                        self.dict_listbox["node"].yield_all())
+        self.exit_asbr.set(None)
+        
         # buttons under the trunks column
         self.button_create_route.grid(row=5, column=0)
         self.button_find_trunks.grid(row=6, column=0)
@@ -158,15 +166,25 @@ class ASManagement(FocusTopLevel):
         # protection type drop-down list
         # self.pct_type_list.grid(row=1, column=6)
         
+        # protection type drop-down list
+        self.router_list.grid(row=10, column=0)
+        
         # at first, the backbone is the only area: we insert it in the listbox
         self.dict_listbox["area names"].insert("Backbone")
         
         # hide the window when closed
-        self.protocol("WM_DELETE_WINDOW", self.withdraw)
+        self.protocol("WM_DELETE_WINDOW", self.save_parameters)
         
         # if the AS is created from an import, close the management window
         if imp: 
             self.withdraw()
+            
+    ## saving function: used when closing the window
+    
+    def save_parameters(self):
+        exit_asbr = self.cs.ntw.pn["node"][self.exit_asbr.get()]
+        self.AS.exit_point = exit_asbr
+        self.withdraw()
         
     ## Functions used directly from the AS Management window
         

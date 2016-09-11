@@ -70,6 +70,9 @@ class AutonomousSystem(object):
         # else it shouldn't be used.
         self.border_routers = set()
         
+        # node used to exit the domain (ASBR for OSPF)
+        self.exit_point = None
+        
     def __repr__(self):
         return self.name
         
