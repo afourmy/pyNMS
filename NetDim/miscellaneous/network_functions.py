@@ -21,6 +21,12 @@ def tosubnet(ip):
     # ex: tosubnet("255.255.255.252") = 30
     return "".join(map(bin, map(int, ip.split(".")))).count("1")
     
+def wildcard(ip):
+    # convert a subnet mask to a wildcard mask or the other way around
+    # ex: towildcard("255.255.255.252") = "0.0.0.3"
+    #     towildcard("0.0.0.3") = "255.255.255.252"
+    return ".".join(map(lambda i: str(255 - int(i)), ip.split(".")))
+
 def tomask(subnet):
     # convert a subnet to a subnet mask
     # ex: tomask(30) = "255.255.255.252"
