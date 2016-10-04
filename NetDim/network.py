@@ -55,17 +55,6 @@ class Network(object):
     link_class = {}
     for dclass in (trunk_class, route_class, traffic_class):
         link_class.update(dclass)
-        
-    st_to_type = {
-    "ethernet": "trunk",
-    "wdm": "trunk",
-    "static route": "route",
-    "BGP peering": "route",
-    "OSPF virtual link": "route",
-    "Label Switched Path": "route",
-    "routed traffic": "traffic",
-    "static traffic": "traffic"
-    }
     
     node_subtype = tuple(node_class.keys())
     link_type = ("trunk", "route", "traffic")
@@ -138,7 +127,7 @@ class Network(object):
            s = None, 
            d = None
            ):
-        link_type = self.st_to_type[subtype]
+        link_type = self.cs.ms.st_to_type[subtype]
         if not name:
             while True:
                 name = link_type + str(self.cpt_link)

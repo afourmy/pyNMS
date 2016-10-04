@@ -58,6 +58,25 @@ class NetDim(tk.Tk):
         "traffic": "traffic"
         }
         
+        self.st_to_type = {
+        "router": "node",
+        "oxc": "node",
+        "host": "node",
+        "antenna": "node",
+        "regenerator": "node",
+        "splitter": "node",
+        "switch": "node",
+        "cloud": "node",
+        "ethernet": "trunk",
+        "wdm": "trunk",
+        "static route": "route",
+        "BGP peering": "route",
+        "OSPF virtual link": "route",
+        "Label Switched Path": "route",
+        "routed traffic": "traffic",
+        "static traffic": "traffic"
+        }
+        
         ## User-defined properties and labels per type of object
         
         # ordered dicts are needed to have the same menu order 

@@ -4,6 +4,7 @@
 
 import tkinter as tk
 import network
+import miscellaneous.search as search
 from menus.general_rightclick_menu import GeneralRightClickMenu
 from menus.selection_rightclick_menu import SelectionRightClickMenu
 from random import randint
@@ -90,6 +91,9 @@ class Scenario(tk.Canvas):
         self.bind("<ButtonPress-3>", self.scroll_start)
         self.bind("<B3-Motion>", self.scroll_move)
         self.bind("<ButtonRelease-3>", self.general_menu)
+        
+        # use Ctrl+F to look for an object
+        self.bind('<Control-Key-f>', lambda e: search.SearchObject(master))
         
         # initialize other bindings depending on the mode
         self.switch_binding()
