@@ -883,7 +883,7 @@ class NetDim(tk.Tk):
                     # hasattr() all the time to check if a property exists.
                     ftr = lambda o: o.subtype == obj_type
                     if obj_type in self.cs.ntw.link_class:
-                        _type = self.cs.ntw.st_to_type[obj_type]
+                        _type = self.st_to_type[obj_type]
                         pool_obj = filter(ftr, self.cs.ntw.pn[_type].values())
                     else:
                         pool_obj = filter(ftr, self.cs.ntw.pn["node"].values())                    
@@ -917,7 +917,7 @@ class NetDim(tk.Tk):
             for obj_type, properties in self.object_ie.items():
                 ftr = lambda o: o.subtype == obj_type
                 if obj_type in self.cs.ntw.link_class:
-                    _type = self.cs.ntw.st_to_type[obj_type]
+                    _type = self.st_to_type[obj_type]
                     pool_obj = filter(ftr, self.cs.ntw.pn[_type].values())
                 else:
                     pool_obj = filter(ftr, self.cs.ntw.pn["node"].values()) 
