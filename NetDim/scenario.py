@@ -190,7 +190,9 @@ class Scenario(tk.Canvas):
     def find_closest_node(self, event):
         # record the item and its location
         self._dict_start_position.clear()
+        print("a")
         self.drag_item = self.find_closest(event.x, event.y)[0]
+        
         # save the initial position to compute the delta for multiple nodes motion
         main_node_selected = self.object_id_to_object[self.drag_item]
         self._start_pos_main_node = main_node_selected.x, main_node_selected.y
@@ -201,12 +203,14 @@ class Scenario(tk.Canvas):
         else:
             # if ctrl is not pressed, we forget about the old selection, 
             # consider only the newly selected node, and unhighlight everything
+            print("b")
             if not self.ctrl:
-                self.so = {"node": {main_node_selected}, "link": set()}
                 self.unhighlight_all()
+                self.highlight_objects(main_node_selected)
             # else, we add the node to the current selection
             else:
-                self.so["node"].add(main_node_selected)
+                self.highlight_objects(main_node_selected)
+            
             # we update the dict of start position
             x, y = main_node_selected.x, main_node_selected.y
             self._dict_start_position[main_node_selected] = [x, y]
@@ -340,8 +344,7 @@ class Scenario(tk.Canvas):
                 if obj in self.object_id_to_object:
                     enclosed_obj = self.object_id_to_object[obj]
                     if enclosed_obj.class_type == self.obj_selection:
-                        self.so[self.obj_selection].add(enclosed_obj)
-            self.highlight_objects(*self.so["node"]|self.so["link"])
+                        self.highlight_objects(enclosed_obj)
             self._start_position = [None]*2
         
     @adapt_coordinates
@@ -455,7 +458,7 @@ class Scenario(tk.Canvas):
         self.update_nodes_coordinates()
         
     @adapt_coordinates
-    def zoomerP(self,event):
+    def zoomerP(self, event):
         """ Zoom for Linux """
         self._cancel()
         self.scale("all", event.x, event.y, 1.1, 1.1)
@@ -463,7 +466,7 @@ class Scenario(tk.Canvas):
         self.update_nodes_coordinates()
         
     @adapt_coordinates
-    def zoomerM(self,event):
+    def zoomerM(self, event):
         """ Zoom for Linux """
         self._cancel()
         self.scale("all", event.x, event.y, 0.9, 0.9)
@@ -509,8 +512,8 @@ class Scenario(tk.Canvas):
                                         width=self.LINK_WIDTH, dash=obj.dash)  
                 
     def unhighlight_all(self):
-        for object_type in self.ntw.pn:
-            self.unhighlight_objects(*self.ntw.pn[object_type].values())
+        for object_type in self.so:
+            self.unhighlight_objects(*self.so[object_type])
                 
     def create_node_label(self, node):
         node.lid = self.create_text(node.x - 15, node.y + 10, anchor="nw")
@@ -609,6 +612,7 @@ class Scenario(tk.Canvas):
         
     def erase_graph(self):
         self.object_id_to_object.clear()
+        self.unhighlight_all()
         self.so = {"node": set(), "link": set()}
         self.temp_line = None
         self.drag_item = None
@@ -925,6 +929,19 @@ class Scenario(tk.Canvas):
             for node in nodes:
                 self.move_node(node)
         self._job = self.after(1, lambda: self.FR_drawing(nodes))
+        
+    def bfs_cluster_drawing(self, nodes):
+        if not self._job:
+            # reset the number of iterations
+            self.drawing_iteration = 0
+        else:
+            self._cancel()
+        self.drawing_iteration += 1
+        params = self.ms.drawing_params["Spring layout"].values()
+        for i in range(10):
+            print(i)
+            self.ntw.bfs_spring(nodes, *params)
+            self.draw_all(False)
             
     ## Failure simulation
     

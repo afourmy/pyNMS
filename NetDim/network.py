@@ -1914,16 +1914,26 @@ class Network(object):
         const = dist and k*(dist - L0)/dist
         return (const*dx, const*dy)
             
-    def spring_layout(self, nodes, cf, k, sf, L0):
+    def spring_layout(self, nodes, cf, k, sf, L0, virtual_nodes=set()):
+        nodes = set(nodes)
+        all_nodes = nodes | virtual_nodes
         for nodeA in nodes:
             Fx = Fy = 0
-            for nodeB in nodes:
+            for nodeB in all_nodes:
                 if nodeA != nodeB:
                     dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
                     dist = self.distance(dx, dy)
                     F_hooke = (0,)*2
                     if self.is_connected(nodeA, nodeB, "trunk"):
-                        F_hooke = self.hooke_force(dx, dy, dist, L0, k) 
+                        F_hooke = self.hooke_force(dx, dy, dist, L0, k)
+                    F_coulomb = self.coulomb_force(dx, dy, dist, cf)
+                    Fx += F_hooke[0] + F_coulomb[0] * nodeB.virtual_factor
+                    Fy += F_hooke[1] + F_coulomb[1] * nodeB.virtual_factor
+            for adj_node, _ in self.graph[nodeA]["trunk"]:
+                if adj_node not in all_nodes:
+                    dx, dy = adj_node.x - nodeA.x, adj_node.y - nodeA.y
+                    dist = self.distance(dx, dy)
+                    F_hooke = self.hooke_force(dx, dy, dist, L0, k)
                     F_coulomb = self.coulomb_force(dx, dy, dist, cf)
                     Fx += F_hooke[0] + F_coulomb[0]
                     Fy += F_hooke[1] + F_coulomb[1]
@@ -1977,6 +1987,62 @@ class Network(object):
                 n.y = min(800, max(0, n.y))
             
         t *= 0.95
+        
+    ## 3) BFS-clusterization spring-based algorithm
+    
+    def bfs_cluster(self, source, visited, stop=30):
+        node_number = 0
+        cluster = set()
+        frontier = {source}
+        while frontier and node_number < stop:
+            temp = frontier
+            frontier = set()
+            for node in temp:
+                for neighbor, _ in self.graph[node]["trunk"]:
+                    if node not in visited:
+                        frontier.add(neighbor)
+                        node_number += 1
+                cluster.add(node)
+        return frontier, cluster
+        
+    def create_virtual_nodes(self, cluster, nb):
+        n = len(cluster)
+        mean_value = lambda axe: sum(getattr(node, axe) for node in cluster)
+        x_mean, y_mean = mean_value("x")/n , mean_value("y")/n
+        virtual_node = self.nf(name = "vn" + str(nb), node_type = "cloud")
+        virtual_node.x, virtual_node.y = x_mean, y_mean
+        virtual_node.virtual_factor = n
+        return virtual_node
+    
+    def bfs_spring(self, nodes, cf, k, sf, L0, size=30, iterations=20):
+        nodes = set(nodes)
+        source = random.choice(list(nodes))
+        print(source)
+        # all nodes one step ahead of the already drawn area
+        overall_frontier = {source}
+        # all nodes which location has already been set
+        seen = set(self.pn["node"].values()) - nodes
+        # virtuals nodes are the centers of previously clusterized area:
+        # they are not connecte to any another node, but are equivalent to a
+        # coulomb forces of all cluster nodes
+        virtual_nodes = set()
+        # number of cluster
+        nb_cluster = 0
+        # total number of nodes
+        n = len(self.pn["node"])
+        while overall_frontier:
+            new_source = overall_frontier.pop()
+            new_frontier, new_cluster = self.bfs_cluster(new_source, seen, size)
+            nb_cluster += 1
+            overall_frontier |= new_frontier
+            seen |= new_cluster
+            overall_frontier -= seen
+            i = 0
+            for i in range(iterations):
+                self.spring_layout(new_cluster, cf, k, sf, L0, virtual_nodes)
+            virtual_nodes.add(self.create_virtual_nodes(new_cluster, nb_cluster))
+        for node in virtual_nodes:
+            self.pn["node"].pop(node.name)
         
     ## Graph generation functions
                 

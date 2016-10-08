@@ -57,7 +57,6 @@ class SelectionRightClickMenu(tk.Menu):
                         command=lambda: self.troubleshoot(node))
             self.add_command(label="Ping", 
                         command=lambda: self.ping(node))
-                        
             self.add_separator()
         
         self.add_command(label="Create AS", 
@@ -206,6 +205,10 @@ class SelectionRightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def multiple_links(self, scenario):
         mobj.MultipleLinks(scenario, self.cs.so["node"])
+        
+    @empty_selection_and_destroy_menu
+    def bfs(self, nodes):
+        self.cs.bfs_cluster_drawing(nodes)
         
     #TODO temporary
     @empty_selection_and_destroy_menu

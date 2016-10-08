@@ -44,6 +44,8 @@ class Node(object):
         self.AS = defaultdict(set)
         # number of path considered for load-balancing
         self.LB_paths = LB_paths
+        # virtual factor for BFS-clusterization drawing
+        self.virtual_factor = 1
         
     def __repr__(self):
         return self.name
