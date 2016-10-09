@@ -222,6 +222,13 @@ class Network(object):
     def is_connected(self, nodeA, nodeB, link_type):
         return any(n == nodeA for n, _ in self.graph[nodeB][link_type])
         
+    # given a node, retrieves nodes attached with a link which subtype 
+    # is in sts
+    def neighbors(self, node, *sts):
+        for subtype in sts:
+            for neighbor, _ in self.graph[node][subtype]:
+                yield neighbor
+        
     def number_of_links_between(self, nodeA, nodeB):
         return sum(
                    n == nodeB 
@@ -1914,12 +1921,11 @@ class Network(object):
         const = dist and k*(dist - L0)/dist
         return (const*dx, const*dy)
             
-    def spring_layout(self, nodes, cf, k, sf, L0, virtual_nodes=set()):
+    def spring_layout(self, nodes, cf, k, sf, L0, v_nodes=set()):
         nodes = set(nodes)
-        all_nodes = nodes | virtual_nodes
         for nodeA in nodes:
             Fx = Fy = 0
-            for nodeB in all_nodes:
+            for nodeB in nodes | v_nodes | set(self.neighbors(nodeA, "trunk")):
                 if nodeA != nodeB:
                     dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
                     dist = self.distance(dx, dy)
@@ -1929,14 +1935,6 @@ class Network(object):
                     F_coulomb = self.coulomb_force(dx, dy, dist, cf)
                     Fx += F_hooke[0] + F_coulomb[0] * nodeB.virtual_factor
                     Fy += F_hooke[1] + F_coulomb[1] * nodeB.virtual_factor
-            for adj_node, _ in self.graph[nodeA]["trunk"]:
-                if adj_node not in all_nodes:
-                    dx, dy = adj_node.x - nodeA.x, adj_node.y - nodeA.y
-                    dist = self.distance(dx, dy)
-                    F_hooke = self.hooke_force(dx, dy, dist, L0, k)
-                    F_coulomb = self.coulomb_force(dx, dy, dist, cf)
-                    Fx += F_hooke[0] + F_coulomb[0]
-                    Fy += F_hooke[1] + F_coulomb[1]
             nodeA.vx = 0.5 * nodeA.vx + 0.2 * Fx
             nodeA.vy = 0.5 * nodeA.vy + 0.2 * Fy
     
@@ -1966,7 +1964,7 @@ class Network(object):
                     dist = self.distance(deltax, deltay)
                     if dist:
                         nA.vx += deltax * opd**2 / dist**2
-                        nA.vy += deltay * opd**2 / dist**2                        
+                        nA.vy += deltay * opd**2 / dist**2   
                     
         for l in self.pn["trunk"].values():
             deltax = l.source.x - l.destination.x
@@ -2014,10 +2012,9 @@ class Network(object):
         virtual_node.virtual_factor = n
         return virtual_node
     
-    def bfs_spring(self, nodes, cf, k, sf, L0, size=30, iterations=20):
+    def bfs_spring(self, nodes, cf, k, sf, L0, size=40, iterations=10):
         nodes = set(nodes)
         source = random.choice(list(nodes))
-        print(source)
         # all nodes one step ahead of the already drawn area
         overall_frontier = {source}
         # all nodes which location has already been set
@@ -2043,6 +2040,7 @@ class Network(object):
             virtual_nodes.add(self.create_virtual_nodes(new_cluster, nb_cluster))
         for node in virtual_nodes:
             self.pn["node"].pop(node.name)
+
         
     ## Graph generation functions
                 

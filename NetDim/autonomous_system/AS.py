@@ -231,8 +231,8 @@ class ASCreation(CustomTopLevel):
         self.entry_name.grid(row=0, column=1, sticky=tk.W)
         self.entry_id.grid(row=1, column=1, sticky=tk.W)
         self.label_type.grid(row=2, column=0, pady=5, padx=5, sticky=tk.W)
-        self.AS_type_list.grid(row=2,column=1, pady=5, padx=5, sticky=tk.W)
-        self.button_create_AS.grid(row=3,column=0, columnspan=2, pady=5, padx=5)
+        self.AS_type_list.grid(row=2, column=1, pady=5, padx=5, sticky=tk.W)
+        self.button_create_AS.grid(row=3, column=0, columnspan=2, pady=5, padx=5)
 
     def create_AS(self, scenario, so):
         # automatic initialization of the AS id in case it is empty

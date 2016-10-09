@@ -190,7 +190,6 @@ class Scenario(tk.Canvas):
     def find_closest_node(self, event):
         # record the item and its location
         self._dict_start_position.clear()
-        print("a")
         self.drag_item = self.find_closest(event.x, event.y)[0]
         
         # save the initial position to compute the delta for multiple nodes motion
@@ -203,14 +202,12 @@ class Scenario(tk.Canvas):
         else:
             # if ctrl is not pressed, we forget about the old selection, 
             # consider only the newly selected node, and unhighlight everything
-            print("b")
             if not self.ctrl:
                 self.unhighlight_all()
                 self.highlight_objects(main_node_selected)
             # else, we add the node to the current selection
             else:
                 self.highlight_objects(main_node_selected)
-            
             # we update the dict of start position
             x, y = main_node_selected.x, main_node_selected.y
             self._dict_start_position[main_node_selected] = [x, y]
@@ -932,16 +929,17 @@ class Scenario(tk.Canvas):
         
     def bfs_cluster_drawing(self, nodes):
         if not self._job:
+            # update the optimal pairwise distance
+            self.ms.opd = sqrt(500*500/len(self.ntw.pn["node"].values()))
             # reset the number of iterations
             self.drawing_iteration = 0
         else:
             self._cancel()
-        self.drawing_iteration += 1
         params = self.ms.drawing_params["Spring layout"].values()
-        for i in range(10):
-            print(i)
-            self.ntw.bfs_spring(nodes, *params)
-            self.draw_all(False)
+        self.ntw.bfs_spring(nodes, *params)
+        for node in nodes:
+            self.move_node(node)
+        self._job = self.after(1, lambda: self.bfs_cluster_drawing(nodes))
             
     ## Failure simulation
     

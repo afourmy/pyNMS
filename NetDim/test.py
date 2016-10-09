@@ -8,6 +8,7 @@ from inspect import getsourcefile
 from os.path import abspath, pardir, join
 
 path_app = abspath(getsourcefile(lambda: 0))[:-7]
+
 if path_app not in sys.path:
     sys.path.append(path_app)
 path_parent = abspath(join(path_app, pardir))
