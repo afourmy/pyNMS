@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+import re
 from miscellaneous.custom_scrolledtext import CustomScrolledText
 from miscellaneous.network_functions import tomask
 
@@ -9,55 +10,73 @@ class Configuration(tk.Toplevel):
         self.cs = scenario
         
         notebook = ttk.Notebook(self)
-        config_frame = ttk.Frame(notebook)
-        st_config = CustomScrolledText(config_frame)
-        notebook.add(config_frame, text=" Configuration ")
+        pastable_config_frame = ttk.Frame(notebook)
+        detailed_config_frame = ttk.Frame(notebook)
+        st_pastable_config = CustomScrolledText(pastable_config_frame)
+        st_detailed_config = CustomScrolledText(detailed_config_frame)
+        notebook.add(pastable_config_frame, text="Pastable configuration ")
+        notebook.add(detailed_config_frame, text="Detailed configuration ")
         
         self.wm_attributes("-topmost", True)
+        
+        for conf in self.build_config(node):
+            pastable_conf = re.search("[#|>](.*)", conf).group(1) + "\n"
+            st_detailed_config.insert("insert", conf)
+            st_pastable_config.insert("insert", pastable_conf)
+            
+        # disable the scrolledtext so that it cannot be edited
+        st_pastable_config.config(state=tk.DISABLED)
+        st_detailed_config.config(state=tk.DISABLED)
+        
+        
+        # pack the scrolledtexts in the frames
+        st_pastable_config.pack(fill=tk.BOTH, expand=tk.YES)
+        st_detailed_config.pack(fill=tk.BOTH, expand=tk.YES)
+        
+        # and the notebook in the window
+        notebook.pack(fill=tk.BOTH, expand=tk.YES)
+        
+    def build_config(self, node):
 
-        enable_mode = " {name}> enable\n".format(name=node.name)  
-        conf_t = " {name}# configure terminal\n".format(name=node.name)
-
-        st_config.insert("insert", enable_mode)
-        st_config.insert("insert", conf_t)
+        # initialization
+        yield " {name}> enable\n".format(name=node.name)  
+        yield " {name}# configure terminal\n".format(name=node.name)
         
         # configuration of the loopback interface
-        lo = " {name}(config)# interface Loopback0\n".format(name=node.name)
-        lo_ip = " {name}(config-if)# ip address {ip} {mask}\n"\
-                .format(name=node.name, ip=node.ipaddress, mask=node.subnetmask)
+        yield " {name}(config)# interface Loopback0\n".format(name=node.name)
+        yield " {name}(config-if)# ip address {ip} {mask}\n"\
+                                        .format(
+                                                name = node.name, 
+                                                ip = node.ipaddress, 
+                                                mask = node.subnetmask
+                                                )
                 
-        st_config.insert("insert", lo)
-        st_config.insert("insert", lo_ip)
-        exit = " {name}(config-if)# exit\n".format(name=node.name)
-        st_config.insert("insert", exit)
+        yield " {name}(config-if)# exit\n".format(name=node.name)
         
         for _, sr in self.cs.ntw.gftr(node, "route", "static route", False):
             sntw, mask = sr.dst_sntw.split("/")
             mask = tomask(int(mask))
-            sr_conf = " {name}(config)# ip route {sntw} {mask} {nh_ip}\n"\
+            yield " {name}(config)# ip route {sntw} {mask} {nh_ip}\n"\
                                     .format(
                                             name = node.name, 
                                             sntw = sntw,
                                             mask = mask,
                                             nh_ip = sr.nh_ip
                                             )
-            st_config.insert("insert", sr_conf)
             
         if node.bgp_AS:
             AS = self.cs.ntw.pnAS[node.bgp_AS]
-            activate_bgp = " {name}(config)# router bgp {AS_id}\n"\
+            yield " {name}(config)# router bgp {AS_id}\n"\
                                         .format(name=node.name, AS_id=AS.id)
-            st_config.insert("insert", activate_bgp)
             
         for bgp_nb, bgp_pr in self.cs.ntw.gftr(node, "route", "BGP peering"):
             nb_AS = self.cs.ntw.pnAS[bgp_nb.bgp_AS]
-            neighbor = " {name}(config-router)# neighbor {ip} remote-as {AS}\n"\
+            yield " {name}(config-router)# neighbor {ip} remote-as {AS}\n"\
                                     .format(
                                             name = node.name, 
                                             ip = bgp_pr("ip", bgp_nb),
                                             AS = nb_AS.id
                                             )
-            st_config.insert("insert", neighbor)
         
         for neighbor, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
             direction = "S"*(adj_trunk.source == node) or "D"
@@ -65,24 +84,19 @@ class Configuration(tk.Toplevel):
             ip = getattr(adj_trunk, "ipaddress" + direction)
             mask = getattr(adj_trunk, "subnetmask" + direction)
             
-            interface_conf = " {name}(config)# interface {interface}\n"\
+            yield " {name}(config)# interface {interface}\n"\
                                     .format(name=node.name, interface=interface)
-            interface_ip = " {name}(config-if)# ip address {ip} {mask}\n"\
+            yield " {name}(config-if)# ip address {ip} {mask}\n"\
                                     .format(name=node.name, ip=ip, mask=mask)
-            no_shut = " {name}(config-if)# no shutdown\n".format(name=node.name)
-            
-            st_config.insert("insert", interface_conf)
-            st_config.insert("insert", interface_ip)
-            st_config.insert("insert", no_shut)
+            yield " {name}(config-if)# no shutdown\n".format(name=node.name)
             
             if any(AS.type == "OSPF" for AS in adj_trunk.AS):
                 direction = "SD" if direction == "S" else "DS"
                 cost = getattr(adj_trunk, "cost" + direction)
                 if cost != 1:
-                    change_cost = (" {name}(config-if)#"
+                    yield (" {name}(config-if)#"
                                     " ip ospf cost {cost}\n")\
                                     .format(name=node.name, cost=cost)
-                    st_config.insert("insert", change_cost)
                     
             # IS-IS is configured both in "config-router" mode and on the 
             # interface itself: the code is set here so that the user doesn't
@@ -97,7 +111,7 @@ class Configuration(tk.Toplevel):
                     in_backbone = node_area.name == "Backbone"
                     
                     # activate IS-IS on the interface
-                    isis_conf = " {name}(config-if)# ip router isis\n"\
+                    yield " {name}(config-if)# ip router isis\n"\
                                                         .format(name=node.name)
                                                         
                     # we need to check what area the neighbor belongs to.
@@ -110,62 +124,51 @@ class Configuration(tk.Toplevel):
                     # the backbone
                     l2 = node_area != neighbor_area or in_backbone
                     cct_type = "level-2" if l2 else "level-1"
-                    cct_type_conf = " {name}(config-if)# isis circuit-type {ct}\n"\
+                    yield " {name}(config-if)# isis circuit-type {ct}\n"\
                                         .format(name=node.name, ct=cct_type)
-                        
-                    st_config.insert("insert", isis_conf)
-                    st_config.insert("insert", cct_type_conf)
                     
-            exit = " {name}(config-if)# exit\n".format(name=node.name)
-            st_config.insert("insert", exit)
+            yield " {name}(config-if)# exit\n".format(name=node.name)
             
         for AS in node.AS:
             
             if AS.type == "RIP":
-                activate_rip = " {name}(config)# router rip\n"\
+                yield " {name}(config)# router rip\n"\
                                                 .format(name=node.name)
-                st_config.insert("insert", activate_rip)
                 
                 for _, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
                     direction = "S"*(adj_trunk.source == node) or "D"
                     if adj_trunk in AS.pAS["trunk"]:
                         ip = getattr(adj_trunk, "ipaddress" + direction)
                         
-                        interface_ip = " {name}(config-router)# network {ip}\n"\
+                        yield " {name}(config-router)# network {ip}\n"\
                                                 .format(name=node.name, ip=ip)
-                        st_config.insert("insert", interface_ip)
                     else:
                         interface = getattr(adj_trunk, "interface" + direction)
-                        pi = " {name}(config-router)# passive-interface {i}\n"\
+                        yield " {name}(config-router)# passive-interface {i}\n"\
                                 .format(name=node.name, i=interface)
-                        st_config.insert("insert", pi)
                 
             elif AS.type == "OSPF":
                 
-                activate_ospf = " {name}(config)# router ospf 1\n"\
+                yield " {name}(config)# router ospf 1\n"\
                                                     .format(name=node.name)
-                st_config.insert("insert", activate_ospf)
                 
                 for _, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
                     direction = "S"*(adj_trunk.source == node) or "D"
                     if adj_trunk in AS.pAS["trunk"]:
                         ip = getattr(adj_trunk, "ipaddress" + direction)
                         trunk_area ,= adj_trunk.AS[AS]
-                        interface_ip = (" {name}(config-router)# network" 
+                        yield (" {name}(config-router)# network" 
                                         " {ip} 0.0.0.3 area {area_id}\n")\
                         .format(name=node.name, ip=ip, area_id=trunk_area.id)
-                        st_config.insert("insert", interface_ip)
                             
                     else:
                         interface = getattr(adj_trunk, "interface" + direction)
-                        pi = " {name}(config-router)# passive-interface {i}\n"\
+                        yield " {name}(config-router)# passive-interface {i}\n"\
                                 .format(name=node.name, i=interface)
-                        st_config.insert("insert", pi)
                         
                 if AS.exit_point == node:
-                    d = " {name}(config-router)# default-information originate\n"\
+                    yield " {name}(config-router)# default-information originate\n"\
                                                         .format(name=node.name)
-                    st_config.insert("insert", d)
                 
             elif AS.type == "ISIS":
                 
@@ -203,36 +206,19 @@ class Configuration(tk.Toplevel):
                 sid = ".".join((format(int(n), "03d") for n in node.ipaddress.split(".")))
                 net = ".".join((AFI, sid, "00"))
             
-                activate_isis = " {name}(config)# router isis\n"\
+                yield " {name}(config)# router isis\n"\
                                                     .format(name=node.name)
-                net_conf = " {name}(config-router)# net {net}\n"\
+                yield " {name}(config-router)# net {net}\n"\
                                             .format(name=node.name, net=net)                   
-                level_conf = " {name}(config-router)# is-type {level}\n"\
+                yield " {name}(config-router)# is-type {level}\n"\
                                         .format(name=node.name, level=level)                           
-                plo= " {name}(config-router)# passive-interface Loopback0\n"\
+                yield " {name}(config-router)# passive-interface Loopback0\n"\
                                                 .format(name=node.name)
-                exit = " {name}(config-router)# exit\n".format(name=node.name)
-                                                
-                st_config.insert("insert", activate_isis)
-                st_config.insert("insert", net_conf)
-                st_config.insert("insert", level_conf)
-                st_config.insert("insert", plo)
-                st_config.insert("insert", exit)
-                        
-                end = " {name}(config-if)# end\n".format(name=node.name)
-                st_config.insert("insert", end)
+                yield " {name}(config-router)# exit\n".format(name=node.name)
                 
         # configuration of the static routes, including the default one
         if node.default_route:
-            def_route = " {name}(config)# ip route 0.0.0.0 0.0.0.0 {def_route}\n"\
+            yield " {name}(config)# ip route 0.0.0.0 0.0.0.0 {def_route}\n"\
                     .format(name=node.name, def_route=node.default_route)
-            st_config.insert("insert", def_route)
-
-        # disable the scrolledtext so that it cannot be edited
-        st_config.config(state=tk.DISABLED)
-        
-        # pack the scrolledtext in the frames, and the notebook in the window
-        st_config.pack(fill=tk.BOTH, expand=tk.YES)
-        notebook.pack(fill=tk.BOTH, expand=tk.YES)
-
-        
+                    
+        yield " {name}(config)# end\n".format(name=node.name)
