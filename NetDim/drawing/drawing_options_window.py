@@ -37,9 +37,9 @@ class DrawingOptions(FocusTopLevel):
         self.drawing_type_list = ttk.Combobox(self, 
                                 textvariable=self.var_drawing_type, width=11)
         self.drawing_type_list["values"] = (
-                                       "Spring layout", 
-                                       "F-R layout"
-                                       )
+                                            "Spring layout", 
+                                            "F-R layout"
+                                            )
         self.drawing_type_list.set(self.ms.drawing_algorithm)
         self.drawing_type_list.grid(row=0, column=2, pady=5, padx=5, sticky=tk.W)
         

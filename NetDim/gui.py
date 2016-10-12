@@ -506,6 +506,8 @@ class NetDim(tk.Tk):
         "AS": "Autonomous system"
         }
         
+        self.name_to_prop = {v: k for k, v in self.prop_to_nice_name.items()}
+        
         colors = ["default", "red", "purple"]
         
         ## ----- Menus : -----
