@@ -204,6 +204,7 @@ class ModifyAS(CustomTopLevel):
 class ASCreation(CustomTopLevel):
     def __init__(self, scenario, so):
         super().__init__()
+        self.so = so
         self.title("Create AS")
         
         # List of AS type
@@ -215,7 +216,7 @@ class ASCreation(CustomTopLevel):
 
         # retrieve and save node data
         self.button_create_AS = ttk.Button(self, text="Create AS", 
-                                command=lambda: self.create_AS(scenario, so))
+                                command=lambda: self.create_AS(scenario))
         
         # Label for the name/type of the AS
         self.label_name = tk.Label(self, bg="#A1DBCD", text="Name")
@@ -234,7 +235,7 @@ class ASCreation(CustomTopLevel):
         self.AS_type_list.grid(row=2, column=1, pady=5, padx=5, sticky=tk.W)
         self.button_create_AS.grid(row=3, column=0, columnspan=2, pady=5, padx=5)
 
-    def create_AS(self, scenario, so):
+    def create_AS(self, scenario):
         # automatic initialization of the AS id in case it is empty
         if self.entry_id.get():
             id = int(self.entry_id.get())
@@ -245,8 +246,8 @@ class ASCreation(CustomTopLevel):
                                          name = self.entry_name.get(), 
                                          _type = self.var_AS_type.get(), 
                                          id = id,
-                                         trunks = so["link"], 
-                                         nodes = so["node"]
+                                         trunks = self.so["link"], 
+                                         nodes = self.so["node"]
                                          )
         self.destroy()
             

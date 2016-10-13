@@ -1,5 +1,5 @@
 import tkinter as tk
-from .drawing_menu import DrawingMenu
+from drawing.drawing_menu import DrawingMenu
 from graph_generation.multiple_objects import MultipleNodes
 
 class GeneralRightClickMenu(tk.Menu):

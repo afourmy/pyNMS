@@ -236,6 +236,8 @@ class Scenario(tk.Canvas):
                         if self.pwindow:
                             self.pwindow.destroy()
                         if self.co and self.co not in self.so[self.co.class_type]:
+                            print(self.co)
+                            
                             self.unhighlight_objects(self.co)
                         self.co = co
                         if co not in self.so[co.class_type]:
@@ -273,7 +275,7 @@ class Scenario(tk.Canvas):
                         label.pack(ipadx=1)
                 else:
                     if self.co:
-                        if self.co not in self.so[co.class_type]:
+                        if self.co not in self.so[self.co.class_type]:
                             self.unhighlight_objects(self.co)
                         self.co = None
                         self.pwindow.destroy()
@@ -875,6 +877,8 @@ class Scenario(tk.Canvas):
     def automatic_drawing(self, nodes):
         if self.ms.drawing_algorithm == "Spring layout":
             self.spring_based_drawing(nodes)
+        elif self.ms.drawing_algorithm == "BFS-cluster layout":
+            self.bfs_cluster_drawing(nodes)
         else:
             self.FR_drawing(nodes)
             

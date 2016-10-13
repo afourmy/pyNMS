@@ -12,7 +12,7 @@ import ip_networks.bgp_table as ip_bgpt
 import drawing.drawing_options_window
 import graph_generation.multiple_objects as mobj
 from .alignment_menu import AlignmentMenu
-from .drawing_menu import DrawingMenu
+from drawing.drawing_menu import DrawingMenu
 from objects.object_management_window import PropertyChanger
 from collections import OrderedDict
                                 
@@ -146,7 +146,6 @@ class SelectionRightClickMenu(tk.Menu):
     def empty_selection_and_destroy_menu(function):
         def wrapper(self, *others):
             function(self, *others)
-            self.cs.so = {"node": set(), "link": set()}
             self.cs.unhighlight_all()
             self.destroy()
         return wrapper
@@ -158,10 +157,6 @@ class SelectionRightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def change_AS(self, mode):
         AS.ModifyAS(self.cs, mode, self.all_so, self.common_AS)
-        
-    @empty_selection_and_destroy_menu
-    def create_AS(self):
-        AS.ASCreation(self.cs, self.cs.so)
         
     @empty_selection_and_destroy_menu
     def simulate_failure(self, trunk):
@@ -209,6 +204,10 @@ class SelectionRightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def bfs(self, nodes):
         self.cs.bfs_cluster_drawing(nodes)
+        
+    def create_AS(self):
+        AS.ASCreation(self.cs, self.cs.so)
+        self.destroy()
         
     #TODO temporary
     @empty_selection_and_destroy_menu
