@@ -87,6 +87,7 @@ class AutonomousSystem(object):
         
     def area_factory(self, name, id=0, trunks=set(), nodes=set()):
         if name not in self.areas:
+            print(nodes)
             self.areas[name] = area.Area(name, id, self, trunks, nodes)
         return self.areas[name]
         

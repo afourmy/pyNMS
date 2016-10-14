@@ -51,14 +51,15 @@ class SearchObject(CustomTopLevel):
         subtype, property = self.subtypes_list.get(), self.property_list.get()
         property = self.ms.name_to_prop[property]
         type = self.ms.st_to_type[subtype]
-        user_input = self.ms.prop_to_type[property](self.entry_search.get())
+        input = self.entry_search.get()
         for obj in self.ms.cs.ntw.ftr(type, subtype):
             value = getattr(obj, property)
             if not self.is_regex.get():
-                if value == user_input:
+                converted_input = self.ms.prop_to_type[property](input)
+                if value == converted_input:
                     self.ms.cs.highlight_objects(obj)
             else:
-                if re.search(str(user_input), str(value)):
+                if re.search(str(input), str(value)):
                     self.ms.cs.highlight_objects(obj)
                 
         

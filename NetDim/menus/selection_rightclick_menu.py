@@ -146,6 +146,7 @@ class SelectionRightClickMenu(tk.Menu):
     def empty_selection_and_destroy_menu(function):
         def wrapper(self, *others):
             function(self, *others)
+            self.cs.so = {"node": set(), "link": set()}
             self.cs.unhighlight_all()
             self.destroy()
         return wrapper
@@ -205,9 +206,9 @@ class SelectionRightClickMenu(tk.Menu):
     def bfs(self, nodes):
         self.cs.bfs_cluster_drawing(nodes)
         
+    @empty_selection_and_destroy_menu
     def create_AS(self):
         AS.ASCreation(self.cs, self.cs.so)
-        self.destroy()
         
     #TODO temporary
     @empty_selection_and_destroy_menu
