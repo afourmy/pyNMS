@@ -335,6 +335,12 @@ class Network(object):
                 self.ip_to_mask[curr_ip] = mask
                 self.ip_to_node[curr_ip] = node
             sntw_ip = ip_incrementer(sntw_ip, 2**size)
+            
+        # allocate loopback address using the 192.168.0.0/16 private 
+        # address space
+        for idx, router in enumerate(self.ftr("node", "router"), 1):
+            router.ipaddress = "192.168.{}.{}".format(idx // 255, idx % 255)
+                                                      
 
     def interface_allocation(self):
         for node in self.graph:

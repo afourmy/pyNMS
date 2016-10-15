@@ -1,3 +1,7 @@
+# NetDim
+# Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
+# Released under the GNU General Public License GPLv3
+
 from miscellaneous.network_functions import compute_network
 from tkinter.scrolledtext import ScrolledText
 from operator import itemgetter

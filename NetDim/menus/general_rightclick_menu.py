@@ -1,3 +1,7 @@
+# NetDim
+# Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
+# Released under the GNU General Public License GPLv3
+
 import tkinter as tk
 from drawing.drawing_menu import DrawingMenu
 from graph_generation.multiple_objects import MultipleNodes
