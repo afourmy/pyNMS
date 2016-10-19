@@ -54,7 +54,10 @@ class Scenario(tk.Canvas):
         self.layered_display = False
         # if layered_display is false, there's only one layer (self.layers[0])
         # else we need a dictionnary associating a type to each layer
-        self.layers = [(0,), {0: "trunk", 1: "route", 2: "traffic"}]
+        self.layers = [(0,), {0: "trunk", 1: "l2vc", 2: "l3vc", 3: "route", 4: "traffic"}]
+        # defines whether a layer should be display or not. By default,
+        # IP and Ethernet virtual connections are not displayed.
+        self.display_layer = [True, False, True, True, True]
         # difference between each layer in pixel
         self.diff_y = 0
         
@@ -236,8 +239,6 @@ class Scenario(tk.Canvas):
                         if self.pwindow:
                             self.pwindow.destroy()
                         if self.co and self.co not in self.so[self.co.class_type]:
-                            print(self.co)
-                            
                             self.unhighlight_objects(self.co)
                         self.co = co
                         if co not in self.so[co.class_type]:
@@ -428,11 +429,12 @@ class Scenario(tk.Canvas):
             self.coords(node.lid, node.x - 15, node.y + 10)
             for layer in self.layers[self.layered_display]:
                 if node.image[layer] or not layer:
+                    real_layer = sum(self.display_layer[:(layer + 1)]) - 1
                     x = node.x - node.imagex / 2
-                    y = node.y - layer*self.diff_y - node.imagey / 2
+                    y = node.y - real_layer*self.diff_y - node.imagey / 2
                     self.coords(node.image[layer], x, y)
             if self.layered_display and node.layer_line:
-                max_layer = 2 if self.ntw.graph[node]["traffic"] else 1 if self.ntw.graph[node]["route"] else 0
+                max_layer = sum(self.display_layer)
                 coord = (node.x, node.y, node.x, node.y - max_layer*self.diff_y)
                 self.coords(node.layer_line, *coord)
             # the oval was also resized while scaling
@@ -525,7 +527,7 @@ class Scenario(tk.Canvas):
         # label_type is None if we simply want to update the label value
         # but not change the type of label displayed.
         if not label_type:
-            label_type = self.current_label[obj.type.title()].lower()
+            label_type = self.current_label[obj.type.capitalize()].lower()
         else:
             label_type = label_type.lower()
         # we retrieve the id of the normal label in general, but the interface
@@ -619,9 +621,9 @@ class Scenario(tk.Canvas):
     def move_node(self, n):
         newx, newy = float(n.x), float(n.y)
         s = self.NODE_SIZE
-        for layer in self.layers[self.layered_display]:
-            if n.image[layer]:
-                y =  newy - layer*self.diff_y
+        for layer in range(5):
+            if self.display_layer[layer] and n.image[layer]:
+                y =  newy - (sum(self.display_layer[:(layer + 1)]) - 1)*self.diff_y
                 coord_image = (newx - (n.imagex)//2, y - (n.imagey)//2)
                 self.coords(n.image[layer], *coord_image)
                 self.coords(n.oval[layer], newx - s, y - s, newx + s, y + s)
@@ -629,10 +631,12 @@ class Scenario(tk.Canvas):
         
         # move also the virtual line, which length depends on what layer exists
         if self.layered_display:
-            for layer in range(1, 3):
-                if n.layer_line[layer]:
-                    coord = (newx, newy, newx, newy - layer*self.diff_y)
-                    self.coords(n.layer_line[layer], *coord)
+            for layer in range(5):
+                if self.display_layer[layer]:
+                    real_layer = sum(self.display_layer[:(layer + 1)])
+                    if n.layer_line[real_layer]:
+                        coord = (newx, newy, newx, newy - real_layer*self.diff_y)
+                        self.coords(n.layer_line[real_layer], *coord)
     
         # update links coordinates
         for type_link in self.ntw.link_type:
@@ -709,7 +713,7 @@ class Scenario(tk.Canvas):
     def create_node(self, node, layer=0):
         s = self.NODE_SIZE
         curr_image = self.ms.dict_image["default"][node.subtype]
-        y = node.y - layer * self.diff_y
+        y = node.y - (sum(self.display_layer[:(layer + 1)]) - 1) * self.diff_y
         tags = () if layer else (node.subtype, node.class_type, "object")
         node.image[layer] = self.create_image(node.x - (node.imagex)/2, 
                 y - (node.imagey)/2, image=curr_image, anchor=tk.NW, tags=tags)
@@ -728,11 +732,12 @@ class Scenario(tk.Canvas):
         angle = atan2(yB - yA, xB - xA)
         dict_link_to_coords = {}
         type = layer if layer == "all" else self.layers[1][layer]
+        real_layer = 0 if layer == "all" else sum(self.display_layer[:(layer+1)]) - 1
         for id, link in enumerate(self.ntw.links_between(source, destination, type)):
             d = ((id + 1) // 2) * 30 * (-1)**id
             xC = (xA + xB) / 2 + d * sin(angle)
             yC = (yA + yB) / 2 - d * cos(angle)
-            offset = 0 if layer == "all" else layer * self.diff_y
+            offset = 0 if layer == "all" else real_layer * self.diff_y
             coord = (xA, yA - offset, xC, yC - offset, xB, yB - offset)
             dict_link_to_coords[link] = coord
             link.lpos = (xC, yC - offset)
@@ -740,6 +745,7 @@ class Scenario(tk.Canvas):
         
     def create_link(self, new_link):
         edges = (new_link.source, new_link.destination)
+        real_layer = sum(self.display_layer[:new_link.layer+1]) - 1
         for node in edges:
             # we always have to create the nodes at layer 0, no matter whether
             # the layered display option is activated or not.
@@ -752,16 +758,16 @@ class Scenario(tk.Canvas):
                         # if the layered display is activated
                         self.layered_display 
                         # and the link we consider is not a trunk
-                        and new_link.layer 
+                        and real_layer 
                         # and the associated "layer line" does not yet exist
-                        and not node.layer_line[new_link.layer]
+                        and not node.layer_line[real_layer]
                         ):
                         # we create it
                         coords = (node.x, node.y, node.x, 
-                                        node.y - new_link.layer * self.diff_y) 
-                        node.layer_line[new_link.layer] = self.create_line(
+                                        node.y - real_layer * self.diff_y) 
+                        node.layer_line[real_layer] = self.create_line(
                                     *coords, fill="black", width=1, dash=(3,5))
-                        self.tag_lower(node.layer_line[new_link.layer])
+                        self.tag_lower(node.layer_line[real_layer]) 
         current_layer = "all" if not self.layered_display else new_link.layer
         link_to_coords = self.link_coordinates(*edges, layer=current_layer)
         for link in link_to_coords:
@@ -769,7 +775,8 @@ class Scenario(tk.Canvas):
             if not link.line:
                 link.line = self.create_line(*coords, tags=(link.subtype, 
                         link.type, link.class_type, "object"), fill=link.color, 
-                        width=self.LINK_WIDTH, dash=link.dash, smooth=True)
+                        width=self.LINK_WIDTH, dash=link.dash, smooth=True,
+                        state=tk.NORMAL if self.display_layer[link.layer] else tk.HIDDEN)
             else:
                 self.coords(link.line, *coords)
         self.tag_lower(new_link.line)
@@ -782,9 +789,9 @@ class Scenario(tk.Canvas):
         
         for node in self.ntw.pn["node"].values():
             #TODO dict from keys
-            node.oval = {layer: None for layer in range(3)}
-            node.image = {layer: None for layer in range(3)}
-            node.layer_line = {layer: None for layer in range(1,3)}
+            node.oval = {layer: None for layer in range(5)}
+            node.image = {layer: None for layer in range(5)}
+            node.layer_line = {layer: None for layer in range(1,5)}
             
         for link_type in self.ntw.link_type:
             for link in self.ntw.pn[link_type].values():
@@ -822,7 +829,7 @@ class Scenario(tk.Canvas):
                 self.delete(obj.oval[0], obj.image[0], obj.lid)
                 self.remove_objects(*self.ntw.remove_node(obj))
                 if self.layered_display:
-                    for layer in (1, 2):
+                    for layer in range(1, 5):
                         self.delete(
                                     obj.oval[layer], 
                                     obj.image[layer], 

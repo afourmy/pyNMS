@@ -10,7 +10,8 @@ class Node(object):
     class_type = type = "node"
     
     def __init__(
-                 self, 
+                 self,
+                 id,
                  name, 
                  x = 100, 
                  y = 100, 
@@ -20,16 +21,17 @@ class Node(object):
                  subnetmask = None,
                  LB_paths = 1
                  ):
+        self.id = id
         self.name = name
         self.longitude = int(longitude)
         self.latitude = int(latitude)
         self.ipaddress = ipaddress
         self.subnetmask = subnetmask
         # self id and id of the corresponding label on the canvas
-        self.oval = {layer: None for layer in range(3)}
+        self.oval = {layer: None for layer in range(5)}
         # image of the node at all three layers: physical, logical and traffic
-        self.image = {layer: None for layer in range(3)}
-        self.layer_line = {layer: None for layer in range(1, 3)}
+        self.image = {layer: None for layer in range(5)}
+        self.layer_line = {layer: None for layer in range(1, 5)}
         self.lid = None
         self.lpos = None
         self.size = 8
@@ -66,11 +68,16 @@ class Router(Node):
     
     color = "magenta"
     subtype = "router"
+    osi_layer = 3
     imagex, imagey = 33, 25
     
     def __init__(self, *args):
         args = list(args)
-        if len(args) > 3:
+        # when a node is created from the scenario left-click binding, we
+        # pass the (x, y) coordinates to nf, adding up to exactly 5 parameters.
+        # if there are more parameters import, it is an excel import and we
+        # pop the router's specific properties beforehand.
+        if len(args) > 5:
             self.bgp_AS = args.pop()
             self.default_route = args.pop()
         else:
@@ -88,6 +95,7 @@ class Switch(Node):
 
     color = "black"
     subtype = "switch"
+    osi_layer = 2
     imagex, imagey = 54, 36
     
     def __init__(self, *args):
@@ -97,6 +105,7 @@ class OXC(Node):
 
     color = "pink"
     subtype = "oxc"
+    osi_layer = 2
     imagex, imagey = 35, 32
     
     def __init__(self, *args):
@@ -106,6 +115,7 @@ class Host(Node):
 
     color = "blue"
     subtype = "host"
+    osi_layer = 3
     imagex, imagey = 35, 32
     
     def __init__(self, *args):
@@ -117,6 +127,7 @@ class Regenerator(Node):
 
     color = "black"
     subtype = "regenerator"
+    osi_layer = 1
     imagex, imagey = 64, 48
     
     def __init__(self, *args):
@@ -126,6 +137,7 @@ class Splitter(Node):
 
     color = "black"
     subtype = "splitter"
+    osi_layer = 1
     imagex, imagey = 64, 50
     
     def __init__(self, *args):
@@ -135,6 +147,7 @@ class Antenna(Node):
 
     color = "black"
     subtype = "antenna"
+    osi_layer = 1
     imagex, imagey = 35, 32
     
     def __init__(self, *args):
@@ -144,6 +157,7 @@ class Cloud(Node):
 
     color = "black"
     subtype = "cloud"
+    osi_layer = 3
     imagex, imagey = 60, 35
     
     def __init__(self, *args):
@@ -154,7 +168,8 @@ class Link(object):
     
     class_type = "link"
     
-    def __init__(self, name, source, destination, distance=0, bandwidth=0.):
+    def __init__(self, id, name, source, destination, distance=0, bandwidth=0.):
+        self.id = id
         self.name = name
         self.source = source
         self.destination = destination
@@ -188,6 +203,7 @@ class Trunk(Link):
 
     def __init__(
                  self, 
+                 id,
                  name, 
                  source, 
                  destination,
@@ -205,7 +221,7 @@ class Trunk(Link):
                  interfaceD = None
                  ):
                      
-        super().__init__(name, source, destination, distance)
+        super().__init__(id, name, source, destination, distance)
         self.interface = interface
         self.costSD, self.costDS = int(costSD), int(costDS)
         self.capacitySD, self.capacityDS = int(capacitySD), int(capacityDS)
@@ -238,6 +254,47 @@ class Trunk(Link):
         else:
             return getattr(self, property + dir)
             
+class L2VC(Link):
+    
+    type = "l2vc"
+    subtype = "l2vc"
+    layer = 1
+    color = "pink"
+    dash = ()
+
+    def __init__(
+                 self, 
+                 id,
+                 name, 
+                 source, 
+                 destination,
+                 ):
+                     
+        super().__init__(id, name, source, destination)
+        
+    def __lt__(self, other):
+        return hash(self.name)
+        
+class L3VC(Link):
+    
+    type = "l3vc"
+    subtype = "l3vc"
+    layer = 2
+    color = "black"
+    dash = ()
+
+    def __init__(
+                 self, 
+                 id,
+                 name, 
+                 source, 
+                 destination,
+                 ):
+                     
+        super().__init__(id, name, source, destination)
+        
+    def __lt__(self, other):
+        return hash(self.name)
         
 class Ethernet(Trunk):
     
@@ -264,10 +321,11 @@ class Route(Link):
     
     type = "route"
     dash = (3,5)
-    layer = 1
+    layer = 3
     
     def __init__(
                  self, 
+                 id,
                  name, 
                  source, 
                  destination, 
@@ -281,7 +339,7 @@ class Route(Link):
                  traffic = 0,
                  ):
                      
-        super().__init__(name, source, destination, distance)
+        super().__init__(id, name, source, destination, distance)
         self.path_constraints = path_constraints
         self.excluded_nodes = excluded_nodes
         self.excluded_trunks = excluded_trunks
@@ -309,7 +367,7 @@ class StaticRoute(Route):
     
     def __init__(self, *args, **kwargs):
         args = list(args)
-        if len(args) > 3:
+        if len(args) > 4:
             self.ad = args.pop()
             self.dst_sntw = args.pop()
             self.nh_ip = args.pop()
@@ -326,7 +384,7 @@ class BGPPeering(Route):
     
     def __init__(self, *args, **kwargs):
         args = list(args)
-        if len(args) > 3:
+        if len(args) > 4:
             self.weightD = args.pop()
             self.weightS = args.pop()
             self.ipS = args.pop()
@@ -348,7 +406,7 @@ class VirtualLink(Route):
     
     def __init__(self, *args, **kwargs):
         args = list(args)
-        if len(args) > 3:
+        if len(args) > 4:
             self.nh_tk = args.pop()
             self.dst_ip = args.pop()
         else:
@@ -363,7 +421,7 @@ class LSP(Route):
     
     def __init__(self, *args, **kwargs):
         args = list(args)
-        if len(args) > 3:
+        if len(args) > 4:
             self.lsp_type = args.pop()
             self.path = args.pop()
         else:
@@ -377,10 +435,11 @@ class Traffic(Link):
     subtype = type
     dash = (7,1,1,1)
     color = "purple"
-    layer = 2
+    layer = 4
     
     def __init__(
                  self, 
+                 id,
                  name, 
                  source, 
                  destination, 
@@ -388,7 +447,7 @@ class Traffic(Link):
                  throughput = 15, 
                  path = []
                  ):
-        super().__init__(name, source, destination)
+        super().__init__(id, name, source, destination)
         # throughput in Mbps
         self.throughput = throughput
         self.subnet = subnet

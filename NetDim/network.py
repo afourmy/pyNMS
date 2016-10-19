@@ -35,6 +35,11 @@ class Network(object):
     ("cloud", objects.Cloud)
     ])
     
+    VC_class = OrderedDict([
+    ("l2vc", objects.L2VC),
+    ("l3vc", objects.L3VC)
+    ])
+    
     trunk_class = OrderedDict([
     ("ethernet", objects.Ethernet),
     ("wdm", objects.WDMFiber)
@@ -53,21 +58,25 @@ class Network(object):
     ])
     
     link_class = {}
-    for dclass in (trunk_class, route_class, traffic_class):
+    for dclass in (trunk_class, route_class, traffic_class, VC_class):
         link_class.update(dclass)
     
     node_subtype = tuple(node_class.keys())
-    link_type = ("trunk", "route", "traffic")
+    link_type = ("trunk", "route", "traffic", "l2vc", "l3vc")
     link_subtype = tuple(link_class.keys())
     all_subtypes = node_subtype + link_subtype
     
     def __init__(self, scenario):
         # pn for "pool network"
-        self.pn = {"trunk": {}, "node": {}, "route": {}, "traffic": {}}
+        self.pn = {"trunk": {}, "node": {}, "route": {}, "traffic": {}, "l2vc":{}, "l3vc":{}}
         self.pnAS = {}
         self.cs = scenario
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link = self.cpt_node = self.cpt_AS = 1
+        # useful for tests and listbox when we want to retrieve an object
+        # based on its name. The only object that needs changing when a object
+        # is renamed by the user.
+        self.name_to_id = {}
         
         # dicts used for IP networks 
         # - associates a subnetwork to a set of IP addresses while the 
@@ -86,6 +95,13 @@ class Network(object):
         # the "graph neighbor" which, in case of a multi-access network,
         # is a L2 device like a switch or a bridge.
         self.trunk_to_neighbor = defaultdict(set)
+        
+        # osi layer to devices
+        self.osi_layers = {
+        "3": ("router", "host", "cloud"),
+        "2": ("switch", "oxc"),
+        "1": ("regenerator", "splitter", "antenna")
+        }
         
         # set of all trunks in failure: this parameter is used for
         # link dimensioning and failure simulation
@@ -123,35 +139,39 @@ class Network(object):
            self, 
            *param, 
            subtype = "ethernet", 
+           id = None,
            name = None, 
            s = None, 
            d = None
            ):
         link_type = self.cs.ms.st_to_type[subtype]
-        if not name:
-            while True:
-                name = link_type + str(self.cpt_link)
-                if name in self.pn[link_type]:
-                    self.cpt_link += 1
-                else:
-                    break
         # creation link in the s-d direction if no link at all yet
-        if not name in self.pn[link_type]:
-            new_link = self.link_class[subtype](name, s, d, *param)
+        if not id:
+            if name in self.name_to_id:
+                return self.pn[link_type][self.name_to_id[name]]
+            if not name:
+                name = link_type + str(self.cpt_link)
+            id = self.cpt_link
             self.cpt_link += 1
-            self.pn[link_type][name] = new_link
+            new_link = self.link_class[subtype](id, name, s, d, *param)
+            self.name_to_id[name] = id
+            self.pn[link_type][id] = new_link
             self.graph[s][link_type].add((d, new_link))
             self.graph[d][link_type].add((s, new_link))
-        return self.pn[link_type][name]
+        return self.pn[link_type][id]
         
     # "nf" is the node factory. Creates or retrieves any type of nodes
-    def nf(self, *p, node_type="router", name=None):
-        if not name:
-            name = "node" + str(self.cpt_node)
-        if name not in self.pn["node"]:
-            self.pn["node"][name] = self.node_class[node_type](name, *p)
+    def nf(self, *p, node_type="router", name=None, id=None):
+        if name in self.name_to_id:
+            return self.pn["node"][self.name_to_id[name]]
+        if not id:
+            id = self.cpt_node
+            if not name:
+                name = "node" + str(self.cpt_node)
+            self.pn["node"][id] = self.node_class[node_type](self.cpt_node, name, *p)
+            self.name_to_id[name] = id
             self.cpt_node += 1
-        return self.pn["node"][name]
+        return self.pn["node"][id]
         
     def AS_factory(
                    self, 
@@ -312,6 +332,9 @@ class Network(object):
             for trunk, node in ma_network:
                 for _, neighbor in ma_network - {(trunk, node)}:
                     self.trunk_to_neighbor[trunk].add(neighbor)
+                    if not self.is_connected(node, neighbor, "l3vc"):
+                        l3vc = self.lf(s=node, d=neighbor, subtype="l3vc")
+                        self.cs.create_link(l3vc)
     
     def ip_allocation(self):
         # we will perform the IP addressing of all subnetworks with VLSM
@@ -1725,7 +1748,6 @@ class Network(object):
                     if new_bw != initial_bw:
                         break
                 else:
-                    print("test")
                     C = C_max - 1
                 
 

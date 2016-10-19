@@ -69,6 +69,8 @@ class NetDim(tk.Tk):
         "cloud": "node",
         "ethernet": "trunk",
         "wdm": "trunk",
+        "l2vc": "l2vc",
+        "l3vc": "l3vc",
         "static route": "route",
         "BGP peering": "route",
         "OSPF virtual link": "route",
@@ -258,6 +260,18 @@ class NetDim(tk.Tk):
         "WCTraffic",
         )),
         
+        ("L2vc",
+        (
+        "None", 
+        "Name", 
+        )),
+        
+        ("L3vc",
+        (
+        "None", 
+        "Name", 
+        )),
+        
         ("Route", 
         (
         "None", 
@@ -341,6 +355,11 @@ class NetDim(tk.Tk):
         "sntw"
         )
         
+        vc_box_properties = (
+        "name", 
+        "type",
+        )
+        
         self.box_properties = collections.OrderedDict([
         ("router", node_box_properties + ("default_route", "bgp_AS")),
         ("oxc", node_box_properties),
@@ -353,6 +372,9 @@ class NetDim(tk.Tk):
         
         ("ethernet", trunk_box_properties),
         ("wdm", trunk_box_properties + ("lambda_capacity",)),
+        
+        ("l2vc", vc_box_properties),
+        ("l3vc", vc_box_properties),
         
         ("static route", route_common_properties + (
         "nh_ip",
@@ -634,7 +656,14 @@ class NetDim(tk.Tk):
         },
         
         "l_type": {
-        l_type: (85, 15) for l_type in self.cs.ntw.link_class
+        "ethernet": (85, 15),
+        "wdm": (85, 15),
+        "static route": (85, 15),
+        "BGP peering": (85, 15),
+        "OSPF virtual link": (85, 15),
+        "Label Switched Path": (85, 15),
+        "routed traffic": (85, 15),
+        "static traffic": (85, 15)
         },
         
         "ntw_topo": {
@@ -749,7 +778,6 @@ class NetDim(tk.Tk):
                 nodes = self.convert_nodes_set(nodes)
                 trunks = self.convert_links_set(trunks)
                 edges = self.convert_nodes_set(edges)
-                print(id)
                 self.cs.ntw.AS_factory(name, type, id, trunks, nodes, 
                                                         edges, set(), True)
             

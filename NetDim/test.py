@@ -19,6 +19,7 @@ def start_and_import(filename):
     def inner_decorator(function):
         def wrapper(self):
             self.netdim = gui.NetDim(path_app)
+            self.ntw = self.netdim.cs.ntw
             path_test = path_parent + "\\Tests\\"
             self.netdim.import_graph(path_test + filename)
             function(self)
@@ -37,7 +38,7 @@ class TestExportImport(unittest.TestCase):
         trunk = cls.netdim.cs.ntw.lf(name="t", s=src, d=dest)
         trunk.distance = 666
         route = cls.netdim.cs.ntw.lf(subtype="static route", s=src, d=dest)
-        # export in all 3 format: excel, text and csv
+        # export in excel and csv
         path = "\\Tests\\test_export."
         for extension in ("xls", "csv"):
             cls.netdim.export_graph("".join((path_parent, path, extension)))
@@ -65,8 +66,8 @@ class TestFlow(unittest.TestCase):
  
     @start_and_import("test_flow1.xls")
     def setUp(self):
-        self.source = self.netdim.cs.ntw.pn["node"]["s"]
-        self.target = self.netdim.cs.ntw.pn["node"]["t"]
+        self.source = self.ntw.pn["node"][self.ntw.name_to_id["s"]]
+        self.target = self.ntw.pn["node"][self.ntw.name_to_id["t"]]
  
     def tearDown(self):
         self.netdim.destroy()
@@ -111,7 +112,7 @@ class TestSP(unittest.TestCase):
  
     @start_and_import("test_SP.xls")
     def setUp(self):
-        get_node = lambda node_name: self.netdim.cs.ntw.pn["node"][node_name]
+        get_node = lambda node_name: self.ntw.pn["node"][self.ntw.name_to_id[node_name]]
         self.route9 = (get_node("node0"), get_node("node4"))
         self.route10 = (get_node("node0"), get_node("node5"))
         self.route11 = (get_node("node0"), get_node("node3"))
@@ -154,8 +155,8 @@ class TestMCF(unittest.TestCase):
     
     @start_and_import("test_mcf.xls")
     def setUp(self):
-        source = self.netdim.cs.ntw.pn["node"]["node1"]
-        target = self.netdim.cs.ntw.pn["node"]["node4"]
+        source = self.ntw.pn["node"][self.ntw.name_to_id["node1"]]
+        target = self.ntw.pn["node"][self.ntw.name_to_id["node4"]]
         self.netdim.cs.ntw.LP_MCF_formulation(source, target, 12)
  
     def tearDown(self):
@@ -163,7 +164,7 @@ class TestMCF(unittest.TestCase):
  
     def test_MCF(self):
         for trunk_name, flow in self.results:
-            trunk = self.netdim.cs.ntw.pn["trunk"][trunk_name]
+            trunk = self.netdim.cs.ntw.pn["trunk"][self.ntw.name_to_id[trunk_name]]
             self.assertEqual(trunk.flowSD, flow)
         
 class TestISIS(unittest.TestCase):
@@ -184,8 +185,9 @@ class TestISIS(unittest.TestCase):
         self.assertEqual(len(self.netdim.cs.ntw.pn["traffic"]), 2)
         for traffic, path in self.results:
             # we retrieve the actual route from its name in pn
-            traffic_link = self.netdim.cs.ntw.pn["traffic"][traffic]
+            traffic_link = self.netdim.cs.ntw.pn["traffic"][self.ntw.name_to_id[traffic]]
             # we check that the path is conform to IS-IS protocol
+            print(traffic_link.path)
             self.assertEqual(set(map(str, traffic_link.path)), path)
             
 class TestOSPF(unittest.TestCase):
@@ -206,7 +208,7 @@ class TestOSPF(unittest.TestCase):
         self.assertEqual(len(self.netdim.cs.ntw.pn["traffic"]), 2)
         for traffic_link, path in self.results:
             # we retrieve the actual route from its name in pn
-            traffic_link = self.netdim.cs.ntw.pn["traffic"][traffic_link]
+            traffic_link = self.netdim.cs.ntw.pn["traffic"][self.ntw.name_to_id[traffic_link]]
             # we check that the path is conform to OSPF protocol
             self.assertEqual(set(map(str, traffic_link.path)), path)
             
