@@ -7,14 +7,14 @@ from collections import defaultdict
 ## Nodes
 class Node(object):
     
-    class_type = type = "node"
+    class_type = type = 'node'
     
     def __init__(
                  self,
                  id,
                  name, 
-                 x = 100, 
-                 y = 100, 
+                 x = 600, 
+                 y = 300, 
                  longitude = 0, 
                  latitude = 0, 
                  ipaddress = None,
@@ -31,7 +31,7 @@ class Node(object):
         self.oval = {layer: None for layer in range(5)}
         # image of the node at all three layers: physical, logical and traffic
         self.image = {layer: None for layer in range(5)}
-        self.layer_line = {layer: None for layer in range(1, 5)}
+        self.layer_line = {layer: None for layer in range(5)}
         self.lid = None
         self.lpos = None
         self.size = 8
@@ -66,9 +66,9 @@ class Node(object):
         
 class Router(Node):
     
-    color = "magenta"
-    subtype = "router"
-    osi_layer = 3
+    color = 'magenta'
+    subtype = 'router'
+    layer = 3
     imagex, imagey = 33, 25
     
     def __init__(self, *args):
@@ -93,9 +93,9 @@ class Router(Node):
         
 class Switch(Node):
 
-    color = "black"
-    subtype = "switch"
-    osi_layer = 2
+    color = 'black'
+    subtype = 'switch'
+    layer = 2
     imagex, imagey = 54, 36
     
     def __init__(self, *args):
@@ -103,9 +103,9 @@ class Switch(Node):
         
 class OXC(Node):
 
-    color = "pink"
-    subtype = "oxc"
-    osi_layer = 2
+    color = 'pink'
+    subtype = 'oxc'
+    layer = 2
     imagex, imagey = 35, 32
     
     def __init__(self, *args):
@@ -113,9 +113,9 @@ class OXC(Node):
         
 class Host(Node):
 
-    color = "blue"
-    subtype = "host"
-    osi_layer = 3
+    color = 'blue'
+    subtype = 'host'
+    layer = 3
     imagex, imagey = 35, 32
     
     def __init__(self, *args):
@@ -125,9 +125,9 @@ class Host(Node):
         
 class Regenerator(Node):
 
-    color = "black"
-    subtype = "regenerator"
-    osi_layer = 1
+    color = 'black'
+    subtype = 'regenerator'
+    layer = 1
     imagex, imagey = 64, 48
     
     def __init__(self, *args):
@@ -135,9 +135,9 @@ class Regenerator(Node):
         
 class Splitter(Node):
 
-    color = "black"
-    subtype = "splitter"
-    osi_layer = 1
+    color = 'black'
+    subtype = 'splitter'
+    layer = 1
     imagex, imagey = 64, 50
     
     def __init__(self, *args):
@@ -145,9 +145,9 @@ class Splitter(Node):
         
 class Antenna(Node):
 
-    color = "black"
-    subtype = "antenna"
-    osi_layer = 1
+    color = 'black'
+    subtype = 'antenna'
+    layer = 1
     imagex, imagey = 35, 32
     
     def __init__(self, *args):
@@ -155,9 +155,9 @@ class Antenna(Node):
         
 class Cloud(Node):
 
-    color = "black"
-    subtype = "cloud"
-    osi_layer = 3
+    color = 'black'
+    subtype = 'cloud'
+    layer = 3
     imagex, imagey = 60, 35
     
     def __init__(self, *args):
@@ -166,7 +166,7 @@ class Cloud(Node):
 ## Links
 class Link(object):
     
-    class_type = "link"
+    class_type = 'link'
     
     def __init__(self, id, name, source, destination, distance=0, bandwidth=0.):
         self.id = id
@@ -197,7 +197,7 @@ class Link(object):
 
 class Trunk(Link):
     
-    type = "trunk"
+    type = 'trunk'
     layer = 0
     dash = ()
 
@@ -207,7 +207,7 @@ class Trunk(Link):
                  name, 
                  source, 
                  destination,
-                 interface = "GE",
+                 interface = 'GE',
                  distance = 0., 
                  costSD = 1., 
                  costDS = 1., 
@@ -246,8 +246,8 @@ class Trunk(Link):
     def __call__(self, property, node, value=None):
         # can be used both as a getter and a setter, depending on 
         # whether a value is provided or not
-        dir = (node == self.source)*"SD" or "DS"
-        if property in ("subnetmask", "interface", "ipaddress"):
+        dir = (node == self.source)*'SD' or 'DS'
+        if property in ('subnetmask', 'interface', 'ipaddress'):
             dir = dir[:-1]
         if value:
             setattr(self, property + dir, value)
@@ -256,10 +256,10 @@ class Trunk(Link):
             
 class L2VC(Link):
     
-    type = "l2vc"
-    subtype = "l2vc"
+    type = 'l2vc'
+    subtype = 'l2vc'
     layer = 1
-    color = "pink"
+    color = 'pink'
     dash = ()
 
     def __init__(
@@ -277,10 +277,10 @@ class L2VC(Link):
         
 class L3VC(Link):
     
-    type = "l3vc"
-    subtype = "l3vc"
+    type = 'l3vc'
+    subtype = 'l3vc'
     layer = 2
-    color = "black"
+    color = 'black'
     dash = ()
 
     def __init__(
@@ -298,16 +298,16 @@ class L3VC(Link):
         
 class Ethernet(Trunk):
     
-    color = "blue"
-    protocol = subtype = "ethernet"
+    color = 'blue'
+    protocol = subtype = 'ethernet'
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
 class WDMFiber(Trunk):
     
-    color = "orange"
-    protocol = subtype = "wdm"
+    color = 'orange'
+    protocol = subtype = 'wdm'
     
     def __init__(self, *args):
         args = list(args)
@@ -319,7 +319,7 @@ class WDMFiber(Trunk):
         
 class Route(Link):
     
-    type = "route"
+    type = 'route'
     dash = (3,5)
     layer = 3
     
@@ -351,7 +351,7 @@ class Route(Link):
     def __call__(self, property, node, value=None):
         # can be used both as a getter and a setter, depending on 
         # whether a value is provided or not
-        dir = (node == self.source)*"S" or "D"
+        dir = (node == self.source)*'S' or 'D'
         if value:
             setattr(self, property + dir, value)
         else:
@@ -362,8 +362,8 @@ class Route(Link):
         
 class StaticRoute(Route):
 
-    color = "violet"
-    subtype = "static route"
+    color = 'violet'
+    subtype = 'static route'
     
     def __init__(self, *args, **kwargs):
         args = list(args)
@@ -379,8 +379,8 @@ class StaticRoute(Route):
         
 class BGPPeering(Route):
 
-    color = "violet"
-    subtype = "BGP peering"
+    color = 'violet'
+    subtype = 'BGP peering'
     
     def __init__(self, *args, **kwargs):
         args = list(args)
@@ -396,13 +396,13 @@ class BGPPeering(Route):
             self.weightS = 0
             self.ipS = None
             self.ipD = None
-            self.bgp_type = "eBGP"
+            self.bgp_type = 'eBGP'
         super().__init__(*args)
         
 class VirtualLink(Route):
 
-    color = "violet"
-    subtype = "OSPF virtual link"
+    color = 'violet'
+    subtype = 'OSPF virtual link'
     
     def __init__(self, *args, **kwargs):
         args = list(args)
@@ -416,8 +416,8 @@ class VirtualLink(Route):
         
 class LSP(Route):
 
-    color = "violet"
-    subtype = "Label Switched Path"
+    color = 'violet'
+    subtype = 'Label Switched Path'
     
     def __init__(self, *args, **kwargs):
         args = list(args)
@@ -431,10 +431,10 @@ class LSP(Route):
 
         
 class Traffic(Link):
-    type = "traffic"
+    type = 'traffic'
     subtype = type
     dash = (7,1,1,1)
-    color = "purple"
+    color = 'purple'
     layer = 4
     
     def __init__(
@@ -455,16 +455,16 @@ class Traffic(Link):
         
 class RoutedTraffic(Traffic):
     
-    color = "forest green"
-    subtype = "routed traffic"
+    color = 'forest green'
+    subtype = 'routed traffic'
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
 class StaticTraffic(Traffic):
     
-    color = "chartreuse"
-    subtype = "static traffic"
+    color = 'chartreuse'
+    subtype = 'static traffic'
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

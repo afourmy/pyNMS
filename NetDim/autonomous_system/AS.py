@@ -31,9 +31,9 @@ class AutonomousSystem(object):
 
         # pAS as in "pool AS": same as pool network
         self.pAS = {
-        "trunk": trunks, 
-        "node": nodes, 
-        "edge": edges
+        "trunk": set(trunks), 
+        "node": set(nodes), 
+        "edge": set(edges)
         }
         
         # areas is a dict associating a name to an area
@@ -73,6 +73,9 @@ class AutonomousSystem(object):
         # node used to exit the domain (ASBR for OSPF)
         self.exit_point = None
         
+        # unselect everything
+        scenario.unhighlight_all()
+        
     def __repr__(self):
         return self.name
         
@@ -87,7 +90,6 @@ class AutonomousSystem(object):
         
     def area_factory(self, name, id=0, trunks=set(), nodes=set()):
         if name not in self.areas:
-            print(nodes)
             self.areas[name] = area.Area(name, id, self, trunks, nodes)
         return self.areas[name]
         
@@ -203,9 +205,9 @@ class ModifyAS(CustomTopLevel):
         self.destroy()
         
 class ASCreation(CustomTopLevel):
-    def __init__(self, scenario, so):
+    def __init__(self, scenario, nodes, trunks):
         super().__init__()
-        self.so = so
+        self.so = scenario.so
         self.title("Create AS")
         
         # List of AS type
@@ -217,7 +219,7 @@ class ASCreation(CustomTopLevel):
 
         # retrieve and save node data
         self.button_create_AS = ttk.Button(self, text="Create AS", 
-                                command=lambda: self.create_AS(scenario))
+                        command=lambda: self.create_AS(scenario, nodes, trunks))
         
         # Label for the name/type of the AS
         self.label_name = tk.Label(self, bg="#A1DBCD", text="Name")
@@ -236,7 +238,7 @@ class ASCreation(CustomTopLevel):
         self.AS_type_list.grid(row=2, column=1, pady=5, padx=5, sticky=tk.W)
         self.button_create_AS.grid(row=3, column=0, columnspan=2, pady=5, padx=5)
 
-    def create_AS(self, scenario):
+    def create_AS(self, scenario, nodes, trunks):
         # automatic initialization of the AS id in case it is empty
         if self.entry_id.get():
             id = int(self.entry_id.get())
@@ -247,8 +249,8 @@ class ASCreation(CustomTopLevel):
                                          name = self.entry_name.get(), 
                                          _type = self.var_AS_type.get(), 
                                          id = id,
-                                         trunks = self.so["link"], 
-                                         nodes = self.so["node"]
+                                         trunks = trunks, 
+                                         nodes = nodes
                                          )
         self.destroy()
             

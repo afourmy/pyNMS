@@ -76,19 +76,19 @@ class TestFlow(unittest.TestCase):
         self.netdim.destroy()
  
     def test_ford_fulkerson(self):
-        ff_flow = self.netdim.cs.ntw.ford_fulkerson(self.source, self.target)
+        ff_flow = self.ntw.ford_fulkerson(self.source, self.target)
         self.assertEqual(ff_flow, 19)
         
     def test_edmonds_karp(self):
-        ek_flow = self.netdim.cs.ntw.edmonds_karp(self.source, self.target)
+        ek_flow = self.ntw.edmonds_karp(self.source, self.target)
         self.assertEqual(ek_flow, 19)  
         
     def test_dinic(self):
-        _, dinic_flow = self.netdim.cs.ntw.dinic(self.source, self.target)
+        _, dinic_flow = self.ntw.dinic(self.source, self.target)
         self.assertEqual(dinic_flow, 19)  
     
     def test_LP_flow(self):
-        LP_flow = self.netdim.cs.ntw.LP_MF_formulation(self.source, self.target)
+        LP_flow = self.ntw.LP_MF_formulation(self.source, self.target)
         self.assertEqual(LP_flow, 19)   
         
 class TestMST(unittest.TestCase):
@@ -101,7 +101,7 @@ class TestMST(unittest.TestCase):
         self.netdim.destroy()
  
     def test_kruskal(self):
-        mst = self.netdim.cs.ntw.kruskal(self.netdim.cs.ntw.pn["node"].values())
+        mst = self.ntw.kruskal(self.ntw.pn["node"].values())
         mst_costs = set(map(lambda trunk: trunk.costSD, mst))
         self.assertEqual(mst_costs, {1, 2, 4})
         
@@ -125,25 +125,25 @@ class TestSP(unittest.TestCase):
  
     def test_A_star(self):
         for i, r in enumerate((self.route9, self.route10, self.route11)):
-            _, path = self.netdim.cs.ntw.A_star(r[0], r[1])
+            _, path = self.ntw.A_star(r[0], r[1])
             self.assertEqual(list(map(str, path)), self.results[i])
         
     def test_bellman_ford(self):
         for i, r in enumerate((self.route9, self.route10, self.route11)):
-            _, path = self.netdim.cs.ntw.bellman_ford(r[0], r[1])
+            _, path = self.ntw.bellman_ford(r[0], r[1])
             self.assertEqual(list(map(str, path)), self.results[i])
         
     def test_floyd_warshall(self):
         cost_trunk = lambda trunk: trunk.costSD
-        all_length = self.netdim.cs.ntw.floyd_warshall()
+        all_length = self.ntw.floyd_warshall()
         for i, r in enumerate((self.route9, self.route10, self.route11)):
             path_length = all_length[r[0]][r[1]]
-            _, path = self.netdim.cs.ntw.A_star(r[0], r[1])
+            _, path = self.ntw.A_star(r[0], r[1])
             self.assertEqual(sum(map(cost_trunk, path)), path_length)
             
     def test_LP(self):
         for i, r in enumerate((self.route9, self.route10, self.route11)):
-            path = self.netdim.cs.ntw.LP_SP_formulation(r[0], r[1])
+            path = self.ntw.LP_SP_formulation(r[0], r[1])
             self.assertEqual(list(map(str, path)), self.results[i])
             
 class TestMCF(unittest.TestCase):
@@ -160,14 +160,14 @@ class TestMCF(unittest.TestCase):
     def setUp(self):
         source = self.ntw.pn["node"][self.ntw.name_to_id["node1"]]
         target = self.ntw.pn["node"][self.ntw.name_to_id["node4"]]
-        self.netdim.cs.ntw.LP_MCF_formulation(source, target, 12)
+        self.ntw.LP_MCF_formulation(source, target, 12)
  
     def tearDown(self):
         self.netdim.destroy()
  
     def test_MCF(self):
         for trunk_name, flow in self.results:
-            trunk = self.netdim.cs.ntw.pn["trunk"][self.ntw.name_to_id[trunk_name]]
+            trunk = self.ntw.pn["trunk"][self.ntw.name_to_id[trunk_name]]
             self.assertEqual(trunk.flowSD, flow)
         
 class TestISIS(unittest.TestCase):
@@ -179,18 +179,17 @@ class TestISIS(unittest.TestCase):
  
     @start_and_import("test_ISIS.xls")
     def setUp(self):
-        self.netdim.cs.ntw.calculate_all()
+        self.ntw.calculate_all()
  
     def tearDown(self):
         self.netdim.destroy()
  
     def test_ISIS(self):
-        self.assertEqual(len(self.netdim.cs.ntw.pn["traffic"]), 2)
+        self.assertEqual(len(self.ntw.pn["traffic"]), 2)
         for traffic, path in self.results:
             # we retrieve the actual route from its name in pn
-            traffic_link = self.netdim.cs.ntw.pn["traffic"][self.ntw.name_to_id[traffic]]
+            traffic_link = self.ntw.pn["traffic"][self.ntw.name_to_id[traffic]]
             # we check that the path is conform to IS-IS protocol
-            print(traffic_link.path)
             self.assertEqual(set(map(str, traffic_link.path)), path)
             
 class TestOSPF(unittest.TestCase):
@@ -202,16 +201,16 @@ class TestOSPF(unittest.TestCase):
  
     @start_and_import("test_ospf.xls")
     def setUp(self):
-        self.netdim.cs.ntw.calculate_all()
+        self.ntw.calculate_all()
  
     def tearDown(self):
         self.netdim.destroy()
  
     def test_OSPF(self):
-        self.assertEqual(len(self.netdim.cs.ntw.pn["traffic"]), 2)
+        self.assertEqual(len(self.ntw.pn["traffic"]), 2)
         for traffic_link, path in self.results:
             # we retrieve the actual route from its name in pn
-            traffic_link = self.netdim.cs.ntw.pn["traffic"][self.ntw.name_to_id[traffic_link]]
+            traffic_link = self.ntw.pn["traffic"][self.ntw.name_to_id[traffic_link]]
             # we check that the path is conform to OSPF protocol
             self.assertEqual(set(map(str, traffic_link.path)), path)
             
@@ -237,32 +236,32 @@ class TestCSPF(unittest.TestCase):
         self.netdim.destroy()
  
     def test_CSPF(self):
-        node1 = self.netdim.cs.ntw.nf(name="node1")
-        node2 = self.netdim.cs.ntw.nf(name="node2")
-        node3 = self.netdim.cs.ntw.nf(name="node3")
-        node4 = self.netdim.cs.ntw.nf(name="node4")
-        node6 = self.netdim.cs.ntw.nf(name="node6")
-        node7 = self.netdim.cs.ntw.nf(name="node7")
+        node1 = self.ntw.nf(name="node1")
+        node2 = self.ntw.nf(name="node2")
+        node3 = self.ntw.nf(name="node3")
+        node4 = self.ntw.nf(name="node4")
+        node6 = self.ntw.nf(name="node6")
+        node7 = self.ntw.nf(name="node7")
         # trunk between node4 and node6
-        trunk13 = self.netdim.cs.ntw.lf(name="trunk13")
+        trunk13 = self.ntw.lf(name="trunk13")
         # trunk between node2 and node5
-        trunk15 = self.netdim.cs.ntw.lf(name="trunk15")
+        trunk15 = self.ntw.lf(name="trunk15")
         
-        _, path = self.netdim.cs.ntw.A_star(node6, node7)
+        _, path = self.ntw.A_star(node6, node7)
         self.assertEqual(list(map(str, path)), self.results[0])
-        _, path = self.netdim.cs.ntw.A_star(node6, node7, 
+        _, path = self.ntw.A_star(node6, node7, 
                                                     path_constraints=[node2])
         self.assertEqual(list(map(str, path)), self.results[1])
-        _, path = self.netdim.cs.ntw.A_star(node6, node7, 
+        _, path = self.ntw.A_star(node6, node7, 
                                             path_constraints=[node3, node2])
         self.assertEqual(list(map(str, path)), self.results[2])                  
-        _, path = self.netdim.cs.ntw.A_star(node6, node7, 
+        _, path = self.ntw.A_star(node6, node7, 
                                                     excluded_trunks={trunk13})
         self.assertEqual(list(map(str, path)), self.results[3])
-        _, path = self.netdim.cs.ntw.A_star(node6, node7, 
+        _, path = self.ntw.A_star(node6, node7, 
                             excluded_trunks={trunk13}, excluded_nodes={node1})
         self.assertEqual(list(map(str, path)), self.results[4])
-        _, path = self.netdim.cs.ntw.A_star(node6, node7, 
+        _, path = self.ntw.A_star(node6, node7, 
                             excluded_trunks={trunk15}, excluded_nodes={node4})
         self.assertEqual(list(map(str, path)), self.results[5])
         
@@ -276,7 +275,7 @@ class TestRWA(unittest.TestCase):
         self.netdim.destroy()
         
     def test_RWA(self):
-        sco_new_graph = self.netdim.cs.ntw.RWA_graph_transformation()
+        sco_new_graph = self.ntw.RWA_graph_transformation()
         self.assertEqual(sco_new_graph.ntw.LP_RWA_formulation(), 3)
         
 if __name__ == '__main__':

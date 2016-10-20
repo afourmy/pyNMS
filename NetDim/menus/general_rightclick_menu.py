@@ -32,7 +32,7 @@ class GeneralRightClickMenu(tk.Menu):
                 command=lambda: MultipleNodes(self.cs, x, y))
                 
         # find networks
-        self.add_command(label="Calculate", 
+        self.add_command(label="Refresh", 
                 command=lambda: self.network())
                 
         # make the menu appear    
@@ -43,5 +43,5 @@ class GeneralRightClickMenu(tk.Menu):
         self.destroy()
         
     def network(self):
-        self.cs.ntw.calculate_all()
+        self.cs.refresh()
         self.destroy()
