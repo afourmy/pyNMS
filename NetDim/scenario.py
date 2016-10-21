@@ -58,7 +58,7 @@ class Scenario(tk.Canvas):
         self.layers = [(0,), {0: 'trunk', 1: 'l2vc', 2: 'l3vc', 3: 'route', 4: 'traffic'}]
         # defines whether a layer should be display or not. By default,
         # IP and Ethernet virtual connections are not displayed.
-        self.display_layer = [True, False, True, True, True]
+        self.display_layer = [True, True, True, True, True]
         # difference between each layer in pixel
         self.diff_y = 0
         
@@ -121,6 +121,10 @@ class Scenario(tk.Canvas):
         self.bind('<Control-KeyRelease>', lambda _: change_ctrl(False))
         self.bind('<Control-KeyPress>', lambda _: change_ctrl(True))
         
+        # display/undisplay a layer by pressing the associated number
+        for layer in range(1, 6):
+            self.bind(str(layer), lambda _, l=layer: self.invert_layer_display(l-1))
+        
     def switch_binding(self):   
         # if there were selected nodes, so that they don't remain highlighted
         self.unhighlight_all()
@@ -172,6 +176,10 @@ class Scenario(tk.Canvas):
             event.x, event.y = self.canvasx(event.x), self.canvasy(event.y)
             function(self, event, *others)
         return wrapper
+        
+    def invert_layer_display(self, layer):
+        self.display_layer[layer] = not self.display_layer[layer]
+        self.draw_all(False)
             
     @adapt_coordinates
     def closest_route_path(self, event):
@@ -428,16 +436,13 @@ class Scenario(tk.Canvas):
             node.x = (new_coords[0] + new_coords[2]) / 2
             node.y = (new_coords[3] + new_coords[1]) / 2
             self.coords(node.lid, node.x - 15, node.y + 10)
-            for layer in self.layers[self.layered_display]:
+            for layer in range(5):
                 if node.image[layer] or not layer:
-                    real_layer = sum(self.display_layer[:(layer + 1)]) - 1
                     x = node.x - node.imagex / 2
-                    y = node.y - real_layer*self.diff_y - node.imagey / 2
+                    y = node.y - layer * self.diff_y - node.imagey / 2
                     self.coords(node.image[layer], x, y)
-            if self.layered_display and node.layer_line:
-                max_layer = sum(self.display_layer)
-                coord = (node.x, node.y, node.x, node.y - max_layer*self.diff_y)
-                self.coords(node.layer_line, *coord)
+                    coord = (node.x, node.y, node.x, node.y - layer * self.diff_y)
+                    self.coords(node.layer_line, *coord)
             # the oval was also resized while scaling
             node.size = abs(new_coords[0] - new_coords[2])/2 
             for type in self.ntw.link_type:
@@ -623,9 +628,8 @@ class Scenario(tk.Canvas):
         newx, newy = float(n.x), float(n.y)
         s = self.NODE_SIZE
         for layer in range(5):
-            if self.display_layer[layer] and n.image[layer]:
-                print(layer, sum(self.display_layer[:(layer + 1)]) - 1)
-                y =  newy - (sum(self.display_layer[:(layer + 1)]) - 1)*self.diff_y
+            if n.image[layer]:
+                y =  newy - layer * self.diff_y
                 coord_image = (newx - (n.imagex)//2, y - (n.imagey)//2)
                 self.coords(n.image[layer], *coord_image)
                 self.coords(n.oval[layer], newx - s, y - s, newx + s, y + s)
@@ -817,7 +821,6 @@ class Scenario(tk.Canvas):
                     
     def remove_objects(self, *objects):
         for obj in objects:
-            print(obj)
             if obj.type not in ('traffic', 'route', 'l2vc', 'l3vc'):
                 for AS in list(obj.AS):
                     AS.management.remove_from_AS(obj)
@@ -865,7 +868,7 @@ class Scenario(tk.Canvas):
             if obj.type == 'node':
                 if random_drawing:
                     obj.x, obj.y = randint(100,700), randint(100,700)
-                if not self.layered_display:
+                if not self.layered_display and not obj.image[0]:
                     self.create_node(obj)
             else:
                 self.create_link(obj)

@@ -595,10 +595,7 @@ class NetDim(tk.Tk):
         self.scenario_notebook.bind('<ButtonRelease-1>', self.change_cs)
         self.dict_scenario = {}
         
-        # cs for 'current scenario' (the first one, which we create)
-        # load a map
-        self.img_france = ImageTk.Image.open(join(self.path_icon, 'france3.jpg'))
-        
+        # cs for 'current scenario' (the first one, which we create)        
         self.cs = scenario.Scenario(self, 'scenario 0')
         self.cpt_scenario = 0
         self.scenario_notebook.add(self.cs, text=self.cs.name, compound=tk.TOP)

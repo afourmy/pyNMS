@@ -335,12 +335,10 @@ class Network(object):
                     if not self.is_connected(node, neighbor, 'l3vc'):
                         l3vc = self.lf(s=node, d=neighbor, subtype='l3vc')
                         self.cs.create_link(l3vc)
-        print(self.ma_segments[2])
         for ma_network in self.ma_segments[2]:
             for trunk, node in ma_network:
                 for _, neighbor in ma_network - {(trunk, node)}:
                     if not self.is_connected(node, neighbor, 'l2vc'):
-                        print("test")
                         l2vc = self.lf(s=node, d=neighbor, subtype='l2vc')
                         self.cs.create_link(l2vc)
     
