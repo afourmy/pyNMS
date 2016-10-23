@@ -217,6 +217,7 @@ class Network(object):
             
     def remove_node(self, node):
         self.pn['node'].pop(self.name_to_id[node.name])
+        self.name_to_id.pop(node.name, None)
         # retrieve adj links to delete them 
         dict_of_adj_links = self.graph.pop(node, {})
         for type_link, adj_obj in dict_of_adj_links.items():

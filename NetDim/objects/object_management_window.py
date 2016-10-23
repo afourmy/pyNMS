@@ -134,24 +134,8 @@ class ObjectManagementWindow(FocusTopLevel):
             else:
                 value = str_var.get()
             # convert "None" to None if necessary
-            print(property, value, type(value))
-            value = None if value == "None" else value
-            print(property, value, type(value))
-            # update dict when the object is renamed
-            # if it is a node, we need to remove and read the entry in the graph dict
-            # for all objects, we need to update pn
-            if property == "name":
-                name = getattr(self.current_obj, property)
-                if name != value:
-                    if self.current_obj.type == "node":
-                        adj_links = self.ms.cs.ntw.graph.pop(self.current_obj, None)
-                    old_name = name
-                    del self.ms.cs.ntw.pn[self.current_obj.type][old_name]
-                    setattr(self.current_obj, property, value)
-                    self.ms.cs.ntw.pn[self.current_obj.type][value] = self.current_obj
-                    if self.current_obj.type == "node":
-                        self.ms.cs.ntw.graph[self.current_obj] = adj_links
-            elif property == "path":
+            value = None if value == "None" else value              
+            if property == "path":
                 setattr(self.current_obj, property, self.current_path)
             elif property in self.property_var_list:
                 setattr(self.current_obj, property, value)
@@ -161,6 +145,10 @@ class ObjectManagementWindow(FocusTopLevel):
                         value = self.conv(property)
                     else:
                         value = self.ms.prop_to_type[property](value)
+                        if property == "name":
+                            name = getattr(self.current_obj, property)
+                            id = self.ms.cs.ntw.name_to_id.pop(name)
+                            self.ms.cs.ntw.name_to_id[value] = id
                     setattr(self.current_obj, property, value)
             # refresh the label if it was changed
             self.ms.cs.refresh_label(self.current_obj)

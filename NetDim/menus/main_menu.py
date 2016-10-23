@@ -37,8 +37,9 @@ class MainMenu(tk.Frame):
             self.type_to_action[topo] = lambda t=topo: NetworkDimension(self.ms.cs, t)
             
         for obj_type in self.ms.object_properties:
-            cmd = lambda o=obj_type: self.change_creation_mode(o)
-            self.type_to_action[obj_type] = cmd
+            if obj_type not in ('l2vc', 'l3vc'):
+                cmd = lambda o=obj_type: self.change_creation_mode(o)
+                self.type_to_action[obj_type] = cmd
         
         for button_type, cmd in self.type_to_action.items():
             button = tk.Button(self, bg='#A1DBCD', relief=tk.FLAT, command=cmd)                

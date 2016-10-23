@@ -773,6 +773,7 @@ class Scenario(tk.Canvas):
         link_to_coords = self.link_coordinates(*edges, layer=current_layer)
         for link in link_to_coords:
             coords = link_to_coords[link]
+            print(link)
             if not link.line:
                 link.line = self.create_line(*coords, tags=(link.subtype, 
                         link.type, link.class_type, 'object'), fill=link.color, 
@@ -780,6 +781,7 @@ class Scenario(tk.Canvas):
                         state=tk.NORMAL if self.display_layer[link.layer] else tk.HIDDEN)
             else:
                 self.coords(link.line, *coords)
+        print(new_link, new_link.line)
         self.tag_lower(new_link.line)
         self.object_id_to_object[new_link.line] = new_link
         self._create_link_label(new_link)

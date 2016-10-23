@@ -196,6 +196,9 @@ class NetDim(tk.Tk):
         ('ethernet', trunk_common_properties),
         ('wdm', trunk_common_properties + ('lambda_capacity',)),
         
+        ('l2vc', route_common_properties),
+        ('l3vc', route_common_properties),
+        
         ('static route', route_common_properties + (
         'nh_ip',
         'dst_sntw',
