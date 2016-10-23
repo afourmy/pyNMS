@@ -156,8 +156,8 @@ class Network(object):
             new_link = self.link_class[subtype](id, name, s, d, *param)
             self.name_to_id[name] = id
             self.pn[link_type][id] = new_link
-            self.graph[s][link_type].add((d, new_link))
-            self.graph[d][link_type].add((s, new_link))
+            self.graph[s.id][link_type].add((d, new_link))
+            self.graph[d.id][link_type].add((s, new_link))
         return self.pn[link_type][id]
         
     # 'nf' is the node factory. Creates or retrieves any type of nodes
@@ -216,55 +216,53 @@ class Network(object):
             dict_of_objects.clear()
             
     def remove_node(self, node):
-        self.pn['node'].pop(self.name_to_id[node.name])
-        self.name_to_id.pop(node.name, None)
+        self.pn['node'].pop(self.name_to_id.pop(node.name))
         # retrieve adj links to delete them 
-        dict_of_adj_links = self.graph.pop(node, {})
+        dict_of_adj_links = self.graph.pop(node.id, {})
         for type_link, adj_obj in dict_of_adj_links.items():
             for neighbor, adj_link in adj_obj:
-                self.graph[neighbor][type_link].discard((node, adj_link))
-                yield self.pn[type_link].pop(self.name_to_id[adj_link.name], None)
-            
+                yield adj_link
+
     def remove_link(self, link):
-        self.graph[link.source][link.type].discard((link.destination, link))
-        self.graph[link.destination][link.type].discard((link.source, link))
-        self.pn[link.type].pop(link.name, None)
+        self.graph[link.source.id][link.type].discard((link.destination, link))
+        self.graph[link.destination.id][link.type].discard((link.source, link))
+        self.pn[link.type].pop(self.name_to_id.pop(link.name))
         
     def find_edge_nodes(self, AS):
         AS.pAS['edge'].clear()
         for node in AS.pAS['node']:
             if any(
                    n not in AS.pAS['node'] 
-                   for n, _ in self.graph[node]['trunk']
+                   for n, _ in self.graph[node.id]['trunk']
                    ):
                 AS.pAS['edge'].add(node)
                 yield node
             
     def is_connected(self, nodeA, nodeB, link_type):
-        return any(n == nodeA for n, _ in self.graph[nodeB][link_type])
+        return any(n == nodeA for n, _ in self.graph[nodeB.id][link_type])
         
     # given a node, retrieves nodes attached with a link which subtype 
     # is in sts
     def neighbors(self, node, *sts):
         for subtype in sts:
-            for neighbor, _ in self.graph[node][subtype]:
+            for neighbor, _ in self.graph[node.id][subtype]:
                 yield neighbor
         
     def number_of_links_between(self, nodeA, nodeB):
         return sum(
                    n == nodeB 
                    for _type in self.link_type 
-                   for n, _ in self.graph[nodeA][_type]
+                   for n, _ in self.graph[nodeA.id][_type]
                    )
         
     def links_between(self, nodeA, nodeB, _type='all'):
         if _type == 'all':
             for link_type in self.link_type:
-                for neighbor, trunk in self.graph[nodeA][link_type]:
+                for neighbor, trunk in self.graph[nodeA.id][link_type]:
                     if neighbor == nodeB:
                         yield trunk
         else:
-            for neighbor, trunk in self.graph[nodeA][_type]:
+            for neighbor, trunk in self.graph[nodeA.id][_type]:
                 if neighbor == nodeB:
                     yield trunk
                     
@@ -297,7 +295,7 @@ class Network(object):
             # that hasn't been visited yet, we don't stop until we've discovered
             # all network's trunks (i.e until we've reached all boundaries 
             # of that networks: routers or host).
-            for neighbor, trunk in self.graph[router]['trunk']:
+            for neighbor, trunk in self.graph[router.id]['trunk']:
                 if trunk in visited_trunks:
                     continue
                 visited_trunks.add(trunk)
@@ -311,7 +309,7 @@ class Network(object):
                     visited_nodes = {router}
                     while stack_network:
                         curr_node = stack_network.pop()
-                        for node, adj_trunk in self.graph[curr_node]['trunk']:
+                        for node, adj_trunk in self.graph[curr_node.id]['trunk']:
                             if node in visited_nodes:
                                 continue
                             visited_trunks.add(adj_trunk)
@@ -373,8 +371,8 @@ class Network(object):
                                                       
 
     def interface_allocation(self):
-        for node in self.graph:
-            for idx, (_, adj_trunk) in enumerate(self.graph[node]['trunk']):
+        for node in self.pn['node'].values():
+            for idx, (_, adj_trunk) in enumerate(self.graph[node.id]['trunk']):
                 adj_trunk('interface', node, 'Ethernet0/{}'.format(idx))
                 
     # WC trunk dimensioning: this computes the maximum traffic the trunk may 
@@ -455,13 +453,13 @@ class Network(object):
             for node in temp:
                 if node not in visited:
                     visited.add(node)
-                    for neighbor, _ in self.graph[node]['trunk']:
+                    for neighbor, _ in self.graph[node.id]['trunk']:
                         layer.add(neighbor)
                         yield neighbor
                     
     def connected_components(self):
         visited = set()
-        for node in self.graph:
+        for node in self.pn['node'].values():
             if node not in visited:
                 new_comp = set(self.bfs(node))
                 visited.update(new_comp)
@@ -494,7 +492,7 @@ class Network(object):
             dist_node, node = heappop(heap) 
             if node not in visited:
                 visited.add(node)
-                for neighbor, adj_trunk in self.graph[node]['trunk']:
+                for neighbor, adj_trunk in self.graph[node.id]['trunk']:
                     # we ignore what's not allowed (not in the AS or in failure)
                     if neighbor not in allowed_nodes:
                         continue
@@ -559,7 +557,7 @@ class Network(object):
                     pc.pop()
                     if not pc:
                         return nodes, trunks
-                for neighbor, adj_trunk in self.graph[node]['trunk']:
+                for neighbor, adj_trunk in self.graph[node.id]['trunk']:
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes-excluded_nodes: 
                         continue
@@ -608,7 +606,7 @@ class Network(object):
         for i in range(n+2):
             negative_cycle = False
             for node in allowed_nodes:
-                for neighbor, adj_trunk in self.graph[node]['trunk']:
+                for neighbor, adj_trunk in self.graph[node.id]['trunk']:
                     sd = (node == adj_trunk.source)*'SD' or 'DS'
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes-excluded_nodes: 
@@ -657,7 +655,7 @@ class Network(object):
         for id1, n1 in enumerate(nodes):
             for id2, n2 in enumerate(nodes):
                 if id1 != id2:
-                    for neighbor, trunk in self.graph[n1]['trunk']:
+                    for neighbor, trunk in self.graph[n1.id]['trunk']:
                         if neighbor == n2:
                             W[id1][id2] = trunk.costSD
                             break
@@ -691,7 +689,7 @@ class Network(object):
             if node == target:
                 yield list(path)
             else:
-                for neighbor, adj_trunk in self.graph[node]['trunk']:
+                for neighbor, adj_trunk in self.graph[node.id]['trunk']:
                     if neighbor not in seen:
                         dead_end = False
                         seen.add(neighbor)
@@ -710,7 +708,7 @@ class Network(object):
     def ping(self, source, dest_sntw):
         node = source
         while True:
-            if any(tk.sntw == dest_sntw for _, tk in self.graph[node]['trunk']):
+            if any(tk.sntw == dest_sntw for _, tk in self.graph[node.id]['trunk']):
                 break
             if dest_sntw in node.rt:
                 routes = node.rt[dest_sntw]
@@ -731,7 +729,7 @@ class Network(object):
     def RFT_path_finder(self, traffic):
         source, destination = traffic.source, traffic.destination
         # the two lines below run faster than making the set an iterable
-        for _, trunk in self.graph[destination]['trunk']:
+        for _, trunk in self.graph[destination.id]['trunk']:
             break
         dest_int = trunk.sntw
         heap = [(source, traffic.throughput)]
@@ -790,7 +788,7 @@ class Network(object):
             source.rt[sr.dst_sntw] = {('S', sr.nh_ip, None, 0, nh_node, None)}
                                                                 
                     
-        for neighbor, adj_trunk in self.graph[source]['trunk']:
+        for neighbor, adj_trunk in self.graph[source.id]['trunk']:
             if adj_trunk in self.fdtks:
                 continue
             ex_ip = adj_trunk('ipaddress', neighbor)
@@ -836,7 +834,7 @@ class Network(object):
             dist, node, path_trunk, ex_int = heappop(heap)  
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
-                for graph_neighbor, adj_trunk in self.graph[node]['trunk']:
+                for graph_neighbor, adj_trunk in self.graph[node.id]['trunk']:
                     for L3_neighbor in self.trunk_to_neighbor[adj_trunk]:
                         if adj_trunk in path_trunk:
                             continue
@@ -934,7 +932,6 @@ class Network(object):
                             continue
                         if (('i L1', trunk.sntw) not in visited_subnetworks 
                             and ('i L2', trunk.sntw) not in visited_subnetworks):
-                            
                             visited_subnetworks.add((rtype, trunk.sntw))
                             source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int,
                                     dist + trunk('cost', node), nh, ex_tk)}
@@ -1031,7 +1028,7 @@ class Network(object):
                     e_o = set(path_trunk)
                 if node == source and e_o:
                     return [], path_trunk
-                for neighbor, adj_trunk in self.graph[node]['trunk']:
+                for neighbor, adj_trunk in self.graph[node.id]['trunk']:
                     sd = (node == adj_trunk.source)*'SD' or 'DS'
                     # we ignore what's not allowed (not in the AS or in failure
                     # or in the path we've used to reach the target)
@@ -1162,7 +1159,7 @@ class Network(object):
         visit[curr_node] = True
         if curr_node == target:
             return val
-        for neighbor, adj_trunk in self.graph[curr_node]['trunk']:
+        for neighbor, adj_trunk in self.graph[curr_node.id]['trunk']:
             direction = curr_node == adj_trunk.source
             sd, ds = direction*'SD' or 'DS', direction*'DS' or 'SD'
             cap = getattr(adj_trunk, 'capacity' + sd)
@@ -1183,26 +1180,26 @@ class Network(object):
         
     def ford_fulkerson(self, s, d):
         self.reset_flow()
-        while self.augment_ff(float('inf'), s, d, {n:0 for n in self.graph}):
+        while self.augment_ff(float('inf'), s, d, {n:0 for n in self.pn["node"].values()}):
             pass
         # flow leaving from the source 
         return sum(
                   getattr(adj, 'flow' + (s==adj.source)*'SD' or 'DS') 
-                  for _, adj in self.graph[s]['trunk']
+                  for _, adj in self.graph[s.id]['trunk']
                   )
         
     ## 2) Edmonds-Karp algorithm
         
     def augment_ek(self, source, destination):
-        res_cap = {n:0 for n in self.graph}
-        augmenting_path = {n: None for n in self.graph}
+        res_cap = {n:0 for n in self.pn["node"].values()}
+        augmenting_path = {n: None for n in self.pn["node"].values()}
         Q = deque()
         Q.append(source)
         augmenting_path[source] = source
         res_cap[source] = float('inf')
         while Q:
             curr_node = Q.popleft()
-            for neighbor, adj_trunk in self.graph[curr_node]['trunk']:
+            for neighbor, adj_trunk in self.graph[curr_node.id]['trunk']:
                 direction = curr_node == adj_trunk.source
                 sd, ds = direction*'SD' or 'DS', direction*'DS' or 'SD'
                 cap = getattr(adj_trunk, 'capacity' + sd)
@@ -1228,7 +1225,7 @@ class Network(object):
                 # find the trunk between the two nodes
                 prec_node = augmenting_path[curr_node]
                 find_trunk = lambda p: getitem(p, 0) == prec_node
-                (_, trunk) ,= filter(find_trunk, self.graph[curr_node]['trunk'])
+                (_, trunk) ,= filter(find_trunk, self.graph[curr_node.id]['trunk'])
                 # define sd and ds depending on how the trunk is defined
                 direction = curr_node == trunk.source
                 sd, ds = direction*'SD' or 'DS', direction*'DS' or 'SD'
@@ -1237,7 +1234,7 @@ class Network(object):
                 curr_node = prec_node 
         return sum(
                    getattr(adj, 'flow' + ((source==adj.source)*'SD' or 'DS')) 
-                   for _, adj in self.graph[source]['trunk']
+                   for _, adj in self.graph[source.id]['trunk']
                   )
                   
     ## 2) Dinic algorithm
@@ -1248,7 +1245,7 @@ class Network(object):
         if curr_node == dest:
             return limit
         val = 0
-        for neighbor, adj_trunk in self.graph[curr_node]['trunk']:
+        for neighbor, adj_trunk in self.graph[curr_node.id]['trunk']:
             direction = curr_node == adj_trunk.source
             sd, ds = direction*'SD' or 'DS', direction*'DS' or 'SD'
             cap = getattr(adj_trunk, 'capacity' + sd)
@@ -1275,7 +1272,7 @@ class Network(object):
             level[source] = 0
             while Q:
                 curr_node = Q.pop()
-                for neighbor, adj_trunk in self.graph[curr_node]['trunk']:
+                for neighbor, adj_trunk in self.graph[curr_node.id]['trunk']:
                     direction = curr_node == adj_trunk.source
                     sd = direction*'SD' or 'DS'
                     cap = getattr(adj_trunk, 'capacity' + sd)
@@ -1289,7 +1286,7 @@ class Network(object):
             limit = sum(
                         getattr(adj_trunk, 'capacity' + 
                         ((source == adj_trunk.source)*'SD' or 'DS'))
-                        for _, adj_trunk in self.graph[source]['trunk']
+                        for _, adj_trunk in self.graph[source.id]['trunk']
                         )
             total += self.augment_di(level, flow, source, destination, limit)
         
@@ -1301,7 +1298,7 @@ class Network(object):
         uf = UnionFind(allowed_nodes)
         edges = []
         for node in allowed_nodes:
-            for neighbor, adj_trunk in self.graph[node]['trunk']:
+            for neighbor, adj_trunk in self.graph[node.id]['trunk']:
                 if neighbor in allowed_nodes:
                     edges.append((adj_trunk.costSD, adj_trunk, node, neighbor))
         for w, t, u, v in sorted(edges, key=itemgetter(0)):
@@ -1323,9 +1320,9 @@ class Network(object):
         
         self.reset_flow()
         
-        new_graph = {node: {} for node in self.graph}
-        for node in self.graph:
-            for neighbor, trunk in self.graph[node]['trunk']:
+        new_graph = {node: {} for node in self.pn['node'].values()}
+        for node in self.pn['node'].values():
+            for neighbor, trunk in self.graph[node.id]['trunk']:
                 sd = (node == trunk.source)*'SD' or 'DS'
                 new_graph[node][neighbor] = getattr(trunk, 'cost' + sd)
 
@@ -1379,7 +1376,7 @@ class Network(object):
         # traceback the shortest path with the flow
         curr_node, path_trunk = s, []
         while curr_node != t:
-            for neighbor, adj_trunk in self.graph[curr_node]['trunk']:
+            for neighbor, adj_trunk in self.graph[curr_node.id]['trunk']:
                 # if the flow leaving the current node is 1, we move
                 # forward and replace the current node with its neighbor
                 if adj_trunk('flow', curr_node) == 1:
@@ -1399,9 +1396,9 @@ class Network(object):
         #                     xi integer, forall i in I
 
         
-        new_graph = {node: {} for node in self.graph}
-        for node in self.graph:
-            for neighbor, trunk in self.graph[node]['trunk']:
+        new_graph = {node: {} for node in self.pn['node'].values()}
+        for node in self.pn['node'].values():
+            for neighbor, trunk in self.graph[node.id]['trunk']:
                 sd = (node == trunk.source)*'SD' or 'DS'
                 new_graph[node][neighbor] = getattr(trunk, 'capacity' + sd)
 
@@ -1451,7 +1448,7 @@ class Network(object):
 
         return sum(
                    getattr(adj, 'flow' + ((s==adj.source)*'SD' or 'DS')) 
-                   for _, adj in self.graph[s]['trunk']
+                   for _, adj in self.graph[s.id]['trunk']
                    )
                    
     ## 3) Single-source single-destination minimum-cost flow
@@ -1465,9 +1462,9 @@ class Network(object):
         #                     xi integer, forall i in I
 
         
-        new_graph = {node: {} for node in self.graph}
-        for node in self.graph:
-            for neighbor, trunk in self.graph[node]['trunk']:
+        new_graph = {node: {} for node in self.pn['node'].values()}
+        for node in self.pn['node'].values():
+            for neighbor, trunk in self.graph[node.id]['trunk']:
                 new_graph[node][neighbor] = (trunk('capacity', node),
                                              trunk('cost', node))
 
@@ -1517,7 +1514,7 @@ class Network(object):
 
         return sum(
                    getattr(adj, 'flow' + ((s==adj.source)*'SD' or 'DS')) 
-                   for _, adj in self.graph[s]['trunk']
+                   for _, adj in self.graph[s.id]['trunk']
                    )
                    
     ## 4) K Link-disjoint shortest pair 
@@ -1535,9 +1532,9 @@ class Network(object):
         
         all_graph = []
         for i in range(K):
-            graph_K = {node: {} for node in self.graph}
+            graph_K = {node: {} for node in self.pn['node'].values()}
             for node in graph_K:
-                for neighbor, trunk in self.graph[node]['trunk']:
+                for neighbor, trunk in self.graph[node.id]['trunk']:
                     sd = (node == trunk.source)*'SD' or 'DS'
                     graph_K[node][neighbor] = getattr(trunk, 'cost' + sd)
             all_graph.append(graph_K)
@@ -1576,7 +1573,7 @@ class Network(object):
         
         A, b = [], []
         for i in range(K):
-            for node_r in self.graph:
+            for node_r in self.pn['node'].values():
                 if node_r != t:
                     row = []
                     b.append(float(node_r == s))
@@ -1813,13 +1810,13 @@ class Network(object):
         uncolored_nodes = list(oxc_color)
         # we will use a function that returns the degree of a node to sort
         # the list in ascending order
-        uncolored_nodes.sort(key = lambda node: len(self.graph[node]['trunk']))
+        uncolored_nodes.sort(key = lambda node: len(self.graph[node.id]['trunk']))
         # and pop nodes one by one
         while uncolored_nodes:
             largest_degree = uncolored_nodes.pop()
             # we compute the set of colors used by adjacent vertices
             colors = set(oxc_color[neighbor] for neighbor, _ in
-                                    self.graph[largest_degree]['trunk'])
+                                    self.graph[largest_degree.id]['trunk'])
             # we find the minimum indexed color which is available
             min_index = [i in colors for i in range(len(colors) + 1)].index(0)
             # and assign it to the current oxc
@@ -2032,7 +2029,7 @@ class Network(object):
             temp = frontier
             frontier = set()
             for node in temp:
-                for neighbor, _ in self.graph[node]['trunk']:
+                for neighbor, _ in self.graph[node.id]['trunk']:
                     if node not in visited:
                         frontier.add(neighbor)
                         node_number += 1

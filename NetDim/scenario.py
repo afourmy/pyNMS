@@ -446,7 +446,7 @@ class Scenario(tk.Canvas):
             # the oval was also resized while scaling
             node.size = abs(new_coords[0] - new_coords[2])/2 
             for type in self.ntw.link_type:
-                for neighbor, t in self.ntw.graph[node][type]:
+                for neighbor, t in self.ntw.graph[node.id][type]:
                     layer = 'all' if not self.layered_display else t.layer
                     link_to_coords = self.link_coordinates(node, neighbor, layer)
                     for link in link_to_coords:
@@ -646,7 +646,7 @@ class Scenario(tk.Canvas):
     
         # update links coordinates
         for type_link in self.ntw.link_type:
-            for neighbor, t in self.ntw.graph[n][type_link]:
+            for neighbor, t in self.ntw.graph[n.id][type_link]:
                 layer = 'all' if not self.layered_display else t.layer
                 link_to_coords = self.link_coordinates(n, neighbor, layer)
                 for link in link_to_coords:
@@ -773,7 +773,6 @@ class Scenario(tk.Canvas):
         link_to_coords = self.link_coordinates(*edges, layer=current_layer)
         for link in link_to_coords:
             coords = link_to_coords[link]
-            print(link)
             if not link.line:
                 link.line = self.create_line(*coords, tags=(link.subtype, 
                         link.type, link.class_type, 'object'), fill=link.color, 
@@ -781,7 +780,6 @@ class Scenario(tk.Canvas):
                         state=tk.NORMAL if self.display_layer[link.layer] else tk.HIDDEN)
             else:
                 self.coords(link.line, *coords)
-        print(new_link, new_link.line)
         self.tag_lower(new_link.line)
         self.object_id_to_object[new_link.line] = new_link
         self._create_link_label(new_link)
@@ -853,7 +851,7 @@ class Scenario(tk.Canvas):
                     for edge in (obj.source, obj.destination):
                         # we check if there still are other links of the same
                         # type (i.e at the same layer) between the edge nodes
-                        if not self.ntw.graph[edge][obj.type]:
+                        if not self.ntw.graph[edge.id][obj.type]:
                             # if that's not the case, we delete the upper-layer
                             # projection of the edge nodes, and reset the 
                             # associated 'layer to projection id' dictionnary

@@ -152,6 +152,7 @@ class SelectionRightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def remove_objects(self):
+        print(self.all_so)
         self.cs.remove_objects(*self.all_so)
         
     @empty_selection_and_destroy_menu

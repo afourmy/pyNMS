@@ -227,7 +227,7 @@ class ASManagement(FocusTopLevel):
     def find_trunks(self):
         trunks_between_domain_nodes = set()
         for node in self.AS.pAS["node"]:
-            for neighbor, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
+            for neighbor, adj_trunk in self.cs.ntw.graph[node.id]["trunk"]:
                 if neighbor in self.AS.pAS["node"]:
                     trunks_between_domain_nodes.add(adj_trunk)
         self.add_to_AS("Backbone", *trunks_between_domain_nodes)
@@ -269,7 +269,7 @@ class ASManagement(FocusTopLevel):
                     self.AS.border_routers.add(node)
                     self.AS.areas["Backbone"].add_to_area(node)
             
-            for neighbor, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
+            for neighbor, adj_trunk in self.cs.ntw.graph[node.id]["trunk"]:
                 
                 # A multi-area IS-IS AS is defined by the status of its nodes.
                 # we automatically update the trunk area status, by considering 
