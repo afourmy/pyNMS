@@ -200,7 +200,7 @@ class SelectionRightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def multiple_links(self, scenario):
-        mobj.MultipleLinks(scenario, self.cs.so["node"])
+        mobj.MultipleLinks(scenario, set(self.cs.so["node"]))
         
     @empty_selection_and_destroy_menu
     def bfs(self, nodes):

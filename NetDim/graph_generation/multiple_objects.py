@@ -66,8 +66,8 @@ class MultipleLinks(CustomTopLevel):
         yscroll.grid(row=1, column=1, sticky="ns")
         
         # add all nodes of the scenario to the listbox
-        for node in self.cs.ntw.pn["node"]:
-            self.listbox.insert(node)
+        for node in self.cs.ntw.pn["node"].values():
+            self.listbox.insert(node.name)
     
         # confirmation button
         self.button_confirmation = ttk.Button(self, text="OK", command=
@@ -79,6 +79,7 @@ class MultipleLinks(CustomTopLevel):
                                                         padx=5, sticky="nsew")
         
     def create_links(self, source_nodes):
+        print(source_nodes)
         for selected_node in self.listbox.selected():
             # retrieve the node object based on its name
             dest_node = self.cs.ntw.nf(name=selected_node)

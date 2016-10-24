@@ -145,12 +145,15 @@ class Network(object):
            d = None
            ):
         link_type = self.cs.ms.st_to_type[subtype]
+        print(name, id)
         # creation link in the s-d direction if no link at all yet
         if not id:
+            print(name)
             if name in self.name_to_id:
                 return self.pn[link_type][self.name_to_id[name]]
             if not name:
                 name = link_type + str(self.cpt_link)
+            print("test", name)
             id = self.cpt_link
             self.cpt_link += 1
             new_link = self.link_class[subtype](id, name, s, d, *param)
@@ -2053,7 +2056,7 @@ class Network(object):
         # all nodes which location has already been set
         seen = set(self.pn['node'].values()) - nodes
         # virtuals nodes are the centers of previously clusterized area:
-        # they are not connecte to any another node, but are equivalent to a
+        # they are not connected to any another node, but are equivalent to a
         # coulomb forces of all cluster nodes
         virtual_nodes = set()
         # number of cluster
@@ -2072,7 +2075,8 @@ class Network(object):
                 self.spring_layout(new_cluster, cf, k, sf, L0, virtual_nodes)
             virtual_nodes.add(self.create_virtual_nodes(new_cluster, nb_cluster))
         for node in virtual_nodes:
-            self.pn['node'].pop(node.name)
+            self.name_to_id.pop(node.name)
+            self.pn['node'].pop(node.id)
 
         
     ## Graph generation functions
