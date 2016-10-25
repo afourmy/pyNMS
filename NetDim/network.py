@@ -331,17 +331,21 @@ class Network(object):
         # associate the list of neighbors, i.e the IP-capable devices
         # that are connected to the graph neighbor, a L2 device (switch, ...)
         for ma_network in self.ma_segments[3]:
-            for trunk, node in ma_network:
-                for _, neighbor in ma_network - {(trunk, node)}:
-                    self.trunk_to_neighbor[trunk].add(neighbor)
+            for source_trunk, node in ma_network:
+                for destination_trunk, neighbor in ma_network - {(source_trunk, node)}:
+                    #self.trunk_to_neighbor[trunk].add(neighbor)
                     if not self.is_connected(node, neighbor, 'l3vc'):
                         l3vc = self.lf(s=node, d=neighbor, subtype='l3vc')
+                        l3vc("link", node, source_trunk)
+                        l3vc("link", neighbor, destination_trunk)
                         self.cs.create_link(l3vc)
         for ma_network in self.ma_segments[2]:
-            for trunk, node in ma_network:
-                for _, neighbor in ma_network - {(trunk, node)}:
+            for source_trunk, node in ma_network:
+                for destination_trunk, neighbor in ma_network - {(source_trunk, node)}:
                     if not self.is_connected(node, neighbor, 'l2vc'):
                         l2vc = self.lf(s=node, d=neighbor, subtype='l2vc')
+                        l2vc("link", node, source_trunk)
+                        l2vc("link", neighbor, destination_trunk)
                         self.cs.create_link(l2vc)
     
     def ip_allocation(self):
@@ -431,6 +435,7 @@ class Network(object):
                 print('no path found for {}'.format(traffic))
                 
     def calculate_all(self):
+        self.ma_segments.clear()
         self.update_AS_topology()
         self.segment_finder(3)
         self.segment_finder(2)
@@ -837,31 +842,31 @@ class Network(object):
             dist, node, path_trunk, ex_int = heappop(heap)  
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
-                for graph_neighbor, adj_trunk in self.graph[node.id]['trunk']:
-                    for L3_neighbor in self.trunk_to_neighbor[adj_trunk]:
-                        if adj_trunk in path_trunk:
-                            continue
-                        # excluded and allowed nodes
-                        if L3_neighbor not in allowed_nodes:
-                            continue
-                        # excluded and allowed trunks
-                        if adj_trunk not in allowed_trunks: 
-                            continue
-                        if node == source:
-                            ex_ip = adj_trunk('ipaddress', graph_neighbor)
-                            ex_int = adj_trunk('interface', source)
-                            source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int, 
-                                                dist, L3_neighbor, adj_trunk)}
-                            SP_cost[adj_trunk.sntw] = 0
-                        heappush(heap, (dist + adj_trunk('cost', node), 
-                                L3_neighbor, path_trunk + [adj_trunk], ex_int))
+                for neighbor, l3vc in self.graph[node.id]['l3vc']:
+                    adj_trunk = l3vc("link", node)
+                    remote_trunk = l3vc("link", neighbor)
+                    if adj_trunk in path_trunk:
+                        continue
+                    # excluded and allowed nodes
+                    if neighbor not in allowed_nodes:
+                        continue
+                    # excluded and allowed trunks
+                    if adj_trunk not in allowed_trunks: 
+                        continue
+                    if node == source:
+                        ex_ip = remote_trunk('ipaddress', neighbor)
+                        print(node, remote_trunk, neighbor, ex_ip)
+                        ex_int = adj_trunk('interface', source)
+                        source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int, 
+                                            dist, neighbor, adj_trunk)}
+                        SP_cost[adj_trunk.sntw] = 0
+                    heappush(heap, (dist + adj_trunk('cost', node), 
+                            neighbor, path_trunk + [adj_trunk], ex_int))
                     
             if path_trunk:
                 trunk = path_trunk[-1]
                 ex_tk = path_trunk[0]
                 nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
-                ex_ip = ex_tk('ipaddress', nh)
-                ex_int = ex_tk('interface', source)
                 if AS.type == 'RIP':
                     if trunk.sntw not in source.rt:
                         SP_cost[trunk.sntw] = dist

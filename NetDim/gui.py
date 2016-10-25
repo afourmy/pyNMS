@@ -143,6 +143,14 @@ class NetDim(tk.Tk):
         'destination'
         )
         
+        vc_common_properties = (
+        'name',
+        'source', 
+        'destination',
+        'linkS',
+        'linkD'
+        )
+        
         traffic_common_properties = (
         'name', 
         'subtype',
@@ -196,8 +204,8 @@ class NetDim(tk.Tk):
         ('ethernet', trunk_common_properties),
         ('wdm', trunk_common_properties + ('lambda_capacity',)),
         
-        ('l2vc', route_common_properties),
-        ('l3vc', route_common_properties),
+        ('l2vc', vc_common_properties),
+        ('l3vc', vc_common_properties),
         
         ('static route', route_common_properties + (
         'nh_ip',
@@ -361,6 +369,10 @@ class NetDim(tk.Tk):
         vc_box_properties = (
         'name', 
         'type',
+        'source', 
+        'destination',
+        'linkS',
+        'linkD'
         )
         
         self.box_properties = collections.OrderedDict([
@@ -487,7 +499,9 @@ class NetDim(tk.Tk):
         'y': 'Y coordinate', 
         'longitude': 'Longitude', 
         'latitude': 'Latitude',
-        'distance': 'Distance', 
+        'distance': 'Distance',
+        'linkS': 'Source link',
+        'linkD': 'Destination link', 
         'costSD': 'Cost S -> D', 
         'costDS': 'Cost D -> S', 
         'cost': 'Cost',

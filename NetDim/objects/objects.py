@@ -267,13 +267,23 @@ class L2VC(Link):
                  id,
                  name, 
                  source, 
-                 destination,
+                 destination
                  ):
-                     
         super().__init__(id, name, source, destination)
+        self.linkS = None
+        self.linkD = None
         
     def __lt__(self, other):
         return hash(self.name)
+        
+    def __call__(self, property, node, value=None):
+        # can be used both as a getter and a setter, depending on 
+        # whether a value is provided or not
+        dir = (node == self.source)*'S' or 'D'
+        if value:
+            setattr(self, property + dir, value)
+        else:
+            return getattr(self, property + dir)
         
 class L3VC(Link):
     
@@ -288,13 +298,23 @@ class L3VC(Link):
                  id,
                  name, 
                  source, 
-                 destination,
-                 ):
-                     
+                 destination
+                 ): 
         super().__init__(id, name, source, destination)
+        self.linkS = None
+        self.linkD = None
         
     def __lt__(self, other):
         return hash(self.name)
+        
+    def __call__(self, property, node, value=None):
+        # can be used both as a getter and a setter, depending on 
+        # whether a value is provided or not
+        dir = (node == self.source)*'S' or 'D'
+        if value:
+            setattr(self, property + dir, value)
+        else:
+            return getattr(self, property + dir)
         
 class Ethernet(Trunk):
     
