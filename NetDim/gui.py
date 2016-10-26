@@ -129,9 +129,11 @@ class NetDim(tk.Tk):
         'ipaddressS', 
         'subnetmaskS', 
         'interfaceS',
+        'macaddressS',
         'ipaddressD', 
         'subnetmaskD', 
         'interfaceD',
+        'macaddressD',
         'sntw',
         'AS'
         )
@@ -173,9 +175,11 @@ class NetDim(tk.Tk):
         'ipaddressS', 
         'subnetmaskS', 
         'interfaceS',
+        'macaddressS',
         'ipaddressD', 
         'subnetmaskD', 
-        'interfaceD'
+        'interfaceD',
+        'macaddressD',
         )
         
         route_common_ie_properties = (
@@ -461,6 +465,8 @@ class NetDim(tk.Tk):
         'subnetmaskD': str, 
         'interfaceS': str,
         'interfaceD': str,
+        'macaddressS': str,
+        'macaddressD': str,
         'sntw': str,
         'throughput': float,
         'lambda_capacity': int,
@@ -521,6 +527,8 @@ class NetDim(tk.Tk):
         'subnetmaskD': 'Subnet mask (destination)',
         'interfaceS': 'Interface (source)',
         'interfaceD': 'Interface (destination)',
+        'macaddressS': 'MAC address (source)',
+        'macaddressD': 'MAC address (destination)',
         'weightS': 'Weight (source)',
         'weightD': 'Weight (destination)',
         'sntw': 'Subnetwork',

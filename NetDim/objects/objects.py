@@ -216,9 +216,11 @@ class Trunk(Link):
                  ipaddressS = None, 
                  subnetmaskS = None,
                  interfaceS = None,
+                 macaddressS = None,
                  ipaddressD = None, 
                  subnetmaskD = None, 
-                 interfaceD = None
+                 interfaceD = None,
+                 macaddressD = None
                  ):
                      
         super().__init__(id, name, source, destination, distance)
@@ -228,9 +230,11 @@ class Trunk(Link):
         self.ipaddressS = ipaddressS
         self.subnetmaskS = subnetmaskS
         self.interfaceS = interfaceS
+        self.macaddressS = macaddressS
         self.ipaddressD = ipaddressD
         self.subnetmaskD = subnetmaskD
         self.interfaceD = interfaceD
+        self.macaddressD = macaddressD
         self.sntw = None
         self.trafficSD = self.trafficDS = 0.
         self.wctrafficSD = self.wctrafficDS = 0.

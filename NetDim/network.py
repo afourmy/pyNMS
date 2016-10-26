@@ -8,7 +8,12 @@ from objects import objects
 import random
 import warnings
 import tkinter as tk
-from miscellaneous.network_functions import compute_network, ip_incrementer, tomask
+from miscellaneous.network_functions import (
+                                             compute_network, 
+                                             mac_incrementer,
+                                             ip_incrementer, 
+                                             tomask
+                                             )
 from math import cos, sin, asin, radians, sqrt, ceil, log
 from collections import defaultdict, deque, OrderedDict
 from heapq import heappop, heappush, nsmallest
@@ -145,15 +150,12 @@ class Network(object):
            d = None
            ):
         link_type = self.cs.ms.st_to_type[subtype]
-        print(name, id)
         # creation link in the s-d direction if no link at all yet
         if not id:
-            print(name)
             if name in self.name_to_id:
                 return self.pn[link_type][self.name_to_id[name]]
             if not name:
                 name = link_type + str(self.cpt_link)
-            print("test", name)
             id = self.cpt_link
             self.cpt_link += 1
             new_link = self.link_class[subtype](id, name, s, d, *param)
@@ -375,7 +377,18 @@ class Network(object):
         # address space
         for idx, router in enumerate(self.ftr('node', 'router'), 1):
             router.ipaddress = '192.168.{}.{}'.format(idx // 255, idx % 255)
-                                                      
+            
+    def mac_allocation(self):
+        # ranges of private MAC addresses
+        # x2:xx:xx:xx:xx:xx
+        # x6:xx:xx:xx:xx:xx
+        # xA:xx:xx:xx:xx:xx
+        # xE:xx:xx:xx:xx:xx
+        mac_x2, mac_x6 = "020000000000", "060000000000"
+        for id, trunk in enumerate(self.pn['trunk'].values(), 1):
+            macS, macD = mac_incrementer(mac_x2, id), mac_incrementer(mac_x6, id)
+            trunk.macaddressS = ':'.join(macS[i:i+2] for i in range(0, 12, 2))
+            trunk.macaddressD = ':'.join(macD[i:i+2] for i in range(0, 12, 2))
 
     def interface_allocation(self):
         for node in self.pn['node'].values():
@@ -439,6 +452,7 @@ class Network(object):
         self.update_AS_topology()
         self.segment_finder(3)
         self.segment_finder(2)
+        self.mac_allocation()
         self.ip_allocation()
         self.multi_access_network()
         self.interface_allocation()
@@ -855,7 +869,6 @@ class Network(object):
                         continue
                     if node == source:
                         ex_ip = remote_trunk('ipaddress', neighbor)
-                        print(node, remote_trunk, neighbor, ex_ip)
                         ex_int = adj_trunk('interface', source)
                         source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int, 
                                             dist, neighbor, adj_trunk)}
@@ -971,7 +984,6 @@ class Network(object):
                     weight = 1 / bgp_pr('weight', source)
                 else: 
                     weight = float('inf')
-                print(source, src_nb,bgp_pr, bgp_pr('ip', src_nb))
                 heappush(heap, (
                                 weight, # weight 
                                 2, # length of the AS_PATH vector

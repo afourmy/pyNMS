@@ -203,14 +203,16 @@ class Scenario(tk.Canvas):
         # record the item and its location
         self._dict_start_position.clear()
         self.drag_item = self.find_closest(event.x, event.y)[0]
-        
         # save the initial position to compute the delta for multiple nodes motion
         main_node_selected = self.object_id_to_object[self.drag_item]
-        self._start_pos_main_node = main_node_selected.x, main_node_selected.y
+        merged_dict = main_node_selected.image.items()
+        layer = [l for l, item_id in merged_dict if item_id == self.drag_item].pop()
+        diff = layer * self.diff_y
+        self._start_pos_main_node = main_node_selected.x, main_node_selected.y + diff
         if main_node_selected in self.so['node']:
             # for all selected node (sn), we store the initial position
             for sn in self.so['node']:
-                self._dict_start_position[sn] = [sn.x, sn.y]
+                self._dict_start_position[sn] = [sn.x, sn.y + diff]
         else:
             # if ctrl is not pressed, we forget about the old selection, 
             # consider only the newly selected node, and unhighlight everything
@@ -294,6 +296,12 @@ class Scenario(tk.Canvas):
     def node_motion(self, event):
         # destroy the tip window when moving a node
         self.pwindow.destroy()
+        # record the new position
+        node = self.object_id_to_object[self.drag_item]
+        # layer diff
+        merged_dict = node.image.items()
+        layer = [l for l, item_id in merged_dict if item_id == self.drag_item].pop()
+        diff = layer * self.diff_y
         for selected_node in self.so['node']:
             # the main node initial position, the main node current position, 
             # and the other node initial position form a rectangle.
@@ -301,12 +309,10 @@ class Scenario(tk.Canvas):
             x0, y0 = self._start_pos_main_node
             x1, y1 = self._dict_start_position[selected_node]
             selected_node.x = x1 + (event.x - x0)
-            selected_node.y = y1 + (event.y - y0)
+            selected_node.y = y1 + (event.y + diff - y0)
             self.move_node(selected_node)
-        # record the new position
-        node = self.object_id_to_object[self.drag_item]
         # update coordinates of the node and move it
-        node.x, node.y = event.x, event.y
+        node.x, node.y = event.x, event.y + diff
         self.move_node(node)     
                 
     def start_point_select_objects(self, event):
@@ -720,7 +726,7 @@ class Scenario(tk.Canvas):
         s = self.NODE_SIZE
         curr_image = self.ms.dict_image['default'][node.subtype]
         y = node.y - layer * self.diff_y
-        tags = () if layer else (node.subtype, node.class_type, 'object')
+        tags = (node.subtype, node.class_type, 'object')
         node.image[layer] = self.create_image(node.x - (node.imagex)/2, 
                 y - (node.imagey)/2, image=curr_image, anchor=tk.NW, tags=tags)
         node.oval[layer] = self.create_oval(node.x-s, y-s, node.x+s, y+s, 
@@ -728,10 +734,11 @@ class Scenario(tk.Canvas):
         # create/hide the image/the oval depending on the current mode
         self.itemconfig(node.oval[layer] if self.display_image 
                                         else node.image[layer], state=tk.HIDDEN)
+        self.object_id_to_object[node.oval[layer]] = node
+        self.object_id_to_object[node.image[layer]] = node
         if not layer:
             self.create_node_label(node)
-            self.object_id_to_object[node.oval[layer]] = node
-            self.object_id_to_object[node.image[layer]] = node
+
     
     def link_coordinates(self, source, destination, layer='all'):
         xA, yA, xB, yB = source.x, source.y, destination.x, destination.y
@@ -868,8 +875,9 @@ class Scenario(tk.Canvas):
             if obj.type == 'node':
                 if random_drawing:
                     obj.x, obj.y = randint(100,700), randint(100,700)
-                if not self.layered_display and not obj.image[0]:
+                if not obj.image[0]:
                     self.create_node(obj)
+                
             else:
                 self.create_link(obj)
     
