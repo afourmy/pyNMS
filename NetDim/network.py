@@ -870,7 +870,7 @@ class Network(object):
                     if node == source:
                         ex_ip = remote_trunk('ipaddress', neighbor)
                         ex_int = adj_trunk('interface', source)
-                        source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int, 
+                        source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int,
                                             dist, neighbor, adj_trunk)}
                         SP_cost[adj_trunk.sntw] = 0
                     heappush(heap, (dist + adj_trunk('cost', node), 

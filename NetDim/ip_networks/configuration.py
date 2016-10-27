@@ -32,7 +32,6 @@ class Configuration(tk.Toplevel):
         st_pastable_config.config(state=tk.DISABLED)
         st_detailed_config.config(state=tk.DISABLED)
         
-        
         # pack the scrolledtexts in the frames
         st_pastable_config.pack(fill=tk.BOTH, expand=tk.YES)
         st_detailed_config.pack(fill=tk.BOTH, expand=tk.YES)
@@ -82,7 +81,7 @@ class Configuration(tk.Toplevel):
                                             AS = nb_AS.id
                                             )
         
-        for neighbor, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
+        for neighbor, adj_trunk in self.cs.ntw.graph[node.id]["trunk"]:
             direction = "S"*(adj_trunk.source == node) or "D"
             interface = getattr(adj_trunk, "interface" + direction)
             ip = getattr(adj_trunk, "ipaddress" + direction)
@@ -139,7 +138,7 @@ class Configuration(tk.Toplevel):
                 yield " {name}(config)# router rip\n"\
                                                 .format(name=node.name)
                 
-                for _, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
+                for _, adj_trunk in self.cs.ntw.graph[node.id]["trunk"]:
                     direction = "S"*(adj_trunk.source == node) or "D"
                     if adj_trunk in AS.pAS["trunk"]:
                         ip = getattr(adj_trunk, "ipaddress" + direction)
@@ -156,7 +155,7 @@ class Configuration(tk.Toplevel):
                 yield " {name}(config)# router ospf 1\n"\
                                                     .format(name=node.name)
                 
-                for _, adj_trunk in self.cs.ntw.graph[node]["trunk"]:
+                for _, adj_trunk in self.cs.ntw.graph[node.id]["trunk"]:
                     direction = "S"*(adj_trunk.source == node) or "D"
                     if adj_trunk in AS.pAS["trunk"]:
                         ip = getattr(adj_trunk, "ipaddress" + direction)
