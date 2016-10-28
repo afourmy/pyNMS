@@ -880,6 +880,8 @@ class Network(object):
                 trunk = path_trunk[-1]
                 ex_tk = path_trunk[0]
                 nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
+                ex_ip = ex_tk("ipaddress", nh)
+                ex_int = ex_tk("interface", source)
                 if AS.type == 'RIP':
                     if trunk.sntw not in source.rt:
                         SP_cost[trunk.sntw] = dist
