@@ -2,6 +2,7 @@
 # Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
 # Released under the GNU General Public License GPLv3
 
+import re
 import tkinter as tk
 from tkinter import ttk, messagebox
 from miscellaneous.custom_toplevel import CustomTopLevel, FocusTopLevel
@@ -137,6 +138,9 @@ class ObjectManagementWindow(FocusTopLevel):
             value = None if value == "None" else value              
             if property == "path":
                 setattr(self.current_obj, property, self.current_path)
+            if property == "sites":
+                value = set(re.sub(r'\s+', '', value).split(','))
+                setattr(self.current_obj, property, value)
             elif property in self.property_var_list:
                 setattr(self.current_obj, property, value)
             else:

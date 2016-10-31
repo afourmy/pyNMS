@@ -157,7 +157,7 @@ class MainMenu(tk.Frame):
         
         # label frame for the spring layout parameters
         self.lf_spring = ttk.Labelframe(self, padding=(6, 6, 12, 12), 
-                                        text='Multi-layer display settings')
+                                        text='Display settings')
         self.lf_spring.grid(column=0, columnspan=4, pady=5, padx=5, 
                                                         row=23, sticky='nsew')
                                                         
@@ -174,6 +174,12 @@ class MainMenu(tk.Frame):
                                                 )
                                                         
             self.button_limit.grid(in_=self.lf_spring, row=0, padx=5, column=layer)
+            
+        # display filter
+        self.filter_label = tk.Label(self, text='Display filters', bg='#A1DBCD')
+        self.filter_entry = tk.Entry(self, width=16)
+        self.filter_label.grid(in_=self.lf_spring, row=1, padx=5, column=0, columnspan=2)
+        self.filter_entry.grid(in_=self.lf_spring, row=1, padx=5, column=2, columnspan=3)
 
     def update_display(self):
         display_settings = list(map(lambda x: x.get(), self.layer_boolean))

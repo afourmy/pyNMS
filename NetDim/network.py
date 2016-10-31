@@ -459,7 +459,6 @@ class Network(object):
         self.rt_creation()
         self.BGPT_builder()
         self.path_finder()
-        self.cs.refresh_all_labels()
         
     def route(self):
         # create the routing tables and route all traffic flows

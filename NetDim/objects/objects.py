@@ -4,8 +4,19 @@
 
 from collections import defaultdict
 
+## NetDim object
+
+class NDobject(object):
+    def __init__(self):
+        # an object in NetDim belongs to one or several groups, which we can
+        # use as a filter to display a subset of objects
+        # each site corresponds to a "site" node, but the filter can also be
+        # a set of sites, in which case any object that belongs to at least
+        # one site of the user-defined filter will be displayed
+        self.sites = set()
+
 ## Nodes
-class Node(object):
+class Node(NDobject):
     
     class_type = type = 'node'
     
@@ -21,6 +32,7 @@ class Node(object):
                  subnetmask = None,
                  LB_paths = 1
                  ):
+        super().__init__()
         self.id = id
         self.name = name
         self.longitude = int(longitude)
@@ -164,11 +176,12 @@ class Cloud(Node):
         super().__init__(*args)
         
 ## Links
-class Link(object):
+class Link(NDobject):
     
     class_type = 'link'
     
     def __init__(self, id, name, source, destination, distance=0, bandwidth=0.):
+        super().__init__()
         self.id = id
         self.name = name
         self.source = source

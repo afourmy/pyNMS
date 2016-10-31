@@ -5,6 +5,7 @@
 import tkinter as tk
 import network
 import miscellaneous.search as search
+import re
 from menus.general_rightclick_menu import GeneralRightClickMenu
 from menus.selection_rightclick_menu import SelectionRightClickMenu
 from random import randint
@@ -995,7 +996,26 @@ class Scenario(tk.Canvas):
             
     ## Update everything
     
+    def display_filter(self, filter):
+        filter_sites = set(re.sub(r'\s+', '', filter).split(','))
+        for node in self.ntw.pn['node'].values():
+            state = tk.NORMAL if node.sites & filter_sites else tk.HIDDEN
+            self.itemconfig(node.lid, state=state)
+            for layer in range(5):
+                if node.image[layer]:
+                    self.itemconfig(node.image[layer], state=state)
+        for link_type in self.ntw.link_type:
+            for link in self.ntw.pn[link_type].values():
+                state = tk.NORMAL if obj.sites & filter_sites else tk.HIDDEN
+                self.itemconfig(link.line, state=state)
+                self.itemconfig(link.lid, state=state)
+        
+    
     def refresh(self):
         self.ntw.calculate_all()
-        self.draw_all(False)                                    
+        self.refresh_all_labels()
+        self.draw_all(False)       
+        filter = self.ms.main_menu.filter_entry.get()
+        if filter:
+            self.display_filter(filter)                             
         

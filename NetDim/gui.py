@@ -91,7 +91,8 @@ class NetDim(tk.Tk):
         'ipaddress', 
         'subnetmask', 
         'LB_paths',
-        'AS'
+        'sites',
+        'AS',
         )
         
         # we exclude the AS from node_common_properties. We don't need to 
@@ -134,15 +135,17 @@ class NetDim(tk.Tk):
         'subnetmaskD', 
         'interfaceD',
         'macaddressD',
+        'sites',
         'sntw',
-        'AS'
+        'AS',
         )
         
         route_common_properties = (
         'name',
         'subtype',
         'source', 
-        'destination'
+        'destination',
+        'sites'
         )
         
         vc_common_properties = (
@@ -150,7 +153,8 @@ class NetDim(tk.Tk):
         'source', 
         'destination',
         'linkS',
-        'linkD'
+        'linkD',
+        'sites'
         )
         
         traffic_common_properties = (
@@ -159,7 +163,8 @@ class NetDim(tk.Tk):
         'source', 
         'destination', 
         'distance', 
-        'throughput'
+        'throughput',
+        'sites'
         )
         
         trunk_common_ie_properties = (
@@ -180,19 +185,22 @@ class NetDim(tk.Tk):
         'subnetmaskD', 
         'interfaceD',
         'macaddressD',
+        'sites'
         )
         
         route_common_ie_properties = (
         'name',
         'source', 
         'destination',
+        'sites'
         )
         
         traffic_common_ie_properties = (
         'name', 
         'source', 
         'destination', 
-        'throughput'
+        'throughput',
+        'sites'
         )
         
         self.object_properties = collections.OrderedDict([
@@ -489,6 +497,7 @@ class NetDim(tk.Tk):
         'excluded_trunks': self.convert_links_set, 
         'path': convert_links_list, 
         'subnets': str, 
+        'sites': str,
         'AS': convert_AS
         }
         
@@ -551,6 +560,7 @@ class NetDim(tk.Tk):
         'excluded_trunks': 'Excluded trunks',
         'path': 'Path',
         'subnets': 'Subnets', 
+        'sites': 'Sites',
         'AS': 'Autonomous system'
         }
         
