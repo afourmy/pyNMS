@@ -6,72 +6,34 @@ import tkinter as tk
 from tkinter import ttk
 from miscellaneous.custom_toplevel import CustomTopLevel
 from collections import defaultdict
+from heapq import heappop, heappush
 from . import area
 from . import AS_management
 
 class AutonomousSystem(object):
     
     class_type = "AS"
+    has_area = False
 
     def __init__(
                  self, 
                  scenario,
-                 type, 
                  name, 
                  id,
                  trunks = set(), 
                  nodes = set(), 
-                 edges = set(), 
-                 routes = set(), 
                  imp = False
                  ):
+        self.cs = scenario
+        self.ntw = self.cs.ntw
         self.name = name
-        self.type = type
         self.id = id
 
         # pAS as in "pool AS": same as pool network
         self.pAS = {
         "trunk": set(trunks), 
-        "node": set(nodes), 
-        "edge": set(edges)
+        "node": set(nodes)
         }
-        
-        # areas is a dict associating a name to an area
-        self.areas = {}
-        
-        # routes is a dict of dict such that routes[eA][eB] returns the route
-        # object going from edge A (source) to edge B (destination).
-        self.routes = defaultdict(dict)
-        for obj in nodes | trunks:
-            obj.AS[self] = set()
-            
-        # management window of the AS 
-        self.management = AS_management.ASManagement(scenario, self, imp)
-        
-        # imp tells us if the AS is imported or created from scratch.
-        if not imp:
-            id = 2 if type == "ISIS" else 0
-            self.area_factory("Backbone", id=id, trunks=trunks, nodes=nodes)
-            
-        # the metric used to compute the shortest path. By default, it is 
-        # a hop count for a RIP AS, and bandwidth-dependent for ISIS or OSPF.
-        # if the metric is bandwidth, it is calculated based on the interface
-        # of the trunk, and a user-defined reference bandwidth.
-        self.metric = {
-        "RIP": "hop count",
-        "ISIS": "bandwidth",
-        "OSPF": "bandwidth",
-        "BGP": None
-        }[type]
-        self.ref_bw = 10**8
-        
-        # for an IS-IS domain, this set contains all L1/L2 nodes.
-        # for an OSPF domain, it contains all ABRs (Area Border Router)
-        # else it shouldn't be used.
-        self.border_routers = set()
-        
-        # node used to exit the domain (ASBR for OSPF)
-        self.exit_point = None
         
         # unselect everything
         scenario.unhighlight_all()
@@ -87,11 +49,6 @@ class AutonomousSystem(object):
         
     def __hash__(self):
         return hash(self.name)
-        
-    def area_factory(self, name, id=0, trunks=set(), nodes=set()):
-        if name not in self.areas:
-            self.areas[name] = area.Area(name, id, self, trunks, nodes)
-        return self.areas[name]
         
     def add_to_AS(self, area, *objects):
         area.add_to_area(*objects)
@@ -109,14 +66,27 @@ class AutonomousSystem(object):
             # for each area, we delete the object from the corresponding pool
             for area in obj_areas:
                 area.remove_from_area(obj)
-            # we also try to remove it from edge if it was a node
-            self.pAS["edge"].discard(obj)
+                
+    def build_RFT(self):
+        allowed_nodes = self.pAS['node']
+        allowed_trunks =  self.pAS['trunk'] - self.ntw.fdtks
+        for node in self.pAS['node']:
+            self.RFT_builder(node, allowed_nodes, allowed_trunks)
+                
+class ASWithArea(AutonomousSystem):
+    
+    has_area = True
+    
+    def __init__(self, *args):
+        super().__init__(*args)
         
-    def add_to_edges(self, node):
-        self.pAS["edge"].add(node)
+        # areas is a dict associating a name to an area
+        self.areas = {}
         
-    def remove_from_edges(self, node):
-        self.pAS["edge"].discard(node)
+    def area_factory(self, name, id=0, trunks=set(), nodes=set()):
+        if name not in self.areas:
+            self.areas[name] = area.Area(name, id, self, trunks, nodes)
+        return self.areas[name]
         
     def delete_area(self, area):
         # we remove the area of the AS areas dictionary
@@ -126,6 +96,290 @@ class AutonomousSystem(object):
                 # we remove the area to the list of area in the AS 
                 # dictionary, for all objects of the area
                 obj.AS[area.AS].remove(area)
+                
+class RIP_AS(AutonomousSystem):
+    
+    AS_type = "RIP"
+    
+    def __init__(self, *args):
+        *common_args, imp = args
+        super().__init__(*common_args)
+        
+        # management window of the AS 
+        self.management = AS_management.RIP_Management(self, imp)
+        
+        # the metric used to compute the shortest path. By default, it is 
+        # a hop count for a RIP AS, and bandwidth-dependent for ISIS or OSPF.
+        # if the metric is bandwidth, it is calculated based on the interface
+        # of the trunk, and a user-defined reference bandwidth.
+        self.metric = "hop count"
+        
+    def RFT_builder(self, source, allowed_nodes, allowed_trunks):
+        K = source.LB_paths
+        visited = set()
+        # we keep track of all already visited subnetworks so that we 
+        # don't add them more than once to the mapping dict.
+        visited_subnetworks = set()
+        heap = [(0, source, [], None)]
+        # cost of the shortesth path to a subnetwork
+        SP_cost = {}
+        
+        while heap:
+            dist, node, path_trunk, ex_int = heappop(heap)  
+            if (node, ex_int) not in visited:
+                visited.add((node, ex_int))
+                for neighbor, l3vc in self.ntw.graph[node.id]['l3vc']:
+                    adj_trunk = l3vc("link", node)
+                    remote_trunk = l3vc("link", neighbor)
+                    if adj_trunk in path_trunk:
+                        continue
+                    # excluded and allowed nodes
+                    if neighbor not in allowed_nodes:
+                        continue
+                    # excluded and allowed trunks
+                    if adj_trunk not in allowed_trunks: 
+                        continue
+                    if node == source:
+                        ex_ip = remote_trunk('ipaddress', neighbor)
+                        ex_int = adj_trunk('interface', source)
+                        source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int,
+                                            dist, neighbor, adj_trunk)}
+                        SP_cost[adj_trunk.sntw] = 0
+                    heappush(heap, (dist + adj_trunk('cost', node), 
+                            neighbor, path_trunk + [adj_trunk], ex_int))
+                    
+            if path_trunk:
+                trunk = path_trunk[-1]
+                ex_tk = path_trunk[0]
+                nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
+                ex_ip = ex_tk("ipaddress", nh)
+                ex_int = ex_tk("interface", source)
+                if trunk.sntw not in source.rt:
+                    SP_cost[trunk.sntw] = dist
+                    source.rt[trunk.sntw] = {('R', ex_ip, ex_int, 
+                                                dist, nh, ex_tk)}
+                else:
+                    if (dist == SP_cost[trunk.sntw] 
+                        and K > len(source.rt[trunk.sntw])):
+                        source.rt[trunk.sntw].add(('R', ex_ip, ex_int, 
+                                                dist, nh, ex_tk))
+        
+class ISIS_AS(ASWithArea):
+    
+    AS_type = "ISIS"
+    
+    def __init__(self, *args):
+        *common_args, imp = args
+        super().__init__(*common_args)
+        self.metric = "bandwidth"
+        
+        # management window of the AS 
+        self.management = AS_management.ISIS_Management(self, imp)
+        
+        # contains all L1/L2 nodes
+        self.border_routers = set()
+        
+        # imp tells us if the AS is imported or created from scratch.
+        trunks, nodes = self.pAS["node"], self.pAS["trunk"]
+        if not imp:
+            self.area_factory("Backbone", id=2, trunks=trunks, nodes=nodes)
+            
+    def RFT_builder(self, source, allowed_nodes, allowed_trunks):
+        K = source.LB_paths
+        visited = set()
+        # we keep track of all already visited subnetworks so that we 
+        # don't add them more than once to the mapping dict.
+        visited_subnetworks = set()
+        heap = [(0, source, [], None)]
+        # source area: we make sure that if the node is connected to an area,
+        # the path we find to any subnetwork in that area is an intra-area path.
+        src_areas = source.AS[self]
+        # cost of the shortesth path to a subnetwork
+        SP_cost = {}
+                
+        # if source is an L1 there will be a default route to
+        # 0.0.0.0 heading to the closest L1/L2 node.
+        src_area ,= source.AS[self]
+        
+        # we keep a boolean telling us if source is L1 so that we know we
+        # must add the i*L1 default route when we first meet a L1/L2 node
+        # and all other routes are i L1 as rtype (route type).
+        isL1 = source not in self.border_routers and src_area.name != 'Backbone'
+        
+        while heap:
+            dist, node, path_trunk, ex_int = heappop(heap)  
+            if (node, ex_int) not in visited:
+                visited.add((node, ex_int))
+                for neighbor, l3vc in self.ntw.graph[node.id]['l3vc']:
+                    adj_trunk = l3vc("link", node)
+                    remote_trunk = l3vc("link", neighbor)
+                    if adj_trunk in path_trunk:
+                        continue
+                    # excluded and allowed nodes
+                    if neighbor not in allowed_nodes:
+                        continue
+                    # excluded and allowed trunks
+                    if adj_trunk not in allowed_trunks: 
+                        continue
+                    if node == source:
+                        ex_ip = remote_trunk('ipaddress', neighbor)
+                        ex_int = adj_trunk('interface', source)
+                        source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int,
+                                            dist, neighbor, adj_trunk)}
+                        SP_cost[adj_trunk.sntw] = 0
+                    heappush(heap, (dist + adj_trunk('cost', node), 
+                            neighbor, path_trunk + [adj_trunk], ex_int))
+                    
+            if path_trunk:
+                trunk = path_trunk[-1]
+                ex_tk = path_trunk[0]
+                nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
+                ex_ip = ex_tk("ipaddress", nh)
+                ex_int = ex_tk("interface", source)
+                if isL1:
+                    if (node in self.border_routers 
+                                        and '0.0.0.0' not in source.rt):
+                        source.rt['0.0.0.0'] = {('i*L1', ex_ip, ex_int,
+                                                    dist, nh, ex_tk)}
+                    else:
+                        if (('i L1', trunk.sntw) not in visited_subnetworks 
+                                        and trunk.AS[self] & ex_tk.AS[self]):
+                            visited_subnetworks.add(('i L1', trunk.sntw))
+                            source.rt[trunk.sntw] = {('i L1', ex_ip, ex_int,
+                                    dist + trunk('cost', node), nh, ex_tk)}
+                else:
+                    trunkAS ,= trunk.AS[self]
+                    exit_area ,= ex_tk.AS[self]
+                    rtype = 'i L1' if (trunk.AS[self] & ex_tk.AS[self] and 
+                                    trunkAS.name != 'Backbone') else 'i L2'
+                    # we favor intra-area routes by excluding a 
+                    # route if the area of the exit trunk is not
+                    # the one of the subnetwork
+                    if (not ex_tk.AS[self] & trunk.AS[self] 
+                                    and trunkAS.name == 'Backbone'):
+                        continue
+                    # if the source is an L1/L2 node and the destination
+                    # is an L1 area different from its own, we force it
+                    # to use the backbone by forbidding it to use the
+                    # exit interface in the source area
+                    if (rtype == 'i L2' and source in self.border_routers and 
+                                exit_area.name != 'Backbone'):
+                        continue
+                    if (('i L1', trunk.sntw) not in visited_subnetworks 
+                        and ('i L2', trunk.sntw) not in visited_subnetworks):
+                        visited_subnetworks.add((rtype, trunk.sntw))
+                        source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int,
+                                dist + trunk('cost', node), nh, ex_tk)}
+                    # TODO
+                    # IS-IS uses per-address unequal cost load balancing 
+                    # a user-defined variance defined as a percentage of the
+                    # primary path cost defines which paths can be used
+                    # (up to 9).
+                
+class OSPF_AS(ASWithArea):
+    
+    AS_type = "OSPF"
+    
+    def __init__(self, *args):
+        *common_args, imp = args
+        super().__init__(*common_args)
+        self.metric = "bandwidth"
+        self.ref_bw = 10**8
+        
+        # management window of the AS 
+        self.management = AS_management.OSPF_Management(self, imp)
+        
+        # contains all ABRs
+        self.border_routers = set()
+        
+        # node used to exit the domain (ASBR for OSPF)
+        self.exit_point = None
+        
+        # imp tells us if the AS is imported or created from scratch.
+        trunks, nodes = self.pAS["node"], self.pAS["trunk"]
+        if not imp:
+            self.area_factory("Backbone", id=0, trunks=trunks, nodes=nodes)
+            
+    def RFT_builder(self, source, allowed_nodes, allowed_trunks):
+        print(source)
+        K = source.LB_paths
+        visited = set()
+        # we keep track of all already visited subnetworks so that we 
+        # don't add them more than once to the mapping dict.
+        visited_subnetworks = set()
+        heap = [(0, source, [], None)]
+        # source area: we make sure that if the node is connected to an area,
+        # the path we find to any subnetwork in that area is an intra-area path.
+        src_areas = source.AS[self]
+        # cost of the shortesth path to a subnetwork
+        SP_cost = {}
+        
+        while heap:
+            dist, node, path_trunk, ex_int = heappop(heap)  
+            if (node, ex_int) not in visited:
+                visited.add((node, ex_int))
+                for neighbor, l3vc in self.ntw.graph[node.id]['l3vc']:
+                    adj_trunk = l3vc("link", node)
+                    remote_trunk = l3vc("link", neighbor)
+                    if adj_trunk in path_trunk:
+                        continue
+                    # excluded and allowed nodes
+                    if neighbor not in allowed_nodes:
+                        continue
+                    # excluded and allowed trunks
+                    if adj_trunk not in allowed_trunks: 
+                        continue
+                    if node == source:
+                        ex_ip = remote_trunk('ipaddress', neighbor)
+                        ex_int = adj_trunk('interface', source)
+                        source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int,
+                                            dist, neighbor, adj_trunk)}
+                        SP_cost[adj_trunk.sntw] = 0
+                    heappush(heap, (dist + adj_trunk('cost', node), 
+                            neighbor, path_trunk + [adj_trunk], ex_int))
+                    
+            if path_trunk:
+                trunk = path_trunk[-1]
+                ex_tk = path_trunk[0]
+                nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
+                ex_ip = ex_tk("ipaddress", nh)
+                ex_int = ex_tk("interface", source)
+                # we check if the trunk has any common area with the
+                # exit trunk: if it does not, it is an inter-area route.
+                rtype = 'O' if (trunk.AS[self] & ex_tk.AS[self]) else 'O IA'
+                if trunk.sntw not in source.rt:
+                    SP_cost[trunk.sntw] = dist
+                    source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                                                dist, nh, ex_tk)}
+                else:
+                    for route in source.rt[trunk.sntw]:
+                        break
+                    if route[0] == 'O' and rtype == 'IA':
+                        continue
+                    elif route[0] == 'O IA' and rtype == 'O':
+                        SP_cost[trunk.sntw] = dist
+                        source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                                                dist, nh, ex_tk)}
+                    else:
+                        if (dist == SP_cost[trunk.sntw]
+                            and K > len(source.rt[trunk.sntw])):
+                            source.rt[trunk.sntw].add((
+                                                    rtype, ex_ip, ex_int, 
+                                                        dist, nh, ex_tk
+                                                        ))
+                if (rtype, trunk.sntw) not in visited_subnetworks:
+                    if ('O', trunk.sntw) in visited_subnetworks:
+                        continue
+                    else:
+                        visited_subnetworks.add((rtype, trunk.sntw))
+                        source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                                                        dist, nh, ex_tk)}
+            
+    # def add_to_ASBR(self, node):
+    #     self.pAS["edge"].add(node)
+    #     
+    # def remove_from_ASBR(self, node):
+    #     self.pAS["edge"].discard(node)
                     
 class ModifyAS(CustomTopLevel):
     def __init__(self, scenario, mode, obj, AS=set()):
@@ -246,11 +500,11 @@ class ASCreation(CustomTopLevel):
             id = len(scenario.ntw.pnAS) + 1
         
         new_AS = scenario.ntw.AS_factory(
-                                         name = self.entry_name.get(), 
-                                         _type = self.var_AS_type.get(), 
-                                         id = id,
-                                         trunks = trunks, 
-                                         nodes = nodes
+                                         self.var_AS_type.get(), 
+                                         self.entry_name.get(), 
+                                         id,
+                                         trunks, 
+                                         nodes
                                          )
         self.destroy()
             

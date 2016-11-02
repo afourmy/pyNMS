@@ -810,13 +810,11 @@ class NetDim(tk.Tk):
         
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):
-                name, type, id, nodes, trunks, edges = AS_sheet.row_values(row_index)
+                name, type, id, nodes = AS_sheet.row_values(row_index)
                 id = int(id)
                 nodes = self.convert_nodes_set(nodes)
                 trunks = self.convert_links_set(trunks)
-                edges = self.convert_nodes_set(edges)
-                self.cs.ntw.AS_factory(name, type, id, trunks, nodes, 
-                                                        edges, set(), True)
+                self.cs.ntw.AS_factory(name, type, id, trunks, nodes, True)
             
             # creation of the area
             for row_index in range(1, area_sheet.nrows):
@@ -840,13 +838,11 @@ class NetDim(tk.Tk):
                         self.cs.ntw.lf(*param, subtype=obj_type, 
                                                         name=n, s=s, d=d)
                     elif obj_type == 'AS':
-                        name, type, id, nodes, trunks, edges = other
+                        name, type, id, nodes, trunks = other
                         id = int(id)
                         nodes = self.convert_nodes_set(unstar(nodes))
                         trunks = self.convert_links_set(unstar(trunks))
-                        edges = self.convert_nodes_set(unstar(edges))
-                        self.cs.ntw.AS_factory(name, type, id, trunks, nodes, 
-                                                                edges, set(), True)
+                        self.cs.ntw.AS_factory(name, type, id, trunks, nodes, True)                                    
                                                                 
                     elif obj_type == 'area':
                         name, AS, id, nodes, trunks = other
@@ -961,11 +957,10 @@ class NetDim(tk.Tk):
             
             for i, AS in enumerate(self.cs.ntw.pnAS.values(), 1):
                 AS_sheet.write(i, 0, str(AS.name))
-                AS_sheet.write(i, 1, str(AS.type))
+                AS_sheet.write(i, 1, str(AS.AS_type))
                 AS_sheet.write(i, 2, str(AS.id))
                 AS_sheet.write(i, 3, to_string(AS.pAS['node']))
                 AS_sheet.write(i, 4, to_string(AS.pAS['trunk']))
-                AS_sheet.write(i, 5, to_string(AS.pAS['edge']))
                 
             area_sheet = excel_workbook.add_sheet('area')
             cpt = 1

@@ -62,6 +62,12 @@ class Network(object):
     ('static traffic', objects.StaticTraffic)
     ])
     
+    AS_class = OrderedDict([
+    ('RIP', AS.RIP_AS),
+    ('ISIS', AS.ISIS_AS),
+    ('OSPF', AS.OSPF_AS)
+    ])
+    
     link_class = {}
     for dclass in (trunk_class, route_class, traffic_class, VC_class):
         link_class.update(dclass)
@@ -180,30 +186,25 @@ class Network(object):
         
     def AS_factory(
                    self, 
+                   AS_type = 'RIP',
                    name = None, 
-                   _type = 'RIP',
                    id = 0,
                    trunks = set(), 
-                   nodes = set(), 
-                   edges = set(), 
-                   routes = set(),
+                   nodes = set(),
                    imp = False
                    ):
         if not name:
             name = 'AS' + str(self.cpt_AS)
         if name not in self.pnAS:
             # creation of the AS
-            self.pnAS[name] = AS.AutonomousSystem(
-                                                  self.cs, 
-                                                  _type, 
-                                                  name, 
-                                                  id,
-                                                  trunks, 
-                                                  nodes, 
-                                                  edges,
-                                                  routes, 
-                                                  imp
-                                                  )
+            self.pnAS[name] = self.AS_class[AS_type](
+                                                    self.cs,
+                                                    name, 
+                                                    id,
+                                                    trunks, 
+                                                    nodes,
+                                                    imp
+                                                    )
             # increase the AS counter by one
             self.cpt_AS += 1
         return self.pnAS[name]
@@ -273,7 +274,7 @@ class Network(object):
                     
     def update_AS_topology(self):
         # update all BGP AS property of nodes in a BGP AS
-        for AS in filter(lambda a: a.type == 'BGP', self.pnAS.values()):
+        for AS in filter(lambda a: a.AS_type == 'BGP', self.pnAS.values()):
             for node in AS.pAS['node']:
                 node.bgp_AS = AS.name
                 
@@ -285,7 +286,8 @@ class Network(object):
         for AS in self.pnAS.values():
             # for all OSPF and IS-IS AS, fill the ABR/L1L2 sets
             # update trunk area based on nodes area (ISIS) and vice-versa (OSPF)
-            AS.management.update_AS_topology()
+            if AS.AS_type in ('ISIS', 'OSPF'):
+                AS.management.update_AS_topology()
             
     def segment_finder(self, layer):
         # we associate a set of trunks to each layer-n segment.
@@ -425,10 +427,9 @@ class Network(object):
         
     def rt_creation(self):
         # we compute the routing table of all routers
+        for AS in self.pnAS.values():
+            AS.build_RFT()
         for router in self.ftr('node', 'router', 'host'):
-            router.rt = {}
-            for AS in router.AS:
-                self.RFT_builder(router, AS)
             self.static_RFT_builder(router)
                 
     def reset_traffic(self):
@@ -819,149 +820,6 @@ class Network(object):
             source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int, 
                                                     0, neighbor, adj_trunk)}
                                             
-    ## 3) RFT builder
-                                                
-    def RFT_builder(
-               self, 
-               source, 
-               AS
-               ):
-    
-        K = source.LB_paths
-        visited = set()
-        allowed_nodes = AS.pAS['node']
-        allowed_trunks =  AS.pAS['trunk'] - self.fdtks
-        # we keep track of all already visited subnetworks so that we 
-        # don't add them more than once to the mapping dict.
-        visited_subnetworks = set()
-        heap = [(0, source, [], None)]
-        # source area: we make sure that if the node is connected to an area,
-        # the path we find to any subnetwork in that area is an intra-area path.
-        src_areas = source.AS[AS]
-        # cost of the shortesth path to a subnetwork
-        SP_cost = {}
-                
-        if AS.type == 'ISIS':
-            # if source is an L1 there will be a default route to
-            # 0.0.0.0 heading to the closest L1/L2 node.
-            src_area ,= source.AS[AS]
-            
-            # we keep a boolean telling us if source is L1 so that we know we
-            # must add the i*L1 default route when we first meet a L1/L2 node
-            # and all other routes are i L1 as rtype (route type).
-            isL1 = source not in AS.border_routers and src_area.name != 'Backbone'
-        
-        while heap:
-            dist, node, path_trunk, ex_int = heappop(heap)  
-            if (node, ex_int) not in visited:
-                visited.add((node, ex_int))
-                for neighbor, l3vc in self.graph[node.id]['l3vc']:
-                    adj_trunk = l3vc("link", node)
-                    remote_trunk = l3vc("link", neighbor)
-                    if adj_trunk in path_trunk:
-                        continue
-                    # excluded and allowed nodes
-                    if neighbor not in allowed_nodes:
-                        continue
-                    # excluded and allowed trunks
-                    if adj_trunk not in allowed_trunks: 
-                        continue
-                    if node == source:
-                        ex_ip = remote_trunk('ipaddress', neighbor)
-                        ex_int = adj_trunk('interface', source)
-                        source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int,
-                                            dist, neighbor, adj_trunk)}
-                        SP_cost[adj_trunk.sntw] = 0
-                    heappush(heap, (dist + adj_trunk('cost', node), 
-                            neighbor, path_trunk + [adj_trunk], ex_int))
-                    
-            if path_trunk:
-                trunk = path_trunk[-1]
-                ex_tk = path_trunk[0]
-                nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
-                ex_ip = ex_tk("ipaddress", nh)
-                ex_int = ex_tk("interface", source)
-                if AS.type == 'RIP':
-                    if trunk.sntw not in source.rt:
-                        SP_cost[trunk.sntw] = dist
-                        source.rt[trunk.sntw] = {('R', ex_ip, ex_int, 
-                                                    dist, nh, ex_tk)}
-                    else:
-                        if (dist == SP_cost[trunk.sntw] 
-                            and K > len(source.rt[trunk.sntw])):
-                            source.rt[trunk.sntw].add(('R', ex_ip, ex_int, 
-                                                    dist, nh, ex_tk))
-                elif AS.type == 'OSPF':
-                    # we check if the trunk has any common area with the
-                    # exit trunk: if it does not, it is an inter-area route.
-                    rtype = 'O' if (trunk.AS[AS] & ex_tk.AS[AS]) else 'O IA'
-                    if trunk.sntw not in source.rt:
-                        SP_cost[trunk.sntw] = dist
-                        source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
-                                                    dist, nh, ex_tk)}
-                    else:
-                        for route in source.rt[trunk.sntw]:
-                            break
-                        if route[0] == 'O' and rtype == 'IA':
-                            continue
-                        elif route[0] == 'O IA' and rtype == 'O':
-                            SP_cost[trunk.sntw] = dist
-                            source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
-                                                    dist, nh, ex_tk)}
-                        else:
-                            if (dist == SP_cost[trunk.sntw]
-                                and K > len(source.rt[trunk.sntw])):
-                                source.rt[trunk.sntw].add((
-                                                        rtype, ex_ip, ex_int, 
-                                                         dist, nh, ex_tk
-                                                         ))
-                    if (rtype, trunk.sntw) not in visited_subnetworks:
-                        if ('O', trunk.sntw) in visited_subnetworks:
-                            continue
-                        else:
-                            visited_subnetworks.add((rtype, trunk.sntw))
-                            source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
-                                                            dist, nh, ex_tk)}
-                elif AS.type == 'ISIS':
-                    if isL1:
-                        if (node in AS.border_routers 
-                                            and '0.0.0.0' not in source.rt):
-                            source.rt['0.0.0.0'] = {('i*L1', ex_ip, ex_int,
-                                                        dist, nh, ex_tk)}
-                        else:
-                            if (('i L1', trunk.sntw) not in visited_subnetworks 
-                                            and trunk.AS[AS] & ex_tk.AS[AS]):
-                                visited_subnetworks.add(('i L1', trunk.sntw))
-                                source.rt[trunk.sntw] = {('i L1', ex_ip, ex_int,
-                                        dist + trunk('cost', node), nh, ex_tk)}
-                    else:
-                        trunkAS ,= trunk.AS[AS]
-                        exit_area ,= ex_tk.AS[AS]
-                        rtype = 'i L1' if (trunk.AS[AS] & ex_tk.AS[AS] and 
-                                        trunkAS.name != 'Backbone') else 'i L2'
-                        # we favor intra-area routes by excluding a 
-                        # route if the area of the exit trunk is not
-                        # the one of the subnetwork
-                        if (not ex_tk.AS[AS] & trunk.AS[AS] 
-                                        and trunkAS.name == 'Backbone'):
-                            continue
-                        # if the source is an L1/L2 node and the destination
-                        # is an L1 area different from its own, we force it
-                        # to use the backbone by forbidding it to use the
-                        # exit interface in the source area
-                        if (rtype == 'i L2' and source in AS.border_routers and 
-                                    exit_area.name != 'Backbone'):
-                            continue
-                        if (('i L1', trunk.sntw) not in visited_subnetworks 
-                            and ('i L2', trunk.sntw) not in visited_subnetworks):
-                            visited_subnetworks.add((rtype, trunk.sntw))
-                            source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int,
-                                    dist + trunk('cost', node), nh, ex_tk)}
-                    # TODO
-                    # IS-IS uses per-address unequal cost load balancing 
-                    # a user-defined variance defined as a percentage of the
-                    # primary path cost defines which paths can be used
-                    # (up to 9).
                     
     def BGPT_builder(self):
         for source in self.ftr('node', 'router'):

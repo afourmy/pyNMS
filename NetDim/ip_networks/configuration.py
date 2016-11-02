@@ -47,11 +47,10 @@ class Configuration(tk.Toplevel):
         
         # configuration of the loopback interface
         yield " {name}(config)# interface Loopback0\n".format(name=node.name)
-        yield " {name}(config-if)# ip address {ip} {mask}\n"\
+        yield " {name}(config-if)# ip address {ip} 255.255.255.255\n"\
                                         .format(
                                                 name = node.name, 
                                                 ip = node.ipaddress, 
-                                                mask = node.subnetmask
                                                 )
                 
         yield " {name}(config-if)# exit\n".format(name=node.name)
@@ -93,7 +92,7 @@ class Configuration(tk.Toplevel):
                                     .format(name=node.name, ip=ip, mask=mask)
             yield " {name}(config-if)# no shutdown\n".format(name=node.name)
             
-            if any(AS.type == "OSPF" for AS in adj_trunk.AS):
+            if any(AS.AS_type == "OSPF" for AS in adj_trunk.AS):
                 direction = "SD" if direction == "S" else "DS"
                 cost = getattr(adj_trunk, "cost" + direction)
                 if cost != 1:
@@ -108,7 +107,7 @@ class Configuration(tk.Toplevel):
                 
                 # we configure isis only if the neighbor 
                 # belongs to the same AS.
-                if AS in neighbor.AS and AS.type == "ISIS":
+                if AS in neighbor.AS and AS.AS_type == "ISIS":
                     
                     node_area ,= node.AS[AS]
                     in_backbone = node_area.name == "Backbone"
@@ -134,7 +133,7 @@ class Configuration(tk.Toplevel):
             
         for AS in node.AS:
             
-            if AS.type == "RIP":
+            if AS.AS_type == "RIP":
                 yield " {name}(config)# router rip\n"\
                                                 .format(name=node.name)
                 
@@ -150,7 +149,7 @@ class Configuration(tk.Toplevel):
                         yield " {name}(config-router)# passive-interface {i}\n"\
                                 .format(name=node.name, i=interface)
                 
-            elif AS.type == "OSPF":
+            elif AS.AS_type == "OSPF":
                 
                 yield " {name}(config)# router ospf 1\n"\
                                                     .format(name=node.name)
@@ -173,7 +172,7 @@ class Configuration(tk.Toplevel):
                     yield " {name}(config-router)# default-information originate\n"\
                                                         .format(name=node.name)
                 
-            elif AS.type == "ISIS":
+            elif AS.AS_type == "ISIS":
                 
                 # we need to know:
                 # - whether the node is in the backbone area (L1/L2 or L2) 
