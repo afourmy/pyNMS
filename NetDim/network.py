@@ -426,6 +426,9 @@ class Network(object):
         self.fdtks.clear()
         
     def rt_creation(self):
+        # clear the existing routing table
+        for router in self.ftr('node', 'router', 'host'):
+            router.rt.clear()
         # we compute the routing table of all routers
         for AS in self.pnAS.values():
             AS.build_RFT()
@@ -787,7 +790,6 @@ class Network(object):
         return path_node, path_trunk
         
     ## 2) Add connected interfaces to the RFT
-    # TODO and default / static route too
     
     def static_RFT_builder(self, source):
         

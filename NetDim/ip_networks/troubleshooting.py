@@ -108,7 +108,7 @@ class Troubleshooting(tk.Toplevel):
         # pack the scrolledtext in the frames, and the notebook in the window
         st_debug.pack(fill=tk.BOTH, expand=tk.YES)
         
-        if any(AS.type == "RIP" for AS in node.AS):
+        if any(AS.AS_type == "RIP" for AS in node.AS):
             
             ## RIP Troubleshooting
 
@@ -144,7 +144,7 @@ class Troubleshooting(tk.Toplevel):
             st_debug_rip.config(state=tk.DISABLED)
             st_debug_rip.pack(fill=tk.BOTH, expand=tk.YES)
             
-        if any(AS.type == "OSPF" for AS in node.AS):
+        if any(AS.AS_type == "OSPF" for AS in node.AS):
         
             ## OSPF Information
             
