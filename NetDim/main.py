@@ -9,7 +9,7 @@ from os.path import abspath
 # prevent python from writing *.pyc files / __pycache__ folders
 sys.dont_write_bytecode = True
 
-path_app = abspath(getsourcefile(lambda: 0))[:-7]
+path_app = abspath(getsourcefile(lambda: _))[:-7]
 if path_app not in sys.path:
     sys.path.append(path_app)
 

@@ -762,6 +762,7 @@ class NetDim(tk.Tk):
     def str_to_object(self, obj_param, type):
         object_list = []
         for id, p in enumerate(self.object_ie[type]):
+            print(p)
             # since None evaluates to False and 'None' to True, it matters
             # that None stays None after import.
             if obj_param[id] == 'None':

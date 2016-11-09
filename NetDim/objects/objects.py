@@ -7,13 +7,13 @@ from collections import defaultdict
 ## NetDim object
 
 class NDobject(object):
-    def __init__(self):
+    def __init__(self, sites):
         # an object in NetDim belongs to one or several groups, which we can
         # use as a filter to display a subset of objects
         # each site corresponds to a "site" node, but the filter can also be
         # a set of sites, in which case any object that belongs to at least
         # one site of the user-defined filter will be displayed
-        self.sites = set()
+        self.sites = sites
 
 ## Nodes
 class Node(NDobject):
@@ -30,9 +30,10 @@ class Node(NDobject):
                  latitude = 0, 
                  ipaddress = None,
                  subnetmask = None,
-                 LB_paths = 1
+                 LB_paths = 1,
+                 sites = set()
                  ):
-        super().__init__()
+        super().__init__(sites)
         self.id = id
         self.name = name
         self.longitude = int(longitude)
@@ -180,8 +181,8 @@ class Link(NDobject):
     
     class_type = 'link'
     
-    def __init__(self, id, name, source, destination, distance=0, bandwidth=0.):
-        super().__init__()
+    def __init__(self, id, name, source, destination, sites=None, distance=0, bandwidth=0.):
+        super().__init__(sites)
         self.id = id
         self.name = name
         self.source = source
@@ -233,10 +234,11 @@ class Trunk(Link):
                  ipaddressD = None, 
                  subnetmaskD = None, 
                  interfaceD = None,
-                 macaddressD = None
+                 macaddressD = None,
+                 sites = None
                  ):
                      
-        super().__init__(id, name, source, destination, distance)
+        super().__init__(id, name, source, destination, sites, distance)
         self.interface = interface
         self.costSD, self.costDS = int(costSD), int(costDS)
         self.capacitySD, self.capacityDS = int(capacitySD), int(capacityDS)
@@ -284,9 +286,10 @@ class L2VC(Link):
                  id,
                  name, 
                  source, 
-                 destination
+                 destination,
+                 sites = None,
                  ):
-        super().__init__(id, name, source, destination)
+        super().__init__(id, name, source, destination, sites)
         self.linkS = None
         self.linkD = None
         
@@ -315,7 +318,8 @@ class L3VC(Link):
                  id,
                  name, 
                  source, 
-                 destination
+                 destination,
+                 sites = None
                  ): 
         super().__init__(id, name, source, destination)
         self.linkS = None

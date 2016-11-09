@@ -5,53 +5,69 @@
 from . import area
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous.custom_toplevel import FocusTopLevel
+from miscellaneous.custom_toplevel import CustomTopLevel
+from miscellaneous.custom_frame import CustomFrame
 from miscellaneous.custom_listbox import ObjectListbox
 
-class ASManagement(FocusTopLevel):
+class ASManagement(CustomTopLevel):
     
     def __init__(self, AS, imp):
         super().__init__()
         self.AS = AS
+        self.dict_listbox = {}
         self.title("Manage AS")
+        
+        # A ttk notebook made of two frames
+        self.frame_notebook = ttk.Notebook(self)
+        common_frame = CustomFrame(self.frame_notebook)
+        self.frame_notebook.add(common_frame, text='Common management')
+        self.frame_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+        
+        # label frame for properties
+        lf_properties = ttk.Labelframe(common_frame, padding=(6, 6, 12, 12), text='AS properties')
+        
         self.obj_type = ("trunk", "node") 
         
-        self.label_name = ttk.Label(self, text="AS name")
-        self.label_id = ttk.Label(self, text="AS ID")
-        self.label_type = ttk.Label(self, text="AS Type")
+        self.label_name = ttk.Label(common_frame, text="AS name")
+        self.label_id = ttk.Label(common_frame, text="AS ID")
+        self.label_type = ttk.Label(common_frame, text="AS Type")
         
         self.str_name = tk.StringVar()
-        self.entry_name  = tk.Entry(self, textvariable=self.str_name, width=10)
+        self.entry_name  = tk.Entry(common_frame, textvariable=self.str_name, width=10)
         self.str_name.set(AS.name)
         self.str_id = tk.StringVar()
-        self.entry_id  = tk.Entry(self, textvariable=self.str_id, width=10)
+        self.entry_id  = tk.Entry(common_frame, textvariable=self.str_id, width=10)
         self.str_id.set(AS.id)
         
         # the type of a domain cannot change after domain creation.
-        self.AS_type = ttk.Label(self, text=AS.AS_type)
+        self.AS_type = ttk.Label(common_frame, text=AS.AS_type)
         
-        self.label_name.grid(row=1, column=0, pady=5, padx=5, sticky="e")
-        self.label_id.grid(row=2, column=0, pady=5, padx=5, sticky="e")
-        self.label_type.grid(row=3, column=0, pady=5, padx=5, sticky="e")
-        self.entry_name.grid(row=1, column=1, pady=5, padx=5, sticky="w")
-        self.entry_id.grid(row=2, column=1, pady=5, padx=5, sticky="w")
-        self.AS_type.grid(row=3, column=1, pady=5, padx=5, sticky="w")
+        lf_properties.grid(row=0, column=0, pady=5, padx=5)
+        self.label_name.grid(row=1, column=0, pady=5, padx=5, sticky="w", in_=lf_properties)
+        self.label_id.grid(row=2, column=0, pady=5, padx=5, sticky="w", in_=lf_properties)
+        self.label_type.grid(row=3, column=0, pady=5, padx=5, sticky="w", in_=lf_properties)
+        self.entry_name.grid(row=1, column=1, pady=5, padx=5, sticky="w", in_=lf_properties)
+        self.entry_id.grid(row=2, column=1, pady=5, padx=5, sticky="w", in_=lf_properties)
+        self.AS_type.grid(row=3, column=1, pady=5, padx=5, sticky="w", in_=lf_properties)
+        
+        # label frame for links and nodes
+        lf_objects = ttk.Labelframe(common_frame, padding=(6, 6, 12, 12), text='AS objects')
+        lf_objects.grid(row=1, column=0, pady=5, padx=5)
         
         # listbox of all AS objects
-        self.dict_listbox = {}
         for index, type in enumerate(self.obj_type):
-            lbl = tk.Label(self, bg="#A1DBCD", text="".join(("AS ",type,"s")))
-            listbox = ObjectListbox(self, activestyle="none", width=15, 
+            lbl = tk.Label(common_frame, bg="#A1DBCD", text="".join(("AS ",type,"s")))
+            listbox = ObjectListbox(common_frame, activestyle="none", width=15, 
                                             height=7, selectmode="extended")
             self.dict_listbox[type] = listbox
-            yscroll = tk.Scrollbar(self, 
+            yscroll = tk.Scrollbar(common_frame, 
                     command=self.dict_listbox[type].yview, orient=tk.VERTICAL)
             listbox.configure(yscrollcommand=yscroll.set)
             listbox.bind("<<ListboxSelect>>", 
                             lambda e, type=type: self.highlight_object(e, type))
-            lbl.grid(row=1, column=2+2*index)
-            listbox.grid(row=2, rowspan=2, column=2+2*index)
-            yscroll.grid(row=2, rowspan=2, column=3+2*index, sticky="ns")
+            lbl.grid(row=0, column=2*index, in_=lf_objects)
+            listbox.grid(row=1, column=2*index, in_=lf_objects)
+            yscroll.grid(row=1, column=1+2*index, sticky="ns", in_=lf_objects)
             
         # populate the listbox with all objects from which the AS was created
         for obj_type in ("trunk", "node"):
@@ -59,25 +75,18 @@ class ASManagement(FocusTopLevel):
                 self.dict_listbox[obj_type].insert(obj)
         
         # find domain trunks: the trunks between nodes of the AS
-        self.button_find_trunks = ttk.Button(self, text="Find trunks", 
+        self.button_find_trunks = ttk.Button(common_frame, text="Find trunks", 
                                 command=lambda: self.find_trunks())
         
         # operation on nodes
-        self.button_remove_node_from_AS = ttk.Button(self, text="Remove node", 
+        self.button_remove_node_from_AS = ttk.Button(common_frame, text="Remove node", 
                                 command=lambda: self.remove_selected("node"))
         
         # buttons under the trunks column
-        self.button_find_trunks.grid(row=5, column=0)
+        self.button_find_trunks.grid(row=2, column=0, in_=lf_objects)
         
         # button under the nodes column
-        self.button_remove_node_from_AS.grid(row=5, column=2)
-        
-        # hide the window when closed
-        self.protocol("WM_DELETE_WINDOW", self.withdraw)
-        
-        # if the AS is created from an import, close the management window
-        if imp: 
-            self.withdraw()
+        self.button_remove_node_from_AS.grid(row=2, column=2, in_=lf_objects)
             
     ## Functions used directly from the AS Management window
         
@@ -87,7 +96,14 @@ class ASManagement(FocusTopLevel):
         for selected_object in self.dict_listbox[obj_type].selected():
             selected_object = self.AS.cs.ntw.of(name=selected_object, _type=obj_type)
             self.AS.cs.highlight_objects(selected_object)
+                
+        # hide the window when closed
+        self.protocol("WM_DELETE_WINDOW", self.withdraw)
         
+        # if the AS is created from an import, close the management window
+        if imp: 
+            self.withdraw()
+            
     # remove the object selected in "obj_type" listbox from the AS
     def remove_selected(self, obj_type):
         # remove and retrieve the selected object in the listbox
@@ -119,19 +135,22 @@ class ASManagement(FocusTopLevel):
                 self.dict_listbox["node"].pop(obj)
             elif obj.type == "trunk":
                 self.dict_listbox["trunk"].pop(obj)
-                
+            
 class ASManagementWithArea(ASManagement):
     
     def __init__(self, *args):
         super().__init__(*args)
+        
+        area_frame = CustomFrame(self.frame_notebook)
+        self.frame_notebook.add(area_frame, text='Area management')
         self.area_listbox = ("area names", "area trunks", "area nodes")
-                            
+        
         # listbox for areas
         for index, type in enumerate(self.area_listbox):
-            lbl = tk.Label(self, bg="#A1DBCD", text=type.title())
-            listbox = ObjectListbox(self, activestyle="none", width=15, height=7)
+            lbl = tk.Label(area_frame, bg="#A1DBCD", text=type.title())
+            listbox = ObjectListbox(area_frame, activestyle="none", width=15, height=7)
             self.dict_listbox[type] = listbox
-            yscroll = tk.Scrollbar(self, 
+            yscroll = tk.Scrollbar(area_frame, 
                     command=self.dict_listbox[type].yview, orient=tk.VERTICAL)
             listbox.configure(yscrollcommand=yscroll.set)
             if type == "area names":
@@ -145,11 +164,11 @@ class ASManagementWithArea(ASManagement):
             yscroll.grid(row=7, column=1+2*index, sticky="ns")
                                                   
         # button to create an area
-        self.button_create_area = ttk.Button(self, text="Create area", 
+        self.button_create_area = ttk.Button(area_frame, text="Create area", 
                                 command=lambda: area.CreateArea(self))
                                 
         # button to delete an area
-        self.button_delete_area = ttk.Button(self, text="Delete area", 
+        self.button_delete_area = ttk.Button(area_frame, text="Delete area", 
                                 command=lambda: self.delete_area())
             
         # button under the area column
@@ -181,7 +200,7 @@ class ASManagementWithArea(ASManagement):
                 self.dict_listbox["area nodes"].insert(node)
             for trunk in area.pa["trunk"]:
                 self.dict_listbox["area trunks"].insert(trunk)
-            
+                
     ## Functions used to modify AS from the right-click menu
     
     def add_to_area(self, area, *objects):
@@ -279,13 +298,13 @@ class OSPF_Management(ASManagementWithArea):
         "100GE":10**10
         }
 
-        self.button_update_cost = ttk.Button(self, text="Update costs", 
-                                command=lambda: self.update_cost())
-        self.button_update_cost.grid(row=1, column=0, pady=5, padx=5, sticky="w")    
-        
-        self.button_update_topo = ttk.Button(self, text="Update topology", 
-                                command=lambda: self.update_AS_topology())
-        self.button_update_topo.grid(row=2, column=0, pady=5, padx=5, sticky="w")
+        # self.button_update_cost = ttk.Button(self, text="Update costs", 
+        #                         command=lambda: self.update_cost())
+        # self.button_update_cost.grid(row=1, column=0, pady=5, padx=5, sticky="w")    
+        # 
+        # self.button_update_topo = ttk.Button(self, text="Update topology", 
+        #                         command=lambda: self.update_AS_topology())
+        # self.button_update_topo.grid(row=2, column=0, pady=5, padx=5, sticky="w")
         
         #TODO ASBR stuff
         # self.button_add_to_edges = ttk.Button(self, text="Add to ASBR", 
