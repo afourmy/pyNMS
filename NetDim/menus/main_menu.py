@@ -6,8 +6,8 @@ import tkinter as tk
 from tkinter import ttk
 from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
-from miscellaneous.custom_toplevel import CustomTopLevel
-from miscellaneous.custom_listbox import ObjectListbox
+from pythonic_tkinter.custom_widgets import CustomTopLevel
+from pythonic_tkinter.custom_listbox import ObjectListbox
 from drawing import drawing_options_window
 
 class MainMenu(tk.Frame):

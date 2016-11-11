@@ -5,9 +5,9 @@
 from . import area
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous.custom_toplevel import CustomTopLevel
-from miscellaneous.custom_frame import CustomFrame
-from miscellaneous.custom_listbox import ObjectListbox
+from pythonic_tkinter.custom_widgets import CustomTopLevel
+from pythonic_tkinter.custom_widgets import CustomFrame
+from pythonic_tkinter.custom_listbox import ObjectListbox
 
 class ASManagement(CustomTopLevel):
     
@@ -141,16 +141,16 @@ class ASManagementWithArea(ASManagement):
     def __init__(self, *args):
         super().__init__(*args)
         
-        area_frame = CustomFrame(self.frame_notebook)
-        self.frame_notebook.add(area_frame, text='Area management')
+        self.area_frame = CustomFrame(self.frame_notebook)
+        self.frame_notebook.add(self.area_frame, text='Area management')
         self.area_listbox = ("area names", "area trunks", "area nodes")
         
         # listbox for areas
         for index, type in enumerate(self.area_listbox):
-            lbl = tk.Label(area_frame, bg="#A1DBCD", text=type.title())
-            listbox = ObjectListbox(area_frame, activestyle="none", width=15, height=7)
+            lbl = tk.Label(self.area_frame, bg="#A1DBCD", text=type.title())
+            listbox = ObjectListbox(self.area_frame, activestyle="none", width=15, height=7)
             self.dict_listbox[type] = listbox
-            yscroll = tk.Scrollbar(area_frame, 
+            yscroll = tk.Scrollbar(self.area_frame, 
                     command=self.dict_listbox[type].yview, orient=tk.VERTICAL)
             listbox.configure(yscrollcommand=yscroll.set)
             if type == "area names":
@@ -164,11 +164,11 @@ class ASManagementWithArea(ASManagement):
             yscroll.grid(row=7, column=1+2*index, sticky="ns")
                                                   
         # button to create an area
-        self.button_create_area = ttk.Button(area_frame, text="Create area", 
+        self.button_create_area = ttk.Button(self.area_frame, text="Create area", 
                                 command=lambda: area.CreateArea(self))
                                 
         # button to delete an area
-        self.button_delete_area = ttk.Button(area_frame, text="Delete area", 
+        self.button_delete_area = ttk.Button(self.area_frame, text="Delete area", 
                                 command=lambda: self.delete_area())
             
         # button under the area column
@@ -230,11 +230,11 @@ class ISIS_Management(ASManagementWithArea):
         "100GE":10**10
         }
         
-        self.button_update_cost = ttk.Button(self, text="Update costs", 
+        self.button_update_cost = ttk.Button(self.area_frame, text="Update costs", 
                                 command=lambda: self.update_cost())
         self.button_update_cost.grid(row=1, column=0, pady=5, padx=5, sticky="w")    
         
-        self.button_update_topo = ttk.Button(self, text="Update topology", 
+        self.button_update_topo = ttk.Button(self.area_frame, text="Update topology", 
                                 command=lambda: self.update_AS_topology())
         self.button_update_topo.grid(row=2, column=0, pady=5, padx=5, sticky="w") 
         

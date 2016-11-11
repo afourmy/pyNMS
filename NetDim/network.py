@@ -146,41 +146,38 @@ class Network(object):
             yield nb.ipaddress
           
     # 'lf' is the link factory. Creates or retrieves any type of link
-    def lf(
-           self, 
-           *param, 
-           subtype = 'ethernet', 
-           id = None,
-           name = None, 
-           s = None, 
-           d = None
-           ):
+    def lf(self, subtype='ethernet', id=None, name=None, **kwargs):
         link_type = self.cs.ms.st_to_type[subtype]
         # creation link in the s-d direction if no link at all yet
         if not id:
             if name in self.name_to_id:
                 return self.pn[link_type][self.name_to_id[name]]
+            s, d = kwargs['source'], kwargs['destination']
+            id = self.cpt_link
             if not name:
                 name = link_type + str(self.cpt_link)
-            id = self.cpt_link
-            self.cpt_link += 1
-            new_link = self.link_class[subtype](id, name, s, d, *param)
+            kwargs.update({'id': id, 'name': name})
+            new_link = self.link_class[subtype](**kwargs)
             self.name_to_id[name] = id
             self.pn[link_type][id] = new_link
             self.graph[s.id][link_type].add((d, new_link))
             self.graph[d.id][link_type].add((s, new_link))
+            self.cpt_link += 1
         return self.pn[link_type][id]
         
     # 'nf' is the node factory. Creates or retrieves any type of nodes
-    def nf(self, *p, node_type='router', name=None, id=None):
-        if name in self.name_to_id:
-            return self.pn['node'][self.name_to_id[name]]
+    def nf(self, node_type='router', id=None, **kwargs):
         if not id:
-            id = self.cpt_node
-            if not name:
+            if 'name' not in kwargs:
                 name = 'node' + str(self.cpt_node)
-            self.pn['node'][id] = self.node_class[node_type](self.cpt_node, name, *p)
-            self.name_to_id[name] = id
+                kwargs['name'] = name
+            else:
+                if kwargs['name'] in self.name_to_id:
+                    return self.pn['node'][self.name_to_id[kwargs['name']]]
+            id = self.cpt_node
+            kwargs['id'] = id
+            self.pn['node'][id] = self.node_class[node_type](**kwargs)
+            self.name_to_id[kwargs['name']] = id
             self.cpt_node += 1
         return self.pn['node'][id]
         
@@ -339,7 +336,7 @@ class Network(object):
                 for destination_trunk, neighbor in ma_network - {(source_trunk, node)}:
                     #self.trunk_to_neighbor[trunk].add(neighbor)
                     if not self.is_connected(node, neighbor, 'l3vc'):
-                        l3vc = self.lf(s=node, d=neighbor, subtype='l3vc')
+                        l3vc = self.lf(source=node, destination=neighbor, subtype='l3vc')
                         l3vc("link", node, source_trunk)
                         l3vc("link", neighbor, destination_trunk)
                         self.cs.create_link(l3vc)
@@ -347,7 +344,7 @@ class Network(object):
             for source_trunk, node in ma_network:
                 for destination_trunk, neighbor in ma_network - {(source_trunk, node)}:
                     if not self.is_connected(node, neighbor, 'l2vc'):
-                        l2vc = self.lf(s=node, d=neighbor, subtype='l2vc')
+                        l2vc = self.lf(source=node, destination=neighbor, subtype='l2vc')
                         l2vc("link", node, source_trunk)
                         l2vc("link", neighbor, destination_trunk)
                         self.cs.create_link(l2vc)
@@ -1662,11 +1659,11 @@ class Network(object):
                         nA, nB = tlA.name, tlB.name
                         name = '{} - {}'.format(nA, nB)
                         graph_sco.ntw.lf(
-                                         s = graph_sco.ntw.nf(
+                                         source = graph_sco.ntw.nf(
                                                               name = nA,
                                                               node_type = 'oxc'
                                                               ),
-                                         d = graph_sco.ntw.nf(
+                                         destination = graph_sco.ntw.nf(
                                                               name = nB,
                                                               node_type = 'oxc'
                                                               ),

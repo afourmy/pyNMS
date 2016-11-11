@@ -3,7 +3,7 @@
 # Released under the GNU General Public License GPLv3
 
 from tkinter import ttk
-from miscellaneous.custom_scrolledtext import CustomScrolledText
+from pythonic_tkinter.custom_widgets import CustomScrolledText
 import tkinter as tk
 
 class Troubleshooting(tk.Toplevel):

@@ -4,8 +4,8 @@
 
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous.custom_toplevel import CustomTopLevel
-from miscellaneous.custom_listbox import ObjectListbox
+from pythonic_tkinter.custom_widgets import CustomTopLevel
+from pythonic_tkinter.custom_listbox import ObjectListbox
 
 class MultipleNodes(CustomTopLevel):    
     def __init__(self, scenario, x, y):

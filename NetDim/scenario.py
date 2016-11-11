@@ -397,14 +397,14 @@ class Scenario(tk.Canvas):
                 if start_node != destination_node:
                     new_link = self.ntw.lf(
                                            subtype = subtype,
-                                           s = start_node, 
-                                           d = destination_node
+                                           source = start_node, 
+                                           destination = destination_node
                                            )
                     self.create_link(new_link)
               
     @adapt_coordinates
     def create_node_on_binding(self, event):
-        new_node = self.ntw.nf(event.x, event.y, node_type=self._creation_mode)
+        new_node = self.ntw.nf(node_type=self._creation_mode, x=event.x, y=event.y)
         self.create_node(new_node)
         
     def change_display(self):

@@ -5,7 +5,7 @@
 import tkinter as tk
 from tkinter import ttk
 import re
-from miscellaneous.custom_scrolledtext import CustomScrolledText
+from pythonic_tkinter.custom_widgets import CustomScrolledText
 from miscellaneous.network_functions import tomask
 
 class Configuration(tk.Toplevel):

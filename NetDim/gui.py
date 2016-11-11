@@ -14,7 +14,7 @@ import network
 import scenario
 from os.path import abspath, pardir, join
 from tkinter import ttk, filedialog
-from miscellaneous.custom_toplevel import CustomTopLevel
+from pythonic_tkinter.custom_widgets import CustomTopLevel
 from objects import object_management_window as omw
 from miscellaneous import graph_algorithms as galg
 from drawing import drawing_options_window as dow
@@ -758,18 +758,15 @@ class NetDim(tk.Tk):
         del self.dict_scenario[self.cs.name]
         self.scenario_notebook.forget(self.cs)
         self.change_cs()
-                
-    def str_to_object(self, obj_param, type):
-        object_list = []
-        for id, p in enumerate(self.object_ie[type]):
-            print(p)
-            # since None evaluates to False and 'None' to True, it matters
-            # that None stays None after import.
-            if obj_param[id] == 'None':
-                object_list.append(None)
-            else:
-                object_list.append(self.prop_to_type[p](obj_param[id]))
-        return object_list
+                        
+    def objectizer(self, properties, values, obj_type):
+        kwargs = {}
+        for property, value in zip(properties, values):
+            value = self.prop_to_type[property](value)
+            if value == "None":
+                value = None
+            kwargs[property] = value
+        return kwargs
                 
     def import_graph(self, filepath=None):
         
@@ -796,26 +793,24 @@ class NetDim(tk.Tk):
             book = xlrd.open_workbook(filepath)
             for id, obj_type in enumerate(self.object_ie):
                 xls_sheet = book.sheets()[id]
-                for row_index in range(1, xls_sheet.nrows):
-                    if obj_type in self.cs.ntw.node_subtype:
-                        n, *param = self.str_to_object(
-                                    xls_sheet.row_values(row_index), obj_type)
-                        self.cs.ntw.nf(*param, node_type=obj_type, name=n)
+                properties = xls_sheet.row_values(0)
+                for row in range(1, xls_sheet.nrows):
+                    values = xls_sheet.row_values(row)
+                    kwargs = self.objectizer(properties, values, obj_type)
+                    if obj_type in self.cs.ntw.node_subtype: 
+                        self.cs.ntw.nf(node_type=obj_type, **kwargs)
                     else:
-                        n, s, d, *param = self.str_to_object(
-                                    xls_sheet.row_values(row_index), obj_type)
-                        self.cs.ntw.lf(*param, subtype=obj_type, 
-                                                            name=n, s=s, d=d)
+                        self.cs.ntw.lf(subtype=obj_type, **kwargs)
                         
             AS_sheet, area_sheet = book.sheets()[16], book.sheets()[17]
         
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):
-                name, type, id, nodes = AS_sheet.row_values(row_index)
+                name, type, id, nodes, trunks = AS_sheet.row_values(row_index)
                 id = int(id)
                 nodes = self.convert_nodes_set(nodes)
                 trunks = self.convert_links_set(trunks)
-                self.cs.ntw.AS_factory(name, type, id, trunks, nodes, True)
+                self.cs.ntw.AS_factory(type, name, id, trunks, nodes, True)
             
             # creation of the area
             for row_index in range(1, area_sheet.nrows):

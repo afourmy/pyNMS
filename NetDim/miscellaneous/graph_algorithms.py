@@ -4,7 +4,7 @@
 
 import tkinter as tk
 from tkinter import ttk
-from miscellaneous.custom_toplevel import FocusTopLevel
+from pythonic_tkinter.custom_widgets import FocusTopLevel
 from collections import OrderedDict
 
 class GraphAlgorithmWindow(FocusTopLevel):
