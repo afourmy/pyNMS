@@ -11,8 +11,14 @@ def initializer(default_properties):
             for k in kw:
                 setattr(self, k, kw[k])
             for property in default_properties:
+                value = default_properties[property]
                 if not hasattr(self, property):
-                    setattr(self, property, default_properties[property])
+                    # if the value should be an empty list / set, we make
+                    # sure it refers to different objects in memory by using eval
+                    try:
+                        setattr(self, property, eval(value))
+                    except (TypeError, NameError):
+                        setattr(self, property, value)
             init(self)
         return wrapper
     return inner_decorator
@@ -431,7 +437,7 @@ class LSP(Route):
     
     ie_properties = {
                     'lsp_type': None,
-                    'path' : [], 
+                    'path' : 'list()', 
                     'cost' : 1,
                     'traffic' : 0
                     }
@@ -473,10 +479,10 @@ class StaticTraffic(Traffic):
     subtype = 'static traffic'
     
     ie_properties = {
-                    'path_constraints' : [], 
-                    'excluded_trunks' : set(), 
-                    'excluded_nodes' : set(), 
-                    'path' : [], 
+                    'path_constraints' : '[]', 
+                    'excluded_trunks' : 'set()', 
+                    'excluded_nodes' : 'set()', 
+                    'path' : '[]', 
                     }
     
     @initializer(ie_properties)

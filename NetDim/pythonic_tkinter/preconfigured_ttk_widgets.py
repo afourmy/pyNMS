@@ -48,6 +48,7 @@ class LF(ttk.LabelFrame):
     def __init__(self, *args, **kwargs):
         if 'padding' not in kwargs:
             kwargs['padding'] = (6, 6, 12, 12)
+
         super().__init__(*args, **kwargs)
     
 def class_factory(name, OriginalWidget, defaults):

@@ -28,11 +28,13 @@ class AutonomousSystem(object):
         self.ntw = self.cs.ntw
         self.name = name
         self.id = id
+        self.trunks = set(trunks)
+        self.nodes = set(nodes)
 
         # pAS as in "pool AS": same as pool network
         self.pAS = {
-        "trunk": set(trunks), 
-        "node": set(nodes)
+        "trunk": self.trunks, 
+        "node": self.nodes
         }
         
         # unselect everything
@@ -68,9 +70,9 @@ class AutonomousSystem(object):
                 area.remove_from_area(obj)
                 
     def build_RFT(self):
-        allowed_nodes = self.pAS['node']
-        allowed_trunks =  self.pAS['trunk'] - self.ntw.fdtks
-        for node in self.pAS['node']:
+        allowed_nodes = self.nodes
+        allowed_trunks =  self.trunks - self.ntw.fdtks
+        for node in self.nodes:
             self.RFT_builder(node, allowed_nodes, allowed_trunks)
                 
 class ASWithArea(AutonomousSystem):
@@ -102,11 +104,11 @@ class RIP_AS(AutonomousSystem):
     AS_type = "RIP"
     
     def __init__(self, *args):
-        *common_args, imp = args
-        super().__init__(*common_args)
+        super().__init__(*args)
+        is_imported = args[-1]
         
         # management window of the AS 
-        self.management = AS_management.RIP_Management(self, imp)
+        self.management = AS_management.RIP_Management(self, is_imported)
         
         # the metric used to compute the shortest path. By default, it is 
         # a hop count for a RIP AS, and bandwidth-dependent for ISIS or OSPF.
@@ -169,19 +171,19 @@ class ISIS_AS(ASWithArea):
     AS_type = "ISIS"
     
     def __init__(self, *args):
-        *common_args, imp = args
-        super().__init__(*common_args)
+        super().__init__(*args)
+        is_imported = args[-1]
         self.metric = "bandwidth"
         
         # management window of the AS 
-        self.management = AS_management.ISIS_Management(self, imp)
+        self.management = AS_management.ISIS_Management(self, is_imported)
         
         # contains all L1/L2 nodes
         self.border_routers = set()
         
         # imp tells us if the AS is imported or created from scratch.
         trunks, nodes = self.pAS["node"], self.pAS["trunk"]
-        if not imp:
+        if not is_imported:
             self.area_factory("Backbone", id=2, trunks=trunks, nodes=nodes)
             
     def RFT_builder(self, source, allowed_nodes, allowed_trunks):
@@ -281,13 +283,13 @@ class OSPF_AS(ASWithArea):
     AS_type = "OSPF"
     
     def __init__(self, *args):
-        *common_args, imp = args
-        super().__init__(*common_args)
+        super().__init__(*args)
+        is_imported = args[-1]
         self.metric = "bandwidth"
         self.ref_bw = 10**8
-        
-        # management window of the AS 
-        self.management = AS_management.OSPF_Management(self, imp)
+
+        # management window of the AS
+        self.management = AS_management.OSPF_Management(self, is_imported)
         
         # contains all ABRs
         self.border_routers = set()
@@ -297,11 +299,10 @@ class OSPF_AS(ASWithArea):
         
         # imp tells us if the AS is imported or created from scratch.
         trunks, nodes = self.pAS["node"], self.pAS["trunk"]
-        if not imp:
+        if not is_imported:
             self.area_factory("Backbone", id=0, trunks=trunks, nodes=nodes)
             
     def RFT_builder(self, source, allowed_nodes, allowed_trunks):
-        print(source)
         K = source.LB_paths
         visited = set()
         # we keep track of all already visited subnetworks so that we 

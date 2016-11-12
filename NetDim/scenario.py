@@ -977,15 +977,19 @@ class Scenario(tk.Canvas):
     
     def simulate_failure(self, trunk):
         self.ntw.fdtks.add(trunk)
-        self.refresh_all_labels()
         source, destination = trunk.source, trunk.destination
         xA, yA, xB, yB = source.x, source.y, destination.x, destination.y
         id_failure = self.create_image(
-                                            (xA+xB)/2, 
-                                            (yA+yB)/2, 
-                                            image = self.ms.img_failure
-                                            )
+                                        (xA+xB)/2, 
+                                        (yA+yB)/2, 
+                                        image = self.ms.img_failure
+                                        )
         self.id_fdtks[trunk] = id_failure
+        
+    def refresh_failures(self):
+        self.id_fdtks.clear()
+        for trunk in self.ntw.fdtks:
+            self.simulate_failure(trunk)
         
     ## Multiple object creation
     
@@ -1014,7 +1018,8 @@ class Scenario(tk.Canvas):
     def refresh(self):
         self.ntw.calculate_all()
         self.refresh_all_labels()
-        self.draw_all(False)       
+        self.draw_all(False)      
+        self.refresh_failures() 
         filter = self.ms.main_menu.filter_entry.get()
         if filter:
             self.display_filter(filter)                             

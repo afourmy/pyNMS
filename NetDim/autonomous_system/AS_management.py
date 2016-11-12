@@ -11,7 +11,7 @@ from pythonic_tkinter.custom_listbox import ObjectListbox
 
 class ASManagement(CustomTopLevel):
     
-    def __init__(self, AS, imp):
+    def __init__(self, AS, is_imported):
         super().__init__()
         self.AS = AS
         self.dict_listbox = {}
@@ -87,6 +87,13 @@ class ASManagement(CustomTopLevel):
         
         # button under the nodes column
         self.button_remove_node_from_AS.grid(row=2, column=2, in_=lf_objects)
+        
+        # hide the window when closed
+        self.protocol("WM_DELETE_WINDOW", self.withdraw)
+        
+        # if the AS is created from an import, close the management window
+        if is_imported: 
+            self.withdraw()
             
     ## Functions used directly from the AS Management window
         
@@ -96,13 +103,6 @@ class ASManagement(CustomTopLevel):
         for selected_object in self.dict_listbox[obj_type].selected():
             selected_object = self.AS.cs.ntw.of(name=selected_object, _type=obj_type)
             self.AS.cs.highlight_objects(selected_object)
-                
-        # hide the window when closed
-        self.protocol("WM_DELETE_WINDOW", self.withdraw)
-        
-        # if the AS is created from an import, close the management window
-        if imp: 
-            self.withdraw()
             
     # remove the object selected in "obj_type" listbox from the AS
     def remove_selected(self, obj_type):

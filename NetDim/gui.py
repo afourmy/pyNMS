@@ -15,6 +15,7 @@ import scenario
 from os.path import abspath, pardir, join
 from tkinter import ttk, filedialog
 from pythonic_tkinter.custom_widgets import CustomTopLevel
+from pythonic_tkinter.preconfigured_ttk_widgets import *
 from objects import object_management_window as omw
 from miscellaneous import graph_algorithms as galg
 from drawing import drawing_options_window as dow
@@ -28,10 +29,10 @@ try:
 except ImportError:
     warnings.warn('Excel library missing: excel import/export disabled')
 
-class NetDim(tk.Tk):
+class NetDim(MainWindow):
     
     def __init__(self, path_app):
-        tk.Tk.__init__(self)
+        super().__init__()
         path_parent = abspath(join(path_app, pardir))
         self.path_icon = join(path_parent, 'Icons')
         self.path_workspace = join(path_parent, 'Workspace')
@@ -162,7 +163,6 @@ class NetDim(tk.Tk):
         'subtype',
         'source', 
         'destination', 
-        'distance', 
         'throughput',
         'sites'
         )
@@ -311,7 +311,6 @@ class NetDim(tk.Tk):
         (
         'None', 
         'Name', 
-        'Distance', 
         'Throughput'
         ))])
         
@@ -454,8 +453,8 @@ class NetDim(tk.Tk):
         'longitude': float, 
         'latitude': float,
         'distance': float, 
-        'costSD': float, 
-        'costDS': float, 
+        'costSD': int, 
+        'costDS': int, 
         'cost': float,
         'capacitySD': int, 
         'capacityDS': int,
@@ -919,7 +918,6 @@ class NetDim(tk.Tk):
                                     mode='w', 
                                     defaultextension='.xls'
                                     )
-            
             if not selected_file: 
                 return 
             else:

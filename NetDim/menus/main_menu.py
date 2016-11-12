@@ -8,6 +8,7 @@ from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
 from pythonic_tkinter.custom_widgets import CustomTopLevel
 from pythonic_tkinter.custom_listbox import ObjectListbox
+from pythonic_tkinter.preconfigured_ttk_widgets import *
 from drawing import drawing_options_window
 
 class MainMenu(tk.Frame):
@@ -156,10 +157,10 @@ class MainMenu(tk.Frame):
         self.type_to_button['ring'].grid(row=22, column=3, sticky='w')
         
         # label frame for the spring layout parameters
-        self.lf_spring = ttk.Labelframe(self, padding=(6, 6, 12, 12), 
-                                        text='Display settings')
-        self.lf_spring.grid(column=0, columnspan=4, pady=5, padx=5, 
-                                                        row=23, sticky='nsew')
+        self.lf_spring = Labelframe(self)
+        self.lf_spring.text = 'Display setting'
+        self.lf_spring.grid(23, 0, 1, 4)
+                                                        
                                                         
         self.layer_boolean = []
         for layer in range(5):

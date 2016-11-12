@@ -194,6 +194,7 @@ class Network(object):
             name = 'AS' + str(self.cpt_AS)
         if name not in self.pnAS:
             # creation of the AS
+            print(imp)
             self.pnAS[name] = self.AS_class[AS_type](
                                                     self.cs,
                                                     name, 
@@ -246,8 +247,8 @@ class Network(object):
         
     # given a node, retrieves nodes attached with a link which subtype 
     # is in sts
-    def neighbors(self, node, *sts):
-        for subtype in sts:
+    def neighbors(self, node, *subtypes):
+        for subtype in subtypes:
             for neighbor, _ in self.graph[node.id][subtype]:
                 yield neighbor
         
@@ -327,27 +328,23 @@ class Network(object):
                 self.ma_segments[layer].add(frozenset(current_network))
         
     def multi_access_network(self):
-        # in order to create the routing table of an IP domain that 
-        # contains multi-access networks, we need for each trunk to 
-        # associate the list of neighbors, i.e the IP-capable devices
-        # that are connected to the graph neighbor, a L2 device (switch, ...)
-        for ma_network in self.ma_segments[3]:
-            for source_trunk, node in ma_network:
-                for destination_trunk, neighbor in ma_network - {(source_trunk, node)}:
-                    #self.trunk_to_neighbor[trunk].add(neighbor)
-                    if not self.is_connected(node, neighbor, 'l3vc'):
-                        l3vc = self.lf(source=node, destination=neighbor, subtype='l3vc')
-                        l3vc("link", node, source_trunk)
-                        l3vc("link", neighbor, destination_trunk)
-                        self.cs.create_link(l3vc)
-        for ma_network in self.ma_segments[2]:
-            for source_trunk, node in ma_network:
-                for destination_trunk, neighbor in ma_network - {(source_trunk, node)}:
-                    if not self.is_connected(node, neighbor, 'l2vc'):
-                        l2vc = self.lf(source=node, destination=neighbor, subtype='l2vc')
-                        l2vc("link", node, source_trunk)
-                        l2vc("link", neighbor, destination_trunk)
-                        self.cs.create_link(l2vc)
+        # we create the virtual connnections at layer 2 and 3, that is the 
+        # links between adjacent L2 and L3 devices.
+        for i in (2, 3):
+            vc_type = 'l{layer}vc'.format(layer = i)
+            for ma_network in self.ma_segments[i]:
+                for source_trunk, node in ma_network:
+                    allowed_neighbors = ma_network - {(source_trunk, node)}
+                    for destination_trunk, neighbor in allowed_neighbors:
+                        if not self.is_connected(node, neighbor, vc_type):
+                            vc = self.lf(
+                                         source = node, 
+                                         destination = neighbor, 
+                                         subtype = vc_type
+                                         )
+                            vc("link", node, source_trunk)
+                            vc("link", neighbor, destination_trunk)
+                            self.cs.create_link(vc)
     
     def ip_allocation(self):
         # we will perform the IP addressing of all subnetworks with VLSM
@@ -447,6 +444,11 @@ class Network(object):
                 _, traffic.path = self.A_star(src, dest)
             if not traffic.path:
                 print('no path found for {}'.format(traffic))
+        
+    def route(self):
+        # create the routing tables and route all traffic flows
+        self.rt_creation()
+        self.path_finder()
                 
     def calculate_all(self):
         self.ma_segments.clear()
@@ -461,11 +463,8 @@ class Network(object):
         self.BGPT_builder()
         self.path_finder()
         
-    def route(self):
-        # create the routing tables and route all traffic flows
-        self.rt_creation()
-        self.path_finder()
-            
+    ## Graph functions
+    
     def bfs(self, source):
         visited = set()
         layer = {source}
@@ -478,7 +477,7 @@ class Network(object):
                     for neighbor, _ in self.graph[node.id]['trunk']:
                         layer.add(neighbor)
                         yield neighbor
-                    
+    
     def connected_components(self):
         visited = set()
         for node in self.pn['node'].values():
