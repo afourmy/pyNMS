@@ -10,7 +10,9 @@ from tkinter.scrolledtext import ScrolledText
 class CustomFrame(tk.Frame):
     
     def __init__(self, *args):
-        super().__init__(*args)   
+        super().__init__(*args)
+        color = "#A1DBCD"
+        self.configure(background=color)      
         
 class CustomTopLevel(tk.Toplevel):
     

@@ -134,8 +134,8 @@ class Network(object):
     # function that retrieves all IP addresses attached to a node, including
     # it's loopback IP.
     def attached_ips(self, src):
-        for _, trunk in self.graph[src]['trunk']:
-            yield trunk('ipaddress', src)
+        for _, l3vc in self.graph[src]['l3vc']:
+            yield l3vc('ipaddress', src)
         yield src.ipaddress
         
     # function that retrieves all next-hop IP addresses attached to a node, 
@@ -234,9 +234,9 @@ class Network(object):
         
     def find_edge_nodes(self, AS):
         AS.pAS['edge'].clear()
-        for node in AS.pAS['node']:
+        for node in AS.nodes:
             if any(
-                   n not in AS.pAS['node'] 
+                   n not in AS.nodes 
                    for n, _ in self.graph[node.id]['trunk']
                    ):
                 AS.pAS['edge'].add(node)
@@ -273,7 +273,7 @@ class Network(object):
     def update_AS_topology(self):
         # update all BGP AS property of nodes in a BGP AS
         for AS in filter(lambda a: a.AS_type == 'BGP', self.pnAS.values()):
-            for node in AS.pAS['node']:
+            for node in AS.nodes:
                 node.bgp_AS = AS.name
                 
         # update all BGP peering type based on the source and destination AS
@@ -884,7 +884,7 @@ class Network(object):
         # contains what belongs to the first path, once we've reached the target.
         
         # if a_n is None:
-        #     a_n = AS.pAS['node']
+        #     a_n = AS.nodes
         # if a_t is None:
         #     a_t = AS.pAS['trunk']
         
@@ -1961,12 +1961,12 @@ class Network(object):
         for i in range(2**n-1):
             n1, n2, n3 = str(i), str(2*i+1), str(2*i+2)
             self.lf(
-                    s = self.nf(name = n1, node_type = subtype), 
-                    d = self.nf(name = n2, node_type = subtype)
+                    source = self.nf(name = n1, node_type = subtype), 
+                    destination = self.nf(name = n2, node_type = subtype)
                     )
             self.lf(
-                    s = self.nf(name = n1, node_type = subtype), 
-                    d = self.nf(name = n3, node_type = subtype)
+                    source = self.nf(name = n1, node_type = subtype), 
+                    destination = self.nf(name = n3, node_type = subtype)
                     )
             
     ## 2) Star generation
@@ -1976,8 +1976,8 @@ class Network(object):
         for i in range(n):
             n1, n2 = str(nb_node), str(nb_node+1+i)
             self.lf(
-                    s = self.nf(name = n1, node_type = subtype), 
-                    d = self.nf(name = n2, node_type = subtype)
+                    source = self.nf(name = n1, node_type = subtype), 
+                    destination = self.nf(name = n2, node_type = subtype)
                     )
             
     ## 3) Full-meshed network generation
@@ -1988,8 +1988,8 @@ class Network(object):
             for j in range(i):
                 n1, n2 = str(nb_node+j), str(nb_node+i)
                 self.lf(
-                        s = self.nf(name = n1, node_type = subtype), 
-                        d = self.nf(name = n2, node_type = subtype)
+                        source = self.nf(name = n1, node_type = subtype), 
+                        destination = self.nf(name = n2, node_type = subtype)
                         )
                 
     ## 4) Ring generation
@@ -1999,8 +1999,8 @@ class Network(object):
         for i in range(n):
             n1, n2 = str(nb_node+i), str(nb_node+(1+i)%n)
             self.lf(
-                    s = self.nf(name = n1, node_type = subtype), 
-                    d = self.nf(name = n2, node_type = subtype)
+                    source = self.nf(name = n1, node_type = subtype), 
+                    destination = self.nf(name = n2, node_type = subtype)
                     )
                     
     ## 5) Square tiling generation
@@ -2010,13 +2010,13 @@ class Network(object):
             n1, n2, n3 = str(i), str(i-1), str(i+n)
             if i-1 > -1 and i%n:
                 self.lf(
-                        s = self.nf(name = n1, node_type = subtype), 
-                        d = self.nf(name = n2, node_type = subtype)
+                        source = self.nf(name = n1, node_type = subtype), 
+                        destination = self.nf(name = n2, node_type = subtype)
                         )
             if i+n < n**2:
                 self.lf(
-                        s = self.nf(name = n1, node_type = subtype), 
-                        d = self.nf(name = n3, node_type = subtype)
+                        source = self.nf(name = n1, node_type = subtype), 
+                        destination = self.nf(name = n3, node_type = subtype)
                         )
         print(len(self.pn['node']), len(self.pn['trunk']))
                     
@@ -2043,16 +2043,16 @@ class Network(object):
                 n2 = str(int(destination.name) + 2**i)
                 graph_trunks.append(
                                    self.lf(
-                                           s = self.nf(name = n1), 
-                                           d = self.nf(name = n2)
+                                           source = self.nf(name = n1), 
+                                           destination = self.nf(name = n2)
                                            )
                                    )
             for k in range(len(graph_nodes)//2):
                 # creation of the trunks of the second hypercube
                 graph_trunks.append(
                                    self.lf(
-                                           s = graph_nodes[k], 
-                                           d = graph_nodes[k+2**i]
+                                           source = graph_nodes[k], 
+                                           destination = graph_nodes[k+2**i]
                                            )
                                    )
             i += 1
@@ -2068,8 +2068,8 @@ class Network(object):
             for setB in map(set, combinations(range(1, n), k)):
                 if setB not in already_done and not setA & setB:
                     self.lf(
-                            s = self.nf(name = str(setA), node_type = subtype), 
-                            d = self.nf(name = str(setB), node_type = subtype)
+                            source = self.nf(name = str(setA), node_type = subtype), 
+                            destination = self.nf(name = str(setB), node_type = subtype)
                             )
                             
     ## 8) Generalized Petersen graph
@@ -2081,18 +2081,18 @@ class Network(object):
         for i in range(n):
             # (u_i, u_i+1) edges
             self.lf(
-                    s = self.nf(name = str(i), node_type = subtype), 
-                    d = self.nf(name = str((i + 1)%n), node_type = subtype)
+                    source = self.nf(name = str(i), node_type = subtype), 
+                    destination = self.nf(name = str((i + 1)%n), node_type = subtype)
                     )
             # (u_i, v_i) edges
             self.lf(
-                    s = self.nf(name = str(i), node_type = subtype), 
-                    d = self.nf(name = str(i + n), node_type = subtype)
+                    source = self.nf(name = str(i), node_type = subtype), 
+                    destination = self.nf(name = str(i + n), node_type = subtype)
                     )
             # (v_i, v_i+k) edges
             self.lf(
-                    s = self.nf(name = str(i + n), node_type = subtype), 
-                    d = self.nf(name = str((i + n + k)%n + n), node_type = subtype)
+                    source = self.nf(name = str(i + n), node_type = subtype), 
+                    destination = self.nf(name = str((i + n + k)%n + n), node_type = subtype)
                     )
                     
     ## Multiple object creation

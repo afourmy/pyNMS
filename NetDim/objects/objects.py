@@ -34,7 +34,7 @@ class NDobject(object):
         # one site of the user-defined filter will be displayed
     ie_properties = {
                     'id': None,
-                    'sites': None,
+                    'sites': set(),
                     'name': None
                     }
                     
