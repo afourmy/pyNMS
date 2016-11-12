@@ -81,7 +81,7 @@ def class_factory(name, OriginalWidget, defaults):
         
     widget_functions = {'grid': grid, 'text': text}
         
-    if name in ('Button', 'Checkbutton'):
+    if name in ('Button', 'Checkbutton', 'Scrollbar'):
         @property
         def command(self):
             self.cget('command')

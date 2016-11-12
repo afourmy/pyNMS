@@ -28,8 +28,8 @@ class AutonomousSystem(object):
         self.ntw = self.cs.ntw
         self.name = name
         self.id = id
-        self.trunks = set(trunks)
-        self.nodes = set(nodes)
+        self.trunks = trunks
+        self.nodes = nodes
 
         # pAS as in "pool AS": same as pool network
         self.pAS = {
@@ -60,14 +60,14 @@ class AutonomousSystem(object):
         
     def remove_from_AS(self, *objects):
         for obj in objects:
+            # for each area, we delete the object from the corresponding pool
+            for area in set(obj.AS[self]):
+                area.remove_from_area(obj)
             # we remove the object from its pool in the AS
             self.pAS[obj.type].discard(obj)
             # we pop the AS from the dict of object AS, and retrieve the list
             # of area it belongs to in this AS
-            obj_areas = obj.AS.pop(self, set())
-            # for each area, we delete the object from the corresponding pool
-            for area in obj_areas:
-                area.remove_from_area(obj)
+            obj.AS.pop(self)
                 
     def build_RFT(self):
         allowed_nodes = self.nodes

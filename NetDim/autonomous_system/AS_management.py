@@ -8,6 +8,7 @@ from tkinter import ttk
 from pythonic_tkinter.custom_widgets import CustomTopLevel
 from pythonic_tkinter.custom_widgets import CustomFrame
 from pythonic_tkinter.custom_listbox import ObjectListbox
+from pythonic_tkinter.preconfigured_ttk_widgets import *
 
 class ASManagement(CustomTopLevel):
     
@@ -24,69 +25,79 @@ class ASManagement(CustomTopLevel):
         self.frame_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
         
         # label frame for properties
-        lf_properties = ttk.Labelframe(common_frame, padding=(6, 6, 12, 12), text='AS properties')
+        lf_properties = Labelframe(common_frame)
+        lf_properties.text = 'AS properties'
         
-        self.obj_type = ("trunk", "node") 
+        obj_types = ('trunk', 'node') 
         
-        self.label_name = ttk.Label(common_frame, text="AS name")
-        self.label_id = ttk.Label(common_frame, text="AS ID")
-        self.label_type = ttk.Label(common_frame, text="AS Type")
+        label_name = Label(common_frame)
+        label_name.text = "AS name"
+        label_id = Label(common_frame)
+        label_id.text = "AS ID"
+        label_type = Label(common_frame)
+        label_type.text = "AS Type"
         
-        self.str_name = tk.StringVar()
-        self.entry_name  = tk.Entry(common_frame, textvariable=self.str_name, width=10)
-        self.str_name.set(AS.name)
-        self.str_id = tk.StringVar()
-        self.entry_id  = tk.Entry(common_frame, textvariable=self.str_id, width=10)
-        self.str_id.set(AS.id)
+        entry_name  = Entry(common_frame, width=10)
+        entry_name.text = AS.name
+        entry_id  = Entry(common_frame, width=10)
+        entry_id.text = AS.id
         
         # the type of a domain cannot change after domain creation.
-        self.AS_type = ttk.Label(common_frame, text=AS.AS_type)
+        AS_type = Label(common_frame) 
+        AS_type.text = AS.AS_type
         
-        lf_properties.grid(row=0, column=0, pady=5, padx=5)
-        self.label_name.grid(row=1, column=0, pady=5, padx=5, sticky="w", in_=lf_properties)
-        self.label_id.grid(row=2, column=0, pady=5, padx=5, sticky="w", in_=lf_properties)
-        self.label_type.grid(row=3, column=0, pady=5, padx=5, sticky="w", in_=lf_properties)
-        self.entry_name.grid(row=1, column=1, pady=5, padx=5, sticky="w", in_=lf_properties)
-        self.entry_id.grid(row=2, column=1, pady=5, padx=5, sticky="w", in_=lf_properties)
-        self.AS_type.grid(row=3, column=1, pady=5, padx=5, sticky="w", in_=lf_properties)
+        lf_properties.grid(0, 0)
+        label_name.grid(1, 0, in_=lf_properties)
+        label_id.grid(2, 0, in_=lf_properties)
+        label_type.grid(3, 0, in_=lf_properties)
+        entry_name.grid(1, 1, in_=lf_properties)
+        entry_id.grid(2, 1, in_=lf_properties)
+        AS_type.grid(3, 1, in_=lf_properties)
         
         # label frame for links and nodes
-        lf_objects = ttk.Labelframe(common_frame, padding=(6, 6, 12, 12), text='AS objects')
-        lf_objects.grid(row=1, column=0, pady=5, padx=5)
+        lf_objects = Labelframe(common_frame)
+        lf_objects.text = 'AS objects'
+        lf_objects.grid(1, 0)
         
         # listbox of all AS objects
-        for index, type in enumerate(self.obj_type):
-            lbl = tk.Label(common_frame, bg="#A1DBCD", text="".join(("AS ",type,"s")))
-            listbox = ObjectListbox(common_frame, activestyle="none", width=15, 
-                                            height=7, selectmode="extended")
+        for index, type in enumerate(obj_types):
+            label = Label(common_frame)
+            label.text = "AS " + type + "s"
+    
+            listbox = Listbox(common_frame, activestyle="none", width=15, height=7, selectmode="extended")
+                                            
             self.dict_listbox[type] = listbox
-            yscroll = tk.Scrollbar(common_frame, 
-                    command=self.dict_listbox[type].yview, orient=tk.VERTICAL)
+            yscroll = Scrollbar(common_frame)
+            yscroll.command = self.dict_listbox[type].yview
+                    
             listbox.configure(yscrollcommand=yscroll.set)
             listbox.bind("<<ListboxSelect>>", 
                             lambda e, type=type: self.highlight_object(e, type))
-            lbl.grid(row=0, column=2*index, in_=lf_objects)
-            listbox.grid(row=1, column=2*index, in_=lf_objects)
-            yscroll.grid(row=1, column=1+2*index, sticky="ns", in_=lf_objects)
+                            
+            label.grid(0, 2 * index, in_=lf_objects)
+            listbox.grid(1, 2 * index, in_=lf_objects)
+            yscroll.grid(1, 1 + 2 * index, in_=lf_objects)
             
         # populate the listbox with all objects from which the AS was created
-        for obj_type in ("trunk", "node"):
+        for obj_type in obj_types:
             for obj in AS.pAS[obj_type]:
                 self.dict_listbox[obj_type].insert(obj)
         
         # find domain trunks: the trunks between nodes of the AS
-        self.button_find_trunks = ttk.Button(common_frame, text="Find trunks", 
-                                command=lambda: self.find_trunks())
+        button_find_trunks = Button(common_frame) 
+        button_find_trunks.text = "Find trunks"
+        button_find_trunks.command=lambda: self.find_trunks()
         
         # operation on nodes
-        self.button_remove_node_from_AS = ttk.Button(common_frame, text="Remove node", 
-                                command=lambda: self.remove_selected("node"))
+        button_remove_node_from_AS = Button(common_frame) 
+        button_remove_node_from_AS.text="Remove node"
+        button_remove_node_from_AS.command = lambda: self.remove_selected("node")
         
         # buttons under the trunks column
-        self.button_find_trunks.grid(row=2, column=0, in_=lf_objects)
+        button_find_trunks.grid(2, 0, in_=lf_objects)
         
         # button under the nodes column
-        self.button_remove_node_from_AS.grid(row=2, column=2, in_=lf_objects)
+        button_remove_node_from_AS.grid(2, 2, in_=lf_objects)
         
         # hide the window when closed
         self.protocol("WM_DELETE_WINDOW", self.withdraw)
@@ -101,15 +112,17 @@ class ASManagement(CustomTopLevel):
     def highlight_object(self, event, obj_type):        
         self.AS.cs.unhighlight_all()
         for selected_object in self.dict_listbox[obj_type].selected():
-            selected_object = self.AS.cs.ntw.of(name=selected_object, _type=obj_type)
-            self.AS.cs.highlight_objects(selected_object)
+            so = self.AS.cs.ntw.of(name=selected_object, _type=obj_type)
+            self.AS.cs.highlight_objects(so)
             
     # remove the object selected in "obj_type" listbox from the AS
     def remove_selected(self, obj_type):
         # remove and retrieve the selected object in the listbox
         for selected_obj in self.dict_listbox[obj_type].pop_selected():
             # remove it from the AS as well
-            self.AS.remove_from_AS(self.AS.cs.ntw.of(name=selected_obj, _type=obj_type))
+            so = self.AS.cs.ntw.of(name=selected_obj, _type=obj_type)
+            print(so)
+            self.AS.remove_from_AS(so)
         
     def add_to_AS(self, area, *objects):
         if self.AS.has_area:
