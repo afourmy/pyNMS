@@ -181,10 +181,13 @@ class ISIS_AS(ASWithArea):
         # contains all L1/L2 nodes
         self.border_routers = set()
         
-        # imp tells us if the AS is imported or created from scratch.
-        trunks, nodes = self.pAS["node"], self.pAS["trunk"]
         if not is_imported:
-            self.area_factory("Backbone", id=2, trunks=trunks, nodes=nodes)
+            self.area_factory(
+                              "Backbone", 
+                              id = 2, 
+                              trunks = self.trunks, 
+                              nodes = self.nodes
+                              )
             
     def RFT_builder(self, source, allowed_nodes, allowed_trunks):
         K = source.LB_paths
@@ -297,10 +300,13 @@ class OSPF_AS(ASWithArea):
         # node used to exit the domain (ASBR for OSPF)
         self.exit_point = None
         
-        # imp tells us if the AS is imported or created from scratch.
-        trunks, nodes = self.pAS["node"], self.pAS["trunk"]
         if not is_imported:
-            self.area_factory("Backbone", id=0, trunks=trunks, nodes=nodes)
+            self.area_factory(
+                              "Backbone", 
+                              id = 0, 
+                              trunks = self.trunks, 
+                              nodes = self.nodes
+                              )
             
     def RFT_builder(self, source, allowed_nodes, allowed_trunks):
         K = source.LB_paths

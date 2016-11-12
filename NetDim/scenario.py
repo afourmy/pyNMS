@@ -298,7 +298,7 @@ class Scenario(tk.Canvas):
     def change_display(self):
         # flip the display from icon to oval and vice-versa, depend on display_image boolean
         self.display_image = not self.display_image
-        for node in self.ntw.pn['node'].values():
+        for node in self.ntw.nodes.values():
             for layer in self.layers[self.layered_display]:
                 self.itemconfig(node.oval[layer], state=tk.HIDDEN if self.display_image else tk.NORMAL)
                 self.itemconfig(node.image[layer], state=tk.NORMAL if self.display_image else tk.HIDDEN)
@@ -357,7 +357,7 @@ class Scenario(tk.Canvas):
     def update_nodes_coordinates(self):
         # scaling changes the coordinates of the oval, and we update 
         # the corresponding node's coordinates accordingly
-        for node in self.ntw.pn['node'].values():
+        for node in self.ntw.nodes.values():
             new_coords = self.coords(node.oval[0])
             node.x = (new_coords[0] + new_coords[2]) / 2
             node.y = (new_coords[3] + new_coords[1]) / 2
@@ -602,7 +602,7 @@ class Scenario(tk.Canvas):
     def erase_all(self):
         self.delete('all')
         
-        for node in self.ntw.pn['node'].values():
+        for node in self.ntw.nodes.values():
             #TODO dict from keys
             node.oval = {layer: None for layer in range(5)}
             node.image = {layer: None for layer in range(5)}
@@ -889,7 +889,7 @@ class Scenario(tk.Canvas):
     def FR_drawing(self, nodes):
         if not self._job:
             # update the optimal pairwise distance
-            self.ms.opd = sqrt(500*500/len(self.ntw.pn['node'].values()))
+            self.ms.opd = sqrt(500*500/len(self.ntw.nodes.values()))
             # reset the number of iterations
             self.drawing_iteration = 0
         else:
@@ -905,7 +905,7 @@ class Scenario(tk.Canvas):
     def bfs_cluster_drawing(self, nodes):
         if not self._job:
             # update the optimal pairwise distance
-            self.ms.opd = sqrt(500*500/len(self.ntw.pn['node'].values()))
+            self.ms.opd = sqrt(500*500/len(self.ntw.nodes.values()))
             # reset the number of iterations
             self.drawing_iteration = 0
         else:
@@ -952,18 +952,18 @@ class Scenario(tk.Canvas):
         
         if self.layered_display:
             self.planal_move(50)
-            min_y = min(node.y for node in self.ntw.pn['node'].values())
-            max_y = max(node.y for node in self.ntw.pn['node'].values())
+            min_y = min(node.y for node in self.ntw.nodes.values())
+            max_y = max(node.y for node in self.ntw.nodes.values())
             self.diff_y = (max_y - min_y) // 2 + 100
             
         self.unhighlight_all()
         self.draw_all(False)
             
     def planal_move(self, angle=45):
-        min_y = min(node.y for node in self.ntw.pn['node'].values())
-        max_y = max(node.y for node in self.ntw.pn['node'].values())
+        min_y = min(node.y for node in self.ntw.nodes.values())
+        max_y = max(node.y for node in self.ntw.nodes.values())
         
-        for node in self.ntw.pn['node'].values():
+        for node in self.ntw.nodes.values():
             diff_y = abs(node.y - min_y)
             new_y = min_y + diff_y * cos(radians(angle))
             node.y = new_y
@@ -1001,7 +1001,7 @@ class Scenario(tk.Canvas):
     
     def display_filter(self, filter):
         filter_sites = set(re.sub(r'\s+', '', filter).split(','))
-        for node in self.ntw.pn['node'].values():
+        for node in self.ntw.nodes.values():
             state = tk.NORMAL if node.sites & filter_sites else tk.HIDDEN
             self.itemconfig(node.lid, state=state)
             for layer in range(5):

@@ -78,8 +78,21 @@ class Network(object):
     all_subtypes = node_subtype + link_subtype
     
     def __init__(self, scenario):
+        self.nodes = {}
+        self.trunks = {}
+        self.routes = {}
+        self.traffics = {}
+        self.l2vc = {}
+        self.l3vc = {}
         # pn for 'pool network'
-        self.pn = {'trunk': {}, 'node': {}, 'route': {}, 'traffic': {}, 'l2vc':{}, 'l3vc':{}}
+        self.pn = {
+                   'node': self.nodes, 
+                   'trunk': self.trunks, 
+                   'route': self.routes, 
+                   'traffic': self.traffics, 
+                   'l2vc': self.l2vc, 
+                   'l3vc': self.l3vc
+                   }
         self.pnAS = {}
         self.cs = scenario
         self.graph = defaultdict(lambda: defaultdict(set))
@@ -102,10 +115,6 @@ class Network(object):
         # - finds all layer-n segments networks, i.e all layer-n-capable 
         # interfaces that communicate via a layer-(n-1) device
         self.ma_segments = defaultdict(set)
-        # - associates a trunk to its L3 neighbors, different from 
-        # the 'graph neighbor' which, in case of a multi-access network,
-        # is a L2 device like a switch or a bridge.
-        self.trunk_to_neighbor = defaultdict(set)
         
         # osi layer to devices
         self.osi_layers = {
@@ -173,13 +182,13 @@ class Network(object):
                 kwargs['name'] = name
             else:
                 if kwargs['name'] in self.name_to_id:
-                    return self.pn['node'][self.name_to_id[kwargs['name']]]
+                    return self.nodes[self.name_to_id[kwargs['name']]]
             id = self.cpt_node
             kwargs['id'] = id
-            self.pn['node'][id] = self.node_class[node_type](**kwargs)
+            self.nodes[id] = self.node_class[node_type](**kwargs)
             self.name_to_id[kwargs['name']] = id
             self.cpt_node += 1
-        return self.pn['node'][id]
+        return self.nodes[id]
         
     def AS_factory(
                    self, 
@@ -194,7 +203,6 @@ class Network(object):
             name = 'AS' + str(self.cpt_AS)
         if name not in self.pnAS:
             # creation of the AS
-            print(imp)
             self.pnAS[name] = self.AS_class[AS_type](
                                                     self.cs,
                                                     name, 
@@ -220,7 +228,7 @@ class Network(object):
             dict_of_objects.clear()
             
     def remove_node(self, node):
-        self.pn['node'].pop(self.name_to_id.pop(node.name))
+        self.nodes.pop(self.name_to_id.pop(node.name))
         # retrieve adj links to delete them 
         dict_of_adj_links = self.graph.pop(node.id, {})
         for type_link, adj_obj in dict_of_adj_links.items():
@@ -290,8 +298,8 @@ class Network(object):
     def segment_finder(self, layer):
         # we associate a set of trunks to each layer-n segment.
         # at this point, there isn't any IP allocated yet: we cannot assign
-        # IP addresses until we know the network layer-3 segment topology.
-        # this topology will be stored in the network_to_trunk set.
+        # IP addresses until we know the network layer-n segment topology.
+        # we use that topology to create layer-n virtual connection
         # we keep the set of all trunks we've already visited 
         visited_trunks = set()
         # we loop through all the layer-3-networks boundaries: routers.
@@ -319,7 +327,8 @@ class Network(object):
                                 continue
                             visited_trunks.add(adj_trunk)
                             visited_nodes.add(node)
-                            if any(node.subtype in self.osi_layers[l] for l in range(1, layer)):
+                            if any(node.subtype in self.osi_layers[l] 
+                                                    for l in range(1, layer)):
                                 stack_network.append(node)
                             else:
                                 current_network.add((adj_trunk, node))
@@ -327,24 +336,24 @@ class Network(object):
                     current_network.add((trunk, neighbor))
                 self.ma_segments[layer].add(frozenset(current_network))
         
-    def multi_access_network(self):
+    def multi_access_network(self, layer):
         # we create the virtual connnections at layer 2 and 3, that is the 
-        # links between adjacent L2 and L3 devices.
-        for i in (2, 3):
-            vc_type = 'l{layer}vc'.format(layer = i)
-            for ma_network in self.ma_segments[i]:
-                for source_trunk, node in ma_network:
-                    allowed_neighbors = ma_network - {(source_trunk, node)}
-                    for destination_trunk, neighbor in allowed_neighbors:
-                        if not self.is_connected(node, neighbor, vc_type):
-                            vc = self.lf(
-                                         source = node, 
-                                         destination = neighbor, 
-                                         subtype = vc_type
-                                         )
-                            vc("link", node, source_trunk)
-                            vc("link", neighbor, destination_trunk)
-                            self.cs.create_link(vc)
+        # links between adjacent Ln devices (L2-L2, L3-L3).
+        vc_type = 'l{layer}vc'.format(layer = layer)
+        
+        for ma_network in self.ma_segments[layer]:
+            for source_trunk, node in ma_network:
+                allowed_neighbors = ma_network - {(source_trunk, node)}
+                for destination_trunk, neighbor in allowed_neighbors:
+                    if not self.is_connected(node, neighbor, vc_type):
+                        vc = self.lf(
+                                     source = node, 
+                                     destination = neighbor, 
+                                     subtype = vc_type
+                                     )
+                        vc("link", node, source_trunk)
+                        vc("link", neighbor, destination_trunk)
+                        self.cs.create_link(vc)
     
     def ip_allocation(self):
         # we will perform the IP addressing of all subnetworks with VLSM
@@ -381,13 +390,13 @@ class Network(object):
         # xA:xx:xx:xx:xx:xx
         # xE:xx:xx:xx:xx:xx
         mac_x2, mac_x6 = "020000000000", "060000000000"
-        for id, trunk in enumerate(self.pn['trunk'].values(), 1):
+        for id, trunk in enumerate(self.trunks.values(), 1):
             macS, macD = mac_incrementer(mac_x2, id), mac_incrementer(mac_x6, id)
             trunk.macaddressS = ':'.join(macS[i:i+2] for i in range(0, 12, 2))
             trunk.macaddressD = ':'.join(macD[i:i+2] for i in range(0, 12, 2))
 
     def interface_allocation(self):
-        for node in self.pn['node'].values():
+        for node in self.nodes.values():
             for idx, (_, adj_trunk) in enumerate(self.graph[node.id]['trunk']):
                 adj_trunk('interface', node, 'Ethernet0/{}'.format(idx))
                 
@@ -404,19 +413,18 @@ class Network(object):
         self.cs.remove_failures()
         
         # we consider each trunk in the network to be failed, one by one
-        for failed_trunk in self.pn['trunk'].values():
+        for failed_trunk in self.trunks.values():
             self.fdtks = {failed_trunk}
             # the trunk being failed, we will recreate all routing tables
             # then use the path finding procedure to map the traffic flows
             self.rt_creation()
             self.path_finder()
-            for trunk in self.pn['trunk'].values():
+            for trunk in self.trunks.values():
                 for dir in ('SD', 'DS'):
                     curr_traffic = getattr(trunk, 'traffic' + dir)
                     if curr_traffic > getattr(trunk, 'wctraffic' + dir):
                         setattr(trunk, 'wctraffic' + dir, curr_traffic)
                         setattr(trunk, 'wcfailure', str(failed_trunk))
-                        
         self.fdtks.clear()
         
     def rt_creation(self):
@@ -431,12 +439,12 @@ class Network(object):
                 
     def reset_traffic(self):
         # reset the traffic for all trunks
-        for trunk in self.pn['trunk'].values():
+        for trunk in self.trunks.values():
             trunk.trafficSD = trunk.trafficDS = 0.
                 
     def path_finder(self):
         self.reset_traffic()
-        for traffic in self.pn['traffic'].values():
+        for traffic in self.traffics.values():
             src, dest = traffic.source, traffic.destination
             if all(node.subtype == 'router' for node in (src, dest)):
                 self.RFT_path_finder(traffic)
@@ -448,20 +456,19 @@ class Network(object):
     def route(self):
         # create the routing tables and route all traffic flows
         self.rt_creation()
+        self.BGPT_builder()
         self.path_finder()
                 
     def calculate_all(self):
         self.ma_segments.clear()
         self.update_AS_topology()
-        self.segment_finder(3)
-        self.segment_finder(2)
+        for i in (2, 3):
+            self.segment_finder(i)
+            self.multi_access_network(i)
         self.mac_allocation()
         self.ip_allocation()
-        self.multi_access_network()
         self.interface_allocation()
-        self.rt_creation()
-        self.BGPT_builder()
-        self.path_finder()
+        self.route()
         
     ## Graph functions
     
@@ -480,7 +487,7 @@ class Network(object):
     
     def connected_components(self):
         visited = set()
-        for node in self.pn['node'].values():
+        for node in self.nodes.values():
             if node not in visited:
                 new_comp = set(self.bfs(node))
                 visited.update(new_comp)
@@ -499,9 +506,9 @@ class Network(object):
                  ):
         
         if allowed_trunks is None:
-            allowed_trunks = set(self.pn['trunk'].values())
+            allowed_trunks = set(self.trunks.values())
         if allowed_nodes is None:
-            allowed_nodes = set(self.pn['node'].values())
+            allowed_nodes = set(self.nodes.values())
         
         prec_node = {i: None for i in allowed_nodes}
         prec_trunk = {i: None for i in allowed_nodes}
@@ -561,9 +568,9 @@ class Network(object):
         if path_constraints is None:
             path_constraints = []
         if allowed_trunks is None:
-            allowed_trunks = set(self.pn['trunk'].values())
+            allowed_trunks = set(self.trunks.values())
         if allowed_nodes is None:
-            allowed_nodes = set(self.pn['node'].values())
+            allowed_nodes = set(self.nodes.values())
             
         pc = [target] + path_constraints[::-1]
         visited = set()
@@ -614,9 +621,9 @@ class Network(object):
         if excluded_trunks is None:
             excluded_trunks = set()
         if allowed_trunks is None:
-            allowed_trunks = set(self.pn['trunk'].values())
+            allowed_trunks = set(self.trunks.values())
         if allowed_nodes is None:
-            allowed_nodes = set(self.pn['node'].values())
+            allowed_nodes = set(self.nodes.values())
 
         n = len(allowed_nodes)
         prec_node = {i: None for i in allowed_nodes}
@@ -669,7 +676,7 @@ class Network(object):
     ## 4) Floyd-Warshall algorithm
             
     def floyd_warshall(self):
-        nodes = list(self.pn['node'].values())
+        nodes = list(self.nodes.values())
         n = len(nodes)
         W = [[0]*n for _ in range(n)]
         
@@ -889,9 +896,9 @@ class Network(object):
         #     a_t = AS.pAS['trunk']
         
         if a_t is None:
-            a_t = set(self.pn['trunk'].values())
+            a_t = set(self.trunks.values())
         if a_n is None:
-            a_n = set(self.pn['node'].values())
+            a_n = set(self.nodes.values())
 
         visited = set()
         # in the heap, we store e_o, the list of excluded objects, which is
@@ -927,9 +934,9 @@ class Network(object):
     # - we remove all overlapping trunks
         
         if a_t is None:
-            a_t = set(self.pn['trunk'].values())
+            a_t = set(self.trunks.values())
         if a_n is None:
-            a_n = set(self.pn['node'].values())
+            a_n = set(self.nodes.values())
             
         # we store the cost value in the flow parameters, since bhandari 
         # algorithm relies on graph transformation, and the costs of the edges
@@ -980,9 +987,9 @@ class Network(object):
     # - we remove all overlapping trunks
         
         if a_t is None:
-            a_t = set(self.pn['trunk'].values())
+            a_t = set(self.trunks.values())
         if a_n is None:
-            a_n = set(self.pn['node'].values())
+            a_n = set(self.nodes.values())
             
         # we store the cost value in the flow parameters, since bhandari 
         # algorithm relies on graph transformation, and the costs of the edges
@@ -1027,7 +1034,7 @@ class Network(object):
     ## Flow algorithms
     
     def reset_flow(self):
-        for trunk in self.pn['trunk'].values():
+        for trunk in self.trunks.values():
             trunk.flowSD = trunk.flowDS = 0
     
     ## 1) Ford-Fulkerson algorithm
@@ -1145,7 +1152,7 @@ class Network(object):
         total = 0
         while True:
             Q.appendleft(source)
-            level = {node: None for node in self.pn['node'].values()}
+            level = {node: None for node in self.nodes.values()}
             level[source] = 0
             while Q:
                 curr_node = Q.pop()
@@ -1197,13 +1204,13 @@ class Network(object):
         
         self.reset_flow()
         
-        new_graph = {node: {} for node in self.pn['node'].values()}
-        for node in self.pn['node'].values():
+        new_graph = {node: {} for node in self.nodes.values()}
+        for node in self.nodes.values():
             for neighbor, trunk in self.graph[node.id]['trunk']:
                 sd = (node == trunk.source)*'SD' or 'DS'
                 new_graph[node][neighbor] = getattr(trunk, 'cost' + sd)
 
-        n = 2*len(self.pn['trunk'])
+        n = 2*len(self.trunks)
         
         c = []
         for node in new_graph:
@@ -1245,7 +1252,7 @@ class Network(object):
                 cpt += 1
                 
         # update the network trunks with the new flow value
-        for trunk in self.pn['trunk'].values():
+        for trunk in self.trunks.values():
             src, dest = trunk.source, trunk.destination
             trunk.flowSD = new_graph[src][dest]
             trunk.flowDS = new_graph[dest][src]
@@ -1273,13 +1280,13 @@ class Network(object):
         #                     xi integer, forall i in I
 
         
-        new_graph = {node: {} for node in self.pn['node'].values()}
-        for node in self.pn['node'].values():
+        new_graph = {node: {} for node in self.nodes.values()}
+        for node in self.nodes.values():
             for neighbor, trunk in self.graph[node.id]['trunk']:
                 sd = (node == trunk.source)*'SD' or 'DS'
                 new_graph[node][neighbor] = getattr(trunk, 'capacity' + sd)
 
-        n = 2*len(self.pn['trunk'])
+        n = 2*len(self.trunks)
         v = len(new_graph)
 
         c, h = [], []
@@ -1318,7 +1325,7 @@ class Network(object):
                 cpt += 1
                 
         # update the network trunks with the new flow value
-        for trunk in self.pn['trunk'].values():
+        for trunk in self.trunks.values():
             src, dest = trunk.source, trunk.destination
             trunk.flowSD = new_graph[src][dest]
             trunk.flowDS = new_graph[dest][src]
@@ -1339,13 +1346,13 @@ class Network(object):
         #                     xi integer, forall i in I
 
         
-        new_graph = {node: {} for node in self.pn['node'].values()}
-        for node in self.pn['node'].values():
+        new_graph = {node: {} for node in self.nodes.values()}
+        for node in self.nodes.values():
             for neighbor, trunk in self.graph[node.id]['trunk']:
                 new_graph[node][neighbor] = (trunk('capacity', node),
                                              trunk('cost', node))
 
-        n = 2*len(self.pn['trunk'])
+        n = 2*len(self.trunks)
         v = len(new_graph)
 
         c, h = [], []
@@ -1384,7 +1391,7 @@ class Network(object):
                 cpt += 1
                 
         # update the network trunks with the new flow value
-        for trunk in self.pn['trunk'].values():
+        for trunk in self.trunks.values():
             src, dest = trunk.source, trunk.destination
             trunk.flowSD = new_graph[src][dest]
             trunk.flowDS = new_graph[dest][src]
@@ -1409,14 +1416,14 @@ class Network(object):
         
         all_graph = []
         for i in range(K):
-            graph_K = {node: {} for node in self.pn['node'].values()}
+            graph_K = {node: {} for node in self.nodes.values()}
             for node in graph_K:
                 for neighbor, trunk in self.graph[node.id]['trunk']:
                     sd = (node == trunk.source)*'SD' or 'DS'
                     graph_K[node][neighbor] = getattr(trunk, 'cost' + sd)
             all_graph.append(graph_K)
 
-        n = 2*len(self.pn['trunk'])
+        n = 2*len(self.trunks)
         
         c = []
         for graph_K in all_graph:
@@ -1450,7 +1457,7 @@ class Network(object):
         
         A, b = [], []
         for i in range(K):
-            for node_r in self.pn['node'].values():
+            for node_r in self.nodes.values():
                 if node_r != t:
                     row = []
                     b.append(float(node_r == s))
@@ -1479,7 +1486,7 @@ class Network(object):
                     cpt += 1
 
         # update the network trunks with the new flow value
-        for trunk in self.pn['trunk'].values():
+        for trunk in self.trunks.values():
             src, dest = trunk.source, trunk.destination
             trunk.flowSD = max(graph_K[src][dest] for graph_K in all_graph)
             trunk.flowDS = max(graph_K[dest][src] for graph_K in all_graph)
@@ -1651,8 +1658,8 @@ class Network(object):
         # we create one node per traffic trunk in the new scenario            
         visited = set()
         # tl stands for traffic trunk
-        for tlA in self.pn['traffic'].values():
-            for tlB in self.pn['traffic'].values():
+        for tlA in self.traffics.values():
+            for tlB in self.traffics.values():
                 if tlB not in visited and tlA != tlB:
                     if set(tlA.path) & set(tlB.path):
                         nA, nB = tlA.name, tlB.name
@@ -1719,7 +1726,7 @@ class Network(object):
         
         # V is the total number of path (i.e the total number of trunks
         # in the transformed graph)
-        V, T = len(self.pn['node']), len(self.pn['trunk'])
+        V, T = len(self.nodes), len(self.trunks)
         
         # for the objective function, which must minimize the sum of y_wl, 
         # that is, the number of wavelength used
@@ -1739,14 +1746,14 @@ class Network(object):
         
         G2 = []
         for i in range(K):
-            for trunk in self.pn['trunk'].values():
+            for trunk in self.trunks.values():
                 p_src, p_dest = trunk.source, trunk.destination
                 # we want to ensure that paths that have at least one trunk in 
                 # common are not assigned the same wavelength.
                 # this means that x_v_src_i + x_v_dest_i <= y_i
                 row = []
                 # vector of x_v_wl: we set x_v_src_i and x_v_dest_i to 1
-                for path in self.pn['node'].values():
+                for path in self.nodes.values():
                     for j in range(K):
                         row.append(float(
                                          (path == p_src or path == p_dest)
@@ -1863,7 +1870,7 @@ class Network(object):
     def fruchterman_reingold_layout(self, nodes, opd, limit):
         t = 1
         if not opd:
-            opd = sqrt(1200*700/len(self.pn['trunk']))
+            opd = sqrt(1200*700/len(self.trunks))
         opd /= 3
         for nA in nodes:
             nA.vx, nA.vy = 0, 0
@@ -1876,7 +1883,7 @@ class Network(object):
                         nA.vx += deltax * opd**2 / dist**2
                         nA.vy += deltay * opd**2 / dist**2   
                     
-        for l in self.pn['trunk'].values():
+        for l in self.trunks.values():
             deltax = l.source.x - l.destination.x
             deltay = l.source.y - l.destination.y
             dist = self.distance(deltax, deltay)
@@ -1928,7 +1935,7 @@ class Network(object):
         # all nodes one step ahead of the already drawn area
         overall_frontier = {source}
         # all nodes which location has already been set
-        seen = set(self.pn['node'].values()) - nodes
+        seen = set(self.nodes.values()) - nodes
         # virtuals nodes are the centers of previously clusterized area:
         # they are not connected to any another node, but are equivalent to a
         # coulomb forces of all cluster nodes
@@ -1936,7 +1943,7 @@ class Network(object):
         # number of cluster
         nb_cluster = 0
         # total number of nodes
-        n = len(self.pn['node'])
+        n = len(self.nodes)
         while overall_frontier:
             new_source = overall_frontier.pop()
             new_frontier, new_cluster = self.bfs_cluster(new_source, seen, size)
@@ -1950,7 +1957,7 @@ class Network(object):
             virtual_nodes.add(self.create_virtual_nodes(new_cluster, nb_cluster))
         for node in virtual_nodes:
             self.name_to_id.pop(node.name)
-            self.pn['node'].pop(node.id)
+            self.nodes.pop(node.id)
 
         
     ## Graph generation functions
@@ -1972,7 +1979,7 @@ class Network(object):
     ## 2) Star generation
             
     def star(self, n, subtype):
-        nb_node = len(self.pn['node'])
+        nb_node = len(self.nodes)
         for i in range(n):
             n1, n2 = str(nb_node), str(nb_node+1+i)
             self.lf(
@@ -1983,7 +1990,7 @@ class Network(object):
     ## 3) Full-meshed network generation
             
     def full_mesh(self, n, subtype):
-        nb_node = len(self.pn['node'])
+        nb_node = len(self.nodes)
         for i in range(n):
             for j in range(i):
                 n1, n2 = str(nb_node+j), str(nb_node+i)
@@ -1995,7 +2002,7 @@ class Network(object):
     ## 4) Ring generation
                 
     def ring(self, n, subtype):
-        nb_node = len(self.pn['node'])
+        nb_node = len(self.nodes)
         for i in range(n):
             n1, n2 = str(nb_node+i), str(nb_node+(1+i)%n)
             self.lf(
@@ -2018,7 +2025,6 @@ class Network(object):
                         source = self.nf(name = n1, node_type = subtype), 
                         destination = self.nf(name = n3, node_type = subtype)
                         )
-        print(len(self.pn['node']), len(self.pn['trunk']))
                     
     ## 6) Hypercube generation
             
@@ -2081,24 +2087,42 @@ class Network(object):
         for i in range(n):
             # (u_i, u_i+1) edges
             self.lf(
-                    source = self.nf(name = str(i), node_type = subtype), 
-                    destination = self.nf(name = str((i + 1)%n), node_type = subtype)
+                    source = self.nf(
+                                     name = str(i), 
+                                     node_type = subtype
+                                     ), 
+                    destination = self.nf(
+                                          name = str((i + 1)%n), 
+                                          node_type = subtype
+                                          )
                     )
             # (u_i, v_i) edges
             self.lf(
-                    source = self.nf(name = str(i), node_type = subtype), 
-                    destination = self.nf(name = str(i + n), node_type = subtype)
+                    source = self.nf(
+                                     name = str(i), 
+                                     node_type = subtype
+                                     ), 
+                    destination = self.nf(
+                                          name = str(i + n), 
+                                          node_type = subtype
+                                          )
                     )
             # (v_i, v_i+k) edges
             self.lf(
-                    source = self.nf(name = str(i + n), node_type = subtype), 
-                    destination = self.nf(name = str((i + n + k)%n + n), node_type = subtype)
+                    source = self.nf(
+                                     name = str(i + n), 
+                                     node_type = subtype
+                                     ), 
+                    destination = self.nf(
+                                          name = str((i + n + k)%n + n), 
+                                          node_type = subtype
+                                          )
                     )
                     
     ## Multiple object creation
     
     def multiple_nodes(self, n, subtype):
-        nb_nodes = len(self.pn['node'])
+        nb_nodes = len(self.nodes)
         for k in range(n):
             yield self.nf(name = str(k + nb_nodes), node_type = subtype)
             
