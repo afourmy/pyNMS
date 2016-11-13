@@ -308,7 +308,7 @@ class L2VC(Link):
         # if the property doesn't exist for a virtual connection, we look at
         # the equivalent property for the associated physical link
         dir = (node == self.source)*'S' or 'D'
-        if hasattr(self, property):
+        if hasattr(self, property + dir):
             if value:
                 setattr(self, property + dir, value)
             else:
@@ -338,11 +338,16 @@ class L3VC(Link):
     def __call__(self, property, node, value=None):
         # can be used both as a getter and a setter, depending on 
         # whether a value is provided or not
+        # if the property doesn't exist for a virtual connection, we look at
+        # the equivalent property for the associated physical link
         dir = (node == self.source)*'S' or 'D'
-        if value:
-            setattr(self, property + dir, value)
+        if hasattr(self, property + dir):
+            if value:
+                setattr(self, property + dir, value)
+            else:
+                return getattr(self, property + dir)
         else:
-            return getattr(self, property + dir)
+            getattr(self, 'link' + dir)(property, node, value)
         
 class Ethernet(Trunk):
     
