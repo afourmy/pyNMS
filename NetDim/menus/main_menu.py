@@ -6,9 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
-from pythonic_tkinter.custom_widgets import CustomTopLevel
-from pythonic_tkinter.custom_listbox import ObjectListbox
-from pythonic_tkinter.preconfigured_ttk_widgets import *
+from pythonic_tkinter.preconfigured_widgets import *
 from drawing import drawing_options_window
 
 class MainMenu(tk.Frame):

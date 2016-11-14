@@ -14,8 +14,7 @@ import network
 import scenario
 from os.path import abspath, pardir, join
 from tkinter import ttk, filedialog
-from pythonic_tkinter.custom_widgets import CustomTopLevel
-from pythonic_tkinter.preconfigured_ttk_widgets import *
+from pythonic_tkinter.preconfigured_widgets import *
 from objects import object_management_window as omw
 from miscellaneous import graph_algorithms as galg
 from drawing import drawing_options_window as dow
@@ -537,6 +536,7 @@ class NetDim(MainWindow):
         'interfaceD': 'Interface (destination)',
         'macaddressS': 'MAC address (source)',
         'macaddressD': 'MAC address (destination)',
+        'macaddress': 'MAC address',
         'weightS': 'Weight (source)',
         'weightD': 'Weight (destination)',
         'sntw': 'Subnetwork',

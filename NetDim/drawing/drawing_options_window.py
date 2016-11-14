@@ -4,7 +4,7 @@
 
 import tkinter as tk
 from tkinter import ttk
-from pythonic_tkinter.custom_widgets import FocusTopLevel, CustomTopLevel
+from pythonic_tkinter.preconfigured_widgets import *
 import collections
 
 class DrawingOptions(FocusTopLevel):

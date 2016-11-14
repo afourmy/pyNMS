@@ -2,7 +2,7 @@
 # Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
 # Released under the GNU General Public License GPLv3
 
-from pythonic_tkinter.custom_widgets import CustomTopLevel
+from pythonic_tkinter.preconfigured_widgets import *
 from tkinter import ttk
 
 class Area(object):

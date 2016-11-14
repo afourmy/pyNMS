@@ -3,7 +3,7 @@
 # Released under the GNU General Public License GPLv3
 
 import re
-from pythonic_tkinter.custom_widgets import CustomTopLevel
+from pythonic_tkinter.preconfigured_widgets import *
 import tkinter as tk
 from tkinter import ttk
 

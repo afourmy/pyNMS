@@ -144,6 +144,7 @@ class Scenario(tk.Canvas):
             self.bind('<1>', lambda event: self.focus_set())
             
             # add bindings to drag a node with left-click
+            self.tag_bind('link', '<Button-1>', self.find_closest_link, add='+')
             self.tag_bind('node', '<Button-1>', self.find_closest_node, add='+')
             for tag in ('node', 'link'):
                 self.tag_bind(tag, '<Button-1>', self.update_mgmt_window, add='+')
@@ -221,16 +222,21 @@ class Scenario(tk.Canvas):
             # consider only the newly selected node, and unhighlight everything
             if not self.ctrl:
                 self.unhighlight_all()
-                self.highlight_objects(main_node_selected)
-            # else, we add the node to the current selection
-            else:
-                self.highlight_objects(main_node_selected)
+            self.highlight_objects(main_node_selected)
             # we update the dict of start position
             x, y = main_node_selected.x, main_node_selected.y
             self._dict_start_position[main_node_selected] = [x, y]
             # we also need to update the highlight to that the old selection
             # is no longer highlighted but the newly selected node is.
             self.highlight_objects(main_node_selected)
+            
+    @adapt_coordinates
+    def find_closest_link(self, event):
+        self.drag_item = self.find_closest(event.x, event.y)[0]
+        main_node_selected = self.object_id_to_object[self.drag_item]
+        if not self.ctrl:
+            self.unhighlight_all()
+        self.highlight_objects(main_node_selected)
 
     def update_mgmt_window(self, event):
         if self.co:

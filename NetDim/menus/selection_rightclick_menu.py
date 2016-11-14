@@ -15,6 +15,8 @@ from .alignment_menu import AlignmentMenu
 from drawing.drawing_menu import DrawingMenu
 from objects.object_management_window import PropertyChanger
 from collections import OrderedDict
+from operator import xor
+from objects.interface_window import InterfaceWindow
                                 
 class SelectionRightClickMenu(tk.Menu):
     def __init__(self, event, scenario):
@@ -38,11 +40,19 @@ class SelectionRightClickMenu(tk.Menu):
         self.all_so = self.cs.so["node"] | self.cs.so["link"]
                             
         # exactly one object: property window 
-        if len(self.cs.so["node"]) == 1 or len(self.cs.so["link"]) == 1:
+        if xor(len(self.cs.so["node"]) == 1, len(self.cs.so["link"]) == 1):
             self.add_command(label="Properties", 
                         command=lambda: self.show_object_properties())
-                            
             self.add_separator()
+            
+        # exacly one node and one trunk: menu for the associated interface
+        if len(self.cs.so["node"]) == 1 and len(self.cs.so["link"]) == 1:
+            link ,= self.cs.so["link"]
+            if link.type == 'trunk':
+                node ,= self.cs.so["node"]
+                self.add_command(label="Interface menu", 
+                    command=lambda: InterfaceWindow(self.cs.master, link, node))
+                self.add_separator()
                 
         # exactly one node: configuration menu
         if not self.cs.so["link"] and len(self.cs.so["node"]) == 1:

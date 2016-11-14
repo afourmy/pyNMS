@@ -276,7 +276,7 @@ class Trunk(Link):
         # can be used both as a getter and a setter, depending on 
         # whether a value is provided or not
         dir = (node == self.source)*'SD' or 'DS'
-        if property in ('subnetmask', 'interface', 'ipaddress'):
+        if property in ('subnetmask', 'interface', 'ipaddress', 'macaddress'):
             dir = dir[:-1]
         if value:
             setattr(self, property + dir, value)

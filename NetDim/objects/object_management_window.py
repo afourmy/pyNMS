@@ -5,7 +5,7 @@
 import re
 import tkinter as tk
 from tkinter import ttk, messagebox
-from pythonic_tkinter.custom_widgets import CustomTopLevel, FocusTopLevel
+from pythonic_tkinter.preconfigured_widgets import *
 
 class ObjectManagementWindow(FocusTopLevel):
     

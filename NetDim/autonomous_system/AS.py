@@ -4,7 +4,7 @@
 
 import tkinter as tk
 from tkinter import ttk
-from pythonic_tkinter.custom_widgets import CustomTopLevel
+from pythonic_tkinter.preconfigured_widgets import *
 from collections import defaultdict
 from heapq import heappop, heappush
 from . import area

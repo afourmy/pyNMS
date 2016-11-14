@@ -2,7 +2,7 @@
 # Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
 # Released under the GNU General Public License GPLv3
 
-from pythonic_tkinter.custom_widgets import FocusTopLevel
+from pythonic_tkinter.preconfigured_widgets import *
 import tkinter as tk
 from tkinter import ttk
 

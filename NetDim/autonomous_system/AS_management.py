@@ -5,10 +5,7 @@
 from . import area
 import tkinter as tk
 from tkinter import ttk
-from pythonic_tkinter.custom_widgets import CustomTopLevel
-from pythonic_tkinter.custom_widgets import CustomFrame
-from pythonic_tkinter.custom_listbox import ObjectListbox
-from pythonic_tkinter.preconfigured_ttk_widgets import *
+from pythonic_tkinter.preconfigured_widgets import *
 
 class ASManagement(CustomTopLevel):
     
@@ -173,7 +170,7 @@ class ASManagementWithArea(ASManagement):
                 listbox.bind("<<ListboxSelect>>", 
                             lambda e, type=type: self.highlight_object(e, type))
             lbl.grid(row=6, column=2*index)
-            listbox.grid(row=7, column=2*index)
+            listbox.grid(7, 2*index)
             yscroll.grid(row=7, column=1+2*index, sticky="ns")
                                                   
         # button to create an area
