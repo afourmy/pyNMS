@@ -94,15 +94,17 @@ class SelectionRightClickMenu(tk.Menu):
                         
         self.add_separator()
         
-        # exactly one trunk: failure simulation menu
+        # exactly one trunk: 
         if not self.cs.so["node"] and len(self.cs.so["link"]) == 1:
             trunk ,= self.cs.so["link"]
+            # failure simulation menu
             if trunk.type == "trunk":
                 self.add_command(label="Simulate failure", 
                         command=lambda: self.simulate_failure(trunk))
                 if trunk in self.cs.ntw.fdtks:
                     self.add_command(label="Remove failure", 
                         command=lambda: self.remove_failure(trunk))
+            # interface menu 
             
         # only nodes: 
         if not self.cs.so["link"]:

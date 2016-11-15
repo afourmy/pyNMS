@@ -1,4 +1,4 @@
 router,s,24,300,0,0,None,None,1,set(),None,None
 router,d,42,300,0,0,None,None,1,set(),None,None
-ethernet,t,s,d,GE,666,1.0,1.0,3,3,None,None,None,None,None,None,None,None,set()
+ethernet,t,s,d,GE,666,1.0,1.0,3,3,set()
 static route,route2,s,d,set(),None,None,1

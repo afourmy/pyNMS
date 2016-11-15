@@ -80,6 +80,7 @@ class Network(object):
     def __init__(self, scenario):
         self.nodes = {}
         self.trunks = {}
+        self.interfaces = {'ethernet': set(), 'wdm': set()}
         self.routes = {}
         self.traffics = {}
         self.l2vc = {}
@@ -171,6 +172,9 @@ class Network(object):
             self.pn[link_type][id] = new_link
             self.graph[s.id][link_type].add((d, new_link))
             self.graph[d.id][link_type].add((s, new_link))
+            if subtype in ('ethernet', 'wdm'):
+                link_if = {new_link.interfaceS, new_link.interfaceD}
+                self.interfaces[subtype] |= link_if
             self.cpt_link += 1
         return self.pn[link_type][id]
         
@@ -398,7 +402,7 @@ class Network(object):
     def interface_allocation(self):
         for node in self.nodes.values():
             for idx, (_, adj_trunk) in enumerate(self.graph[node.id]['trunk']):
-                adj_trunk('interface', node, 'Ethernet0/{}'.format(idx))
+                adj_trunk('name', node, 'Ethernet0/{}'.format(idx))
                 
     # WC trunk dimensioning: this computes the maximum traffic the trunk may 
     # have to carry considering all possible trunk failure. 

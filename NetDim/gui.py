@@ -106,6 +106,8 @@ class NetDim(MainWindow):
         'source', 
         'destination', 
         'interface',
+        'interfaceS',
+        'interfaceD',
         'distance', 
         'costSD', 
         'costDS', 
@@ -127,17 +129,21 @@ class NetDim(MainWindow):
         'wcfailure',
         'flowSD', 
         'flowDS',
-        'ipaddressS', 
-        'subnetmaskS', 
-        'interfaceS',
-        'macaddressS',
-        'ipaddressD', 
-        'subnetmaskD', 
-        'interfaceD',
-        'macaddressD',
         'sites',
         'sntw',
         'AS',
+        )
+        
+        interface_common_properties = (
+        'link',
+        'node',
+        'name'
+        )
+        
+        ethernet_interface_properties = interface_common_properties + (
+        'ipaddress',
+        'subnetmask',
+        'macaddress'
         )
         
         route_common_properties = (
@@ -176,17 +182,9 @@ class NetDim(MainWindow):
         'costDS', 
         'capacitySD', 
         'capacityDS', 
-        'ipaddressS', 
-        'subnetmaskS', 
-        'interfaceS',
-        'macaddressS',
-        'ipaddressD', 
-        'subnetmaskD', 
-        'interfaceD',
-        'macaddressD',
         'sites'
         )
-        
+                
         route_common_ie_properties = (
         'name',
         'source', 
@@ -352,7 +350,10 @@ class NetDim(MainWindow):
         )),
         
         ('routed traffic', traffic_common_ie_properties),
-        ('static traffic', traffic_common_ie_properties)
+        ('static traffic', traffic_common_ie_properties),
+        
+        ('ethernet interface', ethernet_interface_properties),
+        ('wdm interface', interface_common_properties)
         ])
         
         # ordered dicts are needed to have the same menu order 
@@ -371,6 +372,8 @@ class NetDim(MainWindow):
         'name', 
         'subtype',
         'interface',
+        'interfaceS',
+        'interfaceD',
         'source', 
         'destination',
         'sntw'
@@ -429,13 +432,13 @@ class NetDim(MainWindow):
         ])
         
         # methods for string to object conversions
-        convert_node = lambda n: self.cs.ntw.nf(name=n)
-        convert_link = lambda l: self.cs.ntw.lf(name=l)
+        self.convert_node = lambda n: self.cs.ntw.nf(name=n)
+        self.convert_link = lambda l: self.cs.ntw.lf(name=l)
         convert_AS = lambda AS: self.cs.ntw.AS_factory(name=AS)
-        self.convert_nodes_set = lambda ln: set(map(convert_node, eval(ln)))
-        convert_nodes_list = lambda ln: list(map(convert_node, eval(ln)))
-        self.convert_links_set = lambda ll: set(map(convert_link, eval(ll)))
-        convert_links_list = lambda ll: list(map(convert_link, eval(ll)))
+        self.convert_nodes_set = lambda ln: set(map(self.convert_node, eval(ln)))
+        convert_nodes_list = lambda ln: list(map(self.convert_node, eval(ln)))
+        self.convert_links_set = lambda ll: set(map(self.convert_link, eval(ll)))
+        convert_links_list = lambda ll: list(map(self.convert_link, eval(ll)))
         
         # dict property to conversion methods: used at import
         # the code for AS export
@@ -465,19 +468,18 @@ class NetDim(MainWindow):
         'wcfailure': str,
         'flowSD': float,
         'flowDS': float,
-        'ipaddressS': str,
-        'subnetmaskS': str,
-        'ipaddressD': str,
-        'subnetmaskD': str, 
         'interfaceS': str,
         'interfaceD': str,
-        'macaddressS': str,
-        'macaddressD': str,
+        'ipaddress': str,
+        'subnetmask': str,
+        'macaddress': str,
         'sntw': str,
         'throughput': float,
         'lambda_capacity': int,
-        'source': convert_node, 
-        'destination': convert_node, 
+        'source': self.convert_node, 
+        'destination': self.convert_node, 
+        'node': self.convert_node, 
+        'link': self.convert_link, 
         'nh_tk': str,
         'nh_ip': str,
         'ipS': str,
@@ -798,10 +800,23 @@ class NetDim(MainWindow):
                     kwargs = self.objectizer(properties, values, obj_type)
                     if obj_type in self.cs.ntw.node_subtype: 
                         self.cs.ntw.nf(node_type=obj_type, **kwargs)
-                    else:
+                    if obj_type in self.cs.ntw.link_subtype: 
                         self.cs.ntw.lf(subtype=obj_type, **kwargs)
                         
-            AS_sheet, area_sheet = book.sheets()[16], book.sheets()[17]
+            # interface properties update
+            for i in range(16, 18):
+                interface_sheet = book.sheets()[i]
+                if_properties = interface_sheet.row_values(0)
+                # creation of ethernet interfaces
+                for row_index in range(1, interface_sheet.nrows):
+                    link, node, *args = interface_sheet.row_values(row_index)
+                    link = self.convert_link(link)
+                    node = self.convert_node(node)
+                    interface = link('interface', node)
+                    for property, value in zip(if_properties[2:], args):
+                        setattr(interface, property, value)
+                                                        
+            AS_sheet, area_sheet = book.sheets()[18], book.sheets()[19]
         
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):
@@ -940,10 +955,13 @@ class NetDim(MainWindow):
                     # hasattr() all the time to check if a property exists.
                     ftr = lambda o: o.subtype == obj_type
                     if obj_type in self.cs.ntw.link_class:
-                        _type = self.st_to_type[obj_type]
-                        pool_obj = filter(ftr, self.cs.ntw.pn[_type].values())
+                        type = self.st_to_type[obj_type]
+                        pool_obj = filter(ftr, self.cs.ntw.pn[type].values())
+                    elif obj_type in self.cs.ntw.node_subtype:
+                        pool_obj = filter(ftr, self.cs.ntw.pn['node'].values()) 
+                    # if it is neither a node nor an interface, it is a node
                     else:
-                        pool_obj = filter(ftr, self.cs.ntw.pn['node'].values())                    
+                        pool_obj = self.cs.ntw.interfaces[obj_type.split()[0]]
                     for i, t in enumerate(pool_obj, 1):
                         xls_sheet.write(i, id, str(getattr(t, property)))
                         

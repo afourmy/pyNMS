@@ -7,7 +7,7 @@ from collections import defaultdict
 # decorating __init__ to initialize properties
 def initializer(default_properties):
     def inner_decorator(init):
-        def wrapper(self, **kw):
+        def wrapper(self, *a, **kw):
             for k in kw:
                 setattr(self, k, kw[k])
             for property in default_properties:
@@ -19,7 +19,7 @@ def initializer(default_properties):
                         setattr(self, property, eval(value))
                     except (TypeError, NameError):
                         setattr(self, property, value)
-            init(self)
+            init(self, *a)
         return wrapper
     return inner_decorator
 
@@ -246,15 +246,7 @@ class Trunk(Link):
                     'costSD' : 1., 
                     'costDS' : 1., 
                     'capacitySD' : 3, 
-                    'capacityDS' : 3, 
-                    'ipaddressS' : None, 
-                    'subnetmaskS' : None,
-                    'interfaceS' : None,
-                    'macaddressS' : None,
-                    'ipaddressD' : None, 
-                    'subnetmaskD' : None, 
-                    'interfaceD' : None,
-                    'macaddressD' : None
+                    'capacityDS' : 3
                     }
 
     @initializer(ie_properties)
@@ -276,12 +268,92 @@ class Trunk(Link):
         # can be used both as a getter and a setter, depending on 
         # whether a value is provided or not
         dir = (node == self.source)*'SD' or 'DS'
-        if property in ('subnetmask', 'interface', 'ipaddress', 'macaddress'):
-            dir = dir[:-1]
-        if value:
-            setattr(self, property + dir, value)
+        if property in ('flow', 'cost', 'capacity', 'traffic', 'wctraffic'):
+            if value:
+                setattr(self, property + dir, value)
+            else:
+                return getattr(self, property + dir)
+                
         else:
-            return getattr(self, property + dir)
+            interface = getattr(self, 'interface' + dir[:-1])
+            if property == 'interface':
+                return interface
+            elif value:
+                setattr(interface, property, value)
+            else:
+                return getattr(interface, property)
+
+            
+class Interface(NDobject):
+    
+    type = 'interface'
+        
+    def __init__(self, node, link):
+        self.node = node
+        self.link = link
+        super().__init__()
+        
+    def __repr__(self):
+        return self.name
+        
+    def __eq__(self, other):
+        return (isinstance(other, self.__class__) and self.name == other.name
+                    and self.node == other.node and self.link == other.link)
+                    
+    def __hash__(self):
+        return hash(self.name)
+                    
+class EthernetInterface(Interface):
+    
+    subtype = 'ethernet'
+    
+    ie_properties = {
+                    'ipaddress' : 'none', 
+                    'subnetmask' : 'none',
+                    'macaddress' : 'none',
+                    }
+    
+    @initializer(ie_properties)
+    def __init__(self, node, link, **kwargs):
+        super().__init__(node, link)
+        
+class WDMInterface(Interface):
+    
+    subtype = 'wdm'
+    
+    ie_properties = {}
+    
+    @initializer(ie_properties)
+    def __init__(self, node, link, **kwargs):
+        super().__init__(node, link)
+        
+class Ethernet(Trunk):
+    
+    color = 'blue'
+    protocol = subtype = 'ethernet'
+    
+    ie_properties = {}
+    
+    @initializer(ie_properties)
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.interfaceS = EthernetInterface(self.source, self)
+        self.interfaceD = EthernetInterface(self.destination, self)
+        
+class WDMFiber(Trunk):
+    
+    color = 'orange'
+    protocol = subtype = 'wdm'
+    
+    ie_properties = {
+                    'lambda_capacity' : 88
+                    }
+    
+    @initializer(ie_properties)
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.interfaceS = WDMInterface(self.source, self)
+        self.interfaceD = WDMInterface(self.destination, self)
             
 class L2VC(Link):
     
@@ -348,30 +420,6 @@ class L3VC(Link):
                 return getattr(self, property + dir)
         else:
             getattr(self, 'link' + dir)(property, node, value)
-        
-class Ethernet(Trunk):
-    
-    color = 'blue'
-    protocol = subtype = 'ethernet'
-    
-    ie_properties = {}
-    
-    @initializer(ie_properties)
-    def __init__(self, **kwargs):
-        super().__init__()
-        
-class WDMFiber(Trunk):
-    
-    color = 'orange'
-    protocol = subtype = 'wdm'
-    
-    ie_properties = {
-                    'lambda_capacity' : 88
-                    }
-    
-    @initializer(ie_properties)
-    def __init__(self, **kwargs):
-        super().__init__()
         
 class Route(Link):
     
