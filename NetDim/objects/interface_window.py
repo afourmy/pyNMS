@@ -12,11 +12,10 @@ class InterfaceWindow(FocusTopLevel):
                  "macaddress"
                 )
                 
-    def __init__(self, master, trunk, node):
+    def __init__(self, master, interface):
         super().__init__()
         self.ms = master
-        self.trunk = trunk
-        self.node = node
+        self.interface = interface
         self.title("Manage interface properties")
 
         # create the property window
@@ -28,8 +27,7 @@ class InterfaceWindow(FocusTopLevel):
             label.grid(index+1, 0, pady=1)
             
             property_entry = Entry(self, width=15)
-            print(property, trunk(property, node))
-            property_entry.text = str(trunk(property, node))
+            property_entry.text = str(getattr(self.interface, property))
             self.dict_var[property] = property_entry
             property_entry.grid(index+1, 1, pady=1)
             
@@ -39,6 +37,6 @@ class InterfaceWindow(FocusTopLevel):
         
     def save_and_destroy(self):
         for property, entry in self.dict_var.items():
-            value = self.ms.prop_to_type[property + 'S'](entry.get())
-            self.trunk(property, self.node, value)
+            value = self.ms.prop_to_type[property](entry.get())
+            setattr(self.interface, property, value)
         self.destroy()

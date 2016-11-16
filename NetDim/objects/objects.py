@@ -287,7 +287,12 @@ class Trunk(Link):
 class Interface(NDobject):
     
     type = 'interface'
+    
+    ie_properties = {
+                    'name': 'none'
+                    }
         
+    @initializer(ie_properties)
     def __init__(self, node, link):
         self.node = node
         self.link = link
@@ -297,8 +302,8 @@ class Interface(NDobject):
         return self.name
         
     def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.name == other.name
-                    and self.node == other.node and self.link == other.link)
+        return (isinstance(other, self.__class__) and self.node == other.node
+                                            and self.link == other.link)
                     
     def __hash__(self):
         return hash(self.name)

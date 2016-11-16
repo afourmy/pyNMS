@@ -910,7 +910,7 @@ class NetDim(MainWindow):
 
                         # in some graphml files, there are nodes with loopback link
                         if src_name != dest_name:
-                            new_link = self.cs.ntw.lf(s=src, d=dest)
+                            new_link = self.cs.ntw.lf(source=src, destination=dest)
                             new_link.distance = distance
         
         self.cs.draw_all(False)        

@@ -73,13 +73,16 @@ class Scenario(tk.Canvas):
         # list of currently selected object ('so')
         self.so = {'node': set(), 'link': set()}
         
+        # source / destination indicators when a link is selected
+        self.src_label = None
+        self.dest_label = None
+        
         # initialization of all bindings for nodes creation
         self.switch_binding()
         
         ## bindings that remain available in both modes
         # highlight the path of a route/traffic link with left-click
         self.tag_bind('route', '<ButtonPress-1>', self.closest_route_path)
-        self.tag_bind('traffic', '<ButtonPress-1>', self.closest_traffic_path)
         
         # zoom and unzoom on windows
         self.bind('<MouseWheel>',self.zoomer)
@@ -135,6 +138,7 @@ class Scenario(tk.Canvas):
         if self._mode == 'motion':
             # unbind unecessary bindings
             self.unbind('<Button 1>')
+            self.tag_unbind('link', '<Button-1>')
             self.tag_unbind('node', '<Button-1>')
             self.tag_unbind('node', '<B1-Motion>')
             self.tag_unbind('node', '<ButtonRelease-1>')
@@ -162,6 +166,7 @@ class Scenario(tk.Canvas):
             self.unbind('<ButtonRelease-1>')
             self.unbind('<ButtonMotion-1>')
             self.tag_unbind('node', '<Button-1>')
+            self.tag_unbind('link', '<Button-1>')
             
             if self._creation_mode in self.ntw.node_class:
                 # add bindings to create a node with left-click
@@ -190,14 +195,6 @@ class Scenario(tk.Canvas):
         self.unhighlight_all()
         route = self.object_id_to_object[self.find_closest(event.x, event.y)[0]]
         self.highlight_route(route)
-        
-    @adapt_coordinates
-    def closest_traffic_path(self, event):
-        self.unhighlight_all()
-        traffic = self.object_id_to_object[self.find_closest(event.x, event.y)[0]]
-        self.highlight_objects(*traffic.path)
-        for route in filter(lambda l: l.type == 'route', traffic.path):
-            self.highlight_route(route)
             
     def highlight_route(self, route):
         self.highlight_objects(*route.path)
@@ -232,11 +229,32 @@ class Scenario(tk.Canvas):
             
     @adapt_coordinates
     def find_closest_link(self, event):
-        self.drag_item = self.find_closest(event.x, event.y)[0]
-        main_node_selected = self.object_id_to_object[self.drag_item]
+        closest_link = self.find_closest(event.x, event.y)[0]
+        main_link_selected = self.object_id_to_object[closest_link]
         if not self.ctrl:
             self.unhighlight_all()
-        self.highlight_objects(main_node_selected)
+        self.highlight_objects(main_link_selected)
+        source = main_link_selected.source
+        destination = main_link_selected.destination
+        if not self.src_label:
+            font= ("Purisa", '12', 'bold')
+            self.src_label = self.create_text(
+                                              source.x, 
+                                              source.y , 
+                                              text = 'S', 
+                                              font = font, 
+                                              fill = 'gold'
+                                              )
+            self.dest_label = self.create_text(
+                                               destination.x, 
+                                               destination.y, 
+                                               text = 'D', 
+                                               font = font, 
+                                               fill = 'gold'
+                                               )
+        if main_link_selected.type in ('traffic', 'route'):
+            if hasattr(main_link_selected, 'path'):
+                self.highlight_objects(*main_link_selected.path)
 
     def update_mgmt_window(self, event):
         if self.co:
@@ -701,6 +719,10 @@ class Scenario(tk.Canvas):
                                         width=self.LINK_WIDTH, dash=obj.dash)  
                 
     def unhighlight_all(self):
+        self.delete(self.src_label)
+        self.delete(self.dest_label)
+        self.src_label = None
+        self.dest_label = None
         for object_type in self.so:
             self.unhighlight_objects(*self.so[object_type])
             

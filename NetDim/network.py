@@ -457,6 +457,154 @@ class Network(object):
             if not traffic.path:
                 print('no path found for {}'.format(traffic))
         
+    ## 0) Ping / traceroute
+    
+    def ping(self, source, dest_sntw):
+        node = source
+        while True:
+            if any(tk.sntw == dest_sntw for _, tk in self.graph[node.id]['trunk']):
+                break
+            if dest_sntw in node.rt:
+                routes = node.rt[dest_sntw]
+            # if we wannot find the destination address in the routing table, 
+            # and there is a default route, we use it.
+            elif '0.0.0.0' in node.rt:
+                routes = node.rt['0.0.0.0']
+            else:
+                warnings.warn('Packet discarded by {}:'.format(node))
+                break
+            for route in routes:
+                yield route
+                *_, node, _ = route
+                break
+    
+    ## 1) RFT-based routing and dimensioning
+    
+    def RFT_path_finder(self, traffic):
+        source, destination = traffic.source, traffic.destination
+        # the two lines below run faster than making the set an iterable
+        for _, trunk in self.graph[destination.id]['trunk']:
+            break
+        dest_int = trunk.sntw
+        heap = [(source, traffic.throughput)]
+        path_node, path_trunk = {source}, set()
+        while heap:
+            curr_router, share = heap.pop()
+            if curr_router == destination:
+                continue
+            if dest_int in curr_router.rt:
+                routes = curr_router.rt[dest_int]
+            # if we wannot find the destination address in the routing table, 
+            # and there is a default route, we use it.
+            elif '0.0.0.0' in curr_router.rt:
+                routes = curr_router.rt['0.0.0.0']
+            else:
+                warnings.warn('Path not found for {}'.format(traffic))
+                break
+            # we count the number of trunks in failure
+            failed_trunks = sum(r[-1] in self.fdtks for r in routes)
+            # and remove them from share so that they are ignored for 
+            # trunk dimensioning
+            share /= len(routes) - failed_trunks
+            for route in routes:
+                *_, router, trunk = route
+                path_node.add(router)
+                path_trunk.add(trunk)
+                sd = (curr_router == trunk.source)*'SD' or 'DS'
+                trunk.__dict__['traffic' + sd] += share
+                heap.append((router, share))
+             
+        traffic.path = path_trunk
+
+        return path_node, path_trunk
+        
+    ## 2) Add connected interfaces to the RFT
+    
+    def static_RFT_builder(self, source):
+        
+        if source.default_route:
+            try:
+                nh_node = self.ip_to_node[source.default_route]
+                source.rt['0.0.0.0'] = {('S*', source.default_route, 
+                                                    None, 0, nh_node, None)}
+            except KeyError:
+                pass
+            
+
+        for _, sr in self.gftr(source, 'route', 'static route', False):
+            # if the static route next-hop ip is not properly configured, 
+            # we ignore it.
+            try:
+                nh_node = self.ip_to_node[sr.nh_ip]
+            except KeyError:
+                continue
+            source.rt[sr.dst_sntw] = {('S', sr.nh_ip, None, 0, nh_node, None)}
+                                                                
+                    
+        for neighbor, adj_trunk in self.graph[source.id]['trunk']:
+            if adj_trunk in self.fdtks:
+                continue
+            ex_ip = adj_trunk('ipaddress', neighbor)
+            ex_int = adj_trunk('interface', source)
+            # we compute the subnetwork of the attached
+            # interface: it is a directly connected interface
+            source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int, 
+                                                    0, neighbor, adj_trunk)}
+                                            
+                    
+    def BGPT_builder(self):
+        for source in self.ftr('node', 'router'):
+            source.bgpt.clear()
+            visited = {source}
+            heap = []
+            # bgp table
+            bgpt = defaultdict(set)
+            
+            # populate the BGP table with the routes sourced by the source node,
+            # with a default weight of 32768
+            for ip, routes in source.rt.items():
+                for route in routes:
+                    _, nh, *_ = route
+                    source.bgpt[ip] |= {(32768, nh, source, ())}
+            
+            # we fill the heap so that 
+            for src_nb, bgp_pr in self.gftr(source, 'route', 'BGP peering'):
+                first_AS = [source.bgp_AS, src_nb.bgp_AS]
+                if bgp_pr('weight', source):
+                    weight = 1 / bgp_pr('weight', source)
+                else: 
+                    weight = float('inf')
+                heappush(heap, (
+                                weight, # weight 
+                                2, # length of the AS_PATH vector
+                                bgp_pr('ip', src_nb), # next-hop IP address
+                                src_nb, # current node
+                                [], # path as a list of BGP peering connections
+                                first_AS # path as a list of AS
+                                ))
+            
+            while heap:
+                weight, length, nh, node, route_path, AS_path = heappop(heap)
+                if node not in visited:
+                    for ip, routes in node.rt.items():
+                        real_weight = 0 if weight == float('inf') else 1/weight
+                        source.bgpt[ip] |= {(real_weight, nh, node, tuple(AS_path))}
+                    visited.add(node)
+                    for bgp_nb, bgp_pr in self.gftr(node, 'route', 'BGP peering'):
+                        # excluded and allowed nodes
+                        if bgp_nb in visited:
+                            continue
+                        # we append a new AS if we use an external BGP peering
+                        new_AS = [bgp_nb.bgp_AS]*(bgp_pr.bgp_type == 'eBGP')
+                        heappush(heap, (
+                                        weight, 
+                                        length + (bgp_pr.bgp_type == 'eBGP'), 
+                                        nh, 
+                                        bgp_nb,
+                                        route_path + [bgp_pr], 
+                                        AS_path + new_AS
+                                        ))
+                                        
     def route(self):
         # create the routing tables and route all traffic flows
         self.rt_creation()
@@ -732,156 +880,6 @@ class Network(object):
             if not target and dead_end:
                 yield list(path)
         yield from find_all_paths()
-        
-    ## Model 2:
-    
-    ## 0) Ping / traceroute
-    
-    def ping(self, source, dest_sntw):
-        node = source
-        while True:
-            if any(tk.sntw == dest_sntw for _, tk in self.graph[node.id]['trunk']):
-                break
-            if dest_sntw in node.rt:
-                routes = node.rt[dest_sntw]
-            # if we wannot find the destination address in the routing table, 
-            # and there is a default route, we use it.
-            elif '0.0.0.0' in node.rt:
-                routes = node.rt['0.0.0.0']
-            else:
-                warnings.warn('Packet discarded by {}:'.format(node))
-                break
-            for route in routes:
-                yield route
-                *_, node, _ = route
-                break
-    
-    ## 1) RFT-based routing and dimensioning
-    
-    def RFT_path_finder(self, traffic):
-        source, destination = traffic.source, traffic.destination
-        # the two lines below run faster than making the set an iterable
-        for _, trunk in self.graph[destination.id]['trunk']:
-            break
-        dest_int = trunk.sntw
-        heap = [(source, traffic.throughput)]
-        path_node, path_trunk = {source}, set()
-        while heap:
-            curr_router, share = heap.pop()
-            if curr_router == destination:
-                continue
-            if dest_int in curr_router.rt:
-                routes = curr_router.rt[dest_int]
-            # if we wannot find the destination address in the routing table, 
-            # and there is a default route, we use it.
-            elif '0.0.0.0' in curr_router.rt:
-                routes = curr_router.rt['0.0.0.0']
-            else:
-                warnings.warn('Path not found for {}'.format(traffic))
-                break
-            # we count the number of trunks in failure
-            failed_trunks = sum(r[-1] in self.fdtks for r in routes)
-            # and remove them from share so that they are ignored for 
-            # trunk dimensioning
-            share /= len(routes) - failed_trunks
-            for route in routes:
-                *_, router, trunk = route
-                path_node.add(router)
-                path_trunk.add(trunk)
-                sd = (curr_router == trunk.source)*'SD' or 'DS'
-                trunk.__dict__['traffic' + sd] += share
-                heap.append((router, share))
-             
-        traffic.path = path_trunk
-
-        return path_node, path_trunk
-        
-    ## 2) Add connected interfaces to the RFT
-    
-    def static_RFT_builder(self, source):
-        
-        if source.default_route:
-            try:
-                nh_node = self.ip_to_node[source.default_route]
-                source.rt['0.0.0.0'] = {('S*', source.default_route, 
-                                                    None, 0, nh_node, None)}
-            except KeyError:
-                pass
-            
-
-        for _, sr in self.gftr(source, 'route', 'static route', False):
-            # if the static route next-hop ip is not properly configured, 
-            # we ignore it.
-            try:
-                nh_node = self.ip_to_node[sr.nh_ip]
-            except KeyError:
-                continue
-            source.rt[sr.dst_sntw] = {('S', sr.nh_ip, None, 0, nh_node, None)}
-                                                                
-                    
-        for neighbor, adj_trunk in self.graph[source.id]['trunk']:
-            if adj_trunk in self.fdtks:
-                continue
-            ex_ip = adj_trunk('ipaddress', neighbor)
-            ex_int = adj_trunk('interface', source)
-            # we compute the subnetwork of the attached
-            # interface: it is a directly connected interface
-            source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int, 
-                                                    0, neighbor, adj_trunk)}
-                                            
-                    
-    def BGPT_builder(self):
-        for source in self.ftr('node', 'router'):
-            source.bgpt.clear()
-            visited = {source}
-            heap = []
-            # bgp table
-            bgpt = defaultdict(set)
-            
-            # populate the BGP table with the routes sourced by the source node,
-            # with a default weight of 32768
-            for ip, routes in source.rt.items():
-                for route in routes:
-                    _, nh, *_ = route
-                    source.bgpt[ip] |= {(32768, nh, source, ())}
-            
-            # we fill the heap so that 
-            for src_nb, bgp_pr in self.gftr(source, 'route', 'BGP peering'):
-                first_AS = [source.bgp_AS, src_nb.bgp_AS]
-                if bgp_pr('weight', source):
-                    weight = 1 / bgp_pr('weight', source)
-                else: 
-                    weight = float('inf')
-                heappush(heap, (
-                                weight, # weight 
-                                2, # length of the AS_PATH vector
-                                bgp_pr('ip', src_nb), # next-hop IP address
-                                src_nb, # current node
-                                [], # path as a list of BGP peering connections
-                                first_AS # path as a list of AS
-                                ))
-            
-            while heap:
-                weight, length, nh, node, route_path, AS_path = heappop(heap)
-                if node not in visited:
-                    for ip, routes in node.rt.items():
-                        real_weight = 0 if weight == float('inf') else 1/weight
-                        source.bgpt[ip] |= {(real_weight, nh, node, tuple(AS_path))}
-                    visited.add(node)
-                    for bgp_nb, bgp_pr in self.gftr(node, 'route', 'BGP peering'):
-                        # excluded and allowed nodes
-                        if bgp_nb in visited:
-                            continue
-                        # we append a new AS if we use an external BGP peering
-                        new_AS = [bgp_nb.bgp_AS]*(bgp_pr.bgp_type == 'eBGP')
-                        heappush(heap, (
-                                        weight, 
-                                        length + (bgp_pr.bgp_type == 'eBGP'), 
-                                        nh, 
-                                        bgp_nb,
-                                        route_path + [bgp_pr], 
-                                        AS_path + new_AS
-                                        ))
         
     ## Link-disjoint / link-and-node-disjoint shortest pair algorithms
     

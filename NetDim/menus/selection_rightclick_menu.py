@@ -105,6 +105,14 @@ class SelectionRightClickMenu(tk.Menu):
                     self.add_command(label="Remove failure", 
                         command=lambda: self.remove_failure(trunk))
             # interface menu 
+            menu_interfaces = tk.Menu(self, tearoff=0)
+            source_if = trunk('interface', trunk.source)
+            menu_interfaces.add_command(label='Source interface', 
+            command=lambda: InterfaceWindow(self.cs.master, source_if))
+            destination_if = trunk('interface', trunk.destination)
+            menu_interfaces.add_command(label='Destination interface', 
+            command=lambda: InterfaceWindow(self.cs.master, destination_if))
+            self.add_cascade(label='Interface menu', menu=menu_interfaces)
             
         # only nodes: 
         if not self.cs.so["link"]:
