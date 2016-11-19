@@ -202,7 +202,7 @@ This AS management panel also display the area topology. In our case, all nodes 
 ![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step4.PNG)
 
 ## Assign IP address and look at the configuration panel
-Right-click on the canvas, and select the "Calculate" entry. NetDim will perform the following actions:
+Right-click on the canvas, and select the "Refresh" entry. NetDim will perform the following actions:
 - Update AS topology
 - Interface allocation: assign Ethernet interfaces to all trunks: these interfaces are used to create the routing table of the attached routers, as well as for the configuration panel.
 - IP addressing: assign IP addressing to all interfaces.
@@ -226,24 +226,6 @@ Finally, you can trigger the multi-layer display to dissociate traffic links fro
 # To be done
 
 ## Algorithms
-- [x] Kruskal algorithm to find the minimum spanning tree, Union Find structure
-- [x] Ford-Fulkerson algorithm to find the maximum flow
-- [x] Edmonds-Karp algorithm to find the maximum flow
-- [x] Linear programming with GLPK to find the maximum flow
-- [x] Dijkstra algorithm with constraints to find CSPF paths
-- [x] Bellman-Ford to find the shortest path
-- [x] BFS to find all loop-free paths
-- [x] Floyd Warshall to find all SP length
-- [x] Fruchterman-Reingold: make it work.
-- [x] Graph drawing on the right-click for a selection of nodes
-- [x] Shortest path with linear programming
-- [x] Minimum-cost flow with linear programming
-- [x] Shortest pair with A*
-- [x] Bhandari algorithm to find the shortest edge-disjoint pair
-- [x] Dinic algorithm to find the maximum flow
-- [x] Suurbale algorithm to find the shortest edge-disjoint pair
-- [x] Use LP to solve RWA simple version
-- [x] Algorithm to determine link weight in order to optimize load sharing (is-is/ospf optimization)
 - [ ] Improved Suurbale/Bhandari to find the K (maximally) edge/edge&nodes disjoint paths
 - [ ] Prim algorithm to find the minimum spanning tree
 - [ ] Minimum cut.
@@ -251,26 +233,7 @@ Finally, you can trigger the multi-layer display to dissociate traffic links fro
 - [ ] Degree centrality. number of neighbor of each node (graph + make node size depend on it)
 - [ ] Protection-based link dimensioning: IGP reconvergence, FRR, etc
 
-## Links
-- [x] Possibility to change the cost of a link (UD-metric)
-- [x] Interface. Metrics depends on the interface for OSPF, RSTP, etc
-- [x] Different type of physical link: WDM Fiber, ETH, etc. Color per type of link.
-
 ## Canvas-related tasks
-- [x] Multiple selection: all nodes/links contained in a rectangle
-- [x] Icons for devices instead of a tkinter oval
-- [x] Multiple nodes/links deletion
-- [x] Dijkstra must consider the cost of the links
-- [x] Fix the zoom that doesn't work well (zooming and unzooming)
-- [x] Left-clicking on an object updates the property window if it is deiconified
-- [x] Hide/show display per type of objects
-- [x] Draw an arc instead of a straigth line when there are several links between two nodes.
-- [x] Per-layer 3D display with nodes duplication
-- [x] When switching to simple oval display, keep track of the size of the object so that it is always the same.
-- [x] Remove switch to creation button
-- [x] Click on a node should select only the node (erase previous selection). Ctrl to add to selection
-- [x] Radio button for nodes and link selection. Add to menu
-- [ ] Add arrows on trunks for route highlight
 - [ ] Change the mouse pointeur when going over an object
 - [ ] Modified Dijkstra to find the longest path/widest path
 - [ ] Generate text and shapes on the canvas
@@ -282,9 +245,6 @@ Finally, you can trigger the multi-layer display to dissociate traffic links fro
 - [ ] Highlight routes / traffic methods should depend on whether there is or not a link in failure.
 
 ## Routing
-- [x] ISIS routing
-- [x] OSPF routing. 
-- [x] Traffic link routing. All nodes that belongs to an AS should be excluded.
 - [ ] G8032 ring with RPL protection
 - [ ] Ring AS with steering/wrapping protection mode
 - [ ] Dimensioning with Maximally redundant tree
@@ -292,50 +252,23 @@ Finally, you can trigger the multi-layer display to dissociate traffic links fro
 - [ ] IS-IS improvement: route leaking option (RFC 2966)
 
 ## Protection
-- [x] Failure simulation system to see where the traffic is going. Route's protection path highlight.
-- [x] Protection by pruning the failed link(s): dimensioning considering IGP convergence
-- [ ] FRR implementation for MPLS. A LSP can have a protection mode (Local Detour to Merge point, Local Detour to Destination, Next-Hop protection) or a user-defined back-up LSP.
+- [ ] FRR implementation for MPLS.
 - [ ] Highlight the protection path with a different color
 - [ ] K-failure AS dimensioning
 
 ## AS
-- [x] Add to/remove from AS should be done graphically only: no need for buttons.
 - [ ] Highlight all elements of a domain
-- [ ] Improve the AS management window. Button with arrows instead of add/remove edge
 - [ ] Delete AS button. Rename AS. Delete area. Rename area.
 - [ ] Interaction between rename an object and the AS management. 
 - [ ] Find a way to make the network tree view work, by retrieving the name of the category
 - [ ] Add AS properties in the model, NTV and ASm panel
 
 ## Tests
-- [x] Add test for the maximum flow problem
-- [x] Add tests for SP (Dijkstra, BF, all-paths BFS)
-- [x] Add test for import export
-- [x] Add test for IS-IS
-- [x] Add test for OSPF
 - [ ] Add test for AS creation, modification, renaming, deletion, etc + area management
 
 ## Other
-- [x] Convert tk drop-down list into ttk combo box
-- [x] Modify customlistbox to avoid the line to retrieve the index
-- [x] Scenario system with multiple scenarii
-- [x] Possibiliy to rename objects
-- [x] Delete scenario
-- [x] Merge Add to AS and Manage AS window
-- [x] Use haversine formula to compute the distance of a link based on GPS coordinates
-- [x] Add new devices: splitter, regenerator/amplifier
-- [x] Graph generation: select the type of nodes
-- [x] Remove AS from pn
-- [x] Add switch
-- [x] Dict reset from keys
-- [x] IP address management on interface.
-- [x] Menu for graph drawing: save all parameters
-- [ ] Selection dict should include all type of link: trunk, route, traffic
-- [ ] Check box in the frame to hide/show nodes
-- [ ] Filter route display depending on whether a traffic link is using them
 - [ ] Remove all Var() when not necessary (set, get can be used instead)
 - [ ] Scenario duplication
-- [ ] Drawing for a selection of nodes only
 - [ ] Message window (display log) + error window: catch error
 - [ ] Add regex for sanity checks in all user input entry boxes
 - [ ] Network links/nodes statistics with plotlib: number of links per type, etc
@@ -347,25 +280,13 @@ Finally, you can trigger the multi-layer display to dissociate traffic links fro
 - [ ] Treeview to display the list of object of the network
 - [ ] when clicking on a link, window displaying all routes / traffic link mapped on it
 - [ ] Right-click of the tree view equivalent to a right-click on the canvas
-- [ ] Menu to generate complex graph: hypercube, square tiling in a special window
 - [ ] Make a clear distinction between class variable and init
-- [ ] Rename objects bugs
-- [ ] Property decorator to summarize routes param
-- [ ] Vertical bars in RC menu to separate methods
 
 ## Config generation
-- [x] Generate OSPF config
-- [x] Generate RIP config
-- [x] Have an "AS number" and an "area" number.
-- [x] Generate IS-IS config
 - [ ] Generate MPLS config
 - [ ] Generate RSTP config 
 
 ## Import/Export/Save
-- [x] Import and export the graph with CSV
-- [x] Import and export the graph with excel
-- [x] Import GML format and provide all files from the topology zoo
-- [x] Allow to import the property of nodes, so that they can be efficiently modified in excel for a big graph
 - [ ] Consider all scenario when saving/opening a saved project
 - [ ] Save all scenario
 - [ ] Import Export all scenario
