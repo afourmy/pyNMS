@@ -10,7 +10,7 @@ class RWAWindow(FocusTopLevel):
     def __init__(self, master):
         super().__init__()   
         self.ms = master   
-        self.title("Routing and Wavelength Assignment")
+        self.title('Routing and Wavelength Assignment')
                         
         # label frame
         lf_rwa = Labelframe(self)
@@ -19,39 +19,39 @@ class RWAWindow(FocusTopLevel):
         ## Graph transformation and scenario name
                 
         sco_name = Label(self)
-        sco_name.text = "Scenario name :"
+        sco_name.text = 'Scenario name :'
 
         self.entry_sco = Entry(self, width=20)
         
         button_gt = Button(self)
-        button_gt.text = "Graph transformation"
+        button_gt.text = 'Graph transformation'
         button_gt.command = self.transform_graph
 
-        # label "algorithm"
+        # label 'algorithm'
         algorithm = Label(self) 
-        algorithm.text = "Algorithm :"
+        algorithm.text = 'Algorithm :'
         
         # combobox for the user to change the RWA algorithm
         self.rwa_list = Combobox(self, width=17)
-        algorithms = ("Linear programming", "Largest degree first")
-        self.rwa_list["values"] = algorithms
+        algorithms = ('Linear programming', 'Largest degree first')
+        self.rwa_list['values'] = algorithms
         self.rwa_list.current(0)
                                                     
         button_run_alg = Button(self)
-        button_run_alg.text = "Run algorithm"
+        button_run_alg.text = 'Run algorithm'
         button_run_alg.command = self.run_algorithm
                                         
         # grid placement
         lf_rwa.grid(1, 0, 1, 2)
         sco_name.grid(0, 0, in_=lf_rwa)
-        self.entry_sco.grid(0, 1, sticky="e", in_=lf_rwa)
+        self.entry_sco.grid(0, 1, sticky='e', in_=lf_rwa)
         button_gt.grid(1, 0, 1, 2, in_=lf_rwa)
         algorithm.grid(2, 0, in_=lf_rwa)
-        self.rwa_list.grid(2, 1, sticky="e", in_=lf_rwa)
+        self.rwa_list.grid(2, 1, sticky='e', in_=lf_rwa)
         button_run_alg.grid(3, 0, 1, 2, in_=lf_rwa)
         
         # hide the window when closed
-        self.protocol("WM_DELETE_WINDOW", self.withdraw)
+        self.protocol('WM_DELETE_WINDOW', self.withdraw)
         # hide at creation
         self.withdraw()
         
@@ -61,7 +61,7 @@ class RWAWindow(FocusTopLevel):
 
     def run_algorithm(self):
         algorithm = self.rwa_list.get()
-        if algorithm == "Linear programming":
+        if algorithm == 'Linear programming':
             self.ms.cs.ntw.LP_RWA_formulation()
         else:
             self.ms.cs.ntw.largest_degree_first()

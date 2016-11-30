@@ -190,6 +190,7 @@ class ISIS_AS(ASWithArea):
                               )
             
     def RFT_builder(self, source, allowed_nodes, allowed_trunks):
+        print(source)
         K = source.LB_paths
         visited = set()
         # we keep track of all already visited subnetworks so that we 
