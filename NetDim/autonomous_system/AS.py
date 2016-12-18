@@ -52,8 +52,7 @@ class AutonomousSystem(object):
     def __hash__(self):
         return hash(self.name)
         
-    def add_to_AS(self, area, *objects):
-        area.add_to_area(*objects)
+    def add_to_AS(self, *objects):
         for obj in objects:
             # add objects in the AS corresponding pool
             self.pAS[obj.type].add(obj)
@@ -74,8 +73,22 @@ class AutonomousSystem(object):
         allowed_trunks =  self.trunks - self.ntw.fdtks
         for node in self.nodes:
             self.RFT_builder(node, allowed_nodes, allowed_trunks)
+            
+class IP_AS(AutonomousSystem):
+    
+    def __init__(self, *args):
+        super().__init__(*args)
+        
+    def add_to_AS(self, *objects):
+        super(IP_AS, self).add_to_AS(*objects)
+        for obj in objects:
+            if obj.type == 'node':
+                obj.AS_properties[self.name].update({
+                                                    'LB_paths': 4,
+                                                    'router_id': None
+                                                    })
                 
-class ASWithArea(AutonomousSystem):
+class ASWithArea(IP_AS):
     
     has_area = True
     
@@ -90,6 +103,16 @@ class ASWithArea(AutonomousSystem):
             self.areas[name] = area.Area(name, id, self, trunks, nodes)
         return self.areas[name]
         
+    def add_to_AS(self, area='Backbone', *objects):
+        super(ASWithArea, self).add_to_AS(*objects)
+        area.add_to_area(*objects)         
+        
+        for obj in objects:
+            if obj.type == 'trunk':
+                cost = self.ref_bw / obj.bw
+                obj.interfaceS(self.name, 'cost', cost)
+                obj.interfaceD(self.name, 'cost', cost)   
+        
     def delete_area(self, area):
         # we remove the area of the AS areas dictionary
         area = self.areas.pop(area.name)
@@ -99,7 +122,7 @@ class ASWithArea(AutonomousSystem):
                 # dictionary, for all objects of the area
                 obj.AS[area.AS].remove(area)
                 
-class RIP_AS(AutonomousSystem):
+class RIP_AS(IP_AS):
     
     AS_type = "RIP"
     
@@ -116,8 +139,21 @@ class RIP_AS(AutonomousSystem):
         # of the trunk, and a user-defined reference bandwidth.
         self.metric = "hop count"
         
+        if not is_imported:
+            # set the default per-AS properties of all AS objects
+            self.add_to_AS(*(self.nodes | self.trunks))
+            
+    def add_to_AS(self, *objects):
+        super(RIP_AS, self).add_to_AS(*objects)       
+        
+        for obj in objects:
+            if obj.type == 'trunk':
+                print('test')
+                obj.interfaceS(self.name, 'cost', 1)
+                obj.interfaceD(self.name, 'cost', 1)   
+        
     def RFT_builder(self, source, allowed_nodes, allowed_trunks):
-        K = source.LB_paths
+        K = source.AS_properties[self.name]['LB_paths']
         visited = set()
         # we keep track of all already visited subnetworks so that we 
         # don't add them more than once to the mapping dict.
@@ -173,7 +209,7 @@ class ISIS_AS(ASWithArea):
     def __init__(self, *args):
         super().__init__(*args)
         is_imported = args[-1]
-        self.metric = "bandwidth"
+        self.ref_bw = 10000 # (kbps)
         
         # management window of the AS 
         self.management = AS_management.ISIS_Management(self, is_imported)
@@ -188,10 +224,13 @@ class ISIS_AS(ASWithArea):
                               trunks = self.trunks, 
                               nodes = self.nodes
                               )
+                              
+        # set the default per-AS properties of all AS objects
+        self.add_to_AS(self.areas['Backbone'], *(self.nodes | self.trunks))
             
     def RFT_builder(self, source, allowed_nodes, allowed_trunks):
-        print(source)
-        K = source.LB_paths
+
+        K = source.AS_properties[self.name]['LB_paths']
         visited = set()
         # we keep track of all already visited subnetworks so that we 
         # don't add them more than once to the mapping dict.
@@ -308,9 +347,12 @@ class OSPF_AS(ASWithArea):
                               trunks = self.trunks, 
                               nodes = self.nodes
                               )
+                              
+            # set the default per-AS properties of all AS objects
+            self.add_to_AS(self.areas['Backbone'], *(self.nodes | self.trunks))
             
     def RFT_builder(self, source, allowed_nodes, allowed_trunks):
-        K = source.LB_paths
+        K = source.AS_properties[self.name]['LB_paths']
         visited = set()
         # we keep track of all already visited subnetworks so that we 
         # don't add them more than once to the mapping dict.
@@ -382,12 +424,6 @@ class OSPF_AS(ASWithArea):
                         visited_subnetworks.add((rtype, trunk.sntw))
                         source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
                                                         dist, nh, ex_tk)}
-            
-    # def add_to_ASBR(self, node):
-    #     self.pAS["edge"].add(node)
-    #     
-    # def remove_from_ASBR(self, node):
-    #     self.pAS["edge"].discard(node)
                     
 class ModifyAS(CustomTopLevel):
     def __init__(self, scenario, mode, obj, AS=set()):

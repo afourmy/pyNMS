@@ -182,7 +182,7 @@ class Network(object):
     def nf(self, node_type='router', id=None, **kwargs):
         if not id:
             if 'name' not in kwargs:
-                name = 'node' + str(self.cpt_node)
+                name = node_type + str(len(list(self.ftr('node', node_type))))
                 kwargs['name'] = name
             else:
                 if kwargs['name'] in self.name_to_id:

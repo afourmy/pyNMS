@@ -4,8 +4,6 @@
 
 import re
 from pythonic_tkinter.preconfigured_widgets import *
-import tkinter as tk
-from tkinter import ttk
 
 class SearchObject(CustomTopLevel):
     
@@ -14,44 +12,47 @@ class SearchObject(CustomTopLevel):
         self.ms = master
         
         # list of types
-        self.subtypes_list = ttk.Combobox(self, width=20)
-        self.subtypes_list["values"] = tuple(self.ms.object_properties.keys())
+        self.subtypes_list = Combobox(self, width=20)
+        self.subtypes_list['values'] = tuple(self.ms.object_properties.keys())
         self.subtypes_list.current(0)
         self.subtypes_list.bind('<<ComboboxSelected>>', self.update_properties)
-        self.subtypes_list.grid(row=0, column=1, pady=5, padx=5)
         
         # list of properties
-        self.property_list = ttk.Combobox(self, width=20)
-        self.property_list.grid(row=1, column=1, pady=5, padx=5)
+        self.property_list = Combobox(self, width=20)
         
         # combobox for regex-based search
         self.is_regex = tk.BooleanVar()
-        self.button_regex = ttk.Checkbutton(self, text="Regex search", 
-                                                        variable=self.is_regex)
-        self.button_regex.grid(row=2, column=1, pady=5, padx=5, sticky="nsew")
+        button_regex = Checkbutton(self, variable=self.is_regex)
+        button_regex.text = 'Regex search'
                             
-        self.entry_search = ttk.Entry(self, width=20)
-        self.entry_search.grid(row=3, column=1, pady=5, padx=5)
+        self.entry_search = Entry(self, width=20)
         
-        self.button_OK = ttk.Button(self, text="OK", command=self.search)
-        self.button_OK.grid(row=4, column=1, pady=5, padx=5, sticky="nsew")
+        button_OK = Button(self)
+        button_OK.text = 'OK'
+        button_OK.command = self.search
+        
+        self.subtypes_list.grid(0, 1)
+        self.property_list.grid(1, 1)
+        button_regex.grid(2, 1)
+        self.entry_search.grid(3, 1)
+        button_OK.grid(4, 1)
         
         # update property with first value of the list
         self.update_properties()
         
     def update_properties(self, *_):
-        subtype = self.subtypes_list.get()
+        subtype = self.subtypes_list.text
         properties = self.ms.object_properties[subtype]
         properties = tuple(self.ms.prop_to_nice_name[p] for p in properties)
-        self.property_list["values"] = properties
+        self.property_list['values'] = properties
         self.property_list.current(0)
         
     def search(self):
         self.ms.cs.unhighlight_all()
-        subtype, property = self.subtypes_list.get(), self.property_list.get()
+        subtype, property = self.subtypes_list.text, self.property_list.text
         property = self.ms.name_to_prop[property]
         type = self.ms.st_to_type[subtype]
-        input = self.entry_search.get()
+        input = self.entry_search.text
         for obj in self.ms.cs.ntw.ftr(type, subtype):
             value = getattr(obj, property)
             if not self.is_regex.get():

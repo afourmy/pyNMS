@@ -21,8 +21,8 @@ def defaultizer(**default_kwargs_values):
 
 class CustomFrame(tk.Frame):
     
-    def __init__(self, *args):
-        super().__init__(*args)
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
         color = '#A1DBCD'
         self.configure(background=color)        
         
@@ -117,7 +117,8 @@ class MainWindow(tk.Tk):
         super().__init__(*args, **kwargs)
         color = '#A1DBCD'
         for widget in (
-                       'Button', 
+                       'Button',
+                       'Radiobutton',
                        'Label', 
                        'Labelframe', 
                        'Labelframe.Label', 
@@ -125,14 +126,40 @@ class MainWindow(tk.Tk):
                        ):
             ttk.Style().configure('T' + widget, background=color)
             
+class MenuEntry(object):
+    
+    def __init__(self, menu):
+        menu.menu_entries.append(self)
+        self.label = 'Menu text'
+        self.cmd = lambda: None
+        
+    @property
+    def text(self):
+        return self.label
+        
+    @text.setter
+    def text(self, value):
+        self.label = value
+        
+    @property
+    def command(self):
+        return self.command
+        
+    @command.setter
+    def command(self, cmd):
+        self.cmd = cmd
+        
+            
 class Menu(tk.Menu):
     
     @defaultizer(tearoff=0)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.menu_entries = []
         
-    def entry(self, text, cmd):
-        self.add('command', {'label':text, 'command':cmd})   
+    def create_menu(self):
+        for entry in self.menu_entries:
+            self.add('command', {'label': entry.label, 'command': entry.cmd})  
         
 class Notebook(ttk.Notebook):
     
@@ -182,6 +209,19 @@ def class_factory(name, OriginalWidget, defaults):
             self.delete(0, 'end')
             self.insert(0, value)
             
+    elif name =='Text':
+        
+        @text.setter
+        def text(self, value):
+            self.delete('1.0', 'end')
+            self.insert('1.0', value)
+            
+    elif name =='Combobox':
+        
+        @text.setter
+        def text(self, value):
+            self.set(str(value))
+            
     else:
         
         @text.setter
@@ -206,9 +246,11 @@ def class_factory(name, OriginalWidget, defaults):
     globals()[name] = newclass
     
 subwidget_creation = (
-                      ('Label', ttk.Label, (4, 4, 'w')), 
-                      ('Entry', ttk.Entry, (4, 4, 'w')), 
+                      ('Label', ttk.Label, (4, 4, 'w')),
+                      ('Text', tk.Text, (4, 4, 'w')),
+                      ('Entry', ttk.Entry, (4, 4, 'w')),
                       ('Button', ttk.Button, (4, 4, 'w')),
+                      ('Radiobutton', ttk.Radiobutton, (4, 4, 'w')),
                       ('Labelframe', LF, (10, 10, 'w')),
                       ('Listbox', ImprovedListbox, (0, 0, 'w')),
                       ('ObjectListbox', NoDuplicateListbox, (0, 0, 'w')),

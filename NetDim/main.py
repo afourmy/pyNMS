@@ -10,6 +10,7 @@ from os.path import abspath
 sys.dont_write_bytecode = True
 
 path_app = abspath(getsourcefile(lambda: _))[:-7]
+
 if path_app not in sys.path:
     sys.path.append(path_app)
 

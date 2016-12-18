@@ -69,9 +69,6 @@ class TestExportImport(unittest.TestCase):
         
     def test_object_import_xls(self):
         self.object_import("xls")
-        
-    # def test_object_import_csv(self):
-    #     self.object_import("csv")
 
 class TestFlow(unittest.TestCase):
  
@@ -178,49 +175,49 @@ class TestMCF(unittest.TestCase):
             trunk = self.ntw.pn["trunk"][self.ntw.name_to_id[trunk_name]]
             self.assertEqual(trunk.flowSD, flow)
         
-class TestISIS(unittest.TestCase):
-    
-    results = (
-    ("traffic9", {"trunk0", "trunk1", "trunk4", "trunk5"}),
-    ("traffic10", {"trunk2", "trunk3", "trunk5"})
-    )
- 
-    @start_and_import("test_ISIS.xls")
-    def setUp(self):
-        self.ntw.calculate_all()
- 
-    def tearDown(self):
-        self.netdim.destroy()
- 
-    def test_ISIS(self):
-        self.assertEqual(len(self.ntw.pn["traffic"]), 2)
-        for traffic, path in self.results:
-            # we retrieve the actual route from its name in pn
-            traffic_link = self.ntw.pn["traffic"][self.ntw.name_to_id[traffic]]
-            # we check that the path is conform to IS-IS protocol
-            self.assertEqual(set(map(str, traffic_link.path)), path)
-            
-class TestOSPF(unittest.TestCase):
-    
-    results = (
-    ("traffic16", {"trunk14", "trunk2", "trunk3", "trunk6", "trunk8", "trunk15"}),
-    ("traffic15", {"trunk14", "trunk2", "trunk4", "trunk5", "trunk6", "trunk8", "trunk15"})
-    )
- 
-    @start_and_import("test_ospf.xls")
-    def setUp(self):
-        self.ntw.calculate_all()
- 
-    def tearDown(self):
-        self.netdim.destroy()
- 
-    def test_OSPF(self):
-        self.assertEqual(len(self.ntw.pn["traffic"]), 2)
-        for traffic_link, path in self.results:
-            # we retrieve the actual route from its name in pn
-            traffic_link = self.ntw.pn["traffic"][self.ntw.name_to_id[traffic_link]]
-            # we check that the path is conform to OSPF protocol
-            self.assertEqual(set(map(str, traffic_link.path)), path)
+# class TestISIS(unittest.TestCase):
+#     
+#     results = (
+#     ("traffic9", {"trunk0", "trunk1", "trunk4", "trunk5"}),
+#     ("traffic10", {"trunk2", "trunk3", "trunk5"})
+#     )
+#  
+#     @start_and_import("test_ISIS.xls")
+#     def setUp(self):
+#         self.ntw.calculate_all()
+#  
+#     def tearDown(self):
+#         self.netdim.destroy()
+#  
+#     def test_ISIS(self):
+#         self.assertEqual(len(self.ntw.pn["traffic"]), 2)
+#         for traffic, path in self.results:
+#             # we retrieve the actual route from its name in pn
+#             traffic_link = self.ntw.pn["traffic"][self.ntw.name_to_id[traffic]]
+#             # we check that the path is conform to IS-IS protocol
+#             self.assertEqual(set(map(str, traffic_link.path)), path)
+#             
+# class TestOSPF(unittest.TestCase):
+#     
+#     results = (
+#     ("traffic16", {"trunk14", "trunk2", "trunk3", "trunk6", "trunk8", "trunk15"}),
+#     ("traffic15", {"trunk14", "trunk2", "trunk4", "trunk5", "trunk6", "trunk8", "trunk15"})
+#     )
+#  
+#     @start_and_import("test_ospf.xls")
+#     def setUp(self):
+#         self.ntw.calculate_all()
+#  
+#     def tearDown(self):
+#         self.netdim.destroy()
+#  
+#     def test_OSPF(self):
+#         self.assertEqual(len(self.ntw.pn["traffic"]), 2)
+#         for traffic_link, path in self.results:
+#             # we retrieve the actual route from its name in pn
+#             traffic_link = self.ntw.pn["traffic"][self.ntw.name_to_id[traffic_link]]
+#             # we check that the path is conform to OSPF protocol
+#             self.assertEqual(set(map(str, traffic_link.path)), path)
             
 # class TestCSPF(unittest.TestCase):
 #     

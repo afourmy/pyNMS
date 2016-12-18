@@ -12,10 +12,10 @@ class AlignmentMenu(tk.Menu):
         self.cs = scenario
         
         cmds = OrderedDict([
-        ("Horizontal alignment", lambda: self.cs.align(nodes)),
-        ("Vertical alignment", lambda: self.cs.align(nodes, False)),
-        ("Horizontal distribution", lambda: self.cs.distribute(nodes)),
-        ("Vertical distribution", lambda: self.cs.distribute(nodes, False)),
+        ('Horizontal alignment', lambda: self.cs.align(nodes)),
+        ('Vertical alignment', lambda: self.cs.align(nodes, False)),
+        ('Horizontal distribution', lambda: self.cs.distribute(nodes)),
+        ('Vertical distribution', lambda: self.cs.distribute(nodes, False)),
         ])
     
         for label, cmd in cmds.items():

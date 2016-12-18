@@ -2,7 +2,7 @@
 # Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
 # Released under the GNU General Public License GPLv3
 
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 # decorating __init__ to initialize properties
 def initializer(default_properties):
@@ -22,6 +22,35 @@ def initializer(default_properties):
             init(self, *a)
         return wrapper
     return inner_decorator
+    
+## Object properties
+
+## Public global properties
+
+interface_public_properties = (
+'link',
+'node',
+'name'
+)
+                               
+ethernet_interface_public_properties = interface_public_properties + (
+'ipaddress',
+'subnetmask',
+'macaddress'
+)
+
+ethernet_interface_perAS_properties = (
+'cost',
+)
+
+## Public per-AS properties
+
+common_perAS_properties = ()
+
+perAS_properties = OrderedDict([
+('router', ('router_id', 'LB_paths')),
+])
+
 
 ## NetDim object
 
@@ -29,7 +58,7 @@ class NDobject(object):
     
         # an object in NetDim belongs to one or several groups, which we can
         # use as a filter to display a subset of objects
-        # each site corresponds to a "site" node, but the filter can also be
+        # each site corresponds to a 'site' node, but the filter can also be
         # a set of sites, in which case any object that belongs to at least
         # one site of the user-defined filter will be displayed
     ie_properties = {
@@ -53,8 +82,7 @@ class Node(NDobject):
                     'longitude' : 0, 
                     'latitude' : 0, 
                     'ipaddress' : None,
-                    'subnetmask' : None,
-                    'LB_paths' : 1
+                    'subnetmask' : None
                     }
                     
     @initializer(ie_properties)
@@ -98,9 +126,12 @@ class Router(Node):
     subtype = 'router'
     layer = 3
     imagex, imagey = 33, 25
-    
+        
     ie_properties = {
                     'bgp_AS' : None, 
+                    # the default route is the gateway of last resort: 
+                    # it is the IP address of the next-hop 
+                    # (either loopback or interface)
                     'default_route' : None
                     }
                     
@@ -110,8 +141,9 @@ class Router(Node):
         self.rt = {}
         # bgp table
         self.bgpt = defaultdict(set)
-        # the default route is the gateway of last resort: 
-        # it is the IP address of the next-hop (either loopback or interface)
+        # AS_properties contains all per-AS properties: router ID, maximum paths
+        # for load-balancing, etc.
+        self.AS_properties = defaultdict(dict)
         super().__init__()
         
 class Switch(Node):
@@ -261,6 +293,14 @@ class Trunk(Link):
         self.AS = defaultdict(set)
         super().__init__()
         
+    @property
+    def bw(self):
+        return {
+                'FE': 100,
+                'GE': 10,
+                '10GE': 1
+                }[self.interface]
+        
     def __lt__(self, other):
         return hash(self.name)
         
@@ -296,6 +336,12 @@ class Interface(NDobject):
     def __init__(self, node, link):
         self.node = node
         self.link = link
+        # AS_properties contains all per-AS properties: interface cost, 
+        # interface role. It is a dictionnary which AS name are the keys 
+        # (it is easier to store AS names rather than AS itself: if we have the
+        # AS, AS.name is the name, while if we have the name, it is more 
+        # verbose to retrieve the AS itself)
+        self.AS_properties = defaultdict(dict)
         super().__init__()
         
     def __repr__(self):
@@ -307,10 +353,19 @@ class Interface(NDobject):
                     
     def __hash__(self):
         return hash(self.name)
+        
+    def __call__(self, AS, property, value=None):
+        # can be used both as a getter and a setter, depending on 
+        # whether a value is provided or not
+        if value:
+            self.AS_properties[AS][property] = value
+        return self.AS_properties[AS][property]
                     
 class EthernetInterface(Interface):
     
     subtype = 'ethernet'
+    public_properties = ethernet_interface_public_properties
+    perAS_properties = ethernet_interface_perAS_properties
     
     ie_properties = {
                     'ipaddress' : 'none', 

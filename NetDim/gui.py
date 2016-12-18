@@ -90,7 +90,6 @@ class NetDim(MainWindow):
         'latitude', 
         'ipaddress', 
         'subnetmask', 
-        'LB_paths',
         'sites',
         'AS',
         )
@@ -253,7 +252,6 @@ class NetDim(MainWindow):
         'Position', 
         'Coordinates', 
         'IPAddress',
-        'LB_paths',
         'Default_Route'
         )),
         
@@ -364,8 +362,7 @@ class NetDim(MainWindow):
         'name', 
         'subtype',
         'ipaddress', 
-        'subnetmask', 
-        'LB_paths'
+        'subnetmask'
         )
         
         trunk_box_properties = (
@@ -515,6 +512,8 @@ class NetDim(MainWindow):
         'longitude': 'Longitude', 
         'latitude': 'Latitude',
         'distance': 'Distance',
+        'node': 'Node',
+        'link': 'Link',
         'linkS': 'Source link',
         'linkD': 'Destination link', 
         'costSD': 'Cost S -> D', 
@@ -553,6 +552,7 @@ class NetDim(MainWindow):
         'bgp_AS': 'BGP AS',
         'dst_sntw': 'Destination subnetwork',
         'ad': 'Administrative distance',
+        'router_id': 'Router ID',
         'subtype': 'Type',
         'bgp_type': 'BGP Type',
         'lsp_type': 'LSP Type',
@@ -770,9 +770,7 @@ class NetDim(MainWindow):
         return kwargs
                 
     def import_graph(self, filepath=None):
-        
-        unstar = lambda s: s.replace('*', ',')
-        
+                
         # filepath is set for unittest
         if not filepath:
             filepath = filedialog.askopenfilenames(
@@ -789,7 +787,7 @@ class NetDim(MainWindow):
                 return
             else: 
                 filepath ,= filepath
-                    
+                  
         if filepath.endswith('.xls'):
             book = xlrd.open_workbook(filepath)
             for id, obj_type in enumerate(self.object_ie):
@@ -833,37 +831,6 @@ class NetDim(MainWindow):
                 nodes = self.convert_nodes_set(nodes)
                 trunks = self.convert_links_set(trunks)
                 new_area = AS.area_factory(name, int(id), trunks, nodes)
-                
-        elif filepath.endswith('.csv'):
-            try:
-                file_to_import = open(filepath, 'rt')
-                reader = csv.reader(file_to_import)
-                for row in filter(None, reader):
-                    obj_type, *other = row
-                    if obj_type in self.cs.ntw.node_subtype:
-                        n, *param = self.str_to_object(other, obj_type)
-                        self.cs.ntw.nf(*param, node_type='router', name=n)
-                    elif obj_type in self.cs.ntw.link_class:
-                        n, s, d, *param = self.str_to_object(other, obj_type)
-                        self.cs.ntw.lf(*param, subtype=obj_type, 
-                                                        name=n, s=s, d=d)
-                    elif obj_type == 'AS':
-                        name, type, id, nodes, trunks = other
-                        id = int(id)
-                        nodes = self.convert_nodes_set(unstar(nodes))
-                        trunks = self.convert_links_set(unstar(trunks))
-                        self.cs.ntw.AS_factory(name, type, id, trunks, nodes, True)                                    
-                                                                
-                    elif obj_type == 'area':
-                        name, AS, id, nodes, trunks = other
-                        AS = self.cs.ntw.AS_factory(name=AS)
-                        nodes = self.convert_nodes_set(unstar(nodes))
-                        trunks = self.convert_links_set(unstar(trunks))
-                        new_area = AS.area_factory(name, int(id), trunks, nodes)
-                        
-            finally:
-                file_to_import.close()
-            
                 
         # for the topology zoo network graphs
         elif filepath.endswith('.graphml'):
@@ -920,10 +887,6 @@ class NetDim(MainWindow):
         # to convert a list of object into a string of a list of strings
         # useful for AS nodes, edges, trunks as well as area nodes and trunks
         to_string = lambda s: str(list(map(str, s)))
-        # csv use the comma as a delimiter between parameters: for a list of 
-        # string object, we replace comma with star to not interfere
-        # at import, we replace star back with comma before object conversion
-        star = lambda s: s.replace(',', '*')
         
         # filepath is set for unittest
         if not filepath:
@@ -941,94 +904,50 @@ class NetDim(MainWindow):
             filename, file_format = os.path.splitext(filepath)
             selected_file = open(filepath, 'w')
             
-        if file_format == '.xls':
-            excel_workbook = xlwt.Workbook()
-            for obj_type, properties in self.object_ie.items():
-                xls_sheet = excel_workbook.add_sheet(obj_type)
-                for id, property in enumerate(properties):
-                    xls_sheet.write(0, id, property)
-                    # we have one excel sheet per subtype of object.
-                    # we filter the network pool based on the subtype to 
-                    # retrieve only the object of the corresponding subtype
-                    # this was done because objects have different properties
-                    # depending on the subtype, and we want to avoid using 
-                    # hasattr() all the time to check if a property exists.
-                    ftr = lambda o: o.subtype == obj_type
-                    if obj_type in self.cs.ntw.link_class:
-                        type = self.st_to_type[obj_type]
-                        pool_obj = filter(ftr, self.cs.ntw.pn[type].values())
-                    elif obj_type in self.cs.ntw.node_subtype:
-                        pool_obj = filter(ftr, self.cs.ntw.pn['node'].values()) 
-                    # if it is neither a node nor an interface, it is a node
-                    else:
-                        pool_obj = self.cs.ntw.interfaces[obj_type.split()[0]]
-                    for i, t in enumerate(pool_obj, 1):
-                        xls_sheet.write(i, id, str(getattr(t, property)))
-                        
-            AS_sheet = excel_workbook.add_sheet('AS')
-            
-            for i, AS in enumerate(self.cs.ntw.pnAS.values(), 1):
-                AS_sheet.write(i, 0, str(AS.name))
-                AS_sheet.write(i, 1, str(AS.AS_type))
-                AS_sheet.write(i, 2, str(AS.id))
-                AS_sheet.write(i, 3, to_string(AS.pAS['node']))
-                AS_sheet.write(i, 4, to_string(AS.pAS['trunk']))
-                
-            area_sheet = excel_workbook.add_sheet('area')
-            cpt = 1
-            for AS in self.cs.ntw.pnAS.values():
-                for area in AS.areas.values():
-                    area_sheet.write(cpt, 0, str(area.name))
-                    area_sheet.write(cpt, 1, str(area.AS))
-                    area_sheet.write(cpt, 2, str(area.id))
-                    area_sheet.write(cpt, 3, to_string(area.pa['node']))
-                    area_sheet.write(cpt, 4, to_string(area.pa['trunk']))
-                    cpt += 1
-            excel_workbook.save(selected_file.name)
-            
-        elif file_format == '.csv':
-            graph_per_line = []
-            for obj_type, properties in self.object_ie.items():
+        excel_workbook = xlwt.Workbook()
+        for obj_type, properties in self.object_ie.items():
+            xls_sheet = excel_workbook.add_sheet(obj_type)
+            for id, property in enumerate(properties):
+                xls_sheet.write(0, id, property)
+                # we have one excel sheet per subtype of object.
+                # we filter the network pool based on the subtype to 
+                # retrieve only the object of the corresponding subtype
+                # this was done because objects have different properties
+                # depending on the subtype, and we want to avoid using 
+                # hasattr() all the time to check if a property exists.
                 ftr = lambda o: o.subtype == obj_type
                 if obj_type in self.cs.ntw.link_class:
-                    _type = self.st_to_type[obj_type]
-                    pool_obj = filter(ftr, self.cs.ntw.pn[_type].values())
-                else:
+                    type = self.st_to_type[obj_type]
+                    pool_obj = filter(ftr, self.cs.ntw.pn[type].values())
+                elif obj_type in self.cs.ntw.node_subtype:
                     pool_obj = filter(ftr, self.cs.ntw.pn['node'].values()) 
-                for obj in pool_obj:
-                    all_properties = []
-                    for property in properties:
-                        all_properties.append(str(getattr(obj, property)))
-                    param = ','.join(all_properties)
-                    graph_per_line.append(','.join((obj_type, param)))
+                # if it is neither a node nor an interface, it is a node
+                else:
+                    pool_obj = self.cs.ntw.interfaces[obj_type.split()[0]]
+                for i, t in enumerate(pool_obj, 1):
+                    xls_sheet.write(i, id, str(getattr(t, property)))
                     
-            for AS in self.cs.ntw.pnAS.values():
-                graph_per_line.append(','.join((
-                                            'AS',
-                                            str(AS.name),
-                                            str(AS.type),
-                                            str(AS.id),
-                                            star(to_string(AS.pAS['node'])),
-                                            star(to_string(AS.pAS['trunk'])),
-                                            star(to_string(AS.pAS['edge']))
-                                            )))
-                                                
-            for AS in self.cs.ntw.pnAS.values():
-                for area in AS.areas.values():   
-                    graph_per_line.append(','.join((
-                                            'area',
-                                            str(area.name),
-                                            str(area.AS),
-                                            str(area.id),
-                                            star(to_string(area.pa['node'])),
-                                            star(to_string(area.pa['trunk']))
-                                            )))
-                
-            graph_writer = csv.writer(selected_file, delimiter=',', 
-                                                        lineterminator='\n')
-            for line in graph_per_line:
-                graph_writer.writerow(line.split(','))
+        AS_sheet = excel_workbook.add_sheet('AS')
+        
+        for i, AS in enumerate(self.cs.ntw.pnAS.values(), 1):
+            AS_sheet.write(i, 0, str(AS.name))
+            AS_sheet.write(i, 1, str(AS.AS_type))
+            AS_sheet.write(i, 2, str(AS.id))
+            AS_sheet.write(i, 3, to_string(AS.pAS['node']))
+            AS_sheet.write(i, 4, to_string(AS.pAS['trunk']))
             
+        area_sheet = excel_workbook.add_sheet('area')
+        cpt = 1
+        for AS in self.cs.ntw.pnAS.values():
+            for area in AS.areas.values():
+                area_sheet.write(cpt, 0, str(area.name))
+                area_sheet.write(cpt, 1, str(area.AS))
+                area_sheet.write(cpt, 2, str(area.id))
+                area_sheet.write(cpt, 3, to_string(area.pa['node']))
+                area_sheet.write(cpt, 4, to_string(area.pa['trunk']))
+                cpt += 1
+                
+        excel_workbook.save(selected_file.name)
         selected_file.close()
         
 class NetworkTreeView(CustomTopLevel):

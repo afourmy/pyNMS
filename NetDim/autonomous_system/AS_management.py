@@ -124,6 +124,8 @@ class ASManagement(CustomTopLevel):
     def add_to_AS(self, area, *objects):
         if self.AS.has_area:
             self.AS.add_to_AS(self.AS.areas[area], *objects)
+        else:
+            self.AS.add_to_AS(*objects)
         for obj in objects:
             self.dict_listbox[obj.type].insert(obj)
             
@@ -133,7 +135,7 @@ class ASManagement(CustomTopLevel):
             for neighbor, adj_trunk in self.AS.cs.ntw.graph[node.id]["trunk"]:
                 if neighbor in self.AS.pAS["node"]:
                     trunks_between_domain_nodes.add(adj_trunk)
-        self.add_to_AS("Backbone", *trunks_between_domain_nodes)
+        self.add_to_AS('Backbone', *trunks_between_domain_nodes)
             
     ## Functions used to modify AS from the right-click menu
                 
@@ -290,7 +292,7 @@ class ISIS_Management(ASManagementWithArea):
             # by default, all interfaces from GE to 100GE will result in the
             # same metric: 1.
             cost = max(1, self.AS.ref_bw / bw)
-            trunk.costSD = trunk.costDS = cost   
+            trunk.costSD = trunk.costDS = cost
         
 class OSPF_Management(ASManagementWithArea):
     
@@ -315,18 +317,6 @@ class OSPF_Management(ASManagementWithArea):
         # self.button_update_topo = ttk.Button(self, text="Update topology", 
         #                         command=lambda: self.update_AS_topology())
         # self.button_update_topo.grid(row=2, column=0, pady=5, padx=5, sticky="w")
-        
-        #TODO ASBR stuff
-        # self.button_add_to_edges = ttk.Button(self, text="Add to ASBR", 
-        #                         command=lambda: self.add_to_edges())
-        #                         
-        # self.button_remove_from_edges = ttk.Button(self, text="Remove ASBR", 
-        #                         command=lambda: self.remove_from_edges())
-           
-        # button under the edge column
-        # self.button_add_to_edges.grid(row=6, column=2)
-        # self.button_remove_from_edges.grid(row=7, column=2)
-        # self.button_find_edge_nodes.grid(row=5, column=4)
         
         # combobox to choose the exit ASBR
         self.exit_asbr = tk.StringVar()

@@ -240,17 +240,17 @@ class Scenario(tk.Canvas):
             font= ("Purisa", '12', 'bold')
             self.src_label = self.create_text(
                                               source.x, 
-                                              source.y , 
+                                              source.y, 
                                               text = 'S', 
                                               font = font, 
-                                              fill = 'gold'
+                                              fill = 'yellow'
                                               )
             self.dest_label = self.create_text(
                                                destination.x, 
                                                destination.y, 
                                                text = 'D', 
                                                font = font, 
-                                               fill = 'gold'
+                                               fill = 'yellow'
                                                )
         if main_link_selected.type in ('traffic', 'route'):
             if hasattr(main_link_selected, 'path'):

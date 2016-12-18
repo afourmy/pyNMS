@@ -37,127 +37,128 @@ class SelectionRightClickMenu(tk.Menu):
             self.cs.unhighlight_all()
             self.cs.highlight_objects(selected_obj)
             
-        self.all_so = self.cs.so["node"] | self.cs.so["link"]
+        self.all_so = self.cs.so['node'] | self.cs.so['link']
                             
         # exactly one object: property window 
-        if xor(len(self.cs.so["node"]) == 1, len(self.cs.so["link"]) == 1):
-            self.add_command(label="Properties", 
+        if xor(len(self.cs.so['node']) == 1, len(self.cs.so['link']) == 1):
+            self.add_command(label='Properties', 
                         command=lambda: self.show_object_properties())
             self.add_separator()
             
         # exacly one node and one trunk: menu for the associated interface
-        if len(self.cs.so["node"]) == 1 and len(self.cs.so["link"]) == 1:
-            link ,= self.cs.so["link"]
+        if len(self.cs.so['node']) == 1 and len(self.cs.so['link']) == 1:
+            link ,= self.cs.so['link']
             if link.type == 'trunk':
-                node ,= self.cs.so["node"]
-                self.add_command(label="Interface menu", 
+                node ,= self.cs.so['node']
+                self.add_command(label='Interface menu', 
                     command=lambda: InterfaceWindow(self.cs.master, link, node))
                 self.add_separator()
                 
         # exactly one node: configuration menu
-        if not self.cs.so["link"] and len(self.cs.so["node"]) == 1:
-            node ,= self.cs.so["node"]
-            self.add_command(label="Routing table", 
+        if not self.cs.so['link'] and len(self.cs.so['node']) == 1:
+            node ,= self.cs.so['node']
+            self.add_command(label='Routing table', 
                         command=lambda: self.routing_table(node))
-            self.add_command(label="BGP table", 
+            self.add_command(label='BGP table', 
                         command=lambda: self.bgp_table(node))
-            self.add_command(label="Configuration", 
+            self.add_command(label='Configuration', 
                         command=lambda: self.configure(node))
-            self.add_command(label="Troubleshooting", 
+            self.add_command(label='Troubleshooting', 
                         command=lambda: self.troubleshoot(node))
-            self.add_command(label="Ping", 
+            self.add_command(label='Ping', 
                         command=lambda: self.ping(node))
             self.add_separator()
         
-        self.add_command(label="Create AS", 
+        self.add_command(label='Create AS', 
                             command=lambda: self.create_AS()) 
       
         # at least one AS in the network: add to AS
         if self.cs.ntw.pnAS:
-            self.add_command(label="Add to AS", 
-                        command=lambda: self.change_AS("add"))
+            self.add_command(label='Add to AS', 
+                        command=lambda: self.change_AS('add'))
         
         # we compute the set of common AS among all selected objects
         self.common_AS = set(self.cs.ntw.pnAS.values())  
-        cmd = lambda o: o.type in ("node", "trunk")
+        cmd = lambda o: o.type in ('node', 'trunk')
         for obj in filter(cmd, self.all_so):
             self.common_AS &= obj.AS.keys()
             
         # if at least one common AS: remove from AS or manage AS
         if self.common_AS:
-            self.add_command(label="Remove from AS", 
-                        command=lambda: self.change_AS("remove"))
-            self.add_command(label="Remove from area", 
-                        command=lambda: self.change_AS("remove area"))
-            self.add_command(label="Manage AS", 
-                        command=lambda: self.change_AS("manage"))
+            self.add_command(label='Remove from AS', 
+                        command=lambda: self.change_AS('remove'))
+            self.add_command(label='Remove from area', 
+                        command=lambda: self.change_AS('remove area'))
+            self.add_command(label='Manage AS', 
+                        command=lambda: self.change_AS('manage'))
                         
         self.add_separator()
         
         # exactly one trunk: 
-        if not self.cs.so["node"] and len(self.cs.so["link"]) == 1:
-            trunk ,= self.cs.so["link"]
+        if not self.cs.so['node'] and len(self.cs.so['link']) == 1:
+            trunk ,= self.cs.so['link']
             # failure simulation menu
-            if trunk.type == "trunk":
-                self.add_command(label="Simulate failure", 
+            if trunk.type == 'trunk':
+                self.add_command(label='Simulate failure', 
                         command=lambda: self.simulate_failure(trunk))
                 if trunk in self.cs.ntw.fdtks:
-                    self.add_command(label="Remove failure", 
+                    self.add_command(label='Remove failure', 
                         command=lambda: self.remove_failure(trunk))
-            # interface menu 
-            menu_interfaces = tk.Menu(self, tearoff=0)
-            source_if = trunk('interface', trunk.source)
-            menu_interfaces.add_command(label='Source interface', 
-            command=lambda: InterfaceWindow(self.cs.master, source_if))
-            destination_if = trunk('interface', trunk.destination)
-            menu_interfaces.add_command(label='Destination interface', 
-            command=lambda: InterfaceWindow(self.cs.master, destination_if))
-            self.add_cascade(label='Interface menu', menu=menu_interfaces)
+                        
+                # interface menu 
+                menu_interfaces = tk.Menu(self, tearoff=0)
+                source_if = trunk('interface', trunk.source)
+                menu_interfaces.add_command(label='Source interface', 
+                command=lambda: InterfaceWindow(self.cs.master, source_if))
+                destination_if = trunk('interface', trunk.destination)
+                menu_interfaces.add_command(label='Destination interface', 
+                command=lambda: InterfaceWindow(self.cs.master, destination_if))
+                self.add_cascade(label='Interface menu', menu=menu_interfaces)
             
         # only nodes: 
-        if not self.cs.so["link"]:
+        if not self.cs.so['link']:
             # drawing submenu
-            self.add_cascade(label="Automatic layout", 
-                            menu=DrawingMenu(self.cs, self.cs.so["node"]))
+            self.add_cascade(label='Automatic layout', 
+                            menu=DrawingMenu(self.cs, self.cs.so['node']))
             
             # alignment submenu
-            self.add_cascade(label="Align nodes", 
-                            menu=AlignmentMenu(self.cs, self.cs.so["node"]))
+            self.add_cascade(label='Align nodes', 
+                            menu=AlignmentMenu(self.cs, self.cs.so['node']))
             self.add_separator()
             
             # multiple links creation menu
-            self.add_command(label="Create multiple links", 
+            self.add_command(label='Create multiple links', 
                                 command=lambda: self.multiple_links(self.cs))
             self.add_separator()
             
             # only one subtype of nodes
-            if self.cs.so["node"]:
+            if self.cs.so['node']:
                 for subtype in self.cs.ntw.node_subtype:
                     ftr = lambda o, st=subtype: o.subtype == st
-                    if self.cs.so["node"] == set(filter(ftr, self.cs.so["node"])):
-                        self.add_cascade(label="Change property", 
+                    if self.cs.so['node'] == set(filter(ftr, self.cs.so['node'])):
+                        self.add_cascade(label='Change property', 
                                     command= lambda: self.change_property(
-                                                            self.cs.so["node"],
+                                                            self.cs.so['node'],
                                                             subtype
                                                             )
                                         )
                         self.add_separator()
             
         # only one subtype of link: property changer
-        if not self.cs.so["node"] and self.cs.so["link"]:
+        if not self.cs.so['node'] and self.cs.so['link']:
             for subtype in self.cs.ntw.link_subtype:
                 ftr = lambda o, st=subtype: o.subtype == st
-                if self.cs.so["link"] == set(filter(ftr, self.cs.so["link"])):
-                    self.add_cascade(label="Change property", 
+                if self.cs.so['link'] == set(filter(ftr, self.cs.so['link'])):
+                    self.add_cascade(label='Change property', 
                                 command= lambda: self.change_property(
-                                                        self.cs.so["link"],
+                                                        self.cs.so['link'],
                                                         subtype
                                                         )
                                     )
                     self.add_separator()
                     
         # at least one object: deletion or create AS
-        self.add_command(label="Delete", 
+        self.add_command(label='Delete', 
                             command=lambda: self.remove_objects())
             
         # make the menu appear    
@@ -216,11 +217,12 @@ class SelectionRightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def change_property(self, objects, subtype):
+        objects = set(objects)
         PropertyChanger(self.cs.ms, objects, subtype)
         
     @empty_selection_and_destroy_menu
     def multiple_links(self, scenario):
-        mobj.MultipleLinks(scenario, set(self.cs.so["node"]))
+        mobj.MultipleLinks(scenario, set(self.cs.so['node']))
         
     @empty_selection_and_destroy_menu
     def bfs(self, nodes):
@@ -232,6 +234,6 @@ class SelectionRightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def create_AS(self):
-        nodes, trunks = set(self.cs.so["node"]), set(self.cs.so["link"])
+        nodes, trunks = set(self.cs.so['node']), set(self.cs.so['link'])
         AS.ASCreation(self.cs, nodes, trunks)
         

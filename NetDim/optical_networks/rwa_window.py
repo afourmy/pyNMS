@@ -3,8 +3,6 @@
 # Released under the GNU General Public License GPLv3
 
 from pythonic_tkinter.preconfigured_widgets import *
-import tkinter as tk
-from tkinter import ttk
 
 class RWAWindow(FocusTopLevel):
     def __init__(self, master):
@@ -23,7 +21,7 @@ class RWAWindow(FocusTopLevel):
 
         self.entry_sco = Entry(self, width=20)
         
-        button_gt = Button(self)
+        button_gt = Button(self, width=20)
         button_gt.text = 'Graph transformation'
         button_gt.command = self.transform_graph
 
@@ -37,7 +35,7 @@ class RWAWindow(FocusTopLevel):
         self.rwa_list['values'] = algorithms
         self.rwa_list.current(0)
                                                     
-        button_run_alg = Button(self)
+        button_run_alg = Button(self, width=20)
         button_run_alg.text = 'Run algorithm'
         button_run_alg.command = self.run_algorithm
                                         
@@ -56,11 +54,11 @@ class RWAWindow(FocusTopLevel):
         self.withdraw()
         
     def transform_graph(self):
-        name = self.entry_sco.get()
+        name = self.entry_sco.text
         self.ms.cs.ntw.RWA_graph_transformation(name)
 
     def run_algorithm(self):
-        algorithm = self.rwa_list.get()
+        algorithm = self.rwa_list.text
         if algorithm == 'Linear programming':
             self.ms.cs.ntw.LP_RWA_formulation()
         else:
