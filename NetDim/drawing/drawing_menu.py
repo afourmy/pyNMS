@@ -11,16 +11,16 @@ class DrawingMenu(tk.Menu):
         self.cs = scenario
         
         cmds = {
-        "Random": lambda: self.random(nodes),
-        "FBA": lambda: scenario.automatic_drawing(nodes),
-        "BFSC": lambda: scenario.bfs_cluster_drawing(nodes),
-        "Both": lambda: self.both(nodes)
+        'Random': lambda: self.random(nodes),
+        'FBA': lambda: scenario.automatic_drawing(nodes),
+        'BFSC': lambda: scenario.bfs_cluster_drawing(nodes),
+        'Both': lambda: self.both(nodes)
         }
     
-        self.add_command(label="Random layout", command=cmds["Random"])
-        self.add_command(label="Force-based layout", command=cmds["FBA"])
-        self.add_command(label="BFS-clusterization layout", command=cmds["BFSC"])
-        self.add_command(label="Both", command=cmds["Both"])
+        self.add_command(label='Random layout', command=cmds['Random'])
+        self.add_command(label='Force-based layout', command=cmds['FBA'])
+        self.add_command(label='BFS-clusterization layout', command=cmds['BFSC'])
+        self.add_command(label='Both', command=cmds['Both'])
                                             
     def both(self, nodes):
         self.cs.draw_objects(nodes, True)
