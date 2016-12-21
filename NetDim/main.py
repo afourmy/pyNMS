@@ -16,6 +16,6 @@ if path_app not in sys.path:
 
 import gui
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     netdim = gui.NetDim(path_app)
     netdim.mainloop()

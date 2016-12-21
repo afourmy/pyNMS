@@ -12,7 +12,7 @@ from . import AS_management
 
 class AutonomousSystem(object):
     
-    class_type = "AS"
+    class_type = 'AS'
     has_area = False
 
     def __init__(
@@ -31,10 +31,10 @@ class AutonomousSystem(object):
         self.trunks = trunks
         self.nodes = nodes
 
-        # pAS as in "pool AS": same as pool network
+        # pAS as in 'pool AS': same as pool network
         self.pAS = {
-        "trunk": self.trunks, 
-        "node": self.nodes
+        'trunk': self.trunks, 
+        'node': self.nodes
         }
         
         # unselect everything
@@ -116,7 +116,7 @@ class ASWithArea(IP_AS):
     def delete_area(self, area):
         # we remove the area of the AS areas dictionary
         area = self.areas.pop(area.name)
-        for obj_type in ("node", "trunk"):
+        for obj_type in ('node', 'trunk'):
             for obj in area.pa[obj_type]:
                 # we remove the area to the list of area in the AS 
                 # dictionary, for all objects of the area
@@ -124,7 +124,7 @@ class ASWithArea(IP_AS):
                 
 class RIP_AS(IP_AS):
     
-    AS_type = "RIP"
+    AS_type = 'RIP'
     
     def __init__(self, *args):
         super().__init__(*args)
@@ -137,7 +137,7 @@ class RIP_AS(IP_AS):
         # a hop count for a RIP AS, and bandwidth-dependent for ISIS or OSPF.
         # if the metric is bandwidth, it is calculated based on the interface
         # of the trunk, and a user-defined reference bandwidth.
-        self.metric = "hop count"
+        self.metric = 'hop count'
         
         if not is_imported:
             # set the default per-AS properties of all AS objects
@@ -167,8 +167,8 @@ class RIP_AS(IP_AS):
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
                 for neighbor, l3vc in self.ntw.graph[node.id]['l3vc']:
-                    adj_trunk = l3vc("link", node)
-                    remote_trunk = l3vc("link", neighbor)
+                    adj_trunk = l3vc('link', node)
+                    remote_trunk = l3vc('link', neighbor)
                     if adj_trunk in path_trunk:
                         continue
                     # excluded and allowed nodes
@@ -190,8 +190,8 @@ class RIP_AS(IP_AS):
                 trunk = path_trunk[-1]
                 ex_tk = path_trunk[0]
                 nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
-                ex_ip = ex_tk("ipaddress", nh)
-                ex_int = ex_tk("interface", source)
+                ex_ip = ex_tk('ipaddress', nh)
+                ex_int = ex_tk('interface', source)
                 if trunk.sntw not in source.rt:
                     SP_cost[trunk.sntw] = dist
                     source.rt[trunk.sntw] = {('R', ex_ip, ex_int, 
@@ -204,7 +204,7 @@ class RIP_AS(IP_AS):
         
 class ISIS_AS(ASWithArea):
     
-    AS_type = "ISIS"
+    AS_type = 'ISIS'
     
     def __init__(self, *args):
         super().__init__(*args)
@@ -219,7 +219,7 @@ class ISIS_AS(ASWithArea):
         
         if not is_imported:
             self.area_factory(
-                              "Backbone", 
+                              'Backbone', 
                               id = 2, 
                               trunks = self.trunks, 
                               nodes = self.nodes
@@ -256,8 +256,8 @@ class ISIS_AS(ASWithArea):
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
                 for neighbor, l3vc in self.ntw.graph[node.id]['l3vc']:
-                    adj_trunk = l3vc("link", node)
-                    remote_trunk = l3vc("link", neighbor)
+                    adj_trunk = l3vc('link', node)
+                    remote_trunk = l3vc('link', neighbor)
                     if adj_trunk in path_trunk:
                         continue
                     # excluded and allowed nodes
@@ -279,8 +279,8 @@ class ISIS_AS(ASWithArea):
                 trunk = path_trunk[-1]
                 ex_tk = path_trunk[0]
                 nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
-                ex_ip = ex_tk("ipaddress", nh)
-                ex_int = ex_tk("interface", source)
+                ex_ip = ex_tk('ipaddress', nh)
+                ex_int = ex_tk('interface', source)
                 if isL1:
                     if (node in self.border_routers 
                                         and '0.0.0.0' not in source.rt):
@@ -323,12 +323,12 @@ class ISIS_AS(ASWithArea):
                 
 class OSPF_AS(ASWithArea):
     
-    AS_type = "OSPF"
+    AS_type = 'OSPF'
     
     def __init__(self, *args):
         super().__init__(*args)
         is_imported = args[-1]
-        self.metric = "bandwidth"
+        self.metric = 'bandwidth'
         self.ref_bw = 10**8
 
         # management window of the AS
@@ -342,7 +342,7 @@ class OSPF_AS(ASWithArea):
         
         if not is_imported:
             self.area_factory(
-                              "Backbone", 
+                              'Backbone', 
                               id = 0, 
                               trunks = self.trunks, 
                               nodes = self.nodes
@@ -369,8 +369,8 @@ class OSPF_AS(ASWithArea):
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
                 for neighbor, l3vc in self.ntw.graph[node.id]['l3vc']:
-                    adj_trunk = l3vc("link", node)
-                    remote_trunk = l3vc("link", neighbor)
+                    adj_trunk = l3vc('link', node)
+                    remote_trunk = l3vc('link', neighbor)
                     if adj_trunk in path_trunk:
                         continue
                     # excluded and allowed nodes
@@ -392,8 +392,8 @@ class OSPF_AS(ASWithArea):
                 trunk = path_trunk[-1]
                 ex_tk = path_trunk[0]
                 nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
-                ex_ip = ex_tk("ipaddress", nh)
-                ex_int = ex_tk("interface", source)
+                ex_ip = ex_tk('ipaddress', nh)
+                ex_int = ex_tk('interface', source)
                 # we check if the trunk has any common area with the
                 # exit trunk: if it does not, it is an inter-area route.
                 rtype = 'O' if (trunk.AS[self] & ex_tk.AS[self]) else 'O IA'
@@ -430,55 +430,55 @@ class ModifyAS(CustomTopLevel):
         super().__init__()
         # TODO put that in the dict
         titles = {
-        "add": "Add to AS/area", 
-        "remove": "Remove from AS", 
-        "remove area": "Remove from area",
-        "manage": "Manage AS"
+        'add': 'Add to AS/area', 
+        'remove': 'Remove from AS', 
+        'remove area': 'Remove from area',
+        'manage': 'Manage AS'
         }
         self.title(titles[mode])
         # always at least one row and one column with a weight > 0
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        if mode == "add":
+        if mode == 'add':
             command = lambda: self.add(scenario, *obj)
             values = tuple(map(str, scenario.ntw.pnAS.values()))
-        elif mode == "remove":
+        elif mode == 'remove':
             values = tuple(map(str, AS))
             command = lambda: self.remove_from_AS(scenario, *obj)
-        elif mode == "remove area":
+        elif mode == 'remove area':
             values = tuple(map(str, AS))
             command = lambda: self.remove_from_area(scenario, *obj)
-        elif mode == "manage":
+        elif mode == 'manage':
             values = tuple(map(str, AS))
             command = lambda: self.manage_AS(scenario)
         
         # List of existing AS
         self.AS_list = ttk.Combobox(self, width=9)
-        self.AS_list["values"] = values
+        self.AS_list['values'] = values
         self.AS_list.current(0)
         self.AS_list.grid(row=0, column=0, columnspan=2, 
-                                            pady=5, padx=5, sticky="nsew")
+                                            pady=5, padx=5, sticky='nsew')
         self.AS_list.bind('<<ComboboxSelected>>', 
                                         lambda e: self.update_value(scenario))
         
-        if mode in ("add", "remove area"):
+        if mode in ('add', 'remove area'):
             self.area_list = ttk.Combobox(self, width=9)
             self.update_value(scenario)
             self.area_list.current(0)
             self.area_list.grid(row=1, column=0, columnspan=2, 
-                                            pady=5, padx=5, sticky="nsew")
+                                            pady=5, padx=5, sticky='nsew')
         
         # Button to add in an AS
-        self.button_add_AS = ttk.Button(self, text="OK", command=command)
-        #row = 2 if mode in ("add", "remove area") else 1
+        self.button_add_AS = ttk.Button(self, text='OK', command=command)
+        #row = 2 if mode in ('add', 'remove area') else 1
         self.button_add_AS.grid(row=2, column=0, columnspan=2, 
-                                            pady=5, padx=5, sticky="nsew")
+                                            pady=5, padx=5, sticky='nsew')
         
     # when a different AS is selected, the area combobox is updated accordingly
     def update_value(self, scenario):
         selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
-        self.area_list["values"] = tuple(map(str, selected_AS.areas))
+        self.area_list['values'] = tuple(map(str, selected_AS.areas))
         
     # TODO merge these three functions into one with the mode 
     # they share the check + destroy
@@ -506,23 +506,23 @@ class ASCreation(CustomTopLevel):
     def __init__(self, scenario, nodes, trunks):
         super().__init__()
         self.so = scenario.so
-        self.title("Create AS")
+        self.title('Create AS')
         
         # List of AS type
         self.var_AS_type = tk.StringVar()
         self.AS_type_list = ttk.Combobox(self, 
                                     textvariable=self.var_AS_type, width=6)
-        self.AS_type_list["values"] = ("RIP", "ISIS", "OSPF", "RSTP", "BGP")
+        self.AS_type_list['values'] = ('RIP', 'ISIS', 'OSPF', 'RSTP', 'BGP')
         self.AS_type_list.current(0)
 
         # retrieve and save node data
-        self.button_create_AS = ttk.Button(self, text="Create AS", 
+        self.button_create_AS = ttk.Button(self, text='Create AS', 
                         command=lambda: self.create_AS(scenario, nodes, trunks))
         
         # Label for the name/type of the AS
-        self.label_name = tk.Label(self, bg="#A1DBCD", text="Name")
-        self.label_type = tk.Label(self, bg="#A1DBCD", text="Type")
-        self.label_id = tk.Label(self, bg="#A1DBCD", text="ID")
+        self.label_name = tk.Label(self, bg='#A1DBCD', text='Name')
+        self.label_type = tk.Label(self, bg='#A1DBCD', text='Type')
+        self.label_id = tk.Label(self, bg='#A1DBCD', text='ID')
         
         # Entry box for the name of the AS
         self.entry_name  = tk.Entry(self, width=10)

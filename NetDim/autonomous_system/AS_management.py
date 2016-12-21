@@ -13,7 +13,7 @@ class ASManagement(CustomTopLevel):
         super().__init__()
         self.AS = AS
         self.dict_listbox = {}
-        self.title("Manage AS")
+        self.title('Manage AS')
         
         # A ttk notebook made of two frames
         self.frame_notebook = ttk.Notebook(self)
@@ -28,11 +28,11 @@ class ASManagement(CustomTopLevel):
         obj_types = ('trunk', 'node') 
         
         label_name = Label(common_frame)
-        label_name.text = "AS name"
+        label_name.text = 'AS name'
         label_id = Label(common_frame)
-        label_id.text = "AS ID"
+        label_id.text = 'AS ID'
         label_type = Label(common_frame)
-        label_type.text = "AS Type"
+        label_type.text = 'AS Type'
         
         entry_name  = Entry(common_frame, width=10)
         entry_name.text = AS.name
@@ -59,16 +59,16 @@ class ASManagement(CustomTopLevel):
         # listbox of all AS objects
         for index, type in enumerate(obj_types):
             label = Label(common_frame)
-            label.text = "AS " + type + "s"
+            label.text = 'AS ' + type + 's'
     
-            listbox = Listbox(common_frame, activestyle="none", width=15, height=7, selectmode="extended")
+            listbox = Listbox(common_frame, activestyle='none', width=15, height=7, selectmode='extended')
                                             
             self.dict_listbox[type] = listbox
             yscroll = Scrollbar(common_frame)
             yscroll.command = self.dict_listbox[type].yview
                     
             listbox.configure(yscrollcommand=yscroll.set)
-            listbox.bind("<<ListboxSelect>>", 
+            listbox.bind('<<ListboxSelect>>', 
                             lambda e, type=type: self.highlight_object(e, type))
                             
             label.grid(0, 2 * index, in_=lf_objects)
@@ -82,13 +82,13 @@ class ASManagement(CustomTopLevel):
         
         # find domain trunks: the trunks between nodes of the AS
         button_find_trunks = Button(common_frame) 
-        button_find_trunks.text = "Find trunks"
+        button_find_trunks.text = 'Find trunks'
         button_find_trunks.command=lambda: self.find_trunks()
         
         # operation on nodes
         button_remove_node_from_AS = Button(common_frame) 
-        button_remove_node_from_AS.text="Remove node"
-        button_remove_node_from_AS.command = lambda: self.remove_selected("node")
+        button_remove_node_from_AS.text='Remove node'
+        button_remove_node_from_AS.command = lambda: self.remove_selected('node')
         
         # buttons under the trunks column
         button_find_trunks.grid(2, 0, in_=lf_objects)
@@ -97,7 +97,7 @@ class ASManagement(CustomTopLevel):
         button_remove_node_from_AS.grid(2, 2, in_=lf_objects)
         
         # hide the window when closed
-        self.protocol("WM_DELETE_WINDOW", self.withdraw)
+        self.protocol('WM_DELETE_WINDOW', self.withdraw)
         
         # if the AS is created from an import, close the management window
         if is_imported: 
@@ -112,7 +112,7 @@ class ASManagement(CustomTopLevel):
             so = self.AS.cs.ntw.of(name=selected_object, _type=obj_type)
             self.AS.cs.highlight_objects(so)
             
-    # remove the object selected in "obj_type" listbox from the AS
+    # remove the object selected in 'obj_type' listbox from the AS
     def remove_selected(self, obj_type):
         # remove and retrieve the selected object in the listbox
         for selected_obj in self.dict_listbox[obj_type].pop_selected():
@@ -131,9 +131,9 @@ class ASManagement(CustomTopLevel):
             
     def find_trunks(self):
         trunks_between_domain_nodes = set()
-        for node in self.AS.pAS["node"]:
-            for neighbor, adj_trunk in self.AS.cs.ntw.graph[node.id]["trunk"]:
-                if neighbor in self.AS.pAS["node"]:
+        for node in self.AS.pAS['node']:
+            for neighbor, adj_trunk in self.AS.cs.ntw.graph[node.id]['trunk']:
+                if neighbor in self.AS.pAS['node']:
                     trunks_between_domain_nodes.add(adj_trunk)
         self.add_to_AS('Backbone', *trunks_between_domain_nodes)
             
@@ -142,11 +142,11 @@ class ASManagement(CustomTopLevel):
     def remove_from_AS(self, *objects):
         self.AS.remove_from_AS(*objects)
         for obj in objects:
-            if obj.type == "node":
+            if obj.type == 'node':
                 # remove the node from nodes listbox
-                self.dict_listbox["node"].pop(obj)
-            elif obj.type == "trunk":
-                self.dict_listbox["trunk"].pop(obj)
+                self.dict_listbox['node'].pop(obj)
+            elif obj.type == 'trunk':
+                self.dict_listbox['trunk'].pop(obj)
             
 class ASManagementWithArea(ASManagement):
     
@@ -155,32 +155,32 @@ class ASManagementWithArea(ASManagement):
         
         self.area_frame = CustomFrame(self.frame_notebook)
         self.frame_notebook.add(self.area_frame, text='Area management')
-        self.area_listbox = ("area names", "area trunks", "area nodes")
+        self.area_listbox = ('area names', 'area trunks', 'area nodes')
         
         # listbox for areas
         for index, type in enumerate(self.area_listbox):
-            lbl = tk.Label(self.area_frame, bg="#A1DBCD", text=type.title())
-            listbox = ObjectListbox(self.area_frame, activestyle="none", width=15, height=7)
+            lbl = tk.Label(self.area_frame, bg='#A1DBCD', text=type.title())
+            listbox = ObjectListbox(self.area_frame, activestyle='none', width=15, height=7)
             self.dict_listbox[type] = listbox
             yscroll = tk.Scrollbar(self.area_frame, 
                     command=self.dict_listbox[type].yview, orient=tk.VERTICAL)
             listbox.configure(yscrollcommand=yscroll.set)
-            if type == "area names":
-                listbox.bind("<<ListboxSelect>>", 
+            if type == 'area names':
+                listbox.bind('<<ListboxSelect>>', 
                             lambda e: self.display_area(e))
             else:
-                listbox.bind("<<ListboxSelect>>", 
+                listbox.bind('<<ListboxSelect>>', 
                             lambda e, type=type: self.highlight_object(e, type))
             lbl.grid(row=6, column=2*index)
             listbox.grid(7, 2*index)
-            yscroll.grid(row=7, column=1+2*index, sticky="ns")
+            yscroll.grid(row=7, column=1+2*index, sticky='ns')
                                                   
         # button to create an area
-        self.button_create_area = ttk.Button(self.area_frame, text="Create area", 
+        self.button_create_area = ttk.Button(self.area_frame, text='Create area', 
                                 command=lambda: area.CreateArea(self))
                                 
         # button to delete an area
-        self.button_delete_area = ttk.Button(self.area_frame, text="Delete area", 
+        self.button_delete_area = ttk.Button(self.area_frame, text='Delete area', 
                                 command=lambda: self.delete_area())
             
         # button under the area column
@@ -188,30 +188,30 @@ class ASManagementWithArea(ASManagement):
         self.button_delete_area.grid(row=9, column=0)
         
         # at first, the backbone is the only area: we insert it in the listbox
-        self.dict_listbox["area names"].insert("Backbone")
+        self.dict_listbox['area names'].insert('Backbone')
         
     ## Functions used directly from the AS Management window
 
     def create_area(self, name, id):
         self.AS.area_factory(name, id)
-        self.dict_listbox["area names"].insert(name)
+        self.dict_listbox['area names'].insert(name)
 
     def delete_area(self):
-        for area_name in self.dict_listbox["area names"].pop_selected():
+        for area_name in self.dict_listbox['area names'].pop_selected():
             selected_area = self.AS.area_factory(name=area_name)
             self.AS.delete_area(selected_area)
                 
     def display_area(self, event):
-        for area in self.dict_listbox["area names"].selected():
+        for area in self.dict_listbox['area names'].selected():
             area = self.AS.area_factory(area)
             self.AS.cs.unhighlight_all()
-            self.AS.cs.highlight_objects(*(area.pa["node"] | area.pa["trunk"]))
-            self.dict_listbox["area nodes"].clear()
-            self.dict_listbox["area trunks"].clear()
-            for node in area.pa["node"]:
-                self.dict_listbox["area nodes"].insert(node)
-            for trunk in area.pa["trunk"]:
-                self.dict_listbox["area trunks"].insert(trunk)
+            self.AS.cs.highlight_objects(*(area.pa['node'] | area.pa['trunk']))
+            self.dict_listbox['area nodes'].clear()
+            self.dict_listbox['area trunks'].clear()
+            for node in area.pa['node']:
+                self.dict_listbox['area nodes'].insert(node)
+            for trunk in area.pa['trunk']:
+                self.dict_listbox['area trunks'].insert(trunk)
                 
     ## Functions used to modify AS from the right-click menu
     
@@ -235,33 +235,33 @@ class ISIS_Management(ASManagementWithArea):
         # because the cost of a trunk depends on the bandwidth.
         # Trunk_cost = Ref_BW / BW
         self.if_to_cost = {
-        "FE": 10**7,
-        "GE": 10**8,
-        "10GE": 10**9,
-        "40GE": 4*10**9,
-        "100GE":10**10
+        'FE': 10**7,
+        'GE': 10**8,
+        '10GE': 10**9,
+        '40GE': 4*10**9,
+        '100GE':10**10
         }
         
-        self.button_update_cost = ttk.Button(self.area_frame, text="Update costs", 
+        self.button_update_cost = ttk.Button(self.area_frame, text='Update costs', 
                                 command=lambda: self.update_cost())
-        self.button_update_cost.grid(row=1, column=0, pady=5, padx=5, sticky="w")    
+        self.button_update_cost.grid(row=1, column=0, pady=5, padx=5, sticky='w')    
         
-        self.button_update_topo = ttk.Button(self.area_frame, text="Update topology", 
+        self.button_update_topo = ttk.Button(self.area_frame, text='Update topology', 
                                 command=lambda: self.update_AS_topology())
-        self.button_update_topo.grid(row=2, column=0, pady=5, padx=5, sticky="w") 
+        self.button_update_topo.grid(row=2, column=0, pady=5, padx=5, sticky='w') 
         
     def update_AS_topology(self):
         
         self.AS.border_routers.clear()
         # reset all area trunks
-        self.AS.areas["Backbone"].pa["trunk"].clear()
+        self.AS.areas['Backbone'].pa['trunk'].clear()
         
-        for node in self.AS.pAS["node"]:
+        for node in self.AS.pAS['node']:
             
             # In IS-IS, a router has only one area
             node_area ,= node.AS[self.AS]
             
-            for neighbor, adj_trunk in self.AS.cs.ntw.graph[node.id]["trunk"]:
+            for neighbor, adj_trunk in self.AS.cs.ntw.graph[node.id]['trunk']:
                 
                 # A multi-area IS-IS AS is defined by the status of its nodes.
                 # we automatically update the trunk area status, by considering 
@@ -282,11 +282,11 @@ class ISIS_Management(ASManagementWithArea):
                     else:
                         # we consider that the trunk belongs to the backbone,
                         # for interfaces to have IP addresses.
-                        self.AS.areas["Backbone"].add_to_area(adj_trunk)
+                        self.AS.areas['Backbone'].add_to_area(adj_trunk)
                         self.AS.border_routers.add(node)
                 
     def update_cost(self):
-        for trunk in self.AS.pAS["trunk"]:
+        for trunk in self.AS.pAS['trunk']:
             bw = self.if_to_cost[trunk.interface]
             # the cost of a link cannot be less than 1. This also means that,
             # by default, all interfaces from GE to 100GE will result in the
@@ -303,39 +303,39 @@ class OSPF_Management(ASManagementWithArea):
         # because the cost of a trunk depends on the bandwidth.
         # Trunk_cost = Ref_BW / BW
         self.if_to_cost = {
-        "FE": 10**7,
-        "GE": 10**8,
-        "10GE": 10**9,
-        "40GE": 4*10**9,
-        "100GE":10**10
+        'FE': 10**7,
+        'GE': 10**8,
+        '10GE': 10**9,
+        '40GE': 4*10**9,
+        '100GE':10**10
         }
 
-        # self.button_update_cost = ttk.Button(self, text="Update costs", 
+        # self.button_update_cost = ttk.Button(self, text='Update costs', 
         #                         command=lambda: self.update_cost())
-        # self.button_update_cost.grid(row=1, column=0, pady=5, padx=5, sticky="w")    
+        # self.button_update_cost.grid(row=1, column=0, pady=5, padx=5, sticky='w')    
         # 
-        # self.button_update_topo = ttk.Button(self, text="Update topology", 
+        # self.button_update_topo = ttk.Button(self, text='Update topology', 
         #                         command=lambda: self.update_AS_topology())
-        # self.button_update_topo.grid(row=2, column=0, pady=5, padx=5, sticky="w")
+        # self.button_update_topo.grid(row=2, column=0, pady=5, padx=5, sticky='w')
         
         # combobox to choose the exit ASBR
         self.exit_asbr = tk.StringVar()
         self.router_list = ttk.Combobox(self, 
                                     textvariable=self.exit_asbr, width=10)
-        self.router_list["values"] = (None,) + tuple(
-                                        self.dict_listbox["node"].yield_all())
+        self.router_list['values'] = (None,) + tuple(
+                                        self.dict_listbox['node'].yield_all())
         self.exit_asbr.set(None)
         
         # hide the window when closed
-        self.protocol("WM_DELETE_WINDOW", self.save_parameters)
+        self.protocol('WM_DELETE_WINDOW', self.save_parameters)
         
     def update_AS_topology(self):
         
         self.AS.border_routers.clear()
         # reset all area nodes
-        self.AS.areas["Backbone"].pa["node"].clear()
+        self.AS.areas['Backbone'].pa['node'].clear()
         
-        for node in self.AS.pAS["node"]:
+        for node in self.AS.pAS['node']:
                 
             # in OSPF, a router is considered ABR if it has attached
             # trunks that are in different area. Since we just updated 
@@ -344,9 +344,9 @@ class OSPF_Management(ASManagementWithArea):
             # an ABR is automatically part of the backbone area.
             if len(node.AS[self.AS]) > 1:
                 self.AS.border_routers.add(node)
-                self.AS.areas["Backbone"].add_to_area(node)
+                self.AS.areas['Backbone'].add_to_area(node)
             
-            for neighbor, adj_trunk in self.AS.cs.ntw.graph[node.id]["trunk"]:
+            for neighbor, adj_trunk in self.AS.cs.ntw.graph[node.id]['trunk']:
 
                 # a multi-area OSPF AS is defined by the area of its trunk.
                 # we automatically update the node area status, by considering that a 
@@ -355,7 +355,7 @@ class OSPF_Management(ASManagementWithArea):
                     area.add_to_area(node)
                 
     def update_cost(self):
-        for trunk in self.AS.pAS["trunk"]:
+        for trunk in self.AS.pAS['trunk']:
             bw = self.if_to_cost[trunk.interface]
             # the cost of a link cannot be less than 1. This also means that,
             # by default, all interfaces from GE to 100GE will result in the
@@ -366,23 +366,23 @@ class OSPF_Management(ASManagementWithArea):
     ## saving function: used when closing the window
     
     def save_parameters(self):
-        if self.exit_asbr.get() != "None":
-            exit_asbr = self.AS.cs.ntw.pn["node"][self.exit_asbr.get()]
+        if self.exit_asbr.get() != 'None':
+            exit_asbr = self.AS.cs.ntw.pn['node'][self.exit_asbr.get()]
             self.AS.exit_point = exit_asbr
         self.withdraw()
             
     # def add_to_ASBR(self):
-    #     for selected_node in self.dict_listbox["ASBR"].selected():
-    #         self.dict_listbox["ASBR"].insert(selected_node) 
+    #     for selected_node in self.dict_listbox['ASBR'].selected():
+    #         self.dict_listbox['ASBR'].insert(selected_node) 
     #         selected_node = self.AS.cs.ntw.nf(name=selected_node)
     #         self.AS.add_to_edges(selected_node)
     #         
     # def remove_from_edges(self):
-    #     for selected_edge in self.dict_listbox["ASBR"].pop_selected():
+    #     for selected_edge in self.dict_listbox['ASBR'].pop_selected():
     #         selected = self.AS.cs.ntw.nf(name=selected_edge) 
     #         self.AS.remove_from_edges(selected)
     #         
     # def find_edge_nodes(self):
-    #     self.dict_listbox["ASBR"].clear()
+    #     self.dict_listbox['ASBR'].clear()
     #     for edge in self.AS.cs.ntw.find_edge_nodes(self.AS):
-    #         self.dict_listbox["ASBR"].insert(edge)    
+    #         self.dict_listbox['ASBR'].insert(edge)    
