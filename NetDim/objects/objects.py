@@ -103,6 +103,11 @@ class Node(NDobject):
         self.AS = defaultdict(set)
         # virtual factor for BFS-clusterization drawing
         self.virtual_factor = 1
+        # AS_properties contains all per-AS properties: It is a dictionnary 
+        # which AS name are the keys (it is easier to store AS names rather 
+        # than AS itself: if we have the AS, AS.name is the name, while if we 
+        # have the name, it is more verbose to retrieve the AS itself)
+        self.AS_properties = defaultdict(dict)
         super().__init__()
         
     def __repr__(self):
@@ -119,6 +124,13 @@ class Node(NDobject):
         
     def __lt__(self, other):
         return hash(self.name)
+        
+    def __call__(self, AS, property, value=None):
+        # can be used both as a getter and a setter, depending on 
+        # whether a value is provided or not
+        if value:
+            self.AS_properties[AS][property] = value
+        return self.AS_properties[AS][property]
         
 class Router(Node):
     
@@ -141,9 +153,6 @@ class Router(Node):
         self.rt = {}
         # bgp table
         self.bgpt = defaultdict(set)
-        # AS_properties contains all per-AS properties: router ID, maximum paths
-        # for load-balancing, etc.
-        self.AS_properties = defaultdict(dict)
         super().__init__()
         
 class Switch(Node):
@@ -358,6 +367,7 @@ class Interface(NDobject):
         # can be used both as a getter and a setter, depending on 
         # whether a value is provided or not
         if value:
+            print(AS, property, value)
             self.AS_properties[AS][property] = value
         return self.AS_properties[AS][property]
                     

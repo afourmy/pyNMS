@@ -82,7 +82,7 @@ class IP_AS(AutonomousSystem):
     def add_to_AS(self, *objects):
         super(IP_AS, self).add_to_AS(*objects)
         for obj in objects:
-            if obj.type == 'node':
+            if obj.subtype == 'router':
                 obj.AS_properties[self.name].update({
                                                     'LB_paths': 4,
                                                     'router_id': None

@@ -191,6 +191,11 @@ class ObjectManagementWindow(FocusTopLevel):
             if self.current_obj.class_type == 'node':
                 self.ms.cs.move_node(self.current_obj)
                 
+        if self.current_obj.AS_properties:
+            AS = self.AS_combobox.text
+            for property, entry in self.dict_perAS_properties.items():
+                self.current_obj(AS, property, entry.text)
+                
     def save_and_withdraw(self):
         self.save_obj()
         self.withdraw()

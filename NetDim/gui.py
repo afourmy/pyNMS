@@ -12,6 +12,7 @@ import warnings
 import collections
 import network
 import scenario
+from objects import objects
 from os.path import abspath, pardir, join
 from tkinter import ttk, filedialog
 from pythonic_tkinter.preconfigured_widgets import *
@@ -569,63 +570,6 @@ class NetDim(MainWindow):
         
         colors = ['default', 'red', 'purple']
         
-        ## ----- Menus : -----
-        menubar = tk.Menu(self)
-        upper_menu = tk.Menu(menubar, tearoff=0)
-        upper_menu.add_command(label='Add scenario', 
-                                        command=lambda: self.add_scenario())
-        upper_menu.add_command(label='Delete scenario', 
-                                        command=lambda: self.delete_scenario())
-        upper_menu.add_command(label='Duplicate scenario', 
-                                    command=lambda: self.duplicate_scenario())
-        upper_menu.add_separator()
-        upper_menu.add_command(label='Import graph', 
-                                        command=lambda: self.import_graph())
-        upper_menu.add_command(label='Export graph', 
-                                        command=lambda: self.export_graph())
-        upper_menu.add_separator()
-        upper_menu.add_command(label='Exit', command=self.destroy)
-        menubar.add_cascade(label='Main',menu=upper_menu)
-        menu_drawing = tk.Menu(menubar, tearoff=0)
-        menu_drawing.add_command(label='Default drawing parameters', 
-                        command=lambda: dow.DrawingOptions(self))
-        menubar.add_cascade(label='Network drawing',menu=menu_drawing)
-        menu_routing = tk.Menu(menubar, tearoff=0)
-        menu_routing.add_command(label='Advanced graph', 
-                        command=lambda: self.advanced_graph.deiconify())
-        menu_routing.add_command(label='Advanced algorithms', 
-                        command=lambda: self.advanced_graph_options.deiconify())
-        menu_routing.add_command(label='Network Tree View', 
-                                        command=lambda: NetworkTreeView(self))
-        menu_routing.add_command(label='Wavelength assignment', 
-                                    command=lambda: self.rwa_window.deiconify())
-                                                             
-        menubar.add_cascade(label='Network routing',menu=menu_routing)
-
-        # choose which label to display per type of object
-        menu_options = tk.Menu(menubar, tearoff=0)
-        for obj_type, label_type in self.object_label.items():
-            menu_type = tk.Menu(menubar, tearoff=0)
-            menu_options.add_cascade(label=obj_type + ' label', menu=menu_type)
-            for lbl in label_type:
-                cmd = lambda o=obj_type, l=lbl: self.cs.refresh_labels(o, l)
-                menu_type.add_command(label=lbl, command=cmd)
-            
-        menu_options.add_command(label='Change display', 
-                                    command=lambda: self.cs.change_display())
-        
-        # show / hide option per type of objects
-        menu_display = tk.Menu(menubar, tearoff=0)
-        for index, type in enumerate(self.object_properties):
-            new_label = ' '.join(('Hide', type))
-            cmd = lambda t=type, i=index: self.cs.show_hide(menu_display, t, i)
-            menu_display.add_command(label=new_label, command=cmd)
-        menu_options.add_cascade(label='Show/hide object', menu=menu_display)
-            
-        menubar.add_cascade(label='Options',menu=menu_options)
-        
-        self.config(menu=menubar)
-
         # scenario notebook
         self.scenario_notebook = ttk.Notebook(self)
         self.scenario_notebook.bind('<ButtonRelease-1>', self.change_cs)
@@ -636,6 +580,110 @@ class NetDim(MainWindow):
         self.cpt_scenario = 0
         self.scenario_notebook.add(self.cs, text=self.cs.name, compound=tk.TOP)
         self.dict_scenario['scenario 0'] = self.cs
+        
+        # advanced graph options
+        self.advanced_graph_options = galg.GraphAlgorithmWindow(self)
+        
+        # routing and wavelength assignment window
+        self.rwa_window = rwaw.RWAWindow(self)
+        
+        # graph generation window
+        self.advanced_graph = adv_gr.AdvancedGraph(self)
+        
+        ## ----- Menus : -----
+        netdim_menu = Menu(self)
+        
+        # general menu: add/delete scenario, import/export graph, exit NetDim
+        
+        general_menu = Menu(netdim_menu)
+        
+        add_scenario = MenuEntry(general_menu)
+        add_scenario.text = 'Add scenario'
+        add_scenario.command = self.add_scenario
+        
+        delete_scenario = MenuEntry(general_menu)
+        delete_scenario.text = 'Delete scenario'
+        delete_scenario.command = self.delete_scenario
+        
+        general_menu.separator()
+        
+        import_graph = MenuEntry(general_menu)
+        import_graph.text = 'Import graph'
+        import_graph.command = self.import_graph
+        
+        export_graph = MenuEntry(general_menu)
+        export_graph.text = 'Export graph'
+        export_graph.command = self.export_graph
+
+        general_menu.separator()
+        
+        exit = MenuEntry(general_menu)
+        exit.text = 'Exit'
+        exit.command = self.destroy
+
+        general_menu.create_menu()
+        netdim_menu.add_cascade(label='Main',menu=general_menu)
+        
+        # drawing menu: for default drawing parameters
+        drawing_menu = Menu(netdim_menu)
+        
+        drawing_parameters_entry = MenuEntry(drawing_menu)
+        drawing_parameters_entry.text = 'Default drawing parameters'
+        drawing_parameters_entry.command = lambda: dow.DrawingOptions(self)
+        
+        drawing_menu.create_menu()
+        
+        netdim_menu.add_cascade(label='Network drawing',menu=drawing_menu)
+        
+        # routing menu:
+        
+        routing_menu = Menu(netdim_menu)
+        
+        advanced_graph_entry = MenuEntry(routing_menu)
+        advanced_graph_entry.text = 'Advanced graph'
+        advanced_graph_entry.command = self.advanced_graph.deiconify
+        
+        advanced_algorithms_entry = MenuEntry(routing_menu)
+        advanced_algorithms_entry.text = 'Advanced algorithms'
+        advanced_algorithms_entry.command = self.advanced_graph_options.deiconify
+
+        network_tree_view_entry = MenuEntry(routing_menu)
+        network_tree_view_entry.text = 'Network Tree View'
+        network_tree_view_entry.command = lambda: NetworkTreeView(self)
+        
+        wavelenght_assignment_entry = MenuEntry(routing_menu)
+        wavelenght_assignment_entry.text = 'Wavelength assignment'
+        wavelenght_assignment_entry.command = self.rwa_window.deiconify
+        
+        routing_menu.create_menu()
+        netdim_menu.add_cascade(label='Network routing',menu=routing_menu)
+
+        # choose which label to display per type of object
+        display_menu = Menu(netdim_menu)
+        for obj_type, label_type in self.object_label.items():
+            menu_type = Menu(netdim_menu)
+            display_menu.add_cascade(label=obj_type + ' label', menu=menu_type)
+            for lbl in label_type:
+                cmd = lambda o=obj_type, l=lbl: self.cs.refresh_labels(o, l)
+                type_entry = MenuEntry(menu_type)
+                type_entry.text = lbl
+                type_entry.command = cmd
+            menu_type.create_menu()
+        
+        # show / hide option per type of objects
+        show_menu = Menu(netdim_menu)
+        for index, type in enumerate(self.object_properties):
+            new_label = ' '.join(('Hide', type))
+            cmd = lambda t=type, i=index: self.cs.show_hide(show_menu, t, i)
+            show_entry = MenuEntry(show_menu)
+            show_entry.text = new_label
+            show_entry.command = cmd
+        show_menu.create_menu()
+            
+        display_menu.add_cascade(label='Show/hide object', menu=show_menu)
+        netdim_menu.add_cascade(label='Options', menu=display_menu)
+        
+        self.config(menu=netdim_menu)
         
         # object management windows
         self.dict_obj_mgmt_window = {}
@@ -656,15 +704,6 @@ class NetDim(MainWindow):
         ('OPD', 0.),
         ('limit', True)
         ])}
-        
-        # advanced graph options
-        self.advanced_graph_options = galg.GraphAlgorithmWindow(self)
-        
-        # routing and wavelength assignment window
-        self.rwa_window = rwaw.RWAWindow(self)
-        
-        # graph generation window
-        self.advanced_graph = adv_gr.AdvancedGraph(self)
         
         # create a menu
         self.main_menu = main_menu.MainMenu(self)
@@ -814,7 +853,7 @@ class NetDim(MainWindow):
                     for property, value in zip(if_properties[2:], args):
                         setattr(interface, property, value)
                                                         
-            AS_sheet, area_sheet = book.sheets()[18], book.sheets()[19]
+            AS_sheet = book.sheets()[18]
         
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):
@@ -823,6 +862,8 @@ class NetDim(MainWindow):
                 nodes = self.convert_nodes_set(nodes)
                 trunks = self.convert_links_set(trunks)
                 self.cs.ntw.AS_factory(type, name, id, trunks, nodes, True)
+                
+            area_sheet = book.sheets()[19]
             
             # creation of the area
             for row_index in range(1, area_sheet.nrows):
@@ -831,6 +872,38 @@ class NetDim(MainWindow):
                 nodes = self.convert_nodes_set(nodes)
                 trunks = self.convert_links_set(trunks)
                 new_area = AS.area_factory(name, int(id), trunks, nodes)
+                
+            node_AS_sheet = book.sheets()[20]
+            
+            for row_index in range(1, node_AS_sheet.nrows):
+                AS, node, *args = node_AS_sheet.row_values(row_index)
+                node = self.convert_node(node)
+                for idx, property in enumerate(objects.perAS_properties[node.subtype]):
+                    node(AS, property, args[idx])
+                    
+            if_AS_sheet = book.sheets()[21]
+            
+            for row_index in range(1, if_AS_sheet.nrows):
+                AS, link, node, *args = if_AS_sheet.row_values(row_index)
+                AS = self.cs.ntw.AS_factory(name=AS)
+                link = self.convert_link(link)
+                node = self.convert_node(node)
+                interface = link('interface', node)
+                for idx, property in enumerate(objects.ethernet_interface_perAS_properties):
+                    interface(AS.name, property, args[idx])
+                
+        # if_AS_sheet = excel_workbook.add_sheet('per-AS interface properties')
+        # 
+        # cpt = 1
+        # for AS in self.cs.ntw.pnAS.values():
+        #     for link in AS.trunks:
+        #         for interface in (link.interfaceS, link.interfaceD):
+        #             if_AS_sheet.write(cpt, 0, AS.name)
+        #             if_AS_sheet.write(cpt, 1, str(interface.link))
+        #             if_AS_sheet.write(cpt, 2, str(interface.node)) 
+        #             for idx, property in enumerate(objects.ethernet_interface_perAS_properties, 3):
+        #                 if_AS_sheet.write(cpt, idx, str(interface(AS.name, property)))
+        #             cpt += 1
                 
         # for the topology zoo network graphs
         elif filepath.endswith('.graphml'):
@@ -937,8 +1010,9 @@ class NetDim(MainWindow):
             AS_sheet.write(i, 4, to_string(AS.pAS['trunk']))
             
         area_sheet = excel_workbook.add_sheet('area')
+        
         cpt = 1
-        for AS in self.cs.ntw.pnAS.values():
+        for AS in filter(lambda a: a.has_area, self.cs.ntw.pnAS.values()):
             for area in AS.areas.values():
                 area_sheet.write(cpt, 0, str(area.name))
                 area_sheet.write(cpt, 1, str(area.AS))
@@ -946,6 +1020,30 @@ class NetDim(MainWindow):
                 area_sheet.write(cpt, 3, to_string(area.pa['node']))
                 area_sheet.write(cpt, 4, to_string(area.pa['trunk']))
                 cpt += 1
+                
+        node_AS_sheet = excel_workbook.add_sheet('per-AS node properties')
+        
+        cpt = 1
+        for AS in self.cs.ntw.pnAS.values():
+            for node in AS.nodes:
+                node_AS_sheet.write(cpt, 0, AS.name)
+                node_AS_sheet.write(cpt, 1, node.name)
+                for idx, property in enumerate(objects.perAS_properties[node.subtype], 2):
+                    node_AS_sheet.write(cpt, idx, str(node(AS.name, property)))
+                cpt += 1
+                
+        if_AS_sheet = excel_workbook.add_sheet('per-AS interface properties')
+        
+        cpt = 1
+        for AS in self.cs.ntw.pnAS.values():
+            for link in AS.trunks:
+                for interface in (link.interfaceS, link.interfaceD):
+                    if_AS_sheet.write(cpt, 0, AS.name)
+                    if_AS_sheet.write(cpt, 1, str(interface.link))
+                    if_AS_sheet.write(cpt, 2, str(interface.node)) 
+                    for idx, property in enumerate(objects.ethernet_interface_perAS_properties, 3):
+                        if_AS_sheet.write(cpt, idx, str(interface(AS.name, property)))
+                    cpt += 1
                 
         excel_workbook.save(selected_file.name)
         selected_file.close()
