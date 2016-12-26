@@ -367,7 +367,6 @@ class Interface(NDobject):
         # can be used both as a getter and a setter, depending on 
         # whether a value is provided or not
         if value:
-            print(AS, property, value)
             self.AS_properties[AS][property] = value
         return self.AS_properties[AS][property]
                     
@@ -497,7 +496,9 @@ class Route(Link):
     dash = (3,5)
     layer = 3
     
-    ie_properties = {}
+    ie_properties = {
+                    'path' : 'list()'
+                    }
     
     @initializer(ie_properties)
     def __init__(self, **kwargs):
@@ -564,8 +565,7 @@ class LSP(Route):
     subtype = 'Label Switched Path'
     
     ie_properties = {
-                    'lsp_type': None,
-                    'path' : 'list()', 
+                    'lsp_type': None, 
                     'cost' : 1,
                     'traffic' : 0
                     }
@@ -610,7 +610,6 @@ class StaticTraffic(Traffic):
                     'path_constraints' : '[]', 
                     'excluded_trunks' : 'set()', 
                     'excluded_nodes' : 'set()', 
-                    'path' : '[]', 
                     }
     
     @initializer(ie_properties)
