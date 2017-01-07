@@ -229,6 +229,35 @@ class RIP_Management(ASManagement):
     def __init__(self, *args):
         super().__init__(*args)
         
+class STP_Management(ASManagement):
+    
+    def __init__(self, *args):
+        super().__init__(*args)
+        
+        STP_frame = CustomFrame(self.frame_notebook)
+        self.frame_notebook.add(STP_frame, text='STP Specifics')
+        
+        # label frame for links and nodes
+        lf_stp_specifics = Labelframe(STP_frame)
+        lf_stp_specifics.text = 'STP specifics properties'
+        lf_stp_specifics.grid(0, 0)
+        
+        # compute the spanning tree
+        button_compute_SPT = Button(STP_frame) 
+        button_compute_SPT.text='Compute STP'
+        button_compute_SPT.command = lambda: self.AS.build_SPT()
+        
+        # highlight all physical links that are part of the spanning tree
+        button_highlight_SPT = Button(STP_frame) 
+        button_highlight_SPT.text='Highlight spanning tree'
+        button_highlight_SPT.command = lambda: self.highlight_SPT()
+        
+        button_compute_SPT.grid(0, 0, in_=lf_stp_specifics)
+        button_highlight_SPT.grid(0, 1, in_=lf_stp_specifics)
+        
+    def highlight_SPT(self):
+        self.AS.cs.highlight_objects(*self.AS.SPT_trunks)
+        
 class ISIS_Management(ASManagementWithArea):
     
     def __init__(self, *args):

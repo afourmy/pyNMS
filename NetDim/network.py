@@ -65,7 +65,8 @@ class Network(object):
     AS_class = OrderedDict([
     ('RIP', AS.RIP_AS),
     ('ISIS', AS.ISIS_AS),
-    ('OSPF', AS.OSPF_AS)
+    ('OSPF', AS.OSPF_AS),
+    ('STP', AS.STP_AS)
     ])
     
     link_class = {}
@@ -140,6 +141,11 @@ class Network(object):
     def gftr(self, src, type, *sts, ud=True):
         keep = lambda r: r[1].subtype in sts and (ud or r[1].source == src)
         return filter(keep, self.graph[src][type])
+        
+    # function filtering AS per layer
+    def ASftr(self, *sts):
+        keep = lambda r: r.layer in sts
+        return filter(keep, self.pnAS.values())
         
     # function that retrieves all IP addresses attached to a node, including
     # it's loopback IP.
@@ -436,7 +442,7 @@ class Network(object):
         for router in self.ftr('node', 'router', 'host'):
             router.rt.clear()
         # we compute the routing table of all routers
-        for AS in self.pnAS.values():
+        for AS in self.ASftr('IP'):
             AS.build_RFT()
         for router in self.ftr('node', 'router', 'host'):
             self.static_RFT_builder(router)

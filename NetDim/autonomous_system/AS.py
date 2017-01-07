@@ -31,6 +31,7 @@ class AutonomousSystem(object):
         self.trunks = trunks
         self.nodes = nodes
 
+        #TODO get rid of the pAS it's useless
         # pAS as in 'pool AS': same as pool network
         self.pAS = {'trunk': set(), 'node': set()}
         
@@ -56,22 +57,91 @@ class AutonomousSystem(object):
         
     def remove_from_AS(self, *objects):
         for obj in objects:
-            # for each area, we delete the object from the corresponding pool
-            for area in set(obj.AS[self]):
-                area.remove_from_area(obj)
             # we remove the object from its pool in the AS
             self.pAS[obj.type].discard(obj)
             # we pop the AS from the dict of object AS, and retrieve the list
             # of area it belongs to in this AS
             obj.AS.pop(self)
-                
-    def build_RFT(self):
-        allowed_nodes = self.nodes
-        allowed_trunks =  self.trunks - self.ntw.fdtks
-        for node in self.nodes:
-            self.RFT_builder(node, allowed_nodes, allowed_trunks)
             
+class Ethernet_AS(AutonomousSystem):
+    
+    layer = 'Ethernet'
+    
+    def __init__(self, *args):
+        super().__init__(*args)
+        
+    def add_to_AS(self, *objects):
+        super(AutonomousSystem, self).add_to_AS(*objects)
+            
+class STP_AS(Ethernet_AS):
+    
+    AS_type = 'STP'
+    
+    def __init__(self, *args):
+        super().__init__(*args)
+        is_imported = args[-1]
+        
+        #TODO temporary, initialize to sth else later
+        # root of the AS 
+        print(self.nodes)
+        self.root = list(self.nodes)[0]
+        self.SPT_trunks = set()
+        print(self.root)
+        
+        # management window of the AS 
+        self.management = AS_management.STP_Management(self, is_imported)
+                
+        if not is_imported:
+            # set the default per-AS properties of all AS objects
+            self.add_to_AS(*(self.nodes | self.trunks))
+            
+        # update the AS management panel by filling all boxes
+        self.management.refresh_display()
+                    
+    def add_to_AS(self, *objects):
+        super(Ethernet_AS, self).add_to_AS(*objects)       
+        
+        for obj in objects:
+            # A RSTP AS has no area, each object's area set is initialized 
+            # to None as it should never be needed
+            obj.AS[self] = None
+            if obj.type == 'trunk':
+                obj.interfaceS(self.name, 'cost', 1)
+                obj.interfaceD(self.name, 'cost', 1)   
+        
+    def build_SPT(self):
+        visited = set()
+        # allowed nodes and trunks
+        allowed_nodes = self.pAS['node']
+        allowed_trunks =  self.pAS['trunk'] - self.ntw.fdtks
+        # we keep track of all already visited subnetworks so that we 
+        # don't add them more than once to the mapping dict.
+        heap = [(0, self.root, [])]
+        
+        while heap:
+            dist, node, path_trunk = heappop(heap)
+            if node not in visited:
+                print(node, dist, path_trunk)
+                if path_trunk:
+                    self.SPT_trunks.add(path_trunk[-1])
+                visited.add(node)
+                for neighbor, l2vc in self.ntw.graph[node.id]['l2vc']:
+                    adj_trunk = l2vc('link', node)
+                    remote_trunk = l2vc('link', neighbor)
+                    if adj_trunk in path_trunk:
+                        continue
+                    # excluded and allowed nodes
+                    if neighbor not in allowed_nodes:
+                        continue
+                    # excluded and allowed trunks
+                    if adj_trunk not in allowed_trunks: 
+                        continue
+                    heappush(heap, (dist + adj_trunk('cost', node), 
+                                        neighbor, path_trunk + [adj_trunk]))
+    
 class IP_AS(AutonomousSystem):
+    
+    layer = 'IP'
     
     def __init__(self, *args):
         super().__init__(*args)
@@ -85,6 +155,12 @@ class IP_AS(AutonomousSystem):
                                                     'LB_paths': 4,
                                                     'router_id': None
                                                     })
+                                                    
+    def build_RFT(self):
+        allowed_nodes = self.nodes
+        allowed_trunks =  self.trunks - self.ntw.fdtks
+        for node in self.nodes:
+            self.RFT_builder(node, allowed_nodes, allowed_trunks)
                 
 class ASWithArea(IP_AS):
     
@@ -110,6 +186,13 @@ class ASWithArea(IP_AS):
                 cost = self.ref_bw / obj.bw
                 obj.interfaceS(self.name, 'cost', cost)
                 obj.interfaceD(self.name, 'cost', cost)   
+                
+    def remove_from_AS(self, *objects):
+        super(ASWithArea, self).remove_from_AS(*objects)
+        for obj in objects:
+            # for each area, we delete the object from the corresponding pool
+            for area in set(obj.AS[self]):
+                area.remove_from_area(obj)
         
     def delete_area(self, area):
         # we remove the area of the AS areas dictionary
@@ -152,7 +235,6 @@ class RIP_AS(IP_AS):
             # to None as it should never be needed
             obj.AS[self] = None
             if obj.type == 'trunk':
-                print('test')
                 obj.interfaceS(self.name, 'cost', 1)
                 obj.interfaceD(self.name, 'cost', 1)   
         
@@ -488,6 +570,7 @@ class ModifyAS(CustomTopLevel):
     # when a different AS is selected, the area combobox is updated accordingly
     def update_value(self, scenario):
         selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
+        
         self.area_list['values'] = tuple(map(str, selected_AS.areas))
         
     # TODO merge these three functions into one with the mode 
@@ -522,7 +605,7 @@ class ASCreation(CustomTopLevel):
         self.var_AS_type = tk.StringVar()
         self.AS_type_list = ttk.Combobox(self, 
                                     textvariable=self.var_AS_type, width=6)
-        self.AS_type_list['values'] = ('RIP', 'ISIS', 'OSPF', 'RSTP', 'BGP')
+        self.AS_type_list['values'] = ('RIP', 'ISIS', 'OSPF', 'RSTP', 'BGP', 'STP')
         self.AS_type_list.current(0)
 
         # retrieve and save node data
