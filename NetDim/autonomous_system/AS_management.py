@@ -74,11 +74,6 @@ class ASManagement(CustomTopLevel):
             label.grid(0, 2 * index, in_=lf_objects)
             listbox.grid(1, 2 * index, in_=lf_objects)
             yscroll.grid(1, 1 + 2 * index, in_=lf_objects)
-            
-        # populate the listbox with all objects from which the AS was created
-        for obj_type in obj_types:
-            for obj in AS.pAS[obj_type]:
-                self.dict_listbox[obj_type].insert(obj)
         
         # find domain trunks: the trunks between nodes of the AS
         button_find_trunks = Button(common_frame) 
@@ -104,6 +99,14 @@ class ASManagement(CustomTopLevel):
             self.withdraw()
             
     ## Functions used directly from the AS Management window
+    
+    # refresh display
+    def refresh_display(self):
+        # populate the listbox with all AS objects
+        for obj_type in ('trunk', 'node'):
+            self.dict_listbox[obj_type].clear()
+            for obj in self.AS.pAS[obj_type]:
+                self.dict_listbox[obj_type].insert(obj)
         
     # function to highlight the selected object on the canvas
     def highlight_object(self, event, obj_type):        
@@ -370,19 +373,4 @@ class OSPF_Management(ASManagementWithArea):
             exit_asbr = self.AS.cs.ntw.pn['node'][self.exit_asbr.get()]
             self.AS.exit_point = exit_asbr
         self.withdraw()
-            
-    # def add_to_ASBR(self):
-    #     for selected_node in self.dict_listbox['ASBR'].selected():
-    #         self.dict_listbox['ASBR'].insert(selected_node) 
-    #         selected_node = self.AS.cs.ntw.nf(name=selected_node)
-    #         self.AS.add_to_edges(selected_node)
-    #         
-    # def remove_from_edges(self):
-    #     for selected_edge in self.dict_listbox['ASBR'].pop_selected():
-    #         selected = self.AS.cs.ntw.nf(name=selected_edge) 
-    #         self.AS.remove_from_edges(selected)
-    #         
-    # def find_edge_nodes(self):
-    #     self.dict_listbox['ASBR'].clear()
-    #     for edge in self.AS.cs.ntw.find_edge_nodes(self.AS):
-    #         self.dict_listbox['ASBR'].insert(edge)    
+        

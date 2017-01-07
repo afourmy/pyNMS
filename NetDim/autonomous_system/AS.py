@@ -32,10 +32,7 @@ class AutonomousSystem(object):
         self.nodes = nodes
 
         # pAS as in 'pool AS': same as pool network
-        self.pAS = {
-        'trunk': self.trunks, 
-        'node': self.nodes
-        }
+        self.pAS = {'trunk': set(), 'node': set()}
         
         # unselect everything
         scenario.unhighlight_all()
@@ -81,7 +78,8 @@ class IP_AS(AutonomousSystem):
         
     def add_to_AS(self, *objects):
         super(IP_AS, self).add_to_AS(*objects)
-        for obj in objects:
+        
+        for obj in objects:            
             if obj.subtype == 'router':
                 obj.AS_properties[self.name].update({
                                                     'LB_paths': 4,
@@ -143,10 +141,16 @@ class RIP_AS(IP_AS):
             # set the default per-AS properties of all AS objects
             self.add_to_AS(*(self.nodes | self.trunks))
             
+        # update the AS management panel by filling all boxes
+        self.management.refresh_display()
+            
     def add_to_AS(self, *objects):
         super(RIP_AS, self).add_to_AS(*objects)       
         
         for obj in objects:
+            # A RIP AS has no area, each object's area set is initialized 
+            # to None as it should never be needed
+            obj.AS[self] = None
             if obj.type == 'trunk':
                 print('test')
                 obj.interfaceS(self.name, 'cost', 1)
@@ -227,6 +231,9 @@ class ISIS_AS(ASWithArea):
                               
         # set the default per-AS properties of all AS objects
         self.add_to_AS(self.areas['Backbone'], *(self.nodes | self.trunks))
+        
+        # update the AS management panel by filling all boxes
+        self.management.refresh_display()
             
     def RFT_builder(self, source, allowed_nodes, allowed_trunks):
 
@@ -350,6 +357,9 @@ class OSPF_AS(ASWithArea):
                               
             # set the default per-AS properties of all AS objects
             self.add_to_AS(self.areas['Backbone'], *(self.nodes | self.trunks))
+            
+        # update the AS management panel by filling all boxes
+        self.management.refresh_display()
             
     def RFT_builder(self, source, allowed_nodes, allowed_trunks):
         K = source.AS_properties[self.name]['LB_paths']
