@@ -252,8 +252,14 @@ class STP_Management(ASManagement):
         button_highlight_SPT.text='Highlight spanning tree'
         button_highlight_SPT.command = lambda: self.highlight_SPT()
         
+        # trigger a root election
+        button_elect_root = Button(STP_frame) 
+        button_elect_root.text='Elect a root switch'
+        button_elect_root.command = lambda: self.AS.root_election()
+        
         button_compute_SPT.grid(0, 0, in_=lf_stp_specifics)
-        button_highlight_SPT.grid(0, 1, in_=lf_stp_specifics)
+        button_highlight_SPT.grid(1, 0, in_=lf_stp_specifics)
+        button_elect_root.grid(2, 0, in_=lf_stp_specifics)
         
     def highlight_SPT(self):
         self.AS.cs.highlight_objects(*self.AS.SPT_trunks)

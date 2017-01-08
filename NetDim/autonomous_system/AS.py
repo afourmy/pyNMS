@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 from pythonic_tkinter.preconfigured_widgets import *
 from collections import defaultdict
+from miscellaneous.network_functions import mac_comparer
 from heapq import heappop, heappush
 from . import area
 from . import AS_management
@@ -31,9 +32,8 @@ class AutonomousSystem(object):
         self.trunks = trunks
         self.nodes = nodes
 
-        #TODO get rid of the pAS it's useless
         # pAS as in 'pool AS': same as pool network
-        self.pAS = {'trunk': set(), 'node': set()}
+        self.pAS = {'trunk': self.trunks, 'node': self.nodes}
         
         # unselect everything
         scenario.unhighlight_all()
@@ -63,6 +63,46 @@ class AutonomousSystem(object):
             # of area it belongs to in this AS
             obj.AS.pop(self)
             
+class ASWithArea(AutonomousSystem):
+    
+    has_area = True
+    
+    def __init__(self, *args):
+        super().__init__(*args)
+        
+        # areas is a dict associating a name to an area
+        self.areas = {}
+        
+    def area_factory(self, name, id=0, trunks=set(), nodes=set()):
+        if name not in self.areas:
+            self.areas[name] = area.Area(name, id, self, trunks, nodes)
+        return self.areas[name]
+        
+    def add_to_area(self, area='Backbone', *objects):
+        area.add_to_area(*objects)         
+        
+        #TODO move this away
+        # for obj in objects:
+        #     if obj.type == 'trunk':
+        #         cost = self.ref_bw / obj.bw
+        #         obj.interfaceS(self.name, 'cost', cost)
+        #         obj.interfaceD(self.name, 'cost', cost)   
+                
+    def remove_from_area(self, *objects):
+        for obj in objects:
+            # for each area, we delete the object from the corresponding pool
+            for area in set(obj.AS[self]):
+                area.remove_from_area(obj)
+        
+    def delete_area(self, area):
+        # we remove the area of the AS areas dictionary
+        area = self.areas.pop(area.name)
+        for obj_type in ('node', 'trunk'):
+            for obj in area.pa[obj_type]:
+                # we remove the area to the list of area in the AS 
+                # dictionary, for all objects of the area
+                obj.AS[area.AS].remove(area)
+            
 class Ethernet_AS(AutonomousSystem):
     
     layer = 'Ethernet'
@@ -72,6 +112,31 @@ class Ethernet_AS(AutonomousSystem):
         
     def add_to_AS(self, *objects):
         super(AutonomousSystem, self).add_to_AS(*objects)
+        
+class VLAN_AS(Ethernet_AS):
+    
+    AS_type = 'VLAN'
+    
+    def __init__(self, *args):
+        super().__init__(*args)
+        is_imported = args[-1]
+        
+        # root of the AS
+        self.root = None
+        self.SPT_trunks = set()
+        
+        # management window of the AS 
+        self.management = AS_management.STP_Management(self, is_imported)
+                
+        if not is_imported:
+            # set the default per-AS properties of all AS objects
+            self.add_to_AS(*(self.nodes | self.trunks))
+            
+        # trigger the root switch election. The root is the swith with the
+        # highest priority, or in case of tie, the highest MAC address
+        self.root_election()
+        # update the AS management panel by filling all boxes
+        self.management.refresh_display()
             
 class STP_AS(Ethernet_AS):
     
@@ -81,12 +146,9 @@ class STP_AS(Ethernet_AS):
         super().__init__(*args)
         is_imported = args[-1]
         
-        #TODO temporary, initialize to sth else later
-        # root of the AS 
-        print(self.nodes)
-        self.root = list(self.nodes)[0]
+        # root of the AS
+        self.root = None
         self.SPT_trunks = set()
-        print(self.root)
         
         # management window of the AS 
         self.management = AS_management.STP_Management(self, is_imported)
@@ -95,6 +157,9 @@ class STP_AS(Ethernet_AS):
             # set the default per-AS properties of all AS objects
             self.add_to_AS(*(self.nodes | self.trunks))
             
+        # trigger the root switch election. The root is the swith with the
+        # highest priority, or in case of tie, the highest MAC address
+        self.root_election()
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
                     
@@ -107,9 +172,33 @@ class STP_AS(Ethernet_AS):
             obj.AS[self] = None
             if obj.type == 'trunk':
                 obj.interfaceS(self.name, 'cost', 1)
-                obj.interfaceD(self.name, 'cost', 1)   
+                obj.interfaceD(self.name, 'cost', 1)
+                obj.interfaceS(self.name, 'priority', 32768)
+                obj.interfaceD(self.name, 'priority', 32768)
+                
+            if obj.subtype == 'switch':
+                obj.AS_properties[self.name].update({'priority': 32768})
+                
+    def root_election(self):
+        for node in self.nodes:
+            if not self.root:
+                self.root = node
+                continue
+            root_priority = self.root.AS_properties[self.name]['priority']
+            node_priority = node.AS_properties[self.name]['priority'] 
+            # if the current node has a higher priority, it becomes root
+            if node_priority < root_priority:
+                self.root = node
+            # if the priority is the same
+            if node_priority == root_priority:
+                # and the current node has a higher MAC address, it becomes root
+                if mac_comparer(self.root.base_macaddress, node.base_macaddress):
+                    self.root = node
+        print(self.root)
         
     def build_SPT(self):
+        # clear the current spanning tree trunks
+        self.SPT_trunks.clear()
         visited = set()
         # allowed nodes and trunks
         allowed_nodes = self.pAS['node']
@@ -161,47 +250,6 @@ class IP_AS(AutonomousSystem):
         allowed_trunks =  self.trunks - self.ntw.fdtks
         for node in self.nodes:
             self.RFT_builder(node, allowed_nodes, allowed_trunks)
-                
-class ASWithArea(IP_AS):
-    
-    has_area = True
-    
-    def __init__(self, *args):
-        super().__init__(*args)
-        
-        # areas is a dict associating a name to an area
-        self.areas = {}
-        
-    def area_factory(self, name, id=0, trunks=set(), nodes=set()):
-        if name not in self.areas:
-            self.areas[name] = area.Area(name, id, self, trunks, nodes)
-        return self.areas[name]
-        
-    def add_to_AS(self, area='Backbone', *objects):
-        super(ASWithArea, self).add_to_AS(*objects)
-        area.add_to_area(*objects)         
-        
-        for obj in objects:
-            if obj.type == 'trunk':
-                cost = self.ref_bw / obj.bw
-                obj.interfaceS(self.name, 'cost', cost)
-                obj.interfaceD(self.name, 'cost', cost)   
-                
-    def remove_from_AS(self, *objects):
-        super(ASWithArea, self).remove_from_AS(*objects)
-        for obj in objects:
-            # for each area, we delete the object from the corresponding pool
-            for area in set(obj.AS[self]):
-                area.remove_from_area(obj)
-        
-    def delete_area(self, area):
-        # we remove the area of the AS areas dictionary
-        area = self.areas.pop(area.name)
-        for obj_type in ('node', 'trunk'):
-            for obj in area.pa[obj_type]:
-                # we remove the area to the list of area in the AS 
-                # dictionary, for all objects of the area
-                obj.AS[area.AS].remove(area)
                 
 class RIP_AS(IP_AS):
     
@@ -288,7 +336,7 @@ class RIP_AS(IP_AS):
                         source.rt[trunk.sntw].add(('R', ex_ip, ex_int, 
                                                 dist, nh, ex_tk))
         
-class ISIS_AS(ASWithArea):
+class ISIS_AS(ASWithArea, IP_AS):
     
     AS_type = 'ISIS'
     
@@ -312,7 +360,8 @@ class ISIS_AS(ASWithArea):
                               )
                               
         # set the default per-AS properties of all AS objects
-        self.add_to_AS(self.areas['Backbone'], *(self.nodes | self.trunks))
+        self.add_to_AS(*(self.nodes | self.trunks))
+        self.add_to_area(self.areas['Backbone'], *(self.nodes | self.trunks))
         
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
@@ -410,7 +459,7 @@ class ISIS_AS(ASWithArea):
                     # primary path cost defines which paths can be used
                     # (up to 9).
                 
-class OSPF_AS(ASWithArea):
+class OSPF_AS(ASWithArea, IP_AS):
     
     AS_type = 'OSPF'
     
@@ -438,7 +487,8 @@ class OSPF_AS(ASWithArea):
                               )
                               
             # set the default per-AS properties of all AS objects
-            self.add_to_AS(self.areas['Backbone'], *(self.nodes | self.trunks))
+            self.add_to_AS(*(self.nodes | self.trunks))
+            self.add_to_area(self.areas['Backbone'], *(self.nodes | self.trunks))
             
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
@@ -570,8 +620,10 @@ class ModifyAS(CustomTopLevel):
     # when a different AS is selected, the area combobox is updated accordingly
     def update_value(self, scenario):
         selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
-        
-        self.area_list['values'] = tuple(map(str, selected_AS.areas))
+        if selected_AS.has_area:
+            self.area_list['values'] = tuple(map(str, selected_AS.areas))
+        else:
+            self.area_list['values'] = ()
         
     # TODO merge these three functions into one with the mode 
     # they share the check + destroy

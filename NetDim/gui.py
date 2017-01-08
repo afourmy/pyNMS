@@ -202,13 +202,13 @@ class NetDim(MainWindow):
         
         self.object_properties = collections.OrderedDict([
         ('router', node_common_properties + ('default_route', 'bgp_AS')),
+        ('switch', node_common_properties + ('base_macaddress',)),
         ('oxc', node_common_properties),
         ('host', node_common_properties),
         ('antenna', node_common_properties),
         ('regenerator', node_common_properties),
         ('splitter', node_common_properties),
         ('cloud', node_common_properties),
-        ('switch', node_common_properties),
         
         ('ethernet', trunk_common_properties),
         ('wdm', trunk_common_properties + ('lambda_capacity',)),
@@ -313,13 +313,13 @@ class NetDim(MainWindow):
         # object import export (properties)
         self.object_ie = collections.OrderedDict([
         ('router', node_common_ie_properties + ('default_route', 'bgp_AS')),
+        ('switch', node_common_ie_properties + ('base_macaddress',)),
         ('oxc', node_common_ie_properties),
         ('host', node_common_ie_properties),
         ('antenna', node_common_ie_properties),
         ('regenerator', node_common_ie_properties),
         ('splitter', node_common_ie_properties),
         ('cloud', node_common_ie_properties),
-        ('switch', node_common_ie_properties),
         
         ('ethernet', trunk_common_ie_properties),
         ('wdm', trunk_common_ie_properties + ('lambda_capacity',)),
@@ -388,13 +388,13 @@ class NetDim(MainWindow):
         
         self.box_properties = collections.OrderedDict([
         ('router', node_box_properties + ('default_route', 'bgp_AS')),
+        ('switch', node_box_properties + ('base_macaddress',)),
         ('oxc', node_box_properties),
         ('host', node_box_properties),
         ('antenna', node_box_properties),
         ('regenerator', node_box_properties),
         ('splitter', node_box_properties),
         ('cloud', node_box_properties),
-        ('switch', node_box_properties),
         
         ('ethernet', trunk_box_properties),
         ('wdm', trunk_box_properties + ('lambda_capacity',)),
@@ -496,6 +496,9 @@ class NetDim(MainWindow):
         'path': convert_links_list, 
         'subnets': str, 
         'sites': str,
+        'role': str,
+        'priority': int,
+        'base_macaddress': str,
         'AS': convert_AS
         }
         
@@ -563,7 +566,10 @@ class NetDim(MainWindow):
         'path': 'Path',
         'subnets': 'Subnets', 
         'sites': 'Sites',
-        'AS': 'Autonomous system'
+        'AS': 'Autonomous system',
+        'role': 'Role',
+        'priority': 'Priority',
+        'base_macaddress': 'Base MAC address'
         }
         
         self.name_to_prop = {v: k for k, v in self.prop_to_nice_name.items()}

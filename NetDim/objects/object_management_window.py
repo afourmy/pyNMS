@@ -175,7 +175,7 @@ class ObjectManagementWindow(FocusTopLevel):
             elif property in self.property_list:
                 setattr(self.current_obj, property, value)
             else:
-                if property not in self.read_only:
+                if property not in self.read_only and 'interface' not in property:
                     if property in ('path_constraints', 'excluded_nodes', 'excluded_trunks'): 
                         value = self.conv(property)
                     else:
@@ -195,7 +195,8 @@ class ObjectManagementWindow(FocusTopLevel):
             if self.current_obj.AS_properties:
                 AS = self.AS_combobox.text
                 for property, entry in self.dict_perAS_properties.items():
-                    self.current_obj(AS, property, entry.text)
+                    value = self.ms.prop_to_type[property](entry.text)
+                    self.current_obj(AS, property, value)
                 
     def save_and_withdraw(self):
         self.save_obj()

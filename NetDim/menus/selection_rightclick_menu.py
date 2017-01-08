@@ -7,6 +7,7 @@ from autonomous_system import AS
 import ip_networks.configuration as ip_conf
 import ip_networks.troubleshooting as ip_ts
 import ip_networks.ping as ip_ping
+import ip_networks.switching_table as switching_table
 import ip_networks.routing_table as ip_rt
 import ip_networks.bgp_table as ip_bgpt
 import drawing.drawing_options_window
@@ -50,23 +51,32 @@ class SelectionRightClickMenu(tk.Menu):
             link ,= self.cs.so['link']
             if link.type == 'trunk':
                 node ,= self.cs.so['node']
+                interface = link('interface', node)
                 self.add_command(label='Interface menu', 
-                    command=lambda: InterfaceWindow(self.cs.master, link, node))
+                    command=lambda: InterfaceWindow(self.cs.master, interface))
                 self.add_separator()
                 
         # exactly one node: configuration menu
         if not self.cs.so['link'] and len(self.cs.so['node']) == 1:
             node ,= self.cs.so['node']
-            self.add_command(label='Routing table', 
-                        command=lambda: self.routing_table(node))
-            self.add_command(label='BGP table', 
-                        command=lambda: self.bgp_table(node))
+            
             self.add_command(label='Configuration', 
                         command=lambda: self.configure(node))
             self.add_command(label='Troubleshooting', 
                         command=lambda: self.troubleshoot(node))
-            self.add_command(label='Ping', 
-                        command=lambda: self.ping(node))
+                        
+            if node.subtype == 'router':
+                self.add_command(label='Routing table', 
+                            command=lambda: self.routing_table(node))
+                self.add_command(label='BGP table', 
+                            command=lambda: self.bgp_table(node))
+                self.add_command(label='Ping', 
+                            command=lambda: self.ping(node))
+                            
+            if node.subtype == 'switch':
+                self.add_command(label='Switching table', 
+                            command=lambda: self.switching_table(node))
+
             self.add_separator()
         
         self.add_command(label='Create AS', 
@@ -187,6 +197,10 @@ class SelectionRightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def remove_failure(self, trunk):
         self.cs.remove_failure(trunk)
+        
+    @empty_selection_and_destroy_menu
+    def switching_table(self, node):
+        switching_table.SwitchingTable(node, self.cs)
         
     @empty_selection_and_destroy_menu
     def routing_table(self, node):

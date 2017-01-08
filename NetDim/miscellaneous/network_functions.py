@@ -33,6 +33,11 @@ def mac_incrementer(mac_address, nb):
     # increment a mac address by 'nb'
     return '{:012X}'.format(int(mac_address, 16) + nb)
     
+def mac_comparer(mac1, mac2):
+    # 06:00:00:00:00:01 > 05:AA:CC:00:00:11
+    mac1, mac2 = "".join(mac1.split(':')), "".join(mac2.split(':'))
+    return mac_incrementer(mac1, 0) > mac_incrementer(mac2, 0)
+    
 def ip_incrementer(ip_address, nb):
     # increment an ip address by 'nb'
     return tostring(toip(ip_address) + nb)

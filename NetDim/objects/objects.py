@@ -17,7 +17,7 @@ def initializer(default_properties):
                     # sure it refers to different objects in memory by using eval
                     try:
                         setattr(self, property, eval(value))
-                    except (TypeError, NameError):
+                    except (TypeError, NameError, SyntaxError):
                         setattr(self, property, value)
             init(self, *a)
         return wrapper
@@ -41,6 +41,8 @@ ethernet_interface_public_properties = interface_public_properties + (
 
 ethernet_interface_perAS_properties = (
 'cost',
+'role',
+'priority'
 )
 
 ## Public per-AS properties
@@ -49,6 +51,7 @@ common_perAS_properties = ()
 
 perAS_properties = OrderedDict([
 ('router', ('router_id', 'LB_paths')),
+('switch', ('priority',)),
 ])
 
 
@@ -162,10 +165,17 @@ class Switch(Node):
     layer = 2
     imagex, imagey = 54, 36
     
-    ie_properties = {}
+    # each switch has a base mac address which is hardcoded in
+    # hardware and cannot be changed. It is used for STP
+    # root election, in case switches' priorities tie.
+    ie_properties = {
+                     'base_macaddress': '0A0000000000',
+                     }
     
     @initializer(ie_properties)
     def __init__(self, **kwargs):
+        # switching table: binds a MAC address to an outgoing interface
+        self.st = {}
         super().__init__()
         
 class OXC(Node):
@@ -368,7 +378,10 @@ class Interface(NDobject):
         # whether a value is provided or not
         if value:
             self.AS_properties[AS][property] = value
-        return self.AS_properties[AS][property]
+        if property in self.AS_properties[AS]:
+            return self.AS_properties[AS][property]
+        else:
+            return None
                     
 class EthernetInterface(Interface):
     

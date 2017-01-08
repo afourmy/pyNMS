@@ -66,7 +66,8 @@ class Network(object):
     ('RIP', AS.RIP_AS),
     ('ISIS', AS.ISIS_AS),
     ('OSPF', AS.OSPF_AS),
-    ('STP', AS.STP_AS)
+    ('STP', AS.STP_AS),
+    ('VLAN', AS.VLAN_AS),
     ])
     
     link_class = {}
@@ -105,8 +106,7 @@ class Network(object):
         self.name_to_id = {}
         
         # dicts used for IP networks 
-        # - associates a subnetwork to a set of IP addresses while the 
-        # second one associate each IP to its subnet mask
+        # - associates a subnetwork to a set of IP addresses
         self.sntw_to_ip = defaultdict(set)
         # - associates an IP to its mask
         self.ip_to_mask = {}
@@ -142,10 +142,14 @@ class Network(object):
         keep = lambda r: r[1].subtype in sts and (ud or r[1].source == src)
         return filter(keep, self.graph[src][type])
         
-    # function filtering AS per layer
-    def ASftr(self, *sts):
-        keep = lambda r: r.layer in sts
+    # function filtering AS either per layer or per subtype
+    def ASftr(self, filtering_mode, *sts):
+        if filtering_mode == 'layer':
+            keep = lambda r: r.layer in sts
+        else:
+            keep = lambda r: r.AS_type in sts
         return filter(keep, self.pnAS.values())
+        
         
     # function that retrieves all IP addresses attached to a node, including
     # it's loopback IP.
@@ -399,11 +403,20 @@ class Network(object):
         # x6:xx:xx:xx:xx:xx
         # xA:xx:xx:xx:xx:xx
         # xE:xx:xx:xx:xx:xx
+        
+        # allocation of mac_x2 and mac_x6 for interfaces MAC address
         mac_x2, mac_x6 = "020000000000", "060000000000"
         for id, trunk in enumerate(self.trunks.values(), 1):
             macS, macD = mac_incrementer(mac_x2, id), mac_incrementer(mac_x6, id)
-            trunk.macaddressS = ':'.join(macS[i:i+2] for i in range(0, 12, 2))
-            trunk.macaddressD = ':'.join(macD[i:i+2] for i in range(0, 12, 2))
+            source_mac = ':'.join(macS[i:i+2] for i in range(0, 12, 2))
+            destination_mac = ':'.join(macD[i:i+2] for i in range(0, 12, 2))
+            trunk.interfaceS.macaddress = source_mac
+            trunk.interfaceD.macaddress = destination_mac
+            
+        # allocation of mac_xA for switches base (hardware) MAC address
+        mac_xA = "0A0000000000"
+        for id, switch in enumerate(self.ftr('node', 'switch', 1)):
+            switch.base_macaddress = mac_incrementer(mac_xA, id)
 
     def interface_allocation(self):
         for node in self.nodes.values():
@@ -446,6 +459,24 @@ class Network(object):
             AS.build_RFT()
         for router in self.ftr('node', 'router', 'host'):
             self.static_RFT_builder(router)
+            
+    def STP_update(self):
+        for AS in self.ASftr('subtype', 'STP'):
+            AS.root_election()
+            AS.build_SPT()
+            
+    def st_creation(self):
+        # clear the existing switching table
+        for switch in self.ftr('node', 'switch'):
+            switch.st.clear()
+        for AS in self.ASftr('subtype', 'STP'):
+            for switch in AS.nodes:
+                self.ST_builder(switch, AS.pAS['trunk'] - AS.SPT_trunks)
+        # if the switch isn't part of an STP AS, we build its switching table
+        # without excluding any trunk
+        for switch in self.ftr('node', 'switch'):
+            if not switch.st:
+                self.ST_builder(switch)
                 
     def reset_traffic(self):
         # reset the traffic for all trunks
@@ -462,6 +493,42 @@ class Network(object):
                 _, traffic.path = self.A_star(src, dest)
             if not traffic.path:
                 print('no path found for {}'.format(traffic))
+                
+    ## A) Ethernet switching table
+    
+    def ST_builder(self, source, excluded_trunks=None):
+        
+        if not excluded_trunks:
+            excluded_trunks = set()
+        
+        visited = set()
+        heap = [(source, [], [], None)]
+        
+        while heap:
+            node, path_node, path_trunk, ex_int = heappop(heap)  
+            if node not in visited:
+                visited.add(node)
+                for neighbor, l2vc in self.graph[node.id]['l2vc']:
+                    adj_trunk = l2vc('link', node)
+                    remote_trunk = l2vc('link', neighbor)
+                    if adj_trunk in path_trunk:
+                        continue
+                    if adj_trunk in excluded_trunks: 
+                        continue
+                    if node == source:
+                        ex_int = adj_trunk('interface', source)
+                        mac = remote_trunk('macaddress', neighbor)
+                        source.st[mac] = ex_int
+                    heappush(heap, (neighbor, path_node + [neighbor], 
+                                            path_trunk + [adj_trunk], ex_int))
+                    
+            if path_trunk:
+                trunk = path_trunk[-1]
+                node = path_node[-1]
+                ex_tk = path_trunk[0]
+                ex_int = ex_tk('interface', source)
+                mac = trunk('macaddress', node)
+                source.st[mac] = ex_int
         
     ## 0) Ping / traceroute
     
@@ -624,6 +691,8 @@ class Network(object):
             self.segment_finder(i)
             self.multi_access_network(i)
         self.mac_allocation()
+        self.STP_update()
+        self.st_creation()
         self.ip_allocation()
         self.interface_allocation()
         self.route()

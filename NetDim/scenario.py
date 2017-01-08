@@ -776,10 +776,8 @@ class Scenario(tk.Canvas):
         elif itf and label_type in ('name', 'ipaddress'):
             # to display the name of the interface, we retrieve the 'interface'
             # parameters of the corresponding trunk
-            if label_type == 'name':
-                label_type = 'interface'
-            valueS = getattr(obj, label_type + 'S')
-            valueD = getattr(obj, label_type + 'D')
+            valueS = getattr(obj.interfaceS, label_type)
+            valueD = getattr(obj.interfaceD, label_type)
             self.itemconfig(label_id[0], text=valueS)
             self.itemconfig(label_id[1], text=valueD)
         else:
@@ -982,7 +980,7 @@ class Scenario(tk.Canvas):
             self.planal_move(50)
             min_y = min(node.y for node in self.ntw.nodes.values())
             max_y = max(node.y for node in self.ntw.nodes.values())
-            self.diff_y = (max_y - min_y) // 2 + 100
+            self.diff_y = (max_y - min_y) // 2 + 200
             
         self.unhighlight_all()
         self.draw_all(False)

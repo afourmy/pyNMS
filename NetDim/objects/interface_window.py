@@ -56,7 +56,7 @@ class InterfaceWindow(FocusTopLevel):
                 label.text = self.ms.prop_to_nice_name[property]
                 
                 property_entry = Entry(self, width=15)
-                property_entry.text = self.interface(self.AS_combobox.text, property)
+                property_entry.text = str(self.interface(self.AS_combobox.text, property))
                 self.dict_perAS_properties[property] = property_entry
                 
                 label.grid(index+1, 0, pady=1, in_=lf_perAS)
