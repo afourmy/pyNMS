@@ -61,7 +61,7 @@ class ASManagement(CustomTopLevel):
             label = Label(common_frame)
             label.text = 'AS ' + type + 's'
     
-            listbox = Listbox(common_frame, activestyle='none', width=15, height=7, selectmode='extended')
+            listbox = ObjectListbox(common_frame, activestyle='none', width=15, height=7, selectmode='extended')
                                             
             self.dict_listbox[type] = listbox
             yscroll = Scrollbar(common_frame)
@@ -124,11 +124,8 @@ class ASManagement(CustomTopLevel):
             print(so)
             self.AS.remove_from_AS(so)
         
-    def add_to_AS(self, area, *objects):
-        if self.AS.has_area:
-            self.AS.add_to_AS(self.AS.areas[area], *objects)
-        else:
-            self.AS.add_to_AS(*objects)
+    def add_to_AS(self, *objects):
+        self.AS.add_to_AS(*objects)
         for obj in objects:
             self.dict_listbox[obj.type].insert(obj)
             
@@ -138,7 +135,7 @@ class ASManagement(CustomTopLevel):
             for neighbor, adj_trunk in self.AS.cs.ntw.graph[node.id]['trunk']:
                 if neighbor in self.AS.pAS['node']:
                     trunks_between_domain_nodes.add(adj_trunk)
-        self.add_to_AS('Backbone', *trunks_between_domain_nodes)
+        self.add_to_AS(*trunks_between_domain_nodes)
             
     ## Functions used to modify AS from the right-click menu
                 
@@ -263,6 +260,11 @@ class STP_Management(ASManagement):
         
     def highlight_SPT(self):
         self.AS.cs.highlight_objects(*self.AS.SPT_trunks)
+        
+class VLAN_Management(ASManagementWithArea):
+    
+    def __init__(self, *args):
+        super().__init__(*args)
         
 class ISIS_Management(ASManagementWithArea):
     

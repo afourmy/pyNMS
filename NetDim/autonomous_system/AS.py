@@ -80,13 +80,6 @@ class ASWithArea(AutonomousSystem):
         
     def add_to_area(self, area='Backbone', *objects):
         area.add_to_area(*objects)         
-        
-        #TODO move this away
-        # for obj in objects:
-        #     if obj.type == 'trunk':
-        #         cost = self.ref_bw / obj.bw
-        #         obj.interfaceS(self.name, 'cost', cost)
-        #         obj.interfaceD(self.name, 'cost', cost)   
                 
     def remove_from_area(self, *objects):
         for obj in objects:
@@ -111,9 +104,9 @@ class Ethernet_AS(AutonomousSystem):
         super().__init__(*args)
         
     def add_to_AS(self, *objects):
-        super(AutonomousSystem, self).add_to_AS(*objects)
+        super(Ethernet_AS, self).add_to_AS(*objects)
         
-class VLAN_AS(Ethernet_AS):
+class VLAN_AS(ASWithArea, Ethernet_AS):
     
     AS_type = 'VLAN'
     
@@ -121,20 +114,13 @@ class VLAN_AS(Ethernet_AS):
         super().__init__(*args)
         is_imported = args[-1]
         
-        # root of the AS
-        self.root = None
-        self.SPT_trunks = set()
-        
         # management window of the AS 
-        self.management = AS_management.STP_Management(self, is_imported)
+        self.management = AS_management.VLAN_Management(self, is_imported)
                 
         if not is_imported:
             # set the default per-AS properties of all AS objects
             self.add_to_AS(*(self.nodes | self.trunks))
-            
-        # trigger the root switch election. The root is the swith with the
-        # highest priority, or in case of tie, the highest MAC address
-        self.root_election()
+
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
             
@@ -365,7 +351,16 @@ class ISIS_AS(ASWithArea, IP_AS):
         
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
-            
+        
+    def add_to_AS(self, *objects):
+        super(ISIS_AS, self).add_to_AS(*objects)       
+        
+        for obj in objects:
+            if obj.type == 'trunk':
+                cost = self.ref_bw / obj.bw
+                obj.interfaceS(self.name, 'cost', cost)
+                obj.interfaceD(self.name, 'cost', cost)     
+
     def RFT_builder(self, source, allowed_nodes, allowed_trunks):
 
         K = source.AS_properties[self.name]['LB_paths']
@@ -492,6 +487,15 @@ class OSPF_AS(ASWithArea, IP_AS):
             
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
+        
+    def add_to_AS(self, *objects):
+        super(OSPF_AS, self).add_to_AS(*objects)       
+        
+        for obj in objects:
+            if obj.type == 'trunk':
+                cost = self.ref_bw / obj.bw
+                obj.interfaceS(self.name, 'cost', cost)
+                obj.interfaceD(self.name, 'cost', cost)  
             
     def RFT_builder(self, source, allowed_nodes, allowed_trunks):
         K = source.AS_properties[self.name]['LB_paths']
@@ -566,6 +570,8 @@ class OSPF_AS(ASWithArea, IP_AS):
                         visited_subnetworks.add((rtype, trunk.sntw))
                         source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
                                                         dist, nh, ex_tk)}
+                                                        
+                                    
                     
 class ModifyAS(CustomTopLevel):
     def __init__(self, scenario, mode, obj, AS=set()):
@@ -647,49 +653,89 @@ class ModifyAS(CustomTopLevel):
         selected_AS.management.deiconify()
         self.destroy()
         
+        
+class ASOperation(CustomTopLevel):
+    
+    # Add objects to an AS, or remove objects from an AS
+    
+    def __init__(self, scenario, mode, obj, AS=set()):
+        super().__init__()
+        
+        title = 'Add to AS' if mode == 'add' else 'Remove from AS'
+        self.title(title)
+        
+        if mode == 'add':
+            # All AS are proposed 
+            values = tuple(map(str, scenario.ntw.pnAS))
+            print(values)
+        else:
+            # Only the common AS among all selected objects
+            values = tuple(map(str, AS))
+        
+        # List of existing AS
+        self.AS_list = Combobox(self, width=9)
+        self.AS_list['values'] = values
+        #self.AS_list.current(0)
+
+        button_add_AS = Button(self)
+        button_add_AS.text = 'OK'
+        button_add_AS.command = lambda: self.as_operation(scenario, mode, *obj)
+        
+        self.AS_list.grid(0, 0, 1, 2)
+        button_add_AS.grid(1, 0, 1, 2)
+        
+    def as_operation(self, scenario, mode, *objects):
+        selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
+        print(mode)
+        if mode == 'add':
+            selected_AS.management.add_to_AS(*objects)
+        else:
+            selected_AS.management.remove_from_AS(*objects)
+        self.destroy()
+        
 class ASCreation(CustomTopLevel):
     def __init__(self, scenario, nodes, trunks):
         super().__init__()
-        self.so = scenario.so
         self.title('Create AS')
         
         # List of AS type
-        self.var_AS_type = tk.StringVar()
-        self.AS_type_list = ttk.Combobox(self, 
-                                    textvariable=self.var_AS_type, width=6)
-        self.AS_type_list['values'] = ('RIP', 'ISIS', 'OSPF', 'RSTP', 'BGP', 'STP')
+        self.AS_type_list = Combobox(self, width=10)
+        self.AS_type_list['values'] = ('RIP', 'ISIS', 'OSPF', 'RSTP', 'BGP', 'STP', 'VLAN')
         self.AS_type_list.current(0)
 
         # retrieve and save node data
-        self.button_create_AS = ttk.Button(self, text='Create AS', 
-                        command=lambda: self.create_AS(scenario, nodes, trunks))
-        
+        button_create_AS = Button(self)
+        button_create_AS.text = 'Create AS'
+        button_create_AS.command = lambda: self.create_AS(scenario, nodes, trunks)
+                        
         # Label for the name/type of the AS
-        self.label_name = tk.Label(self, bg='#A1DBCD', text='Name')
-        self.label_type = tk.Label(self, bg='#A1DBCD', text='Type')
-        self.label_id = tk.Label(self, bg='#A1DBCD', text='ID')
+        label_name = Label(self)
+        label_name.text = 'Name'
+        
+        label_type = Label(self)
+        label_type.text = 'Type'
+        
+        label_id = Label(self)
+        label_id.text = 'ID'
         
         # Entry box for the name of the AS
-        self.entry_name  = tk.Entry(self, width=10)
-        self.entry_id  = tk.Entry(self, width=10)
+        self.entry_name  = Entry(self, width=13)
+        self.entry_id  = Entry(self, width=13)
         
-        self.label_name.grid(row=0, column=0, pady=5, padx=5, sticky=tk.W)
-        self.label_id.grid(row=1, column=0, pady=5, padx=5, sticky=tk.W)
-        self.entry_name.grid(row=0, column=1, sticky=tk.W)
-        self.entry_id.grid(row=1, column=1, sticky=tk.W)
-        self.label_type.grid(row=2, column=0, pady=5, padx=5, sticky=tk.W)
-        self.AS_type_list.grid(row=2, column=1, pady=5, padx=5, sticky=tk.W)
-        self.button_create_AS.grid(row=3, column=0, columnspan=2, pady=5, padx=5)
+        label_name.grid(0, 0)
+        label_id.grid(1, 0)
+        self.entry_name.grid(0, 1)
+        self.entry_id.grid(1, 1)
+        label_type.grid(2, 0)
+        self.AS_type_list.grid(2, 1)
+        button_create_AS.grid(3, 0, 1, 2)
 
     def create_AS(self, scenario, nodes, trunks):
         # automatic initialization of the AS id in case it is empty
-        if self.entry_id.get():
-            id = int(self.entry_id.get())
-        else:
-            id = len(scenario.ntw.pnAS) + 1
+        id = int(self.entry_id.get()) if self.entry_id.get() else len(scenario.ntw.pnAS) + 1
         
         new_AS = scenario.ntw.AS_factory(
-                                         self.var_AS_type.get(), 
+                                         self.AS_type_list.get(), 
                                          self.entry_name.get(), 
                                          id,
                                          trunks, 

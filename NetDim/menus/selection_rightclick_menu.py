@@ -97,10 +97,10 @@ class SelectionRightClickMenu(tk.Menu):
         if self.common_AS:
             self.add_command(label='Remove from AS', 
                         command=lambda: self.change_AS('remove'))
-            self.add_command(label='Remove from area', 
-                        command=lambda: self.change_AS('remove area'))
-            self.add_command(label='Manage AS', 
-                        command=lambda: self.change_AS('manage'))
+            # self.add_command(label='Remove from area', 
+            #             command=lambda: self.change_AS('remove area'))
+            # self.add_command(label='Manage AS', 
+            #             command=lambda: self.change_AS('manage'))
                         
         self.add_separator()
         
@@ -188,7 +188,8 @@ class SelectionRightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def change_AS(self, mode):
-        AS.ModifyAS(self.cs, mode, self.all_so, self.common_AS)
+        print(mode, self.all_so, self.common_AS)
+        AS.ASOperation(self.cs, mode, self.all_so, self.common_AS)
         
     @empty_selection_and_destroy_menu
     def simulate_failure(self, trunk):
