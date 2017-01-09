@@ -25,6 +25,7 @@ class AutonomousSystem(object):
                  nodes = set(), 
                  imp = False
                  ):
+                     
         self.cs = scenario
         self.ntw = self.cs.ntw
         self.name = name
@@ -54,6 +55,8 @@ class AutonomousSystem(object):
         for obj in objects:
             # add objects in the AS corresponding pool
             self.pAS[obj.type].add(obj)
+            if not self in obj.AS:
+                obj.AS[self] = set()
         
     def remove_from_AS(self, *objects):
         for obj in objects:
@@ -118,6 +121,13 @@ class VLAN_AS(ASWithArea, Ethernet_AS):
         self.management = AS_management.VLAN_Management(self, is_imported)
                 
         if not is_imported:
+            self.area_factory(
+                              'Default VLAN', 
+                              id = 1, 
+                              trunks = self.trunks, 
+                              nodes = self.nodes
+                              )
+                              
             # set the default per-AS properties of all AS objects
             self.add_to_AS(*(self.nodes | self.trunks))
 
@@ -570,89 +580,51 @@ class OSPF_AS(ASWithArea, IP_AS):
                         visited_subnetworks.add((rtype, trunk.sntw))
                         source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
                                                         dist, nh, ex_tk)}
-                                                        
-                                    
-                    
-class ModifyAS(CustomTopLevel):
+        
+class AreaOperation(CustomTopLevel):
+    
+    # Add objects to an area, or remove objects from an area
+    
     def __init__(self, scenario, mode, obj, AS=set()):
         super().__init__()
-        # TODO put that in the dict
-        titles = {
-        'add': 'Add to AS/area', 
-        'remove': 'Remove from AS', 
-        'remove area': 'Remove from area',
-        'manage': 'Manage AS'
-        }
-        self.title(titles[mode])
-        # always at least one row and one column with a weight > 0
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=1)
+        
+        title = 'Add to area' if mode == 'add' else 'Remove from area'
+        self.title(title)
 
-        if mode == 'add':
-            command = lambda: self.add(scenario, *obj)
-            values = tuple(map(str, scenario.ntw.pnAS.values()))
-        elif mode == 'remove':
-            values = tuple(map(str, AS))
-            command = lambda: self.remove_from_AS(scenario, *obj)
-        elif mode == 'remove area':
-            values = tuple(map(str, AS))
-            command = lambda: self.remove_from_area(scenario, *obj)
-        elif mode == 'manage':
-            values = tuple(map(str, AS))
-            command = lambda: self.manage_AS(scenario)
+        values = tuple(map(str, AS))
         
         # List of existing AS
-        self.AS_list = ttk.Combobox(self, width=9)
+        self.AS_list = Combobox(self, width=15)
         self.AS_list['values'] = values
         self.AS_list.current(0)
-        self.AS_list.grid(row=0, column=0, columnspan=2, 
-                                            pady=5, padx=5, sticky='nsew')
-        self.AS_list.bind('<<ComboboxSelected>>', 
-                                        lambda e: self.update_value(scenario))
+        self.AS_list.bind('<<ComboboxSelected>>', lambda e: self.update_value(scenario))
         
-        if mode in ('add', 'remove area'):
-            self.area_list = ttk.Combobox(self, width=9)
-            self.update_value(scenario)
-            self.area_list.current(0)
-            self.area_list.grid(row=1, column=0, columnspan=2, 
-                                            pady=5, padx=5, sticky='nsew')
+        self.area_list = Combobox(self, width=15)
+        self.update_value(scenario)
+        self.area_list.current(0)
+
+        button_area_operation = Button(self)
+        button_area_operation.text = 'OK'
+        button_area_operation.command = lambda: self.area_operation(scenario, mode, *obj)
         
-        # Button to add in an AS
-        self.button_add_AS = ttk.Button(self, text='OK', command=command)
-        #row = 2 if mode in ('add', 'remove area') else 1
-        self.button_add_AS.grid(row=2, column=0, columnspan=2, 
-                                            pady=5, padx=5, sticky='nsew')
+        self.AS_list.grid(0, 0)
+        self.area_list.grid(1, 0)
+        button_area_operation.grid(2, 0)
         
-    # when a different AS is selected, the area combobox is updated accordingly
     def update_value(self, scenario):
         selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
-        if selected_AS.has_area:
-            self.area_list['values'] = tuple(map(str, selected_AS.areas))
+        self.area_list['values'] = tuple(map(str, selected_AS.areas))
+        
+    def area_operation(self, scenario, mode, *objects):
+        selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
+        selected_area = self.area_list.get()
+
+        if mode == 'add':
+            selected_AS.management.add_to_area(selected_area, *objects)
         else:
-            self.area_list['values'] = ()
-        
-    # TODO merge these three functions into one with the mode 
-    # they share the check + destroy
-    def add(self, scenario, *objects):
-        selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
-        selected_AS.management.add_to_AS(self.area_list.get(), *objects)
+            selected_AS.management.remove_from_area(selected_area, *objects)
+            
         self.destroy()
-        
-    def remove_from_area(self, scenario, *objects):
-        selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
-        selected_AS.management.remove_from_area(self.area_list.get(), *objects)
-        self.destroy()
-        
-    def remove_from_AS(self, scenario, *objects):
-        selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
-        selected_AS.management.remove_from_AS(*objects)
-        self.destroy()
-        
-    def manage_AS(self, scenario):
-        selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
-        selected_AS.management.deiconify()
-        self.destroy()
-        
         
 class ASOperation(CustomTopLevel):
     
@@ -661,36 +633,43 @@ class ASOperation(CustomTopLevel):
     def __init__(self, scenario, mode, obj, AS=set()):
         super().__init__()
         
-        title = 'Add to AS' if mode == 'add' else 'Remove from AS'
+        title = {
+        'add': 'Add to AS',
+        'remove': 'Remove from AS',
+        'manage': 'Manage AS'
+        }[mode]
+        
         self.title(title)
         
         if mode == 'add':
             # All AS are proposed 
             values = tuple(map(str, scenario.ntw.pnAS))
-            print(values)
         else:
             # Only the common AS among all selected objects
             values = tuple(map(str, AS))
         
         # List of existing AS
-        self.AS_list = Combobox(self, width=9)
+        self.AS_list = Combobox(self, width=15)
         self.AS_list['values'] = values
-        #self.AS_list.current(0)
+        self.AS_list.current(0)
 
-        button_add_AS = Button(self)
-        button_add_AS.text = 'OK'
-        button_add_AS.command = lambda: self.as_operation(scenario, mode, *obj)
+        button_AS_operation = Button(self)
+        button_AS_operation.text = 'OK'
+        button_AS_operation.command = lambda: self.as_operation(scenario, mode, *obj)
         
         self.AS_list.grid(0, 0, 1, 2)
-        button_add_AS.grid(1, 0, 1, 2)
+        button_AS_operation.grid(1, 0, 1, 2)
         
     def as_operation(self, scenario, mode, *objects):
         selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
-        print(mode)
+
         if mode == 'add':
             selected_AS.management.add_to_AS(*objects)
-        else:
+        elif mode == 'remove':
             selected_AS.management.remove_from_AS(*objects)
+        else:
+            selected_AS.management.deiconify()
+            
         self.destroy()
         
 class ASCreation(CustomTopLevel):

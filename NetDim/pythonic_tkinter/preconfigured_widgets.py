@@ -88,7 +88,7 @@ class ImprovedListbox(tk.Listbox):
         # we have to decrease the curselection index by how many objects
         # we've deleted so far.
         for idx, obj in enumerate(self.curselection()):
-            self.pop(self.get(obj - idx))
+            yield self.pop(self.get(obj - idx))
         
     def clear(self):
         self.delete(0, 'end')

@@ -18,6 +18,7 @@ from tkinter import ttk, filedialog
 from pythonic_tkinter.preconfigured_widgets import *
 from objects import object_management_window as omw
 from miscellaneous import graph_algorithms as galg
+from miscellaneous import debug
 from drawing import drawing_options_window as dow
 from graph_generation import advanced_graph as adv_gr
 from optical_networks import rwa_window as rwaw
@@ -596,6 +597,9 @@ class NetDim(MainWindow):
         # graph generation window
         self.advanced_graph = adv_gr.AdvancedGraph(self)
         
+        # debug window
+        self.debug_window = debug.Debug(self)
+        
         ## ----- Menus : -----
         netdim_menu = Menu(self)
         
@@ -622,6 +626,10 @@ class NetDim(MainWindow):
         export_graph.command = self.export_graph
 
         general_menu.separator()
+        
+        debug_entry = MenuEntry(general_menu)
+        debug_entry.text = 'Debug'
+        debug_entry.command = self.debug_window.deiconify
         
         exit = MenuEntry(general_menu)
         exit.text = 'Exit'

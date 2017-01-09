@@ -4,7 +4,7 @@
 
 import tkinter as tk
 from autonomous_system import AS
-import ip_networks.configuration as ip_conf
+import ip_networks.configuration as conf
 import ip_networks.troubleshooting as ip_ts
 import ip_networks.ping as ip_ping
 import ip_networks.switching_table as switching_table
@@ -95,12 +95,22 @@ class SelectionRightClickMenu(tk.Menu):
             
         # if at least one common AS: remove from AS or manage AS
         if self.common_AS:
+            self.add_command(label='Manage AS', 
+                        command=lambda: self.change_AS('manage'))
             self.add_command(label='Remove from AS', 
                         command=lambda: self.change_AS('remove'))
-            # self.add_command(label='Remove from area', 
-            #             command=lambda: self.change_AS('remove area'))
-            # self.add_command(label='Manage AS', 
-            #             command=lambda: self.change_AS('manage'))
+                        
+            keep = lambda AS: AS.has_area
+            self.common_AS_with_area = set(filter(keep, self.common_AS))
+            
+            # if there is at least one AS with area among all common AS
+            # of the current selection, display the area management menu
+            if self.common_AS_with_area:
+                self.add_command(label='Add to area', 
+                            command=lambda: self.change_area('add'))
+                self.add_command(label='Remove from area', 
+                            command=lambda: self.change_area('remove'))
+
                         
         self.add_separator()
         
@@ -188,8 +198,11 @@ class SelectionRightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def change_AS(self, mode):
-        print(mode, self.all_so, self.common_AS)
         AS.ASOperation(self.cs, mode, self.all_so, self.common_AS)
+        
+    @empty_selection_and_destroy_menu
+    def change_area(self, mode):
+        AS.AreaOperation(self.cs, mode, self.all_so, self.common_AS)
         
     @empty_selection_and_destroy_menu
     def simulate_failure(self, trunk):
@@ -213,7 +226,10 @@ class SelectionRightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def configure(self, node):
-        ip_conf.Configuration(node, self.cs)
+        if node.subtype == 'router':
+            conf.RouterConfiguration(node, self.cs)
+        if node.subtype == 'switch':
+            conf.SwitchConfiguration(node, self.cs)
         
     @empty_selection_and_destroy_menu
     def troubleshoot(self, node):

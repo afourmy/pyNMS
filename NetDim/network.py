@@ -455,7 +455,7 @@ class Network(object):
         for router in self.ftr('node', 'router', 'host'):
             router.rt.clear()
         # we compute the routing table of all routers
-        for AS in self.ASftr('IP'):
+        for AS in self.ASftr('layer', 'IP'):
             AS.build_RFT()
         for router in self.ftr('node', 'router', 'host'):
             self.static_RFT_builder(router)

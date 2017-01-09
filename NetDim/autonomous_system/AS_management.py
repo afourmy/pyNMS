@@ -61,7 +61,7 @@ class ASManagement(CustomTopLevel):
             label = Label(common_frame)
             label.text = 'AS ' + type + 's'
     
-            listbox = ObjectListbox(common_frame, activestyle='none', width=15, height=7, selectmode='extended')
+            listbox = ObjectListbox(common_frame, width=15, height=7)
                                             
             self.dict_listbox[type] = listbox
             yscroll = Scrollbar(common_frame)
@@ -91,6 +91,7 @@ class ASManagement(CustomTopLevel):
         # button under the nodes column
         button_remove_node_from_AS.grid(2, 2, in_=lf_objects)
         
+        self.wm_attributes('-topmost', True) 
         # hide the window when closed
         self.protocol('WM_DELETE_WINDOW', self.withdraw)
         
@@ -153,67 +154,89 @@ class ASManagementWithArea(ASManagement):
     def __init__(self, *args):
         super().__init__(*args)
         
+        if self.AS.AS_type == 'VLAN':
+            mode = 'VLAN'
+        else:
+            mode = 'area'
+        
         self.area_frame = CustomFrame(self.frame_notebook)
         self.frame_notebook.add(self.area_frame, text='Area management')
-        self.area_listbox = ('area names', 'area trunks', 'area nodes')
+        self.area_listbox = ('name', 'trunk', 'node')
+        self.dict_area_listbox = {}
         
         # listbox for areas
         for index, type in enumerate(self.area_listbox):
-            lbl = tk.Label(self.area_frame, bg='#A1DBCD', text=type.title())
-            listbox = ObjectListbox(self.area_frame, activestyle='none', width=15, height=7)
-            self.dict_listbox[type] = listbox
-            yscroll = tk.Scrollbar(self.area_frame, 
-                    command=self.dict_listbox[type].yview, orient=tk.VERTICAL)
+            lbl = Label(self.area_frame)
+            lbl.text = ' '.join((mode, type))
+            listbox = ObjectListbox(self.area_frame, width=15, height=7)
+            self.dict_area_listbox[type] = listbox
+            
+            yscroll = Scrollbar(self.area_frame, orient=tk.VERTICAL)
+            yscroll.command = self.dict_area_listbox[type].yview
             listbox.configure(yscrollcommand=yscroll.set)
-            if type == 'area names':
-                listbox.bind('<<ListboxSelect>>', 
-                            lambda e: self.display_area(e))
+            
+            if type == 'name':
+                listbox.bind('<<ListboxSelect>>', lambda e: self.display_area(e))
             else:
-                listbox.bind('<<ListboxSelect>>', 
-                            lambda e, type=type: self.highlight_object(e, type))
-            lbl.grid(row=6, column=2*index)
+                listbox.bind('<<ListboxSelect>>', lambda e, type=type: self.highlight_area_object(e, type))
+                            
+            lbl.grid(6, 2 * index)
             listbox.grid(7, 2*index)
-            yscroll.grid(row=7, column=1+2*index, sticky='ns')
+            yscroll.grid(7, 1+2*index)
                                                   
         # button to create an area
-        self.button_create_area = ttk.Button(self.area_frame, text='Create area', 
-                                command=lambda: area.CreateArea(self))
+        button_create_area = Button(self.area_frame) 
+        button_create_area.text = 'Create ' + mode
+        button_create_area.command = lambda: area.CreateArea(self)
                                 
         # button to delete an area
-        self.button_delete_area = ttk.Button(self.area_frame, text='Delete area', 
-                                command=lambda: self.delete_area())
+        button_delete_area = Button(self.area_frame)
+        button_delete_area.text = 'Delete area'
+        button_delete_area.command = lambda: self.delete_area()
             
         # button under the area column
-        self.button_create_area.grid(row=8, column=0)
-        self.button_delete_area.grid(row=9, column=0)
+        button_create_area.grid(8, 0)
+        button_delete_area.grid(9, 0)
         
         # at first, the backbone is the only area: we insert it in the listbox
-        self.dict_listbox['area names'].insert('Backbone')
+        self.default_area = 'Default VLAN' if mode == 'VLAN' else 'Backbone'
+        self.dict_area_listbox['name'].insert(self.default_area)
+        
+    # function to highlight the selected object on the canvas
+    def highlight_area_object(self, event, obj_type):        
+        self.AS.cs.unhighlight_all()
+        for selected_object in self.dict_area_listbox[obj_type].selected():
+            so = self.AS.cs.ntw.of(name=selected_object, _type=obj_type)
+            self.AS.cs.highlight_objects(so)
         
     ## Functions used directly from the AS Management window
 
     def create_area(self, name, id):
         self.AS.area_factory(name, id)
-        self.dict_listbox['area names'].insert(name)
+        self.dict_area_listbox['name'].insert(name)
 
     def delete_area(self):
-        for area_name in self.dict_listbox['area names'].pop_selected():
+        for area_name in self.dict_area_listbox['name'].pop_selected():
             selected_area = self.AS.area_factory(name=area_name)
             self.AS.delete_area(selected_area)
                 
     def display_area(self, event):
-        for area in self.dict_listbox['area names'].selected():
+        for area in self.dict_area_listbox['name'].selected():
             area = self.AS.area_factory(area)
             self.AS.cs.unhighlight_all()
             self.AS.cs.highlight_objects(*(area.pa['node'] | area.pa['trunk']))
-            self.dict_listbox['area nodes'].clear()
-            self.dict_listbox['area trunks'].clear()
+            self.dict_area_listbox['node'].clear()
+            self.dict_area_listbox['trunk'].clear()
             for node in area.pa['node']:
-                self.dict_listbox['area nodes'].insert(node)
+                self.dict_area_listbox['node'].insert(node)
             for trunk in area.pa['trunk']:
-                self.dict_listbox['area trunks'].insert(trunk)
+                self.dict_area_listbox['trunk'].insert(trunk)
                 
     ## Functions used to modify AS from the right-click menu
+    
+    def add_to_AS(self, *objects):
+        super(ASManagementWithArea, self).add_to_AS(*objects)  
+        self.add_to_area(self.default_area, *objects)
     
     def add_to_area(self, area, *objects):
         self.AS.areas[area].add_to_area(*objects)

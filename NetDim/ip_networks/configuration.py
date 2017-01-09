@@ -8,7 +8,7 @@ import re
 from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous.network_functions import tomask
 
-class Configuration(tk.Toplevel):
+class RouterConfiguration(tk.Toplevel):
     def __init__(self, node, scenario):
         super().__init__() 
         self.cs = scenario
@@ -220,5 +220,103 @@ class Configuration(tk.Toplevel):
         if node.default_route:
             yield ' {name}(config)# ip route 0.0.0.0 0.0.0.0 {def_route}\n'\
                     .format(name=node.name, def_route=node.default_route)
+                    
+        yield ' {name}(config)# end\n'.format(name=node.name)
+
+class SwitchConfiguration(tk.Toplevel):
+    def __init__(self, node, scenario):
+        super().__init__() 
+        self.cs = scenario
+        
+        notebook = ttk.Notebook(self)
+        pastable_config_frame = ttk.Frame(notebook)
+        detailed_config_frame = ttk.Frame(notebook)
+        st_pastable_config = CustomScrolledText(pastable_config_frame)
+        st_detailed_config = CustomScrolledText(detailed_config_frame)
+        notebook.add(pastable_config_frame, text='Pastable configuration ')
+        notebook.add(detailed_config_frame, text='Detailed configuration ')
+        
+        self.wm_attributes('-topmost', True)
+        
+        for conf in self.build_config(node):
+            pastable_conf = re.search('[#|>](.*)', conf).group(1) + '\n'
+            st_detailed_config.insert('insert', conf)
+            st_pastable_config.insert('insert', pastable_conf)
+            
+        # disable the scrolledtext so that it cannot be edited
+        st_pastable_config.config(state=tk.DISABLED)
+        st_detailed_config.config(state=tk.DISABLED)
+        
+        # pack the scrolledtexts in the frames
+        st_pastable_config.pack(fill=tk.BOTH, expand=tk.YES)
+        st_detailed_config.pack(fill=tk.BOTH, expand=tk.YES)
+        
+        # and the notebook in the window
+        notebook.pack(fill=tk.BOTH, expand=tk.YES)
+        
+    def build_config(self, node):
+
+        # initialization
+        yield ' {name}> enable\n'.format(name=node.name)  
+        yield ' {name}# configure terminal\n'.format(name=node.name)
+        
+        # create all VLAN on the switch
+        for AS in node.AS:
+            if AS.AS_type == 'VLAN':
+                for VLAN in node.AS[AS]:
+                    yield ' {name}(config)# vlan {vlan_id}\n'\
+                                    .format(name=node.name, vlan_id=VLAN.id)
+                    yield ' {name}(config-vlan)# name {vlan_name}\n'\
+                                    .format(name=node.name, vlan_name=VLAN.name)
+                    yield ' {name}(config-vlan)# exit\n'.format(name=node.name)
+        
+        for _, adj_trunk in self.cs.ntw.graph[node.id]['trunk']:
+            interface = adj_trunk('interface', node)
+            yield ' {name}(config)# interface {interface}\n'\
+                                .format(name=node.name, interface=interface)
+                                    
+            for AS in adj_trunk.AS:
+                
+                # VLAN configuration
+                if AS.AS_type == 'VLAN':
+                    
+                    # if there is a single VLAN, the link is an access link
+                    if len(adj_trunk.AS[AS]) == 1:
+                        # retrieve the unique VLAN the link belongs to
+                        unique_VLAN ,= adj_trunk.AS[AS]
+                        yield ' {name}(config-if)# switchport mode access\n'\
+                                                        .format(name=node.name)
+                        yield ' {name}(config-if)# switchport access vlan {vlan}\n'\
+                                .format(name=node.name, vlan=unique_VLAN.id)
+                                
+                    else:
+                        # there is more than one VLAN, the link is a trunk
+                        yield ' {name}(config-if)# switchport mode trunk\n'\
+                                                        .format(name=node.name)
+                        # finds all VLAN IDs
+                        VLAN_IDs = map(lambda vlan: str(vlan.id), adj_trunk.AS[AS])
+                        # allow them on the trunk
+                        yield ' {name}(config-if)# switchport trunk allowed vlan add {all_ids}\n'\
+                            .format(name=node.name, all_ids=",".join(VLAN_IDs))
+                        
+                    
+            
+        for AS in node.AS:
+            
+            if AS.AS_type == 'RIP':
+                yield ' {name}(config)# router rip\n'\
+                                                .format(name=node.name)
+                
+                for _, adj_trunk in self.cs.ntw.graph[node.id]['trunk']:
+                    interface = adj_trunk('interface', node)
+                    if adj_trunk in AS.pAS['trunk']:
+                        ip = interface.ipaddress
+                        
+                        yield ' {name}(config-router)# network {ip}\n'\
+                                                .format(name=node.name, ip=ip)
+                    else:
+                        if_name = interface.name
+                        yield ' {name}(config-router)# passive-interface {i}\n'\
+                                .format(name=node.name, i=if_name)
                     
         yield ' {name}(config)# end\n'.format(name=node.name)
