@@ -154,6 +154,10 @@ class Router(Node):
     def __init__(self, **kwargs):
         # routing table: binds an IP address to a cost / next-hop
         self.rt = {}
+        # arp table: binds an IP to a tuple (MAC address, outgoing interface)
+        self.arpt = {}
+        # reverse arp table: the other way around
+        self.rarpt = {}
         # bgp table
         self.bgpt = defaultdict(set)
         super().__init__()

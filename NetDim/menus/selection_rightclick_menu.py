@@ -8,6 +8,7 @@ import ip_networks.configuration as conf
 import ip_networks.troubleshooting as ip_ts
 import ip_networks.ping as ip_ping
 import ip_networks.switching_table as switching_table
+import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
 import ip_networks.bgp_table as ip_bgpt
 import drawing.drawing_options_window
@@ -65,17 +66,24 @@ class SelectionRightClickMenu(tk.Menu):
             self.add_command(label='Troubleshooting', 
                         command=lambda: self.troubleshoot(node))
                         
+            # tables menu 
+            menu_tables = tk.Menu(self, tearoff=0)
+                        
             if node.subtype == 'router':
-                self.add_command(label='Routing table', 
+                menu_tables.add_command(label='Routing table', 
                             command=lambda: self.routing_table(node))
-                self.add_command(label='BGP table', 
+                menu_tables.add_command(label='BGP table', 
                             command=lambda: self.bgp_table(node))
+                menu_tables.add_command(label='ARP table', 
+                                command=lambda: self.arp_table(node))
                 self.add_command(label='Ping', 
                             command=lambda: self.ping(node))
                             
             if node.subtype == 'switch':
-                self.add_command(label='Switching table', 
+                menu_tables.add_command(label='Switching table', 
                             command=lambda: self.switching_table(node))
+                            
+            self.add_cascade(label='Tables', menu=menu_tables)
 
             self.add_separator()
         
@@ -211,6 +219,10 @@ class SelectionRightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def remove_failure(self, trunk):
         self.cs.remove_failure(trunk)
+        
+    @empty_selection_and_destroy_menu
+    def arp_table(self, node):
+        arp_table.ARPTable(node, self.cs)
         
     @empty_selection_and_destroy_menu
     def switching_table(self, node):

@@ -316,7 +316,7 @@ class Network(object):
         # we use that topology to create layer-n virtual connection
         # we keep the set of all trunks we've already visited 
         visited_trunks = set()
-        # we loop through all the layer-3-networks boundaries: routers.
+        # we loop through all the layer-n-networks boundaries
         for router in self.ftr('node', *self.osi_layers[layer]):
             # we start by looking at all attached trunks, and when we find one
             # that hasn't been visited yet, we don't stop until we've discovered
@@ -451,14 +451,28 @@ class Network(object):
         self.fdtks.clear()
         
     def rt_creation(self):
-        # clear the existing routing table
-        for router in self.ftr('node', 'router', 'host'):
-            router.rt.clear()
+        # clear the existing routing tables
+        for node in self.ftr('node', 'router', 'host'):
+            node.rt.clear()
         # we compute the routing table of all routers
         for AS in self.ASftr('layer', 'IP'):
             AS.build_RFT()
         for router in self.ftr('node', 'router', 'host'):
             self.static_RFT_builder(router)
+            
+    # this function creates both the ARP and the RARP tables
+    def arpt_creation(self):
+        # clear the existing ARP tables
+        for router in self.ftr('node', 'router'):
+            router.arpt.clear()
+        for l3_segments in self.ma_segments[3]:
+            for (trunkA, routerA) in l3_segments:
+                for (trunkB, routerB) in l3_segments: 
+                    remote_ip = trunkB('ipaddress', routerB)
+                    remote_mac = trunkB('macaddress', routerB)
+                    outgoing_if = trunkA('name', routerA)
+                    routerA.arpt[remote_ip] = (remote_mac, outgoing_if)
+                print(routerA, routerA.arpt)
             
     def STP_update(self):
         for AS in self.ASftr('subtype', 'STP'):
@@ -567,7 +581,7 @@ class Network(object):
                 continue
             if dest_int in curr_router.rt:
                 routes = curr_router.rt[dest_int]
-            # if we wannot find the destination address in the routing table, 
+            # if we cannot find the destination address in the routing table, 
             # and there is a default route, we use it.
             elif '0.0.0.0' in curr_router.rt:
                 routes = curr_router.rt['0.0.0.0']
@@ -602,7 +616,6 @@ class Network(object):
                                                     None, 0, nh_node, None)}
             except KeyError:
                 pass
-            
 
         for _, sr in self.gftr(source, 'route', 'static route', False):
             # if the static route next-hop ip is not properly configured, 
@@ -695,6 +708,7 @@ class Network(object):
         self.st_creation()
         self.ip_allocation()
         self.interface_allocation()
+        self.arpt_creation()
         self.route()
         
     ## Graph functions
