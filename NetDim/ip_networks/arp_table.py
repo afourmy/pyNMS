@@ -21,8 +21,8 @@ class ARPTable(tk.Toplevel):
         self.ST.insert('insert', introduction)
                 
         arp_table = sorted(node.arpt.items(), key=itemgetter(0))
-        for ip_addr, (mac_addr, outgoing_interface) in arp_table:
-            line = (ip_addr, mac_addr, 'ARPA', str(outgoing_interface), '\n')
+        for oip, (mac_addr, outgoing_interface) in arp_table:
+            line = (oip.ip_addr, mac_addr, 'ARPA', str(outgoing_interface), '\n')
             self.ST.insert('insert', 8*" " + (9*" ").join(line))
                                                                 
         self.ST.pack(fill=tk.BOTH, expand=tk.YES)

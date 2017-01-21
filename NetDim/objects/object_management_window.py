@@ -165,6 +165,7 @@ class ObjectManagementWindow(FocusTopLevel):
     def save_obj(self):
         for property, property_widget in self.dict_global_properties.items():
             value = property_widget.text
+            print(property, value)
             # convert 'None' to None if necessary
             value = None if value == 'None' else value              
             if property == 'path':
@@ -173,6 +174,10 @@ class ObjectManagementWindow(FocusTopLevel):
                 value = set(re.sub(r'\s+', '', value).split(','))
                 setattr(self.current_obj, property, value)
             elif property in self.property_list:
+                if property in ('ipS', 'ipD'):
+                    # convert the IP to a Object IP, if it isn't None
+                    if value:
+                        value = self.ms.cs.ntw.ip_to_oip[value]
                 setattr(self.current_obj, property, value)
             else:
                 if property not in self.read_only and 'interface' not in property:

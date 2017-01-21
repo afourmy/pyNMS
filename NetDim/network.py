@@ -8,11 +8,14 @@ from objects import objects
 import random
 import warnings
 import tkinter as tk
+from copy import copy
 from miscellaneous.network_functions import (
                                              compute_network, 
                                              mac_incrementer,
                                              ip_incrementer, 
-                                             tomask
+                                             tomask,
+                                             DataFlow,
+                                             IPAddress
                                              )
 from math import cos, sin, asin, radians, sqrt, ceil, log
 from collections import defaultdict, deque, OrderedDict
@@ -117,6 +120,8 @@ class Network(object):
         # - finds all layer-n segments networks, i.e all layer-n-capable 
         # interfaces that communicate via a layer-(n-1) device
         self.ma_segments = defaultdict(set)
+        # string IP <-> IP mapping for I/E + parameters saving
+        self.ip_to_oip = {}
         
         # osi layer to devices
         self.osi_layers = {
@@ -154,16 +159,16 @@ class Network(object):
     # function that retrieves all IP addresses attached to a node, including
     # it's loopback IP.
     def attached_ips(self, src):
-        for _, l3vc in self.graph[src]['l3vc']:
-            yield l3vc('ipaddress', src)
+        for _, trunk in self.graph[src.id]['trunk']:
+            yield trunk('ipaddress', src)
         yield src.ipaddress
         
     # function that retrieves all next-hop IP addresses attached to a node, 
     # including the loopback addresses of its neighbors
     def nh_ips(self, src):
-        for nb, trunk in self.graph[src]['trunk']:
-            yield trunk('ipaddress', nb)
-            yield nb.ipaddress
+        for nh, trunk in self.graph[src.id]['trunk']:
+            yield trunk('ipaddress', nh)
+            yield nh.ipaddress
           
     # 'lf' is the link factory. Creates or retrieves any type of link
     def lf(self, subtype='ethernet', id=None, name=None, **kwargs):
@@ -381,15 +386,13 @@ class Network(object):
             # both network and broadcast addresses are excluded:
             # we add 2 to the size of the subnetwork
             size = ceil(log(len(sntw) + 2, 2))
-            subnet, mask = '/{}'.format(32 - size), tomask(32 - size)
+            subnet = 32 - size
             for idx, (trunk, node) in enumerate(sntw, 1):
-                trunk.sntw = sntw_ip + subnet
-                trunk('subnetmask', node, mask)
                 curr_ip = ip_incrementer(sntw_ip, idx)
-                trunk('ipaddress', node, curr_ip)
-                self.sntw_to_ip[sntw_ip + subnet].add(curr_ip)
-                self.ip_to_mask[curr_ip] = mask
-                self.ip_to_node[curr_ip] = node
+                ip_addr = IPAddress(curr_ip, subnet, trunk('interface', node))
+                self.ip_to_oip[str(ip_addr)] = ip_addr
+                trunk('ipaddress', node, ip_addr)
+                trunk.sntw = ip_addr.network
             sntw_ip = ip_incrementer(sntw_ip, 2**size)
             
         # allocate loopback address using the 192.168.0.0/16 private 
@@ -472,7 +475,6 @@ class Network(object):
                     remote_mac = trunkB('macaddress', routerB)
                     outgoing_if = trunkA('name', routerA)
                     routerA.arpt[remote_ip] = (remote_mac, outgoing_if)
-                print(routerA, routerA.arpt)
             
     def STP_update(self):
         for AS in self.ASftr('subtype', 'STP'):
@@ -569,41 +571,73 @@ class Network(object):
     
     def RFT_path_finder(self, traffic):
         source, destination = traffic.source, traffic.destination
-        # the two lines below run faster than making the set an iterable
-        for _, trunk in self.graph[destination.id]['trunk']:
-            break
-        dest_int = trunk.sntw
-        heap = [(source, traffic.throughput)]
-        path_node, path_trunk = {source}, set()
-        while heap:
-            curr_router, share = heap.pop()
-            if curr_router == destination:
+        src_ip, dst_ip = traffic.ipS, traffic.ipD
+        valid = bool(src_ip) & bool(dst_ip)
+        
+        if valid:
+            dst_ntw = dst_ip.network
+        heap = [(source, None)]
+        path = set()
+        while heap and valid:
+            curr_node, dataflow = heap.pop()
+            path.add(curr_node)
+            # data flow creation
+            if not dataflow:
+                dataflow = DataFlow(src_ip, dst_ip)
+                dataflow.throughput = traffic.throughput
+            print(curr_node, destination)
+            if curr_node == destination:
                 continue
-            if dest_int in curr_router.rt:
-                routes = curr_router.rt[dest_int]
-            # if we cannot find the destination address in the routing table, 
-            # and there is a default route, we use it.
-            elif '0.0.0.0' in curr_router.rt:
-                routes = curr_router.rt['0.0.0.0']
-            else:
-                warnings.warn('Path not found for {}'.format(traffic))
-                break
-            # we count the number of trunks in failure
-            failed_trunks = sum(r[-1] in self.fdtks for r in routes)
-            # and remove them from share so that they are ignored for 
-            # trunk dimensioning
-            share /= len(routes) - failed_trunks
-            for route in routes:
-                *_, router, trunk = route
-                path_node.add(router)
-                path_trunk.add(trunk)
-                sd = (curr_router == trunk.source)*'SD' or 'DS'
-                trunk.__dict__['traffic' + sd] += share
-                heap.append((router, share))
+            if curr_node.subtype == 'router':
+                print(dst_ntw, curr_node.rt)
+                if dst_ntw in curr_node.rt:
+                    routes = curr_node.rt[dst_ntw]
+                # if we cannot find the destination address in the routing table, 
+                # and there is a default route, we use it.
+                elif '0.0.0.0' in curr_node.rt:
+                    routes = curr_node.rt['0.0.0.0']
+                else:
+                    warnings.warn('Path not found for {}'.format(traffic))
+                    break
+                # we count the number of trunks in failure
+                #TODO vraiment utile ? si on recompute, failed_trunk devrait
+                # être égal à 0 normalement
+                failed_trunks = sum(r[-1] in self.fdtks for r in routes)
+                # and remove them from share so that they are ignored for 
+                # trunk dimensioning
+                for route in routes:
+                    _, nh_ip, ex_int, _, router, ex_tk = route
+                    # we create a new dataflow based on the old one
+                    new_data_flow = copy(dataflow)
+                    # the throughput depends on the number of ECMP routes
+                    new_data_flow.throughput /= len(routes) - failed_trunks
+                    # the source MAC address is the MAC address of the interface
+                    # used to exit the current node
+                    new_data_flow.src_mac = ex_int.macaddress
+                    # the destination MAC address is the MAC address
+                    # corresponding to the next-hop IP address in the ARP table
+                    new_data_flow.dst_mac = curr_node.arpt[nh_ip]
+                    sd = (curr_node == ex_tk.source)*'SD' or 'DS'
+                    ex_tk.__dict__['traffic' + sd] += new_data_flow.throughput
+                    # add the exit trunk to the path
+                    path.add(ex_tk)
+                    # the next-hop is the node at the end of the exit trunk
+                    next_hop = ex_tk.source if sd == 'DS' else ex_tk.destination
+                    heap.append((next_hop, new_data_flow))
+                    
+            if curr_node.subtype == 'switch':
+                # the find the exit interface based on the destination MAC
+                # address in the switching table, the dataflow itself remains
+                # unaltered
+                ex_int = curr_node.st[dataflow.dst_mac]
+                # we append the next hop to the heap
+                if ex_int.link.source == curr_node:
+                    next_hop = ex_int.link.destination
+                else:
+                    next_hop = ex_int.link.source
              
-        traffic.path = path_trunk
-
-        return path_node, path_trunk
+        traffic.path = path
+        return path
         
     ## 2) Add connected interfaces to the RFT
     

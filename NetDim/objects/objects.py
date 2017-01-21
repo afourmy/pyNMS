@@ -612,7 +612,10 @@ class RoutedTraffic(Traffic):
     color = 'forest green'
     subtype = 'routed traffic'
     
-    ie_properties = {}
+    ie_properties = {
+                    'ipS' : None, 
+                    'ipD': None
+                    }
     
     @initializer(ie_properties)
     def __init__(self, **kwargs):

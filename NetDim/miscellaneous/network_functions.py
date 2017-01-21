@@ -2,6 +2,32 @@
 # Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
 # Released under the GNU General Public License GPLv3
 
+class DataFlow(object):
+    
+    def __init__(self, src_ip, dst_ip):
+        self.src_ip = src_ip
+        self.dst_ip = dst_ip
+        self.throughput = 0
+        self.src_mac = None
+        self.dst_mac = None
+        
+class IPAddress(object):
+
+    # an IP address object is defined as an IP and a subnet ('IP/subnet')
+    def __init__(self, ip_addr, subnet, interface=None):
+        self.ip_addr = ip_addr
+        self.subnet = subnet
+        self.mask = tomask(self.subnet)
+        self.network = compute_network(self.ip_addr, self.mask)
+        # interface to which the IP address is attached
+        self.interface = interface
+        
+    def __repr__(self):
+        return '{ip}/{subnet}'.format(ip=self.ip_addr, subnet=self.subnet)
+        
+    def __lt__(self, other):
+        return self.interface.name
+
 BYTE = range(32, 0, -8)
 
 def toip(ip):
@@ -35,7 +61,7 @@ def mac_incrementer(mac_address, nb):
     
 def mac_comparer(mac1, mac2):
     # 06:00:00:00:00:01 > 05:AA:CC:00:00:11
-    mac1, mac2 = "".join(mac1.split(':')), "".join(mac2.split(':'))
+    mac1, mac2 = ''.join(mac1.split(':')), ''.join(mac2.split(':'))
     return mac_incrementer(mac1, 0) > mac_incrementer(mac2, 0)
     
 def ip_incrementer(ip_address, nb):

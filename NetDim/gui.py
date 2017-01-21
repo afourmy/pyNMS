@@ -241,7 +241,7 @@ class NetDim(MainWindow):
         'path'
         )),
         
-        ('routed traffic', traffic_common_properties),
+        ('routed traffic', traffic_common_properties + ('ipS', 'ipD')),
         ('static traffic', traffic_common_properties),
         
         ])
@@ -816,6 +816,7 @@ class NetDim(MainWindow):
     def objectizer(self, properties, values, obj_type):
         kwargs = {}
         for property, value in zip(properties, values):
+            print(property, value)
             value = self.prop_to_type[property](value)
             if value == "None":
                 value = None
