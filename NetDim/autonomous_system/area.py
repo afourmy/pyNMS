@@ -9,17 +9,17 @@ class Area(object):
     
     class_type = 'area'
     
-    def __init__(self, name, id, AS, trunks, nodes):
+    def __init__(self, name, id, AS, plinks, nodes):
         self.name = name
         self.id = int(id)
         self.AS = AS
         # it is important to write set(nodes) and not just nodes so that
         # both set are distinct in memory, and when we remove a node
-        # (or trunk) from an area, it is not removed from the AS as well.
-        self.pa = {'node': set(nodes), 'trunk': set(trunks)}
+        # (or physical link) from an area, it is not removed from the AS as well.
+        self.pa = {'node': set(nodes), 'plink': set(plinks)}
         # update the AS dict for all objects, so that they are aware they
         # belong to this new area
-        for obj in nodes | trunks:
+        for obj in nodes | plinks:
             obj.AS[self.AS].add(self)
         # update the area dict of the AS with the new area
         self.AS.areas[name] = self

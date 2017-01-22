@@ -9,14 +9,8 @@ import random
 import warnings
 import tkinter as tk
 from copy import copy
-from miscellaneous.network_functions import (
-                                             compute_network, 
-                                             mac_incrementer,
-                                             ip_incrementer, 
-                                             tomask,
-                                             DataFlow,
-                                             IPAddress
-                                             )
+from objects.objects import subtype_to_type
+from miscellaneous.network_functions import *
 from math import cos, sin, asin, radians, sqrt, ceil, log
 from collections import defaultdict, deque, OrderedDict
 from heapq import heappop, heappush, nsmallest
@@ -48,7 +42,7 @@ class Network(object):
     ('l3vc', objects.L3VC)
     ])
     
-    trunk_class = OrderedDict([
+    plink_class = OrderedDict([
     ('ethernet', objects.Ethernet),
     ('wdm', objects.WDMFiber)
     ])
@@ -74,17 +68,17 @@ class Network(object):
     ])
     
     link_class = {}
-    for dclass in (trunk_class, route_class, traffic_class, VC_class):
+    for dclass in (plink_class, route_class, traffic_class, VC_class):
         link_class.update(dclass)
     
     node_subtype = tuple(node_class.keys())
-    link_type = ('trunk', 'route', 'traffic', 'l2vc', 'l3vc')
+    link_type = ('plink', 'route', 'traffic', 'l2vc', 'l3vc')
     link_subtype = tuple(link_class.keys())
     all_subtypes = node_subtype + link_subtype
     
     def __init__(self, scenario):
         self.nodes = {}
-        self.trunks = {}
+        self.plinks = {}
         self.interfaces = {'ethernet': set(), 'wdm': set()}
         self.routes = {}
         self.traffics = {}
@@ -93,7 +87,7 @@ class Network(object):
         # pn for 'pool network'
         self.pn = {
                    'node': self.nodes, 
-                   'trunk': self.trunks, 
+                   'plink': self.plinks, 
                    'route': self.routes, 
                    'traffic': self.traffics, 
                    'l2vc': self.l2vc, 
@@ -122,6 +116,9 @@ class Network(object):
         self.ma_segments = defaultdict(set)
         # string IP <-> IP mapping for I/E + parameters saving
         self.ip_to_oip = {}
+        # set of all physical links in failure: this parameter is used for
+        # link dimensioning and failure simulation
+        self.fdtks = set()
         
         # osi layer to devices
         self.osi_layers = {
@@ -130,9 +127,68 @@ class Network(object):
         1: ('regenerator', 'splitter', 'antenna')
         }
         
-        # set of all trunks in failure: this parameter is used for
-        # link dimensioning and failure simulation
-        self.fdtks = set()
+        # property -> type associations 
+        self.prop_to_type = {
+        'name': str, 
+        'protocol': str,
+        'interface': str,
+        'ipaddress': str,
+        'subnetmask': str,
+        'LB_paths': int,
+        'default_route': str,
+        'x': float, 
+        'y': float, 
+        'longitude': float, 
+        'latitude': float,
+        'distance': float, 
+        'costSD': float, 
+        'costDS': float, 
+        'cost': float,
+        'capacitySD': int, 
+        'capacityDS': int,
+        'traffic': float,
+        'trafficSD': float,
+        'trafficDS': float,
+        'wctrafficSD': float,
+        'wctrafficDS': float,
+        'wcfailure': str,
+        'flowSD': float,
+        'flowDS': float,
+        'interfaceS': str,
+        'interfaceD': str,
+        'ipaddress': str,
+        'subnetmask': str,
+        'macaddress': str,
+        'sntw': str,
+        'throughput': float,
+        'lambda_capacity': int,
+        'source': self.convert_node, 
+        'destination': self.convert_node, 
+        'node': self.convert_node, 
+        'link': self.convert_link, 
+        'nh_tk': str,
+        'nh_ip': str,
+        'ipS': self.convert_IP,
+        'ipD': self.convert_IP,
+        'bgp_AS': str,
+        'weightS': int,
+        'weightD': int,
+        'dst_sntw': str,
+        'ad': int,
+        'subtype': str,
+        'bgp_type': str,
+        'lsp_type': str,
+        'path_constraints': self.convert_node_list, 
+        'excluded_nodes': self.convert_node_set,
+        'excluded_plinks': self.convert_link_set, 
+        'path': self.convert_link_list, 
+        'subnets': str, 
+        'sites': str,
+        'role': str,
+        'priority': int,
+        'base_macaddress': str,
+        'AS': self.convert_AS
+        }
         
     # function filtering pn to retrieve all objects of given subtypes
     def ftr(self, type, *sts):
@@ -159,20 +215,20 @@ class Network(object):
     # function that retrieves all IP addresses attached to a node, including
     # it's loopback IP.
     def attached_ips(self, src):
-        for _, trunk in self.graph[src.id]['trunk']:
-            yield trunk('ipaddress', src)
+        for _, plink in self.graph[src.id]['plink']:
+            yield plink('ipaddress', src)
         yield src.ipaddress
         
     # function that retrieves all next-hop IP addresses attached to a node, 
     # including the loopback addresses of its neighbors
     def nh_ips(self, src):
-        for nh, trunk in self.graph[src.id]['trunk']:
-            yield trunk('ipaddress', nh)
+        for nh, plink in self.graph[src.id]['plink']:
+            yield plink('ipaddress', nh)
             yield nh.ipaddress
           
     # 'lf' is the link factory. Creates or retrieves any type of link
     def lf(self, subtype='ethernet', id=None, name=None, **kwargs):
-        link_type = self.cs.ms.st_to_type[subtype]
+        link_type = subtype_to_type[subtype]
         # creation link in the s-d direction if no link at all yet
         if not id:
             if name in self.name_to_id:
@@ -180,7 +236,7 @@ class Network(object):
             s, d = kwargs['source'], kwargs['destination']
             id = self.cpt_link
             if not name:
-                name = link_type + str(self.cpt_link)
+                name = subtype + ' link' + str(self.cpt_link)
             kwargs.update({'id': id, 'name': name})
             new_link = self.link_class[subtype](**kwargs)
             self.name_to_id[name] = id
@@ -209,12 +265,26 @@ class Network(object):
             self.cpt_node += 1
         return self.nodes[id]
         
+    def OIPf(self, str_ip, interface=None):
+        # creates  or retrieves an OIP based on a string IP ('IP/subnet' format)
+        # the interface should always be specified at creation
+        if str_ip in self.ip_to_oip:
+            return self.ip_to_oip[str_ip]
+        try:
+            ip_addr, subnet = str_ip.split('/')
+            OIP = IPAddress(ip_addr, int(subnet), interface)
+        except ValueError:
+            # wrong IP address format
+            OIP = None
+        self.ip_to_oip[str_ip] = OIP
+        return OIP
+        
     def AS_factory(
                    self, 
                    AS_type = 'RIP',
                    name = None, 
                    id = 0,
-                   trunks = set(), 
+                   plinks = set(), 
                    nodes = set(),
                    imp = False
                    ):
@@ -226,7 +296,7 @@ class Network(object):
                                                     self.cs,
                                                     name, 
                                                     id,
-                                                    trunks, 
+                                                    plinks, 
                                                     nodes,
                                                     imp
                                                     )
@@ -240,6 +310,42 @@ class Network(object):
             return self.nf(name=name)
         else:
             return self.lf(name=name)
+            
+    ## Conversion methods and property -> type mapping
+    
+    # methods used to convert a string to an object 
+    
+    # convert a node name to a node
+    def convert_node(self, node_name):
+        return self.nf(name=node_name)
+    
+    # convert a link name to a node
+    def convert_link(self, link_name):
+        return self.lf(name=link_name)
+    
+    # convert an AS name to an AS
+    def convert_AS(self, AS_name):
+        return self.AS_factory(name=AS_name)
+    
+    # convert a string IP ('IP/subnet') to an 'Object IP'
+    def convert_IP(self, ip):
+        return self.OIPf(ip)
+    
+    # convert a string representing a set of nodes, to an actual set of nodes
+    def convert_node_set(self, node_set):
+        return set(map(self.convert_node, eval(node_set)))
+    
+    # convert a string representing a list of nodes, to an actual list of nodes
+    def convert_node_list(self, node_list):
+        return list(map(self.convert_node, eval(node_list)))
+    
+    # convert a string representing a set of links, to an actual set of links
+    def convert_link_set(self, link_set):
+        return set(map(self.convert_link, eval(link_set)))
+    
+    # convert a string representing a list of links, to an actual list of links
+    def convert_link_list(self, link_list):
+        return list(map(self.convert_link, eval(link_list)))
             
     def erase_network(self):
         self.graph.clear()
@@ -264,7 +370,7 @@ class Network(object):
         for node in AS.nodes:
             if any(
                    n not in AS.nodes 
-                   for n, _ in self.graph[node.id]['trunk']
+                   for n, _ in self.graph[node.id]['plink']
                    ):
                 AS.pAS['edge'].add(node)
                 yield node
@@ -289,13 +395,13 @@ class Network(object):
     def links_between(self, nodeA, nodeB, _type='all'):
         if _type == 'all':
             for link_type in self.link_type:
-                for neighbor, trunk in self.graph[nodeA.id][link_type]:
+                for neighbor, link in self.graph[nodeA.id][link_type]:
                     if neighbor == nodeB:
-                        yield trunk
+                        yield link
         else:
-            for neighbor, trunk in self.graph[nodeA.id][_type]:
+            for neighbor, link in self.graph[nodeA.id][_type]:
                 if neighbor == nodeB:
-                    yield trunk
+                    yield link
                     
     def update_AS_topology(self):
         # update all BGP AS property of nodes in a BGP AS
@@ -310,29 +416,31 @@ class Network(object):
         
         for AS in self.pnAS.values():
             # for all OSPF and IS-IS AS, fill the ABR/L1L2 sets
-            # update trunk area based on nodes area (ISIS) and vice-versa (OSPF)
+            # update physical link area based on nodes area (ISIS) 
+            # and vice-versa (OSPF)
             if AS.AS_type in ('ISIS', 'OSPF'):
                 AS.management.update_AS_topology()
             
     def segment_finder(self, layer):
-        # we associate a set of trunks to each layer-n segment.
+        # we associate a set of physical links to each layer-n segment.
         # at this point, there isn't any IP allocated yet: we cannot assign
         # IP addresses until we know the network layer-n segment topology.
         # we use that topology to create layer-n virtual connection
-        # we keep the set of all trunks we've already visited 
-        visited_trunks = set()
+        # we keep the set of all physical links we've already visited 
+        visited_plinks = set()
         # we loop through all the layer-n-networks boundaries
         for router in self.ftr('node', *self.osi_layers[layer]):
-            # we start by looking at all attached trunks, and when we find one
+            # we start by looking at all attached physical links, and when we find one
             # that hasn't been visited yet, we don't stop until we've discovered
-            # all network's trunks (i.e until we've reached all boundaries 
+            # all network's physical links (i.e until we've reached all boundaries 
             # of that networks: routers or host).
-            for neighbor, trunk in self.graph[router.id]['trunk']:
-                if trunk in visited_trunks:
+            for neighbor, plink in self.graph[router.id]['plink']:
+                if plink in visited_plinks:
                     continue
-                visited_trunks.add(trunk)
-                # we update the set of trunks of the network as we discover them
-                current_network = {(trunk, router)}
+                visited_plinks.add(plink)
+                # we update the set of physical linkss of the network 
+                # as we discover them
+                current_network = {(plink, router)}
                 if any(neighbor.subtype in self.osi_layers[l] for l in range(1, layer)):
                     # we add the neighbor of the router in the stack: we'll fill 
                     # the stack with nodes as we discover them, provided that 
@@ -341,18 +449,18 @@ class Network(object):
                     visited_nodes = {router}
                     while stack_network:
                         curr_node = stack_network.pop()
-                        for node, adj_trunk in self.graph[curr_node.id]['trunk']:
+                        for node, adj_plink in self.graph[curr_node.id]['plink']:
                             if node in visited_nodes:
                                 continue
-                            visited_trunks.add(adj_trunk)
+                            visited_plinks.add(adj_plink)
                             visited_nodes.add(node)
                             if any(node.subtype in self.osi_layers[l] 
                                                     for l in range(1, layer)):
                                 stack_network.append(node)
                             else:
-                                current_network.add((adj_trunk, node))
+                                current_network.add((adj_plink, node))
                 else:
-                    current_network.add((trunk, neighbor))
+                    current_network.add((plink, neighbor))
                 self.ma_segments[layer].add(frozenset(current_network))
         
     def multi_access_network(self, layer):
@@ -361,17 +469,17 @@ class Network(object):
         vc_type = 'l{layer}vc'.format(layer = layer)
         
         for ma_network in self.ma_segments[layer]:
-            for source_trunk, node in ma_network:
-                allowed_neighbors = ma_network - {(source_trunk, node)}
-                for destination_trunk, neighbor in allowed_neighbors:
+            for source_plink, node in ma_network:
+                allowed_neighbors = ma_network - {(source_plink, node)}
+                for destination_plink, neighbor in allowed_neighbors:
                     if not self.is_connected(node, neighbor, vc_type):
                         vc = self.lf(
                                      source = node, 
                                      destination = neighbor, 
                                      subtype = vc_type
                                      )
-                        vc("link", node, source_trunk)
-                        vc("link", neighbor, destination_trunk)
+                        vc("link", node, source_plink)
+                        vc("link", neighbor, destination_plink)
                         self.cs.create_link(vc)
     
     def ip_allocation(self):
@@ -387,18 +495,23 @@ class Network(object):
             # we add 2 to the size of the subnetwork
             size = ceil(log(len(sntw) + 2, 2))
             subnet = 32 - size
-            for idx, (trunk, node) in enumerate(sntw, 1):
+            for idx, (plink, node) in enumerate(sntw, 1):
                 curr_ip = ip_incrementer(sntw_ip, idx)
-                ip_addr = IPAddress(curr_ip, subnet, trunk('interface', node))
+                ip_addr = IPAddress(curr_ip, subnet, plink('interface', node))
                 self.ip_to_oip[str(ip_addr)] = ip_addr
-                trunk('ipaddress', node, ip_addr)
-                trunk.sntw = ip_addr.network
+                plink('ipaddress', node, ip_addr)
+                plink.sntw = ip_addr.network
             sntw_ip = ip_incrementer(sntw_ip, 2**size)
             
         # allocate loopback address using the 192.168.0.0/16 private 
         # address space
         for idx, router in enumerate(self.ftr('node', 'router'), 1):
             router.ipaddress = '192.168.{}.{}'.format(idx // 255, idx % 255)
+            
+    def subnetwork_allocation(self):
+        for ip in self.ip_to_oip.values():
+            if ip and ip.interface:
+                ip.interface.link.sntw = ip.network
             
     def mac_allocation(self):
         # ranges of private MAC addresses
@@ -409,12 +522,12 @@ class Network(object):
         
         # allocation of mac_x2 and mac_x6 for interfaces MAC address
         mac_x2, mac_x6 = "020000000000", "060000000000"
-        for id, trunk in enumerate(self.trunks.values(), 1):
+        for id, plink in enumerate(self.plinks.values(), 1):
             macS, macD = mac_incrementer(mac_x2, id), mac_incrementer(mac_x6, id)
             source_mac = ':'.join(macS[i:i+2] for i in range(0, 12, 2))
             destination_mac = ':'.join(macD[i:i+2] for i in range(0, 12, 2))
-            trunk.interfaceS.macaddress = source_mac
-            trunk.interfaceD.macaddress = destination_mac
+            plink.interfaceS.macaddress = source_mac
+            plink.interfaceD.macaddress = destination_mac
             
         # allocation of mac_xA for switches base (hardware) MAC address
         mac_xA = "0A0000000000"
@@ -423,34 +536,34 @@ class Network(object):
 
     def interface_allocation(self):
         for node in self.nodes.values():
-            for idx, (_, adj_trunk) in enumerate(self.graph[node.id]['trunk']):
-                adj_trunk('name', node, 'Ethernet0/{}'.format(idx))
+            for idx, (_, adj_plink) in enumerate(self.graph[node.id]['plink']):
+                adj_plink('name', node, 'Ethernet0/{}'.format(idx))
                 
-    # WC trunk dimensioning: this computes the maximum traffic the trunk may 
-    # have to carry considering all possible trunk failure. 
-    # NetDim fails all trunks of the network one by one, and evaluates 
-    # the impact in terms of bandwidth for each trunk. 
-    # The highest value is kept in memory, as well as the trunk which failure 
+    # WC physical link dimensioning: this computes the maximum traffic the physical link
+    # may have to carry considering all possible physical link failure. 
+    # NetDim fails all physical links of the network one by one, and evaluates 
+    # the impact in terms of bandwidth for each physical link. 
+    # The highest value is kept in memory, as well as the physical link which failure 
     # induces this value.
-    def trunk_dimensioning(self):
-        # we need to remove all failures before dimensioning the trunks:
-        # the set of failed trunk will be redefined, but we also need the
+    def plink_dimensioning(self):
+        # we need to remove all failures before dimensioning the physical links:
+        # the set of failed physical link will be redefined, but we also need the
         # icons to be cleaned from the canvas
         self.cs.remove_failures()
         
-        # we consider each trunk in the network to be failed, one by one
-        for failed_trunk in self.trunks.values():
-            self.fdtks = {failed_trunk}
-            # the trunk being failed, we will recreate all routing tables
+        # we consider each physical link in the network to be failed, one by one
+        for failed_plink in self.plinks.values():
+            self.fdtks = {failed_plink}
+            # the physical link being failed, we will recreate all routing tables
             # then use the path finding procedure to map the traffic flows
             self.rt_creation()
             self.path_finder()
-            for trunk in self.trunks.values():
+            for plink in self.plinks.values():
                 for dir in ('SD', 'DS'):
-                    curr_traffic = getattr(trunk, 'traffic' + dir)
-                    if curr_traffic > getattr(trunk, 'wctraffic' + dir):
-                        setattr(trunk, 'wctraffic' + dir, curr_traffic)
-                        setattr(trunk, 'wcfailure', str(failed_trunk))
+                    curr_traffic = getattr(plink, 'traffic' + dir)
+                    if curr_traffic > getattr(plink, 'wctraffic' + dir):
+                        setattr(plink, 'wctraffic' + dir, curr_traffic)
+                        setattr(plink, 'wcfailure', str(failed_plink))
         self.fdtks.clear()
         
     def rt_creation(self):
@@ -469,11 +582,11 @@ class Network(object):
         for router in self.ftr('node', 'router'):
             router.arpt.clear()
         for l3_segments in self.ma_segments[3]:
-            for (trunkA, routerA) in l3_segments:
-                for (trunkB, routerB) in l3_segments: 
-                    remote_ip = trunkB('ipaddress', routerB)
-                    remote_mac = trunkB('macaddress', routerB)
-                    outgoing_if = trunkA('name', routerA)
+            for (plinkA, routerA) in l3_segments:
+                for (plinkB, routerB) in l3_segments: 
+                    remote_ip = plinkB('ipaddress', routerB)
+                    remote_mac = plinkB('macaddress', routerB)
+                    outgoing_if = plinkA('name', routerA)
                     routerA.arpt[remote_ip] = (remote_mac, outgoing_if)
             
     def STP_update(self):
@@ -487,17 +600,17 @@ class Network(object):
             switch.st.clear()
         for AS in self.ASftr('subtype', 'STP'):
             for switch in AS.nodes:
-                self.ST_builder(switch, AS.pAS['trunk'] - AS.SPT_trunks)
+                self.ST_builder(switch, AS.pAS['plink'] - AS.SPT_plinks)
         # if the switch isn't part of an STP AS, we build its switching table
-        # without excluding any trunk
+        # without excluding any physical link
         for switch in self.ftr('node', 'switch'):
             if not switch.st:
                 self.ST_builder(switch)
                 
     def reset_traffic(self):
-        # reset the traffic for all trunks
-        for trunk in self.trunks.values():
-            trunk.trafficSD = trunk.trafficDS = 0.
+        # reset the traffic for all physical links
+        for plink in self.plinks.values():
+            plink.trafficSD = plink.trafficDS = 0.
                 
     def path_finder(self):
         self.reset_traffic()
@@ -512,38 +625,38 @@ class Network(object):
                 
     ## A) Ethernet switching table
     
-    def ST_builder(self, source, excluded_trunks=None):
+    def ST_builder(self, source, excluded_plinks=None):
         
-        if not excluded_trunks:
-            excluded_trunks = set()
+        if not excluded_plinks:
+            excluded_plinks = set()
         
         visited = set()
         heap = [(source, [], [], None)]
         
         while heap:
-            node, path_node, path_trunk, ex_int = heappop(heap)  
+            node, path_node, path_plink, ex_int = heappop(heap)  
             if node not in visited:
                 visited.add(node)
                 for neighbor, l2vc in self.graph[node.id]['l2vc']:
-                    adj_trunk = l2vc('link', node)
-                    remote_trunk = l2vc('link', neighbor)
-                    if adj_trunk in path_trunk:
+                    adj_plink = l2vc('link', node)
+                    remote_plink = l2vc('link', neighbor)
+                    if adj_plink in path_plink:
                         continue
-                    if adj_trunk in excluded_trunks: 
+                    if adj_plink in excluded_plinks: 
                         continue
                     if node == source:
-                        ex_int = adj_trunk('interface', source)
-                        mac = remote_trunk('macaddress', neighbor)
+                        ex_int = adj_plink('interface', source)
+                        mac = remote_plink('macaddress', neighbor)
                         source.st[mac] = ex_int
                     heappush(heap, (neighbor, path_node + [neighbor], 
-                                            path_trunk + [adj_trunk], ex_int))
+                                            path_plink + [adj_plink], ex_int))
                     
-            if path_trunk:
-                trunk = path_trunk[-1]
+            if path_plink:
+                plink = path_plink[-1]
                 node = path_node[-1]
-                ex_tk = path_trunk[0]
+                ex_tk = path_plink[0]
                 ex_int = ex_tk('interface', source)
-                mac = trunk('macaddress', node)
+                mac = plink('macaddress', node)
                 source.st[mac] = ex_int
         
     ## 0) Ping / traceroute
@@ -551,7 +664,7 @@ class Network(object):
     def ping(self, source, dest_sntw):
         node = source
         while True:
-            if any(tk.sntw == dest_sntw for _, tk in self.graph[node.id]['trunk']):
+            if any(tk.sntw == dest_sntw for _, tk in self.graph[node.id]['plink']):
                 break
             if dest_sntw in node.rt:
                 routes = node.rt[dest_sntw]
@@ -585,11 +698,9 @@ class Network(object):
             if not dataflow:
                 dataflow = DataFlow(src_ip, dst_ip)
                 dataflow.throughput = traffic.throughput
-            print(curr_node, destination)
             if curr_node == destination:
                 continue
             if curr_node.subtype == 'router':
-                print(dst_ntw, curr_node.rt)
                 if dst_ntw in curr_node.rt:
                     routes = curr_node.rt[dst_ntw]
                 # if we cannot find the destination address in the routing table, 
@@ -599,42 +710,47 @@ class Network(object):
                 else:
                     warnings.warn('Path not found for {}'.format(traffic))
                     break
-                # we count the number of trunks in failure
+                # we count the number of physical links in failure
                 #TODO vraiment utile ? si on recompute, failed_trunk devrait
                 # être égal à 0 normalement
-                failed_trunks = sum(r[-1] in self.fdtks for r in routes)
+                failed_plinks = sum(r[-1] in self.fdtks for r in routes)
                 # and remove them from share so that they are ignored for 
-                # trunk dimensioning
+                # physical link dimensioning
                 for route in routes:
                     _, nh_ip, ex_int, _, router, ex_tk = route
                     # we create a new dataflow based on the old one
-                    new_data_flow = copy(dataflow)
+                    new_dataflow = copy(dataflow)
                     # the throughput depends on the number of ECMP routes
-                    new_data_flow.throughput /= len(routes) - failed_trunks
+                    new_dataflow.throughput /= len(routes) - failed_plinks
                     # the source MAC address is the MAC address of the interface
                     # used to exit the current node
-                    new_data_flow.src_mac = ex_int.macaddress
+                    new_dataflow.src_mac = ex_int.macaddress
                     # the destination MAC address is the MAC address
                     # corresponding to the next-hop IP address in the ARP table
-                    new_data_flow.dst_mac = curr_node.arpt[nh_ip]
+                    # we take the first element as the ARP table is built as 
+                    # a mapping IP <-> (MAC, outgoing interface)
+                    new_dataflow.dst_mac = curr_node.arpt[nh_ip][0]
                     sd = (curr_node == ex_tk.source)*'SD' or 'DS'
-                    ex_tk.__dict__['traffic' + sd] += new_data_flow.throughput
-                    # add the exit trunk to the path
+                    ex_tk.__dict__['traffic' + sd] += new_dataflow.throughput
+                    # add the exit physical link to the path
                     path.add(ex_tk)
-                    # the next-hop is the node at the end of the exit trunk
+                    # the next-hop is the node at the end of the exit physical link
                     next_hop = ex_tk.source if sd == 'DS' else ex_tk.destination
-                    heap.append((next_hop, new_data_flow))
+                    heap.append((next_hop, new_dataflow))
                     
             if curr_node.subtype == 'switch':
                 # the find the exit interface based on the destination MAC
                 # address in the switching table, the dataflow itself remains
                 # unaltered
                 ex_int = curr_node.st[dataflow.dst_mac]
+                ex_tk = ex_int.link
+                path.add(ex_tk)
                 # we append the next hop to the heap
-                if ex_int.link.source == curr_node:
-                    next_hop = ex_int.link.destination
+                if ex_tk.source == curr_node:
+                    next_hop = ex_tk.destination
                 else:
-                    next_hop = ex_int.link.source
+                    next_hop = ex_tk.source
+                heap.append((next_hop, dataflow))
              
         traffic.path = path
         return path
@@ -661,15 +777,15 @@ class Network(object):
             source.rt[sr.dst_sntw] = {('S', sr.nh_ip, None, 0, nh_node, None)}
                                                                 
                     
-        for neighbor, adj_trunk in self.graph[source.id]['trunk']:
-            if adj_trunk in self.fdtks:
+        for neighbor, adj_plink in self.graph[source.id]['plink']:
+            if adj_plink in self.fdtks:
                 continue
-            ex_ip = adj_trunk('ipaddress', neighbor)
-            ex_int = adj_trunk('interface', source)
+            ex_ip = adj_plink('ipaddress', neighbor)
+            ex_int = adj_plink('interface', source)
             # we compute the subnetwork of the attached
             # interface: it is a directly connected interface
-            source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int, 
-                                                    0, neighbor, adj_trunk)}
+            source.rt[adj_plink.sntw] = {('C', ex_ip, ex_int, 
+                                                    0, neighbor, adj_plink)}
                                             
                     
     def BGPT_builder(self):
@@ -740,7 +856,11 @@ class Network(object):
         self.mac_allocation()
         self.STP_update()
         self.st_creation()
-        self.ip_allocation()
+        if not self.ip_to_oip:
+            self.ip_allocation()
+        else:
+            self.subnetwork_allocation()
+            print('test')
         self.interface_allocation()
         self.arpt_creation()
         self.route()
@@ -756,7 +876,7 @@ class Network(object):
             for node in temp:
                 if node not in visited:
                     visited.add(node)
-                    for neighbor, _ in self.graph[node.id]['trunk']:
+                    for neighbor, _ in self.graph[node.id]['plink']:
                         layer.add(neighbor)
                         yield neighbor
     
@@ -776,17 +896,17 @@ class Network(object):
                  self, 
                  source, 
                  target,
-                 allowed_trunks = None, 
+                 allowed_plinks = None, 
                  allowed_nodes = None
                  ):
         
-        if allowed_trunks is None:
-            allowed_trunks = set(self.trunks.values())
+        if allowed_plinks is None:
+            allowed_plinks = set(self.plinks.values())
         if allowed_nodes is None:
             allowed_nodes = set(self.nodes.values())
         
         prec_node = {i: None for i in allowed_nodes}
-        prec_trunk = {i: None for i in allowed_nodes}
+        prec_plink = {i: None for i in allowed_nodes}
         visited = set()
         dist = {i: float('inf') for i in allowed_nodes}
         dist[source] = 0
@@ -795,24 +915,24 @@ class Network(object):
             dist_node, node = heappop(heap) 
             if node not in visited:
                 visited.add(node)
-                for neighbor, adj_trunk in self.graph[node.id]['trunk']:
+                for neighbor, adj_plink in self.graph[node.id]['plink']:
                     # we ignore what's not allowed (not in the AS or in failure)
                     if neighbor not in allowed_nodes:
                         continue
-                    if adj_trunk not in allowed_trunks:
+                    if adj_plink not in allowed_plinks:
                         continue
-                    dist_neighbor = dist_node + adj_trunk('cost', node)
+                    dist_neighbor = dist_node + adj_plink('cost', node)
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
                         prec_node[neighbor] = node
-                        prec_trunk[neighbor] = adj_trunk
+                        prec_plink[neighbor] = adj_plink
                         heappush(heap, (dist_neighbor, neighbor))
                         
         # traceback the path from target to source
-        curr, path_trunk = target, [prec_trunk[target]]
+        curr, path_plink = target, [prec_plink[target]]
         while curr != source:
             curr = prec_node[curr]
-            path_trunk.append(prec_trunk[curr])
+            path_plink.append(prec_plink[curr])
                         
         # we return:
         # - the dist dictionnary, that contains the distance from the source
@@ -820,7 +940,7 @@ class Network(object):
         # - the shortest path from source to target
         # - all edges that belong to the Shortest Path Tree
         # we need all three variables for Suurbale algorithm below
-        return dist, path_trunk[:-1][::-1], filter(None, prec_trunk.values())
+        return dist, path_plink[:-1][::-1], filter(None, prec_plink.values())
         
     ## 2) A* algorithm for CSPF modelization
             
@@ -828,22 +948,22 @@ class Network(object):
                self, 
                source, 
                target, 
-               excluded_trunks = None, 
+               excluded_plinks = None, 
                excluded_nodes = None, 
                path_constraints = None, 
-               allowed_trunks = None, 
+               allowed_plinks = None, 
                allowed_nodes = None
                ):
                 
         # initialize parameters
         if excluded_nodes is None:
             excluded_nodes = set()
-        if excluded_trunks is None:
-            excluded_trunks = set()
+        if excluded_plinks is None:
+            excluded_plinks = set()
         if path_constraints is None:
             path_constraints = []
-        if allowed_trunks is None:
-            allowed_trunks = set(self.trunks.values())
+        if allowed_plinks is None:
+            allowed_plinks = set(self.plinks.values())
         if allowed_nodes is None:
             allowed_nodes = set(self.nodes.values())
             
@@ -851,7 +971,7 @@ class Network(object):
         visited = set()
         heap = [(0, source, [source], [], pc)]
         while heap:
-            dist, node, nodes, trunks, pc = heappop(heap)
+            dist, node, nodes, plinks, pc = heappop(heap)
             if node not in visited:
                 visited.add(node)
                 if node == pc[-1]:
@@ -859,19 +979,19 @@ class Network(object):
                     heap.clear()
                     pc.pop()
                     if not pc:
-                        return nodes, trunks
-                for neighbor, adj_trunk in self.graph[node.id]['trunk']:
+                        return nodes, plinks
+                for neighbor, adj_plink in self.graph[node.id]['plink']:
                     # excluded and allowed nodes
-                    if neighbor not in allowed_nodes-excluded_nodes: 
+                    if neighbor not in allowed_nodes - excluded_nodes: 
                         continue
-                    # excluded and allowed trunks
-                    if adj_trunk not in allowed_trunks-excluded_trunks: 
+                    # excluded and allowed physical links
+                    if adj_plink not in allowed_plinks - excluded_plinks: 
                         continue
                     heappush(heap, (
-                                    dist + adj_trunk('cost', node), 
+                                    dist + adj_plink('cost', node), 
                                     neighbor,
                                     nodes + [neighbor], 
-                                    trunks + [adj_trunk], 
+                                    plinks + [adj_plink], 
                                     pc
                                     )
                             )
@@ -884,66 +1004,66 @@ class Network(object):
                      source, 
                      target, 
                      cycle = False,
-                     excluded_trunks = None, 
+                     excluded_plinks = None, 
                      excluded_nodes = None, 
-                     allowed_trunks = None, 
+                     allowed_plinks = None, 
                      allowed_nodes = None
                      ):
         
         # initialize parameters
         if excluded_nodes is None:
             excluded_nodes = set()
-        if excluded_trunks is None:
-            excluded_trunks = set()
-        if allowed_trunks is None:
-            allowed_trunks = set(self.trunks.values())
+        if excluded_plinks is None:
+            excluded_plinks = set()
+        if allowed_plinks is None:
+            allowed_plinks = set(self.plinks.values())
         if allowed_nodes is None:
             allowed_nodes = set(self.nodes.values())
 
         n = len(allowed_nodes)
         prec_node = {i: None for i in allowed_nodes}
-        prec_trunk = {i: None for i in allowed_nodes}
+        prec_plink = {i: None for i in allowed_nodes}
         dist = {i: float('inf') for i in allowed_nodes}
         dist[source] = 0
         
         for i in range(n+2):
             negative_cycle = False
             for node in allowed_nodes:
-                for neighbor, adj_trunk in self.graph[node.id]['trunk']:
-                    sd = (node == adj_trunk.source)*'SD' or 'DS'
+                for neighbor, adj_plink in self.graph[node.id]['plink']:
+                    sd = (node == adj_plink.source)*'SD' or 'DS'
                     # excluded and allowed nodes
-                    if neighbor not in allowed_nodes-excluded_nodes: 
+                    if neighbor not in allowed_nodes - excluded_nodes: 
                         continue
-                    # excluded and allowed trunks
-                    if adj_trunk not in allowed_trunks-excluded_trunks: 
+                    # excluded and allowed physical links
+                    if adj_plink not in allowed_plinks - excluded_plinks: 
                         continue
-                    dist_neighbor = dist[node] + getattr(adj_trunk, 'cost' + sd)
+                    dist_neighbor = dist[node] + getattr(adj_plink, 'cost' + sd)
                     if dist_neighbor < dist[neighbor]:
                         dist[neighbor] = dist_neighbor
                         prec_node[neighbor] = node
-                        prec_trunk[neighbor] = adj_trunk
+                        prec_plink[neighbor] = adj_plink
                         negative_cycle = True
                         
         # traceback the path from target to source
         if dist[target] != float('inf') and not cycle:
-            curr, path_node, path_trunk = target, [target], [prec_trunk[target]]
+            curr, path_node, path_plink = target, [target], [prec_plink[target]]
             while curr != source:
                 curr = prec_node[curr]
-                path_trunk.append(prec_trunk[curr])
+                path_plink.append(prec_plink[curr])
                 path_node.append(curr)
-            return path_node[::-1], path_trunk[:-1][::-1]
+            return path_node[::-1], path_plink[:-1][::-1]
         # if we want a cycle, and one exists, we find it
         if cycle and negative_cycle:
-                curr, path_node, path_trunk = target, [target], [prec_trunk[target]]
+                curr, path_node, path_plink = target, [target], [prec_plink[target]]
                 # return the cycle itself (for the cycle cancelling algorithm) 
                 # starting from the target, we go through the predecessors 
                 # we find any cycle (we don't necessarily have to come back to
                 # the target).
                 while curr not in path_node:
                     curr = prec_node[curr]
-                    path_trunk.append(prec_trunk[curr])
+                    path_plink.append(prec_plink[curr])
                     path_node.append(curr)
-                return path_node[::-1], path_trunk[:-1][::-1]
+                return path_node[::-1], path_plink[:-1][::-1]
         # if we didn't find a path, and were not looking for a cycle, 
         # we return empty lists
         return [], []
@@ -958,9 +1078,9 @@ class Network(object):
         for id1, n1 in enumerate(nodes):
             for id2, n2 in enumerate(nodes):
                 if id1 != id2:
-                    for neighbor, trunk in self.graph[n1.id]['trunk']:
+                    for neighbor, plink in self.graph[n1.id]['plink']:
                         if neighbor == n2:
-                            W[id1][id2] = trunk.costSD
+                            W[id1][id2] = plink.costSD
                             break
                     else:
                         W[id1][id2] = float('inf')
@@ -992,7 +1112,7 @@ class Network(object):
             if node == target:
                 yield list(path)
             else:
-                for neighbor, adj_trunk in self.graph[node.id]['trunk']:
+                for neighbor, adj_plink in self.graph[node.id]['plink']:
                     if neighbor not in seen:
                         dead_end = False
                         seen.add(neighbor)
@@ -1012,16 +1132,16 @@ class Network(object):
         # To find the shortest pair from the source to the target, we look
         # for the shortest path going from the source to the source, with 
         # the target as a 'path constraint'.
-        # Each path is stored with sets of allowed nodes and trunks that will 
+        # Each path is stored with sets of allowed nodes and physical links that will 
         # contains what belongs to the first path, once we've reached the target.
         
         # if a_n is None:
         #     a_n = AS.nodes
         # if a_t is None:
-        #     a_t = AS.pAS['trunk']
+        #     a_t = AS.pAS['plink']
         
         if a_t is None:
-            a_t = set(self.trunks.values())
+            a_t = set(self.plinks.values())
         if a_n is None:
             a_n = set(self.nodes.values())
 
@@ -1030,36 +1150,36 @@ class Network(object):
         # empty until we reach the target.
         heap = [(0, source, [], set())]
         while heap:
-            dist, node, path_trunk, e_o = heappop(heap)  
-            if (node, tuple(path_trunk)) not in visited:
-                visited.add((node, tuple(path_trunk)))
+            dist, node, path_plink, e_o = heappop(heap)  
+            if (node, tuple(path_plink)) not in visited:
+                visited.add((node, tuple(path_plink)))
                 if node == target:
-                    e_o = set(path_trunk)
+                    e_o = set(path_plink)
                 if node == source and e_o:
-                    return [], path_trunk
-                for neighbor, adj_trunk in self.graph[node.id]['trunk']:
-                    sd = (node == adj_trunk.source)*'SD' or 'DS'
+                    return [], path_plink
+                for neighbor, adj_plink in self.graph[node.id]['plink']:
+                    sd = (node == adj_plink.source)*'SD' or 'DS'
                     # we ignore what's not allowed (not in the AS or in failure
                     # or in the path we've used to reach the target)
-                    if neighbor not in a_n or adj_trunk not in a_t-e_o:
+                    if neighbor not in a_n or adj_plink not in a_t-e_o:
                         continue
-                    cost = getattr(adj_trunk, 'cost' + sd)
+                    cost = getattr(adj_plink, 'cost' + sd)
                     heappush(heap, (dist + cost, neighbor, 
-                                                path_trunk + [adj_trunk], e_o))
+                                                path_plink + [adj_plink], e_o))
         return [], []
         
     ## 2) Bhandari algorithm for link-disjoint shortest pair
         
     def bhandari(self, source, target, a_n=None, a_t=None):
     # - we find the shortest path from source to target using A* algorithm
-    # - we replace bidirectionnal trunks of the shortest path with unidirectional 
-    # trunks with a negative cost
+    # - we replace bidirectionnal physical links of the shortest path with 
+    # unidirectional physical links with a negative cost
     # - we run Bellman-Ford algorithm to find the new 
     # shortest path from source to target
-    # - we remove all overlapping trunks
+    # - we remove all overlapping physical links
         
         if a_t is None:
-            a_t = set(self.trunks.values())
+            a_t = set(self.plinks.values())
         if a_n is None:
             a_n = set(self.nodes.values())
             
@@ -1067,38 +1187,38 @@ class Network(object):
         # algorithm relies on graph transformation, and the costs of the edges
         # will be modified.
         # at the end, we will revert the cost to their original value
-        for trunk in a_t:
-            trunk.flowSD = trunk.costSD
-            trunk.flowDS = trunk.costDS
+        for plink in a_t:
+            plink.flowSD = plink.costSD
+            plink.flowDS = plink.costDS
             
         _, first_path = self.A_star(
                               source, 
                               target, 
-                              allowed_trunks = a_t, 
+                              allowed_plinks = a_t, 
                               allowed_nodes = a_n
                               ) 
                    
-        # we set the cost of the shortest path trunks to float('inf'), which 
-        # is equivalent to just removing them. In the reverse direction, 
+        # we set the cost of the shortest path physical linkss to float('inf'), 
+        # which is equivalent to just removing them. In the reverse direction, 
         # we set the cost to -1.
         current_node = source
-        for trunk in first_path:
-            dir = 'SD' * (current_node == trunk.source) or 'DS'
+        for plink in first_path:
+            dir = 'SD' * (current_node == plink.source) or 'DS'
             reverse_dir = 'SD' if dir == 'DS' else 'DS'
-            setattr(trunk, 'cost' + dir, float('inf'))
-            setattr(trunk, 'cost' + reverse_dir, -1)
-            current_node = trunk.destination if dir == 'SD' else trunk.source
+            setattr(plink, 'cost' + dir, float('inf'))
+            setattr(plink, 'cost' + reverse_dir, -1)
+            current_node = plink.destination if dir == 'SD' else plink.source
             
         _, second_path = self.bellman_ford(
                                            source, 
                                            target, 
-                                           allowed_trunks = a_t, 
+                                           allowed_plinks = a_t, 
                                            allowed_nodes = a_n
                                            )
         
-        for trunk in a_t:
-            trunk.costSD = trunk.flowSD
-            trunk.costDS = trunk.flowDS
+        for plink in a_t:
+            plink.costSD = plink.flowSD
+            plink.costDS = plink.flowDS
 
         return set(first_path) ^ set(second_path)
         
@@ -1109,10 +1229,10 @@ class Network(object):
     # resulting cost of 0 with that formula, since c(a, b) = d(s, a) - d(s, b)
     # - we run A* algorithm to find the new 
     # shortest path from source to target
-    # - we remove all overlapping trunks
+    # - we remove all overlapping physical links
         
         if a_t is None:
-            a_t = set(self.trunks.values())
+            a_t = set(self.plinks.values())
         if a_n is None:
             a_n = set(self.nodes.values())
             
@@ -1120,36 +1240,36 @@ class Network(object):
         # algorithm relies on graph transformation, and the costs of the edges
         # will be modified.
         # at the end, we will revert the cost to their original value
-        for trunk in a_t:
-            trunk.flowSD = trunk.costSD
-            trunk.flowDS = trunk.costDS
+        for plink in a_t:
+            plink.flowSD = plink.costSD
+            plink.flowDS = plink.costDS
             
         dist, first_path, tree = self.dijkstra(
                               source, 
                               target, 
-                              allowed_trunks = a_t, 
+                              allowed_plinks = a_t, 
                               allowed_nodes = a_n
                               ) 
                               
-        # we change the trunks cost with the formula described above
-        for trunk in tree:
+        # we change the physical links' cost with the formula described above
+        for plink in tree:
             # new_c(a, b) = c(a, b) - D(b) + D(a) where D(x) is the 
             # distance from the source to x.
-            src, dest = trunk.source, trunk.destination
-            trunk.costSD += dist[src] - dist[dest]
-            trunk.costDS += dist[dest] - dist[src]
+            src, dest = plink.source, plink.destination
+            plink.costSD += dist[src] - dist[dest]
+            plink.costDS += dist[dest] - dist[src]
             
         # we exclude the edge of the shortest path (infinite cost)
         current_node = source
-        for trunk in first_path:
-            dir = 'SD' * (current_node == trunk.source) or 'DS'
-            setattr(trunk, 'cost' + dir, float('inf'))
-            current_node = trunk.destination if dir == 'SD' else trunk.source
+        for plink in first_path:
+            dir = 'SD' * (current_node == plink.source) or 'DS'
+            setattr(plink, 'cost' + dir, float('inf'))
+            current_node = plink.destination if dir == 'SD' else plink.source
             
         _, second_path = self.A_star(
                               source, 
                               target, 
-                              allowed_trunks = a_t, 
+                              allowed_plinks = a_t, 
                               allowed_nodes = a_n
                               )
                               
@@ -1159,8 +1279,8 @@ class Network(object):
     ## Flow algorithms
     
     def reset_flow(self):
-        for trunk in self.trunks.values():
-            trunk.flowSD = trunk.flowDS = 0
+        for plink in self.plinks.values():
+            plink.flowSD = plink.flowDS = 0
     
     ## 1) Ford-Fulkerson algorithm
         
@@ -1168,11 +1288,11 @@ class Network(object):
         visit[curr_node] = True
         if curr_node == target:
             return val
-        for neighbor, adj_trunk in self.graph[curr_node.id]['trunk']:
-            direction = curr_node == adj_trunk.source
+        for neighbor, adj_plink in self.graph[curr_node.id]['plink']:
+            direction = curr_node == adj_plink.source
             sd, ds = direction*'SD' or 'DS', direction*'DS' or 'SD'
-            cap = getattr(adj_trunk, 'capacity' + sd)
-            current_flow = getattr(adj_trunk, 'flow' + sd)
+            cap = getattr(adj_plink, 'capacity' + sd)
+            current_flow = getattr(adj_plink, 'flow' + sd)
             if cap > current_flow and not visit[neighbor]:
                 residual_capacity = min(val, cap - current_flow)
                 global_flow = self.augment_ff(
@@ -1182,8 +1302,8 @@ class Network(object):
                                               visit
                                               )
                 if global_flow > 0:
-                    adj_trunk.__dict__['flow' + sd] += global_flow
-                    adj_trunk.__dict__['flow' + ds] -= global_flow
+                    adj_plink.__dict__['flow' + sd] += global_flow
+                    adj_plink.__dict__['flow' + ds] -= global_flow
                     return global_flow
         return False
         
@@ -1194,7 +1314,7 @@ class Network(object):
         # flow leaving from the source 
         return sum(
                   getattr(adj, 'flow' + (s==adj.source)*'SD' or 'DS') 
-                  for _, adj in self.graph[s.id]['trunk']
+                  for _, adj in self.graph[s.id]['plink']
                   )
         
     ## 2) Edmonds-Karp algorithm
@@ -1208,11 +1328,11 @@ class Network(object):
         res_cap[source] = float('inf')
         while Q:
             curr_node = Q.popleft()
-            for neighbor, adj_trunk in self.graph[curr_node.id]['trunk']:
-                direction = curr_node == adj_trunk.source
+            for neighbor, adj_plink in self.graph[curr_node.id]['plink']:
+                direction = curr_node == adj_plink.source
                 sd, ds = direction*'SD' or 'DS', direction*'DS' or 'SD'
-                cap = getattr(adj_trunk, 'capacity' + sd)
-                flow = getattr(adj_trunk, 'flow' + sd)
+                cap = getattr(adj_plink, 'capacity' + sd)
+                flow = getattr(adj_plink, 'flow' + sd)
                 residual = cap - flow
                 if residual and augmenting_path[neighbor] is None:
                     augmenting_path[neighbor] = curr_node
@@ -1231,19 +1351,19 @@ class Network(object):
                 break
             curr_node = destination
             while curr_node != source:
-                # find the trunk between the two nodes
+                # find the physical link between the two nodes
                 prec_node = augmenting_path[curr_node]
-                find_trunk = lambda p: getitem(p, 0) == prec_node
-                (_, trunk) ,= filter(find_trunk, self.graph[curr_node.id]['trunk'])
-                # define sd and ds depending on how the trunk is defined
-                direction = curr_node == trunk.source
+                find_plink = lambda p: getitem(p, 0) == prec_node
+                (_, plink) ,= filter(find_plink, self.graph[curr_node.id]['plink'])
+                # define sd and ds depending on how the physical link is defined
+                direction = curr_node == plink.source
                 sd, ds = direction*'SD' or 'DS', direction*'DS' or 'SD'
-                trunk.__dict__['flow' + ds] += global_flow
-                trunk.__dict__['flow' + sd] -= global_flow
+                plink.__dict__['flow' + ds] += global_flow
+                plink.__dict__['flow' + sd] -= global_flow
                 curr_node = prec_node 
         return sum(
                    getattr(adj, 'flow' + ((source==adj.source)*'SD' or 'DS')) 
-                   for _, adj in self.graph[source.id]['trunk']
+                   for _, adj in self.graph[source.id]['plink']
                   )
                   
     ## 2) Dinic algorithm
@@ -1254,17 +1374,17 @@ class Network(object):
         if curr_node == dest:
             return limit
         val = 0
-        for neighbor, adj_trunk in self.graph[curr_node.id]['trunk']:
-            direction = curr_node == adj_trunk.source
+        for neighbor, adj_plink in self.graph[curr_node.id]['plink']:
+            direction = curr_node == adj_plink.source
             sd, ds = direction*'SD' or 'DS', direction*'DS' or 'SD'
-            cap = getattr(adj_trunk, 'capacity' + sd)
-            flow = getattr(adj_trunk, 'flow' + sd)
+            cap = getattr(adj_plink, 'capacity' + sd)
+            flow = getattr(adj_plink, 'flow' + sd)
             residual = cap - flow
             if level[neighbor] == level[curr_node] + 1 and residual > 0:
                 z = min(limit, residual)
                 aug = self.augment_di(level, flow, neighbor, dest, z)
-                adj_trunk.__dict__['flow' + sd] += aug
-                adj_trunk.__dict__['flow' + ds] -= aug
+                adj_plink.__dict__['flow' + sd] += aug
+                adj_plink.__dict__['flow' + ds] -= aug
                 val += aug
                 limit -= aug
         if not val:
@@ -1281,11 +1401,11 @@ class Network(object):
             level[source] = 0
             while Q:
                 curr_node = Q.pop()
-                for neighbor, adj_trunk in self.graph[curr_node.id]['trunk']:
-                    direction = curr_node == adj_trunk.source
+                for neighbor, adj_plink in self.graph[curr_node.id]['plink']:
+                    direction = curr_node == adj_plink.source
                     sd = direction*'SD' or 'DS'
-                    cap = getattr(adj_trunk, 'capacity' + sd)
-                    flow = getattr(adj_trunk, 'flow' + sd)
+                    cap = getattr(adj_plink, 'capacity' + sd)
+                    flow = getattr(adj_plink, 'flow' + sd)
                     if level[neighbor] is None and cap > flow:
                         level[neighbor] = level[curr_node] + 1
                         Q.appendleft(neighbor)
@@ -1293,9 +1413,9 @@ class Network(object):
             if level[destination] is None:
                 return flow, total
             limit = sum(
-                        getattr(adj_trunk, 'capacity' + 
-                        ((source == adj_trunk.source)*'SD' or 'DS'))
-                        for _, adj_trunk in self.graph[source.id]['trunk']
+                        getattr(adj_plink, 'capacity' + 
+                        ((source == adj_plink.source)*'SD' or 'DS'))
+                        for _, adj_plink in self.graph[source.id]['plink']
                         )
             total += self.augment_di(level, flow, source, destination, limit)
         
@@ -1307,9 +1427,9 @@ class Network(object):
         uf = UnionFind(allowed_nodes)
         edges = []
         for node in allowed_nodes:
-            for neighbor, adj_trunk in self.graph[node.id]['trunk']:
+            for neighbor, adj_plink in self.graph[node.id]['plink']:
                 if neighbor in allowed_nodes:
-                    edges.append((adj_trunk.costSD, adj_trunk, node, neighbor))
+                    edges.append((adj_plink.costSD, adj_plink, node, neighbor))
         for w, t, u, v in sorted(edges, key=itemgetter(0)):
             if uf.union(u, v):
                 yield t
@@ -1331,11 +1451,11 @@ class Network(object):
         
         new_graph = {node: {} for node in self.nodes.values()}
         for node in self.nodes.values():
-            for neighbor, trunk in self.graph[node.id]['trunk']:
-                sd = (node == trunk.source)*'SD' or 'DS'
-                new_graph[node][neighbor] = getattr(trunk, 'cost' + sd)
+            for neighbor, plink in self.graph[node.id]['plink']:
+                sd = (node == plink.source)*'SD' or 'DS'
+                new_graph[node][neighbor] = getattr(plink, 'cost' + sd)
 
-        n = 2*len(self.trunks)
+        n = 2*len(self.plinks)
         
         c = []
         for node in new_graph:
@@ -1376,23 +1496,23 @@ class Network(object):
                 new_graph[node][neighbor] = x[cpt]
                 cpt += 1
                 
-        # update the network trunks with the new flow value
-        for trunk in self.trunks.values():
-            src, dest = trunk.source, trunk.destination
-            trunk.flowSD = new_graph[src][dest]
-            trunk.flowDS = new_graph[dest][src]
+        # update the network physical links with the new flow value
+        for plink in self.plinks.values():
+            src, dest = plink.source, plink.destination
+            plink.flowSD = new_graph[src][dest]
+            plink.flowDS = new_graph[dest][src]
             
         # traceback the shortest path with the flow
-        curr_node, path_trunk = s, []
+        curr_node, path_plink = s, []
         while curr_node != t:
-            for neighbor, adj_trunk in self.graph[curr_node.id]['trunk']:
+            for neighbor, adj_plink in self.graph[curr_node.id]['plink']:
                 # if the flow leaving the current node is 1, we move
                 # forward and replace the current node with its neighbor
-                if adj_trunk('flow', curr_node) == 1:
-                    path_trunk.append(adj_trunk)
+                if adj_plink('flow', curr_node) == 1:
+                    path_plink.append(adj_plink)
                     curr_node = neighbor
                     
-        return path_trunk
+        return path_plink
     
     ## 2) Single-source single-destination maximum flow
                
@@ -1407,11 +1527,11 @@ class Network(object):
         
         new_graph = {node: {} for node in self.nodes.values()}
         for node in self.nodes.values():
-            for neighbor, trunk in self.graph[node.id]['trunk']:
-                sd = (node == trunk.source)*'SD' or 'DS'
-                new_graph[node][neighbor] = getattr(trunk, 'capacity' + sd)
+            for neighbor, plink in self.graph[node.id]['plink']:
+                sd = (node == plink.source)*'SD' or 'DS'
+                new_graph[node][neighbor] = getattr(plink, 'capacity' + sd)
 
-        n = 2*len(self.trunks)
+        n = 2*len(self.plinks)
         v = len(new_graph)
 
         c, h = [], []
@@ -1449,15 +1569,15 @@ class Network(object):
                 new_graph[node][neighbor] = x[cpt]
                 cpt += 1
                 
-        # update the network trunks with the new flow value
-        for trunk in self.trunks.values():
-            src, dest = trunk.source, trunk.destination
-            trunk.flowSD = new_graph[src][dest]
-            trunk.flowDS = new_graph[dest][src]
+        # update the network physical links with the new flow value
+        for plink in self.plinks.values():
+            src, dest = plink.source, plink.destination
+            plink.flowSD = new_graph[src][dest]
+            plink.flowDS = new_graph[dest][src]
 
         return sum(
                    getattr(adj, 'flow' + ((s==adj.source)*'SD' or 'DS')) 
-                   for _, adj in self.graph[s.id]['trunk']
+                   for _, adj in self.graph[s.id]['plink']
                    )
                    
     ## 3) Single-source single-destination minimum-cost flow
@@ -1473,11 +1593,11 @@ class Network(object):
         
         new_graph = {node: {} for node in self.nodes.values()}
         for node in self.nodes.values():
-            for neighbor, trunk in self.graph[node.id]['trunk']:
-                new_graph[node][neighbor] = (trunk('capacity', node),
-                                             trunk('cost', node))
+            for neighbor, plink in self.graph[node.id]['plink']:
+                new_graph[node][neighbor] = (plink('capacity', node),
+                                             plink('cost', node))
 
-        n = 2*len(self.trunks)
+        n = 2*len(self.plinks)
         v = len(new_graph)
 
         c, h = [], []
@@ -1515,15 +1635,15 @@ class Network(object):
                 new_graph[node][neighbor] = x[cpt]
                 cpt += 1
                 
-        # update the network trunks with the new flow value
-        for trunk in self.trunks.values():
-            src, dest = trunk.source, trunk.destination
-            trunk.flowSD = new_graph[src][dest]
-            trunk.flowDS = new_graph[dest][src]
+        # update the network physical links with the new flow value
+        for plink in self.plinks.values():
+            src, dest = plink.source, plink.destination
+            plink.flowSD = new_graph[src][dest]
+            plink.flowDS = new_graph[dest][src]
 
         return sum(
                    getattr(adj, 'flow' + ((s==adj.source)*'SD' or 'DS')) 
-                   for _, adj in self.graph[s.id]['trunk']
+                   for _, adj in self.graph[s.id]['plink']
                    )
                    
     ## 4) K Link-disjoint shortest pair 
@@ -1543,12 +1663,12 @@ class Network(object):
         for i in range(K):
             graph_K = {node: {} for node in self.nodes.values()}
             for node in graph_K:
-                for neighbor, trunk in self.graph[node.id]['trunk']:
-                    sd = (node == trunk.source)*'SD' or 'DS'
-                    graph_K[node][neighbor] = getattr(trunk, 'cost' + sd)
+                for neighbor, plink in self.graph[node.id]['plink']:
+                    sd = (node == plink.source)*'SD' or 'DS'
+                    graph_K[node][neighbor] = getattr(plink, 'cost' + sd)
             all_graph.append(graph_K)
 
-        n = 2*len(self.trunks)
+        n = 2*len(self.plinks)
         
         c = []
         for graph_K in all_graph:
@@ -1610,11 +1730,11 @@ class Network(object):
                     graph_K[node][neighbor] = x[cpt]
                     cpt += 1
 
-        # update the network trunks with the new flow value
-        for trunk in self.trunks.values():
-            src, dest = trunk.source, trunk.destination
-            trunk.flowSD = max(graph_K[src][dest] for graph_K in all_graph)
-            trunk.flowDS = max(graph_K[dest][src] for graph_K in all_graph)
+        # update the network physical links with the new flow value
+        for plink in self.plinks.values():
+            src, dest = plink.source, plink.destination
+            plink.flowSD = max(graph_K[src][dest] for graph_K in all_graph)
+            plink.flowDS = max(graph_K[dest][src] for graph_K in all_graph)
             
         return sum(x)
         
@@ -1626,15 +1746,15 @@ class Network(object):
     # it is defined as max( link bw / link capacity for all links):
     # it is the maximum utilization ratio among all AS links.
     # we also use this function to retrieve the argmax, that is, 
-    # the trunk with the highlight bandwidth / capacity ratio.
+    # the physical link with the highlight bandwidth / capacity ratio.
     def ncr_computation(self, AS_links):
-        # ct_id is the index of the congested trunk bandwidth in AS_links
+        # ct_id is the index of the congested plink bandwidth in AS_links
         # cd indicates which is the congested direction: SD or DS
         ncr, ct_id, cd = 0, None, None
-        for idx, trunk in enumerate(AS_links):
+        for idx, plink in enumerate(AS_links):
             for direction in ('SD', 'DS'):
                 tf, cap = 'traffic' + direction, 'capacity' + direction 
-                curr_ncr = getattr(trunk, tf) / getattr(trunk, cap)
+                curr_ncr = getattr(plink, tf) / getattr(plink, cap)
                 if curr_ncr > ncr:
                     ncr = curr_ncr
                     ct_id = idx
@@ -1649,10 +1769,11 @@ class Network(object):
         self.ip_allocation()
         self.interface_allocation()
         
-        AS_links = list(AS.pAS['trunk'])
+        AS_links = list(AS.pAS['plink'])
         
         # a cost assignment solution is a vector of 2*n value where n is
-        # the number of trunks in the AS, because each trunk has two costs:
+        # the number of physical links in the AS, because each physical link
+        # has two costs:
         # one per direction (SD and DS).
         n = 2*len(AS_links)
         
@@ -1673,9 +1794,9 @@ class Network(object):
         # we store the cost value in the flow parameters, since we'll change
         # the links' costs to evaluate each solution
         # at the end, we will revert the cost to their original value
-        for trunk in AS.pAS['trunk']:
-            trunk.flowSD = trunk.costSD
-            trunk.flowDS = trunk.costDS
+        for plink in AS.pAS['plink']:
+            plink.flowSD = plink.costSD
+            plink.flowDS = plink.costDS
             
         generation_size = 10
         best_candidates = []
@@ -1684,7 +1805,7 @@ class Network(object):
             print(i)
             curr_solution = [random.randint(1, n) for _ in range(n)]
                 
-            # we assign the costs to the trunks
+            # we assign the costs to the physical links
             for id, cost in enumerate(curr_solution):
                 setattr(AS_links[id//2], 'cost' + ('DS'*(id%2) or 'SD'), cost)
                 
@@ -1707,13 +1828,13 @@ class Network(object):
             # we create an cost assignment and add it to the tabu list
             tabu_list.append(curr_solution)
             
-            # we assign the costs to the trunks
+            # we assign the costs to the physical links
             for id, cost in enumerate(curr_solution):
                 setattr(AS_links[id//2], 'cost' + ('DS'*(id%2) or 'SD'), cost)
             
             self.route()
             
-            # if we have to look for the most congested trunk more than 
+            # if we have to look for the most congested physical link more than 
             # C_max times, and still can't have a network congestion 
             # ratio lower than best_ncr, we stop
             C_max, C = 10, 0
@@ -1739,13 +1860,13 @@ class Network(object):
                         print(best_ncr)
                         break
                     
-                # we store the bandwidth of the trunk with the highest
+                # we store the bandwidth of the physical link with the highest
                 # congestion (in the congested direction)
                 initial_bw = getattr(AS_links[ct_id], 'traffic' + cd)
                     
-                # we'll increase the cost of the congested trunk, until
+                # we'll increase the cost of the congested physical link, until
                 # at least one traffic is rerouted (in such a way that it will
-                # no longer use the congested trunk)
+                # no longer use the congested physical link)
                 for k in range(5):
                     #print(k)
                     AS_links[ct_id].__dict__['cost' + cd] += n // 5
@@ -1775,14 +1896,14 @@ class Network(object):
     
     def RWA_graph_transformation(self, name=None):
         
-        # we compute the path of all traffic trunks
+        # we compute the path of all traffic physical links
         self.path_finder()
         graph_sco = self.cs.ms.add_scenario(name)
         
         # in the new graph, each node corresponds to a traffic path
-        # we create one node per traffic trunk in the new scenario            
+        # we create one node per traffic physical link in the new scenario            
         visited = set()
-        # tl stands for traffic trunk
+        # tl stands for traffic physical link
         for tlA in self.traffics.values():
             for tlB in self.traffics.values():
                 if tlB not in visited and tlA != tlB:
@@ -1819,13 +1940,13 @@ class Network(object):
         uncolored_nodes = list(oxc_color)
         # we will use a function that returns the degree of a node to sort
         # the list in ascending order
-        uncolored_nodes.sort(key = lambda node: len(self.graph[node.id]['trunk']))
+        uncolored_nodes.sort(key = lambda node: len(self.graph[node.id]['plink']))
         # and pop nodes one by one
         while uncolored_nodes:
             largest_degree = uncolored_nodes.pop()
             # we compute the set of colors used by adjacent vertices
             colors = set(oxc_color[neighbor] for neighbor, _ in
-                                    self.graph[largest_degree.id]['trunk'])
+                                    self.graph[largest_degree.id]['plink'])
             # we find the minimum indexed color which is available
             min_index = [i in colors for i in range(len(colors) + 1)].index(0)
             # and assign it to the current oxc
@@ -1849,9 +1970,9 @@ class Network(object):
         # x = [x_1_0, x_2_0, ..., x_V_0, x_1_1, ... x_V-1_K-1, x_V_K-1]
         # that is, [(x_v_0) for v in V, ..., (x_v_K) for wl in K]
         
-        # V is the total number of path (i.e the total number of trunks
+        # V is the total number of path (i.e the total number of physical links
         # in the transformed graph)
-        V, T = len(self.nodes), len(self.trunks)
+        V, T = len(self.nodes), len(self.plinks)
         
         # for the objective function, which must minimize the sum of y_wl, 
         # that is, the number of wavelength used
@@ -1871,9 +1992,9 @@ class Network(object):
         
         G2 = []
         for i in range(K):
-            for trunk in self.trunks.values():
-                p_src, p_dest = trunk.source, trunk.destination
-                # we want to ensure that paths that have at least one trunk in 
+            for plink in self.plinks.values():
+                p_src, p_dest = plink.source, plink.destination
+                # we want to ensure that paths that have at least one physical link in 
                 # common are not assigned the same wavelength.
                 # this means that x_v_src_i + x_v_dest_i <= y_i
                 row = []
@@ -1967,12 +2088,12 @@ class Network(object):
         nodes = set(nodes)
         for nodeA in nodes:
             Fx = Fy = 0
-            for nodeB in nodes | v_nodes | set(self.neighbors(nodeA, 'trunk')):
+            for nodeB in nodes | v_nodes | set(self.neighbors(nodeA, 'plink')):
                 if nodeA != nodeB:
                     dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
                     dist = self.distance(dx, dy)
                     F_hooke = (0,)*2
-                    if self.is_connected(nodeA, nodeB, 'trunk'):
+                    if self.is_connected(nodeA, nodeB, 'plink'):
                         F_hooke = self.hooke_force(dx, dy, dist, L0, k)
                     F_coulomb = self.coulomb_force(dx, dy, dist, cf)
                     Fx += F_hooke[0] + F_coulomb[0] * nodeB.virtual_factor
@@ -1995,7 +2116,7 @@ class Network(object):
     def fruchterman_reingold_layout(self, nodes, opd, limit):
         t = 1
         if not opd:
-            opd = sqrt(1200*700/len(self.trunks))
+            opd = sqrt(1200*700/len(self.plinks))
         opd /= 3
         for nA in nodes:
             nA.vx, nA.vy = 0, 0
@@ -2008,7 +2129,7 @@ class Network(object):
                         nA.vx += deltax * opd**2 / dist**2
                         nA.vy += deltay * opd**2 / dist**2   
                     
-        for l in self.trunks.values():
+        for l in self.plinks.values():
             deltax = l.source.x - l.destination.x
             deltay = l.source.y - l.destination.y
             dist = self.distance(deltax, deltay)
@@ -2038,7 +2159,7 @@ class Network(object):
             temp = frontier
             frontier = set()
             for node in temp:
-                for neighbor, _ in self.graph[node.id]['trunk']:
+                for neighbor, _ in self.graph[node.id]['plink']:
                     if node not in visited:
                         frontier.add(neighbor)
                         node_number += 1
@@ -2157,7 +2278,7 @@ class Network(object):
         # we create a n-dim hypercube by connecting two (n-1)-dim hypercubes
         i = 0
         graph_nodes = [self.nf(name=str(0), node_type=subtype)]
-        graph_trunks = []
+        graph_plinks = []
         while i < n+1:
             for k in range(len(graph_nodes)):
                 # creation of the nodes of the second hypercube
@@ -2167,20 +2288,20 @@ class Network(object):
                                            node_type = subtype
                                            )
                                    )
-            for trunk in graph_trunks[:]:
+            for plink in graph_plinks[:]:
                 # connection of the two hypercubes
-                source, destination = trunk.source, trunk.destination
+                source, destination = plink.source, plink.destination
                 n1 = str(int(source.name) + 2**i)
                 n2 = str(int(destination.name) + 2**i)
-                graph_trunks.append(
+                graph_plinks.append(
                                    self.lf(
                                            source = self.nf(name = n1), 
                                            destination = self.nf(name = n2)
                                            )
                                    )
             for k in range(len(graph_nodes)//2):
-                # creation of the trunks of the second hypercube
-                graph_trunks.append(
+                # creation of the physical links of the second hypercube
+                graph_plinks.append(
                                    self.lf(
                                            source = graph_nodes[k], 
                                            destination = graph_nodes[k+2**i]

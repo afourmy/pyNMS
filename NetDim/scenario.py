@@ -6,6 +6,7 @@ import tkinter as tk
 import network
 import miscellaneous.search as search
 import re
+from objects.objects import *
 from menus.general_rightclick_menu import GeneralRightClickMenu
 from menus.selection_rightclick_menu import SelectionRightClickMenu
 from random import randint
@@ -31,11 +32,11 @@ class Scenario(tk.Canvas):
         self.NODE_SIZE = 8
         
         # default label display
-        self.current_label = dict.fromkeys(self.ms.object_label, 'none')
+        self.current_label = dict.fromkeys(object_labels, 'none')
         
         # creation mode, object type, and associated bindings
         self._start_position = [None]*2
-        self._object_type = 'trunk'
+        self._object_type = 'plink'
         self.drag_item = None
         self.temp_line = None
         
@@ -56,7 +57,7 @@ class Scenario(tk.Canvas):
         self.layered_display = False
         # if layered_display is false, there's only one layer (self.layers[0])
         # else we need a dictionnary associating a type to each layer
-        self.layers = [(0,), {0: 'trunk', 1: 'l2vc', 2: 'l3vc', 3: 'route', 4: 'traffic'}]
+        self.layers = [(0,), {0: 'plink', 1: 'l2vc', 2: 'l3vc', 3: 'route', 4: 'traffic'}]
         # defines whether a layer should be display or not. By default,
         # IP and Ethernet virtual connections are not displayed.
         self.display_layer = [True, True, True, True, True]
@@ -67,7 +68,7 @@ class Scenario(tk.Canvas):
         self.display_per_type = dict.fromkeys(self.ntw.all_subtypes, True)
         
         # indexes of the failure icons: dictionnary that bins
-        # trunks item to the id of the associated icon
+        # physical links item to the id of the associated icon
         self.id_fdtks = {}
         
         # list of currently selected object ('so')
@@ -284,10 +285,10 @@ class Scenario(tk.Canvas):
                         self.pwindow = tk.Toplevel(self)
                         self.pwindow.wm_overrideredirect(1)
                         text = '\n'.join(
-                                         self.ms.prop_to_nice_name[property] 
+                                         prop_to_nice_name[property] 
                                          + ' : ' + str(getattr(co, property)) 
                                          + ' ' for property in 
-                                        self.ms.box_properties[co.subtype]
+                                         box_properties[co.subtype]
                                          )
                         x0, y0 = self.ms.winfo_x() + 250, self.ms.winfo_y() + 75
                         self.pwindow.wm_geometry('+%d+%d' % (x0, y0))
@@ -600,7 +601,7 @@ class Scenario(tk.Canvas):
                 # we remove the associated link in the network model
                 self.ntw.remove_link(obj)
                 # if the layered display is activate and the link 
-                # to delete is not a physical link (trunk)
+                # to delete is not a physical link
                 if self.layered_display and obj.layer:
                     for edge in (obj.source, obj.destination):
                         # we check if there still are other links of the same
@@ -775,7 +776,7 @@ class Scenario(tk.Canvas):
                 self.itemconfig(label_id, text=text)
         elif itf and label_type in ('name', 'ipaddress'):
             # to display the name of the interface, we retrieve the 'interface'
-            # parameters of the corresponding trunk
+            # parameters of the corresponding physical link
             valueS = getattr(obj.interfaceS, label_type)
             valueD = getattr(obj.interfaceD, label_type)
             self.itemconfig(label_id[0], text=valueS)
@@ -787,11 +788,11 @@ class Scenario(tk.Canvas):
     def refresh_labels(self, type, label=None):
         if label:
             self.current_label[type] = label
-        # if we change the interface label, it is actually the trunk we
+        # if we change the interface label, it is actually the physical link we
         # need to retrieve, since that's where we store the interfaces values
-        obj_type = 'trunk' if type == 'Interface' else type.lower()
+        obj_type = 'plink' if type == 'Interface' else type.lower()
         # interface is a boolean that tells the 'refresh_label' function
-        # whether we want to update the interface label, or the trunk label,
+        # whether we want to update the interface label, or the physical link label,
         # since they have the same name
         itf = type == 'Interface'
         for obj in self.ntw.pn[obj_type].values():
@@ -996,9 +997,9 @@ class Scenario(tk.Canvas):
             
     ## Failure simulation
     
-    def remove_failure(self, trunk):
-        self.ntw.fdtks.remove(trunk)
-        icon_id = self.id_fdtks.pop(trunk)
+    def remove_failure(self, plink):
+        self.ntw.fdtks.remove(plink)
+        icon_id = self.id_fdtks.pop(plink)
         self.delete(icon_id)
     
     def remove_failures(self):
@@ -1007,21 +1008,21 @@ class Scenario(tk.Canvas):
             self.delete(idx)
         self.id_fdtks.clear()
     
-    def simulate_failure(self, trunk):
-        self.ntw.fdtks.add(trunk)
-        source, destination = trunk.source, trunk.destination
+    def simulate_failure(self, plink):
+        self.ntw.fdtks.add(plink)
+        source, destination = plink.source, plink.destination
         xA, yA, xB, yB = source.x, source.y, destination.x, destination.y
         id_failure = self.create_image(
                                         (xA+xB)/2, 
                                         (yA+yB)/2, 
                                         image = self.ms.img_failure
                                         )
-        self.id_fdtks[trunk] = id_failure
+        self.id_fdtks[plink] = id_failure
         
     def refresh_failures(self):
         self.id_fdtks.clear()
-        for trunk in self.ntw.fdtks:
-            self.simulate_failure(trunk)
+        for plink in self.ntw.fdtks:
+            self.simulate_failure(plink)
             
     ## Display filtering
     
@@ -1069,10 +1070,10 @@ class Scenario(tk.Canvas):
                 self.itemconfig(node.image[0] if self.display_image 
                                             else node.oval, state=new_state)
                 self.itemconfig(node.lid, state=new_state)
-        elif type in self.ntw.trunk_subtype:
-            for trunk in self.ntw.ftr('trunk', type):
-                self.itemconfig(trunk.line, state=new_state)
-                self.itemconfig(trunk.lid, state=new_state)
+        elif type in self.ntw.plink_subtype:
+            for plink in self.ntw.ftr('plink', type):
+                self.itemconfig(plink.line, state=new_state)
+                self.itemconfig(plink.lid, state=new_state)
         else:
             for link in self.ntw.pn[type].values():
                 self.itemconfig(link.line, state=new_state)

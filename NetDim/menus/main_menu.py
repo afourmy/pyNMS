@@ -3,6 +3,7 @@
 # Released under the GNU General Public License GPLv3
 
 import tkinter as tk
+from objects.objects import *
 from tkinter import ttk
 from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
@@ -35,7 +36,7 @@ class MainMenu(tk.Frame):
         for topo in ('tree', 'star', 'full-mesh', 'ring'):
             self.type_to_action[topo] = lambda t=topo: NetworkDimension(self.ms.cs, t)
             
-        for obj_type in self.ms.object_properties:
+        for obj_type in object_properties:
             if obj_type not in ('l2vc', 'l3vc'):
                 cmd = lambda o=obj_type: self.change_creation_mode(o)
                 self.type_to_action[obj_type] = cmd
@@ -44,8 +45,8 @@ class MainMenu(tk.Frame):
             button = tk.Button(self, bg='#A1DBCD', relief=tk.FLAT, command=cmd)                
             if button_type in self.ms.cs.ntw.link_class:
                 button.configure(text={
-                                       'ethernet': 'Ethernet trunk',
-                                       'wdm': 'WDM trunk',
+                                       'ethernet': 'Ethernet link',
+                                       'wdm': 'WDM link',
                                        'static route': 'Static route',
                                        'BGP peering': 'BGP peering',
                                        'OSPF virtual link': 'OSPF virtual link',

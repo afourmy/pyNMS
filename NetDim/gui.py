@@ -9,19 +9,20 @@ import copy
 import csv
 import xml.etree.ElementTree as etree
 import warnings
-import collections
 import network
 import scenario
-from objects import objects
+from collections import OrderedDict, defaultdict
 from os.path import abspath, pardir, join
 from tkinter import ttk, filedialog
-from pythonic_tkinter.preconfigured_widgets import *
 from objects import object_management_window as omw
+from objects.objects import *
+from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous import graph_algorithms as galg
 from miscellaneous import debug
 from drawing import drawing_options_window as dow
 from graph_generation import advanced_graph as adv_gr
 from optical_networks import rwa_window as rwaw
+from miscellaneous.network_functions import IPAddress
 from menus import main_menu
 from PIL import ImageTk
 try:
@@ -42,538 +43,6 @@ class NetDim(MainWindow):
         self.title('NetDim')
         netdim_icon = tk.PhotoImage(file=join(self.path_icon, 'netdim_icon.gif'))
         self.tk.call('wm', 'iconphoto', self._w, netdim_icon)
-        
-        ## Netdim objects
-        
-        self.nd_obj = {
-        'router': 'node',
-        'oxc': 'node',
-        'host': 'node',
-        'antenna': 'node',
-        'regenerator': 'node',
-        'splitter': 'node',
-        'cloud': 'node',
-        'switch': 'node',
-        'ethernet': 'trunk',
-        'wdm': 'trunk',
-        'route': 'route',
-        'traffic': 'traffic'
-        }
-        
-        self.st_to_type = {
-        'router': 'node',
-        'oxc': 'node',
-        'host': 'node',
-        'antenna': 'node',
-        'regenerator': 'node',
-        'splitter': 'node',
-        'switch': 'node',
-        'cloud': 'node',
-        'ethernet': 'trunk',
-        'wdm': 'trunk',
-        'l2vc': 'l2vc',
-        'l3vc': 'l3vc',
-        'static route': 'route',
-        'BGP peering': 'route',
-        'OSPF virtual link': 'route',
-        'Label Switched Path': 'route',
-        'routed traffic': 'traffic',
-        'static traffic': 'traffic'
-        }
-        
-        ## User-defined properties and labels per type of object
-        
-        # ordered dicts are needed to have the same menu order 
-        node_common_properties = (
-        'name', 
-        'x', 
-        'y', 
-        'longitude', 
-        'latitude', 
-        'ipaddress', 
-        'subnetmask', 
-        'sites',
-        'AS',
-        )
-        
-        # we exclude the AS from node_common_properties. We don't need to 
-        # import/export the AS of a node, because when the AS itself is imported, 
-        # we rebuild #its logical topology, and that includes 
-        # rebuilding the nodes AS dict
-        node_common_ie_properties = node_common_properties[:-1]
-        
-        trunk_common_properties = (
-        'name', 
-        'source', 
-        'destination', 
-        'interface',
-        'interfaceS',
-        'interfaceD',
-        'distance', 
-        'costSD', 
-        'costDS', 
-        'capacitySD', 
-        'capacityDS', 
-        # if there is no failure simulation, the traffic property tells us how
-        # much traffic is transiting on the trunk in a 'no failure' situation
-        # if there is a link in failure, the traffic that is redirected will 
-        # also contribute to this 'traffic parameter'.
-        'trafficSD', 
-        'trafficDS',
-        # unlike the traffic property above, wctraffic is the worst case
-        # traffic. It is the traffic that we use for dimensioning purposes, and
-        # it considers the maximum traffic that the link must be able to 
-        # handle, considering all possible failure cases.
-        'wctrafficSD',
-        'wctrafficDS',
-        # the trunk which failure results in the worst case traffic
-        'wcfailure',
-        'flowSD', 
-        'flowDS',
-        'sites',
-        'sntw',
-        'AS',
-        )
-        
-        interface_common_properties = (
-        'link',
-        'node',
-        'name'
-        )
-        
-        ethernet_interface_properties = interface_common_properties + (
-        'ipaddress',
-        'subnetmask',
-        'macaddress'
-        )
-        
-        route_common_properties = (
-        'name',
-        'subtype',
-        'source', 
-        'destination',
-        'sites'
-        )
-        
-        vc_common_properties = (
-        'name',
-        'source', 
-        'destination',
-        'linkS',
-        'linkD',
-        'sites'
-        )
-        
-        traffic_common_properties = (
-        'name', 
-        'subtype',
-        'source', 
-        'destination', 
-        'throughput',
-        'sites'
-        )
-        
-        trunk_common_ie_properties = (
-        'name', 
-        'source', 
-        'destination', 
-        'interface',
-        'distance', 
-        'costSD', 
-        'costDS', 
-        'capacitySD', 
-        'capacityDS', 
-        'sites'
-        )
-                
-        route_common_ie_properties = (
-        'name',
-        'source', 
-        'destination',
-        'sites'
-        )
-        
-        traffic_common_ie_properties = (
-        'name', 
-        'source', 
-        'destination', 
-        'throughput',
-        'sites'
-        )
-        
-        self.object_properties = collections.OrderedDict([
-        ('router', node_common_properties + ('default_route', 'bgp_AS')),
-        ('switch', node_common_properties + ('base_macaddress',)),
-        ('oxc', node_common_properties),
-        ('host', node_common_properties),
-        ('antenna', node_common_properties),
-        ('regenerator', node_common_properties),
-        ('splitter', node_common_properties),
-        ('cloud', node_common_properties),
-        
-        ('ethernet', trunk_common_properties),
-        ('wdm', trunk_common_properties + ('lambda_capacity',)),
-        
-        ('l2vc', vc_common_properties),
-        ('l3vc', vc_common_properties),
-        
-        ('static route', route_common_properties + (
-        'nh_ip',
-        'dst_sntw',
-        'ad'
-        )),
-        
-        ('BGP peering', route_common_properties + (
-        'bgp_type',
-        'ipS',
-        'ipD',
-        'weightS',
-        'weightD'
-        )),
-        
-        ('OSPF virtual link', route_common_properties + (
-        'nh_tk',
-        'dst_sntw'
-        )),
-        
-        ('Label Switched Path', route_common_properties + (
-        'lsp_type',
-        'path'
-        )),
-        
-        ('routed traffic', traffic_common_properties + ('ipS', 'ipD')),
-        ('static traffic', traffic_common_properties),
-        
-        ])
-        
-        self.object_label = collections.OrderedDict([
-        ('Node', 
-        (
-        'None', 
-        'Name', 
-        'Position', 
-        'Coordinates', 
-        'IPAddress',
-        'Default_Route'
-        )),
-        
-        ('Trunk', 
-        (
-        'None', 
-        'Name', 
-        'Type',
-        'Distance', 
-        'Traffic', 
-        'WCTraffic',
-        'Sntw'
-        )),
-        
-        ('Interface', 
-        (
-        'None', 
-        'Name', 
-        'Cost',
-        'Capacity',
-        'Flow',
-        'IPaddress',
-        'Traffic', 
-        'WCTraffic',
-        )),
-        
-        ('L2vc',
-        (
-        'None', 
-        'Name', 
-        )),
-        
-        ('L3vc',
-        (
-        'None', 
-        'Name', 
-        )),
-        
-        ('Route', 
-        (
-        'None', 
-        'Name', 
-        'Distance', 
-        'Type', 
-        'Path', 
-        'Cost', 
-        'Subnet', 
-        'Traffic'
-        )),
-        
-        ('Traffic', 
-        (
-        'None', 
-        'Name', 
-        'Throughput'
-        ))])
-        
-        # object import export (properties)
-        self.object_ie = collections.OrderedDict([
-        ('router', node_common_ie_properties + ('default_route', 'bgp_AS')),
-        ('switch', node_common_ie_properties + ('base_macaddress',)),
-        ('oxc', node_common_ie_properties),
-        ('host', node_common_ie_properties),
-        ('antenna', node_common_ie_properties),
-        ('regenerator', node_common_ie_properties),
-        ('splitter', node_common_ie_properties),
-        ('cloud', node_common_ie_properties),
-        
-        ('ethernet', trunk_common_ie_properties),
-        ('wdm', trunk_common_ie_properties + ('lambda_capacity',)),
-        
-        ('static route', route_common_ie_properties + (
-        'nh_ip',
-        'dst_sntw',
-        'ad'
-        )),
-        
-        ('BGP peering', route_common_ie_properties + (
-        'bgp_type',
-        'ipS',
-        'ipD',
-        'weightS',
-        'weightD'
-        )),
-        
-        ('OSPF virtual link', route_common_ie_properties + (
-        'nh_tk',
-        'dst_ip'
-        )),
-        
-        ('Label Switched Path', route_common_ie_properties + (
-        'lsp_type',
-        'path'
-        )),
-        
-        ('routed traffic', traffic_common_ie_properties),
-        ('static traffic', traffic_common_ie_properties),
-        
-        ('ethernet interface', ethernet_interface_properties),
-        ('wdm interface', interface_common_properties)
-        ])
-        
-        # ordered dicts are needed to have the same menu order 
-        # box properties defines which properties are to be displayed in the
-        # upper left corner of the canvas when hoverin over an object
-        
-        node_box_properties = (
-        'name', 
-        'subtype',
-        'ipaddress', 
-        'subnetmask'
-        )
-        
-        trunk_box_properties = (
-        'name', 
-        'subtype',
-        'interface',
-        'interfaceS',
-        'interfaceD',
-        'source', 
-        'destination',
-        'sntw'
-        )
-        
-        vc_box_properties = (
-        'name', 
-        'type',
-        'source', 
-        'destination',
-        'linkS',
-        'linkD'
-        )
-        
-        self.box_properties = collections.OrderedDict([
-        ('router', node_box_properties + ('default_route', 'bgp_AS')),
-        ('switch', node_box_properties + ('base_macaddress',)),
-        ('oxc', node_box_properties),
-        ('host', node_box_properties),
-        ('antenna', node_box_properties),
-        ('regenerator', node_box_properties),
-        ('splitter', node_box_properties),
-        ('cloud', node_box_properties),
-        
-        ('ethernet', trunk_box_properties),
-        ('wdm', trunk_box_properties + ('lambda_capacity',)),
-        
-        ('l2vc', vc_box_properties),
-        ('l3vc', vc_box_properties),
-        
-        ('static route', route_common_properties + (
-        'nh_ip',
-        'dst_sntw',
-        'ad'
-        )),
-        
-        ('BGP peering', route_common_properties + (
-        'bgp_type',
-        'ipS',
-        'ipD',
-        'weightS',
-        'weightD'
-        )),
-        
-        ('OSPF virtual link', route_common_properties + (
-        'nh_tk',
-        'dst_sntw'
-        )),
-        
-        ('Label Switched Path', route_common_properties + (
-        'lsp_type',
-        )),                
-        
-        ('routed traffic', traffic_common_properties),
-        ('static traffic', traffic_common_properties)
-        ])
-        
-        # methods for string to object conversions
-        self.convert_node = lambda n: self.cs.ntw.nf(name=n)
-        self.convert_link = lambda l: self.cs.ntw.lf(name=l)
-        convert_AS = lambda AS: self.cs.ntw.AS_factory(name=AS)
-        self.convert_nodes_set = lambda ln: set(map(self.convert_node, eval(ln)))
-        convert_nodes_list = lambda ln: list(map(self.convert_node, eval(ln)))
-        self.convert_links_set = lambda ll: set(map(self.convert_link, eval(ll)))
-        convert_links_list = lambda ll: list(map(self.convert_link, eval(ll)))
-        
-        # dict property to conversion methods: used at import
-        # the code for AS export
-        self.prop_to_type = {
-        'name': str, 
-        'protocol': str,
-        'interface': str,
-        'ipaddress': str,
-        'subnetmask': str,
-        'LB_paths': int,
-        'default_route': str,
-        'x': float, 
-        'y': float, 
-        'longitude': float, 
-        'latitude': float,
-        'distance': float, 
-        'costSD': float, 
-        'costDS': float, 
-        'cost': float,
-        'capacitySD': int, 
-        'capacityDS': int,
-        'traffic': float,
-        'trafficSD': float,
-        'trafficDS': float,
-        'wctrafficSD': float,
-        'wctrafficDS': float,
-        'wcfailure': str,
-        'flowSD': float,
-        'flowDS': float,
-        'interfaceS': str,
-        'interfaceD': str,
-        'ipaddress': str,
-        'subnetmask': str,
-        'macaddress': str,
-        'sntw': str,
-        'throughput': float,
-        'lambda_capacity': int,
-        'source': self.convert_node, 
-        'destination': self.convert_node, 
-        'node': self.convert_node, 
-        'link': self.convert_link, 
-        'nh_tk': str,
-        'nh_ip': str,
-        'ipS': str,
-        'ipD': str,
-        'bgp_AS': str,
-        'weightS': int,
-        'weightD': int,
-        'dst_sntw': str,
-        'ad': int,
-        'subtype': str,
-        'bgp_type': str,
-        'lsp_type': str,
-        'path_constraints': convert_nodes_list, 
-        'excluded_nodes': self.convert_nodes_set,
-        'excluded_trunks': self.convert_links_set, 
-        'path': convert_links_list, 
-        'subnets': str, 
-        'sites': str,
-        'role': str,
-        'priority': int,
-        'base_macaddress': str,
-        'AS': convert_AS
-        }
-        
-        self.prop_to_nice_name = {
-        'name': 'Name',
-        'type': 'Type',
-        'protocol': 'Protocol',
-        'interface': 'Interface',
-        'ipaddress': 'IP address',
-        'subnetmask': 'Subnet mask',
-        'LB_paths': 'Maximum paths (LB)',
-        'default_route': 'Default Route',
-        'x': 'X coordinate', 
-        'y': 'Y coordinate', 
-        'longitude': 'Longitude', 
-        'latitude': 'Latitude',
-        'distance': 'Distance',
-        'node': 'Node',
-        'link': 'Link',
-        'linkS': 'Source link',
-        'linkD': 'Destination link', 
-        'costSD': 'Cost S -> D', 
-        'costDS': 'Cost D -> S', 
-        'cost': 'Cost',
-        'capacitySD': 'Capacity S -> D', 
-        'capacityDS': 'Capacity D -> S', 
-        'traffic': 'Traffic',
-        'trafficSD': 'Traffic S -> D', 
-        'trafficDS': 'Traffic D -> S', 
-        'wctrafficSD': 'Worst case traffic S -> D', 
-        'wctrafficDS': 'Worst case traffic D -> S', 
-        'wcfailure': 'Worst case failure',
-        'flowSD': 'Flow S -> D', 
-        'flowDS': 'Flow D -> S', 
-        'ipaddressS': 'IP address (source)',
-        'subnetmaskS': 'Subnet mask (source)',
-        'ipaddressD': 'IP address (destination)',
-        'subnetmaskD': 'Subnet mask (destination)',
-        'interfaceS': 'Interface (source)',
-        'interfaceD': 'Interface (destination)',
-        'macaddressS': 'MAC address (source)',
-        'macaddressD': 'MAC address (destination)',
-        'macaddress': 'MAC address',
-        'weightS': 'Weight (source)',
-        'weightD': 'Weight (destination)',
-        'sntw': 'Subnetwork',
-        'throughput': 'Throughput',
-        'lambda_capacity': 'Lambda capacity',
-        'source': 'Source',
-        'destination': 'Destination',
-        'nh_tk': 'Next-hop trunk',
-        'nh_ip': 'Next-hop IP',
-        'ipS': 'Source IP',
-        'ipD': 'Destination IP',
-        'bgp_AS': 'BGP AS',
-        'dst_sntw': 'Destination subnetwork',
-        'ad': 'Administrative distance',
-        'router_id': 'Router ID',
-        'subtype': 'Type',
-        'bgp_type': 'BGP Type',
-        'lsp_type': 'LSP Type',
-        'path_constraints': 'Path constraints',
-        'excluded_nodes': 'Excluded nodes',
-        'excluded_trunks': 'Excluded trunks',
-        'path': 'Path',
-        'subnets': 'Subnets', 
-        'sites': 'Sites',
-        'AS': 'Autonomous system',
-        'role': 'Role',
-        'priority': 'Priority',
-        'base_macaddress': 'Base MAC address'
-        }
-        
-        self.name_to_prop = {v: k for k, v in self.prop_to_nice_name.items()}
         
         colors = ['default', 'red', 'purple']
         
@@ -674,7 +143,7 @@ class NetDim(MainWindow):
 
         # choose which label to display per type of object
         display_menu = Menu(netdim_menu)
-        for obj_type, label_type in self.object_label.items():
+        for obj_type, label_type in object_labels.items():
             menu_type = Menu(netdim_menu)
             display_menu.add_cascade(label=obj_type + ' label', menu=menu_type)
             for lbl in label_type:
@@ -686,7 +155,7 @@ class NetDim(MainWindow):
         
         # show / hide option per type of objects
         show_menu = Menu(netdim_menu)
-        for index, type in enumerate(self.object_properties):
+        for index, type in enumerate(object_properties):
             new_label = ' '.join(('Hide', type))
             cmd = lambda t=type, i=index: self.cs.show_hide(show_menu, t, i)
             show_entry = MenuEntry(show_menu)
@@ -701,20 +170,21 @@ class NetDim(MainWindow):
         
         # object management windows
         self.dict_obj_mgmt_window = {}
-        for obj in self.object_properties:
+        for obj in object_properties:
             self.dict_obj_mgmt_window[obj] = omw.ObjectManagementWindow(self, obj)
         
         # drawing algorithm and parameters: per project
         self.drawing_algorithm = 'Spring layout'
 
         self.drawing_params = {
-        'Spring layout': collections.OrderedDict([
+        'Spring layout': OrderedDict([
         ('Coulomb factor', 10000),
         ('Spring stiffness', 0.5),
         ('Speed factor', 0.35),
         ('Equilibrium length', 8.)
         ]),
-        'F-R layout': collections.OrderedDict([
+        
+        'F-R layout': OrderedDict([
         ('OPD', 0.),
         ('limit', True)
         ])}
@@ -725,7 +195,7 @@ class NetDim(MainWindow):
         self.scenario_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
         
         # dict of nodes image for node creation
-        self.dict_image = collections.defaultdict(dict)
+        self.dict_image = defaultdict(dict)
         
         self.node_size_image = {
         'router': (33, 25), 
@@ -817,7 +287,7 @@ class NetDim(MainWindow):
         kwargs = {}
         for property, value in zip(properties, values):
             print(property, value)
-            value = self.prop_to_type[property](value)
+            value = self.cs.ntw.prop_to_type[property](value)
             if value == "None":
                 value = None
             kwargs[property] = value
@@ -844,7 +314,7 @@ class NetDim(MainWindow):
                   
         if filepath.endswith('.xls'):
             book = xlrd.open_workbook(filepath)
-            for id, obj_type in enumerate(self.object_ie):
+            for id, obj_type in enumerate(object_ie):
                 xls_sheet = book.sheets()[id]
                 properties = xls_sheet.row_values(0)
                 for row in range(1, xls_sheet.nrows):
@@ -862,38 +332,41 @@ class NetDim(MainWindow):
                 # creation of ethernet interfaces
                 for row_index in range(1, interface_sheet.nrows):
                     link, node, *args = interface_sheet.row_values(row_index)
-                    link = self.convert_link(link)
-                    node = self.convert_node(node)
+                    link = self.cs.ntw.convert_link(link)
+                    node = self.cs.ntw.convert_node(node)
                     interface = link('interface', node)
                     for property, value in zip(if_properties[2:], args):
+                        # we convert all string IPs to an OIPs
+                        if property == 'ipaddress':
+                            value = self.cs.ntw.OIPf(value, interface)
                         setattr(interface, property, value)
                                                         
             AS_sheet = book.sheets()[18]
         
             # creation of the AS
             for row_index in range(1, AS_sheet.nrows):
-                name, type, id, nodes, trunks = AS_sheet.row_values(row_index)
+                name, type, id, nodes, plinks = AS_sheet.row_values(row_index)
                 id = int(id)
-                nodes = self.convert_nodes_set(nodes)
-                trunks = self.convert_links_set(trunks)
-                self.cs.ntw.AS_factory(type, name, id, trunks, nodes, True)
+                nodes = self.cs.ntw.convert_node_set(nodes)
+                plinks = self.cs.ntw.convert_link_set(plinks)
+                self.cs.ntw.AS_factory(type, name, id, plinks, nodes, True)
                 
             area_sheet = book.sheets()[19]
             
             # creation of the area
             for row_index in range(1, area_sheet.nrows):
-                name, AS, id, nodes, trunks = area_sheet.row_values(row_index)
+                name, AS, id, nodes, plinks = area_sheet.row_values(row_index)
                 AS = self.cs.ntw.AS_factory(name=AS)
-                nodes = self.convert_nodes_set(nodes)
-                trunks = self.convert_links_set(trunks)
-                new_area = AS.area_factory(name, int(id), trunks, nodes)
+                nodes = self.cs.ntw.convert_node_set(nodes)
+                plinks = self.cs.ntw.convert_link_set(plinks)
+                new_area = AS.area_factory(name, int(id), plinks, nodes)
                 
             node_AS_sheet = book.sheets()[20]
             
             for row_index in range(1, node_AS_sheet.nrows):
                 AS, node, *args = node_AS_sheet.row_values(row_index)
-                node = self.convert_node(node)
-                for idx, property in enumerate(objects.perAS_properties[node.subtype]):
+                node = self.cs.ntw.convert_node(node)
+                for idx, property in enumerate(perAS_properties[node.subtype]):
                     node(AS, property, args[idx])
                     
             if_AS_sheet = book.sheets()[21]
@@ -901,22 +374,22 @@ class NetDim(MainWindow):
             for row_index in range(1, if_AS_sheet.nrows):
                 AS, link, node, *args = if_AS_sheet.row_values(row_index)
                 AS = self.cs.ntw.AS_factory(name=AS)
-                link = self.convert_link(link)
-                node = self.convert_node(node)
+                link = self.cs.ntw.convert_link(link)
+                node = self.cs.ntw.convert_node(node)
                 interface = link('interface', node)
-                for idx, property in enumerate(objects.ethernet_interface_perAS_properties):
+                for idx, property in enumerate(ethernet_interface_perAS_properties):
                     interface(AS.name, property, args[idx])
                 
         # if_AS_sheet = excel_workbook.add_sheet('per-AS interface properties')
         # 
         # cpt = 1
         # for AS in self.cs.ntw.pnAS.values():
-        #     for link in AS.trunks:
+        #     for link in AS.plinks:
         #         for interface in (link.interfaceS, link.interfaceD):
         #             if_AS_sheet.write(cpt, 0, AS.name)
         #             if_AS_sheet.write(cpt, 1, str(interface.link))
         #             if_AS_sheet.write(cpt, 2, str(interface.node)) 
-        #             for idx, property in enumerate(objects.ethernet_interface_perAS_properties, 3):
+        #             for idx, property in enumerate(ethernet_interface_perAS_properties, 3):
         #                 if_AS_sheet.write(cpt, idx, str(interface(AS.name, property)))
         #             cpt += 1
                 
@@ -973,7 +446,7 @@ class NetDim(MainWindow):
     def export_graph(self, filepath=None):
         
         # to convert a list of object into a string of a list of strings
-        # useful for AS nodes, edges, trunks as well as area nodes and trunks
+        # useful for AS nodes, edges, plinks as well as area nodes and plinks
         to_string = lambda s: str(list(map(str, s)))
         
         # filepath is set for unittest
@@ -993,7 +466,7 @@ class NetDim(MainWindow):
             selected_file = open(filepath, 'w')
             
         excel_workbook = xlwt.Workbook()
-        for obj_type, properties in self.object_ie.items():
+        for obj_type, properties in object_ie.items():
             xls_sheet = excel_workbook.add_sheet(obj_type)
             for id, property in enumerate(properties):
                 xls_sheet.write(0, id, property)
@@ -1005,7 +478,7 @@ class NetDim(MainWindow):
                 # hasattr() all the time to check if a property exists.
                 ftr = lambda o: o.subtype == obj_type
                 if obj_type in self.cs.ntw.link_class:
-                    type = self.st_to_type[obj_type]
+                    type = subtype_to_type[obj_type]
                     pool_obj = filter(ftr, self.cs.ntw.pn[type].values())
                 elif obj_type in self.cs.ntw.node_subtype:
                     pool_obj = filter(ftr, self.cs.ntw.pn['node'].values()) 
@@ -1022,7 +495,7 @@ class NetDim(MainWindow):
             AS_sheet.write(i, 1, str(AS.AS_type))
             AS_sheet.write(i, 2, str(AS.id))
             AS_sheet.write(i, 3, to_string(AS.pAS['node']))
-            AS_sheet.write(i, 4, to_string(AS.pAS['trunk']))
+            AS_sheet.write(i, 4, to_string(AS.pAS['plink']))
             
         area_sheet = excel_workbook.add_sheet('area')
         
@@ -1033,7 +506,7 @@ class NetDim(MainWindow):
                 area_sheet.write(cpt, 1, str(area.AS))
                 area_sheet.write(cpt, 2, str(area.id))
                 area_sheet.write(cpt, 3, to_string(area.pa['node']))
-                area_sheet.write(cpt, 4, to_string(area.pa['trunk']))
+                area_sheet.write(cpt, 4, to_string(area.pa['plink']))
                 cpt += 1
                 
         node_AS_sheet = excel_workbook.add_sheet('per-AS node properties')
@@ -1043,7 +516,7 @@ class NetDim(MainWindow):
             for node in AS.nodes:
                 node_AS_sheet.write(cpt, 0, AS.name)
                 node_AS_sheet.write(cpt, 1, node.name)
-                for idx, property in enumerate(objects.perAS_properties[node.subtype], 2):
+                for idx, property in enumerate(perAS_properties[node.subtype], 2):
                     node_AS_sheet.write(cpt, idx, str(node(AS.name, property)))
                 cpt += 1
                 
@@ -1051,12 +524,12 @@ class NetDim(MainWindow):
         
         cpt = 1
         for AS in self.cs.ntw.pnAS.values():
-            for link in AS.trunks:
+            for link in AS.plinks:
                 for interface in (link.interfaceS, link.interfaceD):
                     if_AS_sheet.write(cpt, 0, AS.name)
                     if_AS_sheet.write(cpt, 1, str(interface.link))
                     if_AS_sheet.write(cpt, 2, str(interface.node)) 
-                    for idx, property in enumerate(objects.ethernet_interface_perAS_properties, 3):
+                    for idx, property in enumerate(ethernet_interface_perAS_properties, 3):
                         if_AS_sheet.write(cpt, idx, str(interface(AS.name, property)))
                     cpt += 1
                 

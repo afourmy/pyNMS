@@ -80,8 +80,8 @@ class RouterConfiguration(tk.Toplevel):
                                             AS = nb_AS.id
                                             )
         
-        for neighbor, adj_trunk in self.cs.ntw.graph[node.id]['trunk']:
-            interface = adj_trunk('interface', node)
+        for neighbor, adj_plink in self.cs.ntw.graph[node.id]['plink']:
+            interface = adj_plink('interface', node)
             ip = interface.ipaddress
             mask = interface.subnetmask
             
@@ -91,8 +91,8 @@ class RouterConfiguration(tk.Toplevel):
                                     .format(name=node.name, ip=ip, mask=mask)
             yield ' {name}(config-if)# no shutdown\n'.format(name=node.name)
             
-            if any(AS.AS_type == 'OSPF' for AS in adj_trunk.AS):
-                cost = adj_trunk('cost', node)
+            if any(AS.AS_type == 'OSPF' for AS in adj_plink.AS):
+                cost = adj_plink('cost', node)
                 if cost != 1:
                     yield (' {name}(config-if)#'
                                     ' ip ospf cost {cost}\n')\
@@ -135,9 +135,9 @@ class RouterConfiguration(tk.Toplevel):
                 yield ' {name}(config)# router rip\n'\
                                                 .format(name=node.name)
                 
-                for _, adj_trunk in self.cs.ntw.graph[node.id]['trunk']:
-                    interface = adj_trunk('interface', node)
-                    if adj_trunk in AS.pAS['trunk']:
+                for _, adj_plink in self.cs.ntw.graph[node.id]['plink']:
+                    interface = adj_plink('interface', node)
+                    if adj_plink in AS.pAS['plink']:
                         ip = interface.ipaddress
                         
                         yield ' {name}(config-router)# network {ip}\n'\
@@ -152,14 +152,14 @@ class RouterConfiguration(tk.Toplevel):
                 yield ' {name}(config)# router ospf 1\n'\
                                                     .format(name=node.name)
                 
-                for _, adj_trunk in self.cs.ntw.graph[node.id]['trunk']:
-                    interface = adj_trunk('interface', node)
-                    if adj_trunk in AS.pAS['trunk']:
+                for _, adj_plink in self.cs.ntw.graph[node.id]['plink']:
+                    interface = adj_plink('interface', node)
+                    if adj_plink in AS.pAS['plink']:
                         ip = interface.ipaddress
-                        trunk_area ,= adj_trunk.AS[AS]
+                        plink_area ,= adj_plink.AS[AS]
                         yield (' {name}(config-router)# network' 
                                         ' {ip} 0.0.0.3 area {area_id}\n')\
-                        .format(name=node.name, ip=ip, area_id=trunk_area.id)
+                        .format(name=node.name, ip=ip, area_id=plink_area.id)
                             
                     else:
                         if_name = interface.name
@@ -270,20 +270,20 @@ class SwitchConfiguration(tk.Toplevel):
                                     .format(name=node.name, vlan_name=VLAN.name)
                     yield ' {name}(config-vlan)# exit\n'.format(name=node.name)
         
-        for _, adj_trunk in self.cs.ntw.graph[node.id]['trunk']:
-            interface = adj_trunk('interface', node)
+        for _, adj_plink in self.cs.ntw.graph[node.id]['plink']:
+            interface = adj_plink('interface', node)
             yield ' {name}(config)# interface {interface}\n'\
                                 .format(name=node.name, interface=interface)
                                     
-            for AS in adj_trunk.AS:
+            for AS in adj_plink.AS:
                 
                 # VLAN configuration
                 if AS.AS_type == 'VLAN':
                     
                     # if there is a single VLAN, the link is an access link
-                    if len(adj_trunk.AS[AS]) == 1:
+                    if len(adj_plink.AS[AS]) == 1:
                         # retrieve the unique VLAN the link belongs to
-                        unique_VLAN ,= adj_trunk.AS[AS]
+                        unique_VLAN ,= adj_plink.AS[AS]
                         yield ' {name}(config-if)# switchport mode access\n'\
                                                         .format(name=node.name)
                         yield ' {name}(config-if)# switchport access vlan {vlan}\n'\
@@ -294,7 +294,7 @@ class SwitchConfiguration(tk.Toplevel):
                         yield ' {name}(config-if)# switchport mode trunk\n'\
                                                         .format(name=node.name)
                         # finds all VLAN IDs
-                        VLAN_IDs = map(lambda vlan: str(vlan.id), adj_trunk.AS[AS])
+                        VLAN_IDs = map(lambda vlan: str(vlan.id), adj_plink.AS[AS])
                         # allow them on the trunk
                         yield ' {name}(config-if)# switchport trunk allowed vlan add {all_ids}\n'\
                             .format(name=node.name, all_ids=",".join(VLAN_IDs))
@@ -307,9 +307,9 @@ class SwitchConfiguration(tk.Toplevel):
                 yield ' {name}(config)# router rip\n'\
                                                 .format(name=node.name)
                 
-                for _, adj_trunk in self.cs.ntw.graph[node.id]['trunk']:
-                    interface = adj_trunk('interface', node)
-                    if adj_trunk in AS.pAS['trunk']:
+                for _, adj_plink in self.cs.ntw.graph[node.id]['plink']:
+                    interface = adj_plink('interface', node)
+                    if adj_plink in AS.pAS['plink']:
                         ip = interface.ipaddress
                         
                         yield ' {name}(config-router)# network {ip}\n'\

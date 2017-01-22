@@ -68,7 +68,7 @@ class RightClickMenu(tk.Menu):
         
         # we compute the set of common AS among all selected objects
         self.common_AS = set(self.cs.ntw.pnAS.values())  
-        cmd = lambda o: o.type in ('node', 'trunk')
+        cmd = lambda o: o.type in ('node', 'plink')
         for obj in filter(cmd, self.all_so):
             self.common_AS &= obj.AS.keys()
             
@@ -83,15 +83,15 @@ class RightClickMenu(tk.Menu):
                         
         self.add_separator()
         
-        # exactly one trunk: failure simulation menu
+        # exactly one physical link: failure simulation menu
         if not self.cs.so['node'] and len(self.cs.so['link']) == 1:
-            trunk ,= self.cs.so['link']
-            if trunk.type == 'trunk':
+            plink ,= self.cs.so['link']
+            if plink.type == 'plink':
                 self.add_command(label='Simulate failure', 
-                        command=lambda: self.simulate_failure(trunk))
-                if trunk in self.cs.ntw.fdtks:
+                        command=lambda: self.simulate_failure(plink))
+                if plink in self.cs.ntw.fdtks:
                     self.add_command(label='Remove failure', 
-                        command=lambda: self.remove_failure(trunk))
+                        command=lambda: self.remove_failure(plink))
             
         # only nodes: 
         if not self.cs.so['link']:
@@ -163,12 +163,12 @@ class RightClickMenu(tk.Menu):
         AS.ASCreation(self.cs, self.cs.so)
         
     @empty_selection_and_destroy_menu
-    def simulate_failure(self, trunk):
-        self.cs.simulate_failure(trunk)
+    def simulate_failure(self, plink):
+        self.cs.simulate_failure(plink)
         
     @empty_selection_and_destroy_menu
-    def remove_failure(self, trunk):
-        self.cs.remove_failure(trunk)
+    def remove_failure(self, plink):
+        self.cs.remove_failure(plink)
         
     @empty_selection_and_destroy_menu
     def routing_table(self, node):

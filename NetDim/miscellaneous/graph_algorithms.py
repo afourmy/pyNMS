@@ -211,15 +211,15 @@ class GraphAlgorithmWindow(FocusTopLevel):
         source = self.ms.cs.ntw.nf(name=self.sp_src_entry.text)
         destination = self.ms.cs.ntw.nf(name=self.sp_dest_entry.text)
         algorithm = self.sp_list.text
-        nodes, trunks = self.sp_algorithms[algorithm](source, destination)
-        self.ms.cs.highlight_objects(*(nodes + trunks))
+        nodes, plinks = self.sp_algorithms[algorithm](source, destination)
+        self.ms.cs.highlight_objects(*(nodes + plinks))
         
     def compute_spair(self):
         source = self.ms.cs.ntw.nf(name=self.spair_src_entry.text)
         destination = self.ms.cs.ntw.nf(name=self.spair_dest_entry.text)
         algorithm = self.spair_list.text
-        nodes, trunks = self.spair_algorithms[algorithm](source, destination)
-        self.ms.cs.highlight_objects(*(nodes + trunks))
+        nodes, plinks = self.spair_algorithms[algorithm](source, destination)
+        self.ms.cs.highlight_objects(*(nodes + plinks))
         
     def compute_mflow(self):
         source = self.ms.cs.ntw.nf(name=self.mflow_src_entry.text)

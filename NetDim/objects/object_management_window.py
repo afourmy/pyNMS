@@ -5,7 +5,7 @@
 import re
 import tkinter as tk
 from tkinter import ttk, messagebox
-from objects.objects import perAS_properties
+from objects.objects import *
 from pythonic_tkinter.preconfigured_widgets import *
 
 class ObjectManagementWindow(FocusTopLevel):
@@ -33,6 +33,7 @@ class ObjectManagementWindow(FocusTopLevel):
     def __init__(self, master, type):
         super().__init__()
         self.ms = master
+        self.ntw = self.ms.cs.ntw
         self.title('Manage {} properties'.format(type))
 
         # current node which properties are displayed
@@ -51,10 +52,10 @@ class ObjectManagementWindow(FocusTopLevel):
         lf_global.text = 'Global properties'
         lf_global.grid(1, 0, 1, 2)
         
-        for index, property in enumerate(self.ms.object_properties[type]):
+        for index, property in enumerate(object_properties[type]):
             
             # creation of the label associated to the property
-            text = self.ms.prop_to_nice_name[property]
+            text = prop_to_nice_name[property]
             label = Label(self)
             label.text = text
             
@@ -86,7 +87,7 @@ class ObjectManagementWindow(FocusTopLevel):
             for index, property in enumerate(perAS_properties[type]):
                 
                 # creation of the label associated to the property
-                text = self.ms.prop_to_nice_name[property]
+                text = prop_to_nice_name[property]
                 label = Label(self)
                 label.text = text
                 
@@ -126,7 +127,7 @@ class ObjectManagementWindow(FocusTopLevel):
     # route properties.
     def conv(self, property):
         value = self.dict_var[property].get().replace(' ','').split(',')
-        if property == 'excluded_trunks':
+        if property == 'excluded_plinks':
             return {self.ms.cs.ntw.lf(name=t) for t in filter(None, value)}
         elif property == 'excluded_nodes':
             return {self.ms.cs.ntw.nf(name=n) for n in filter(None, value)}
@@ -141,20 +142,20 @@ class ObjectManagementWindow(FocusTopLevel):
                 name, 
                 source, 
                 destination, 
-                self.conv('excluded_trunks'), 
+                self.conv('excluded_plinks'), 
                 self.conv('excluded_nodes'), 
                 self.conv('path_constraints')
                 )
         
     def find_path(self):
         name, *parameters = self.get_user_input()
-        nodes, trunks = self.ms.cs.ntw.A_star(*parameters)
+        nodes, plinks = self.ms.cs.ntw.A_star(*parameters)
         
-        if trunks:
+        if plinks:
             self.ms.cs.unhighlight_all()
-            self.current_path = trunks
-            self.dict_var['path'].set(trunks)
-            self.ms.cs.highlight_objects(*(nodes + trunks))
+            self.current_path = plinks
+            self.dict_var['path'].set(plinks)
+            self.ms.cs.highlight_objects(*(nodes + plinks))
         else:
             self.ms.cs.unhighlight_all()
             # activate focus to prevent the messagebox from removing the window
@@ -181,14 +182,14 @@ class ObjectManagementWindow(FocusTopLevel):
                 setattr(self.current_obj, property, value)
             else:
                 if property not in self.read_only and 'interface' not in property:
-                    if property in ('path_constraints', 'excluded_nodes', 'excluded_trunks'): 
+                    if property in ('path_constraints', 'excluded_nodes', 'excluded_plinks'): 
                         value = self.conv(property)
                     else:
-                        value = self.ms.prop_to_type[property](value)
+                        value = self.ntw.prop_to_type[property](value)
                         if property == 'name':
                             name = getattr(self.current_obj, property)
-                            id = self.ms.cs.ntw.name_to_id.pop(name)
-                            self.ms.cs.ntw.name_to_id[value] = id
+                            id = self.ntw.name_to_id.pop(name)
+                            self.ntw.name_to_id[value] = id
                     setattr(self.current_obj, property, value)
             # refresh the label if it was changed
             self.ms.cs.refresh_label(self.current_obj)
@@ -200,7 +201,7 @@ class ObjectManagementWindow(FocusTopLevel):
             if self.current_obj.AS_properties:
                 AS = self.AS_combobox.text
                 for property, entry in self.dict_perAS_properties.items():
-                    value = self.ms.prop_to_type[property](entry.text)
+                    value = self.ntw.prop_to_type[property](entry.text)
                     self.current_obj(AS, property, value)
                 
     def save_and_withdraw(self):
@@ -218,38 +219,38 @@ class ObjectManagementWindow(FocusTopLevel):
                 # ARP table being overloaded: to be avoided in real-life and
                 # forbidden here.
                 attached_ints = (None,) + tuple(filter(None, 
-                                    self.ms.cs.ntw.nh_ips(self.current_obj)))
+                                    self.ntw.nh_ips(self.current_obj)))
                 property_widget['values'] = attached_ints
                 property_widget.text = obj_prop
             elif property == 'nh_tk':
                 src_route = self.current_obj.source
-                attached_ints = tuple(filter(None, (trunk for _, trunk 
-                                in self.ms.cs.ntw.graph[src_route]['trunk'])))
+                attached_ints = tuple(filter(None, (plink for _, plink 
+                                in self.ntw.graph[src_route]['plink'])))
                 property_widget['values'] = attached_ints
                 property_widget.text = obj_prop
             elif property == 'dst_sntw':
                 dest_node = self.current_obj.destination
                 attached_ips = (None,) + tuple(filter(None, 
-                            (trunk.sntw for _, trunk
-                            in self.ms.cs.ntw.graph[dest_node]['trunk']
+                            (plink.sntw for _, plink
+                            in self.ntw.graph[dest_node]['plink']
                             ))) 
                 property_widget['values'] = attached_ips
                 property_widget.text = obj_prop
             elif property == 'ipS':
                 src = self.current_obj.source
                 attached_ips = (None,) + tuple(filter(None, 
-                                    self.ms.cs.ntw.attached_ips(src)))
+                                    self.ntw.attached_ips(src)))
                 property_widget['values'] = attached_ips
                 property_widget.text = obj_prop
             elif property == 'nh_ip':
                 nh_ips = (None,) + tuple(filter(None, 
-                                    self.ms.cs.ntw.nh_ips(self.current_obj)))
+                                    self.ntw.nh_ips(self.current_obj)))
                 property_widget['values'] = nh_ips
                 property_widget.text = obj_prop
             elif property == 'ipD':
                 dest = self.current_obj.destination
                 attached_ips = (None,) + tuple(filter(None, 
-                                    self.ms.cs.ntw.attached_ips(dest)))
+                                    self.ntw.attached_ips(dest)))
                 property_widget['values'] = attached_ips
                 property_widget.text = obj_prop
             elif property == 'AS':

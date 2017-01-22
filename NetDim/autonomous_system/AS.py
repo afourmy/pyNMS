@@ -21,7 +21,7 @@ class AutonomousSystem(object):
                  scenario,
                  name, 
                  id,
-                 trunks = set(), 
+                 plinks = set(), 
                  nodes = set(), 
                  imp = False
                  ):
@@ -30,11 +30,11 @@ class AutonomousSystem(object):
         self.ntw = self.cs.ntw
         self.name = name
         self.id = id
-        self.trunks = trunks
+        self.plinks = plinks
         self.nodes = nodes
 
         # pAS as in 'pool AS': same as pool network
-        self.pAS = {'trunk': self.trunks, 'node': self.nodes}
+        self.pAS = {'plink': self.plinks, 'node': self.nodes}
         
         # unselect everything
         scenario.unhighlight_all()
@@ -76,9 +76,9 @@ class ASWithArea(AutonomousSystem):
         # areas is a dict associating a name to an area
         self.areas = {}
         
-    def area_factory(self, name, id=0, trunks=set(), nodes=set()):
+    def area_factory(self, name, id=0, plinks=set(), nodes=set()):
         if name not in self.areas:
-            self.areas[name] = area.Area(name, id, self, trunks, nodes)
+            self.areas[name] = area.Area(name, id, self, plinks, nodes)
         return self.areas[name]
         
     def add_to_area(self, area='Backbone', *objects):
@@ -93,7 +93,7 @@ class ASWithArea(AutonomousSystem):
     def delete_area(self, area):
         # we remove the area of the AS areas dictionary
         area = self.areas.pop(area.name)
-        for obj_type in ('node', 'trunk'):
+        for obj_type in ('node', 'plink'):
             for obj in area.pa[obj_type]:
                 # we remove the area to the list of area in the AS 
                 # dictionary, for all objects of the area
@@ -124,12 +124,12 @@ class VLAN_AS(ASWithArea, Ethernet_AS):
             self.area_factory(
                               'Default VLAN', 
                               id = 1, 
-                              trunks = self.trunks, 
+                              plinks = self.plinks, 
                               nodes = self.nodes
                               )
                               
             # set the default per-AS properties of all AS objects
-            self.add_to_AS(*(self.nodes | self.trunks))
+            self.add_to_AS(*(self.nodes | self.plinks))
 
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
@@ -144,14 +144,14 @@ class STP_AS(Ethernet_AS):
         
         # root of the AS
         self.root = None
-        self.SPT_trunks = set()
+        self.SPT_plinks = set()
         
         # management window of the AS 
         self.management = AS_management.STP_Management(self, is_imported)
                 
         if not is_imported:
             # set the default per-AS properties of all AS objects
-            self.add_to_AS(*(self.nodes | self.trunks))
+            self.add_to_AS(*(self.nodes | self.plinks))
             
         # trigger the root switch election. The root is the swith with the
         # highest priority, or in case of tie, the highest MAC address
@@ -166,7 +166,7 @@ class STP_AS(Ethernet_AS):
             # A RSTP AS has no area, each object's area set is initialized 
             # to None as it should never be needed
             obj.AS[self] = None
-            if obj.type == 'trunk':
+            if obj.type == 'plink':
                 obj.interfaceS(self.name, 'cost', 1)
                 obj.interfaceD(self.name, 'cost', 1)
                 obj.interfaceS(self.name, 'priority', 32768)
@@ -193,36 +193,35 @@ class STP_AS(Ethernet_AS):
         print(self.root)
         
     def build_SPT(self):
-        # clear the current spanning tree trunks
-        self.SPT_trunks.clear()
+        # clear the current spanning tree physical links
+        self.SPT_plinks.clear()
         visited = set()
-        # allowed nodes and trunks
+        # allowed nodes and plinks
         allowed_nodes = self.pAS['node']
-        allowed_trunks =  self.pAS['trunk'] - self.ntw.fdtks
+        allowed_plinks =  self.pAS['plink'] - self.ntw.fdtks
         # we keep track of all already visited subnetworks so that we 
         # don't add them more than once to the mapping dict.
         heap = [(0, self.root, [])]
         
         while heap:
-            dist, node, path_trunk = heappop(heap)
+            dist, node, path_plink = heappop(heap)
             if node not in visited:
-                print(node, dist, path_trunk)
-                if path_trunk:
-                    self.SPT_trunks.add(path_trunk[-1])
+                if path_plink:
+                    self.SPT_plinks.add(path_plink[-1])
                 visited.add(node)
                 for neighbor, l2vc in self.ntw.graph[node.id]['l2vc']:
-                    adj_trunk = l2vc('link', node)
-                    remote_trunk = l2vc('link', neighbor)
-                    if adj_trunk in path_trunk:
+                    adj_plink = l2vc('link', node)
+                    remote_plink = l2vc('link', neighbor)
+                    if adj_plink in path_plink:
                         continue
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes:
                         continue
-                    # excluded and allowed trunks
-                    if adj_trunk not in allowed_trunks: 
+                    # excluded and allowed physical links
+                    if adj_plink not in allowed_plinks: 
                         continue
-                    heappush(heap, (dist + adj_trunk('cost', node), 
-                                        neighbor, path_trunk + [adj_trunk]))
+                    heappush(heap, (dist + adj_plink('cost', node), 
+                                        neighbor, path_plink + [adj_plink]))
     
 class IP_AS(AutonomousSystem):
     
@@ -243,9 +242,9 @@ class IP_AS(AutonomousSystem):
                                                     
     def build_RFT(self):
         allowed_nodes = self.nodes
-        allowed_trunks =  self.trunks - self.ntw.fdtks
+        allowed_plinks =  self.plinks - self.ntw.fdtks
         for node in self.nodes:
-            self.RFT_builder(node, allowed_nodes, allowed_trunks)
+            self.RFT_builder(node, allowed_nodes, allowed_plinks)
                 
 class RIP_AS(IP_AS):
     
@@ -261,12 +260,12 @@ class RIP_AS(IP_AS):
         # the metric used to compute the shortest path. By default, it is 
         # a hop count for a RIP AS, and bandwidth-dependent for ISIS or OSPF.
         # if the metric is bandwidth, it is calculated based on the interface
-        # of the trunk, and a user-defined reference bandwidth.
+        # of the physical link, and a user-defined reference bandwidth.
         self.metric = 'hop count'
         
         if not is_imported:
             # set the default per-AS properties of all AS objects
-            self.add_to_AS(*(self.nodes | self.trunks))
+            self.add_to_AS(*(self.nodes | self.plinks))
             
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
@@ -278,11 +277,11 @@ class RIP_AS(IP_AS):
             # A RIP AS has no area, each object's area set is initialized 
             # to None as it should never be needed
             obj.AS[self] = None
-            if obj.type == 'trunk':
+            if obj.type == 'plink':
                 obj.interfaceS(self.name, 'cost', 1)
                 obj.interfaceD(self.name, 'cost', 1)   
         
-    def RFT_builder(self, source, allowed_nodes, allowed_trunks):
+    def RFT_builder(self, source, allowed_nodes, allowed_plinks):
         K = source.AS_properties[self.name]['LB_paths']
         visited = set()
         # we keep track of all already visited subnetworks so that we 
@@ -293,43 +292,44 @@ class RIP_AS(IP_AS):
         SP_cost = {}
         
         while heap:
-            dist, node, path_trunk, ex_int = heappop(heap)  
+            dist, node, l3_path, ex_int = heappop(heap)  
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
                 for neighbor, l3vc in self.ntw.graph[node.id]['l3vc']:
-                    adj_trunk = l3vc('link', node)
-                    remote_trunk = l3vc('link', neighbor)
-                    if adj_trunk in path_trunk:
+                    adj_plink = l3vc('link', node)
+                    remote_plink = l3vc('link', neighbor)
+                    if l3vc in l3_path:
                         continue
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes:
                         continue
-                    # excluded and allowed trunks
-                    if adj_trunk not in allowed_trunks: 
+                    # excluded and allowed physical links
+                    if adj_plink not in allowed_plinks: 
                         continue
                     if node == source:
-                        ex_ip = remote_trunk('ipaddress', neighbor)
-                        ex_int = adj_trunk('interface', source)
-                        source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int,
-                                            dist, neighbor, adj_trunk)}
-                        SP_cost[adj_trunk.sntw] = 0
-                    heappush(heap, (dist + adj_trunk('cost', node), 
-                            neighbor, path_trunk + [adj_trunk], ex_int))
+                        ex_ip = remote_plink('ipaddress', neighbor)
+                        ex_int = adj_plink('interface', source)
+                        source.rt[adj_plink.sntw] = {('C', ex_ip, ex_int,
+                                            dist, neighbor, adj_plink)}
+                        SP_cost[adj_plink.sntw] = 0
+                    heappush(heap, (dist + adj_plink('cost', node), 
+                            neighbor, l3_path + [l3vc], ex_int))
                     
-            if path_trunk:
-                trunk = path_trunk[-1]
-                ex_tk = path_trunk[0]
-                nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
-                ex_ip = ex_tk('ipaddress', nh)
+            if l3_path:
+                curr_l3, ex_l3 = l3_path[-1], l3_path[0]
+                ex_tk = ex_l3('link', source)
+                nh = ex_l3.destination if ex_l3.source == source else ex_l3.source
+                ex_ip = ex_l3('link', nh)('ipaddress', nh)
+                plink = curr_l3('link', node)
                 ex_int = ex_tk('interface', source)
-                if trunk.sntw not in source.rt:
-                    SP_cost[trunk.sntw] = dist
-                    source.rt[trunk.sntw] = {('R', ex_ip, ex_int, 
+                if plink.sntw not in source.rt:
+                    SP_cost[plink.sntw] = dist
+                    source.rt[plink.sntw] = {('R', ex_ip, ex_int, 
                                                 dist, nh, ex_tk)}
                 else:
-                    if (dist == SP_cost[trunk.sntw] 
-                        and K > len(source.rt[trunk.sntw])):
-                        source.rt[trunk.sntw].add(('R', ex_ip, ex_int, 
+                    if (dist == SP_cost[plink.sntw] 
+                        and K > len(source.rt[plink.sntw])):
+                        source.rt[plink.sntw].add(('R', ex_ip, ex_int, 
                                                 dist, nh, ex_tk))
         
 class ISIS_AS(ASWithArea, IP_AS):
@@ -351,13 +351,13 @@ class ISIS_AS(ASWithArea, IP_AS):
             self.area_factory(
                               'Backbone', 
                               id = 2, 
-                              trunks = self.trunks, 
+                              plinks = self.plinks, 
                               nodes = self.nodes
                               )
                               
         # set the default per-AS properties of all AS objects
-        self.add_to_AS(*(self.nodes | self.trunks))
-        self.add_to_area(self.areas['Backbone'], *(self.nodes | self.trunks))
+        self.add_to_AS(*(self.nodes | self.plinks))
+        self.add_to_area(self.areas['Backbone'], *(self.nodes | self.plinks))
         
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
@@ -366,12 +366,12 @@ class ISIS_AS(ASWithArea, IP_AS):
         super(ISIS_AS, self).add_to_AS(*objects)       
         
         for obj in objects:
-            if obj.type == 'trunk':
+            if obj.type == 'plink':
                 cost = self.ref_bw / obj.bw
                 obj.interfaceS(self.name, 'cost', cost)
                 obj.interfaceD(self.name, 'cost', cost)     
 
-    def RFT_builder(self, source, allowed_nodes, allowed_trunks):
+    def RFT_builder(self, source, allowed_nodes, allowed_plinks):
 
         K = source.AS_properties[self.name]['LB_paths']
         visited = set()
@@ -395,34 +395,35 @@ class ISIS_AS(ASWithArea, IP_AS):
         isL1 = source not in self.border_routers and src_area.name != 'Backbone'
         
         while heap:
-            dist, node, path_trunk, ex_int = heappop(heap)  
+            dist, node, l3_path, ex_int = heappop(heap)  
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
                 for neighbor, l3vc in self.ntw.graph[node.id]['l3vc']:
-                    adj_trunk = l3vc('link', node)
-                    remote_trunk = l3vc('link', neighbor)
-                    if adj_trunk in path_trunk:
+                    adj_plink = l3vc('link', node)
+                    remote_plink = l3vc('link', neighbor)
+                    if l3vc in l3_path:
                         continue
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes:
                         continue
-                    # excluded and allowed trunks
-                    if adj_trunk not in allowed_trunks: 
+                    # excluded and allowed physical links
+                    if adj_plink not in allowed_plinks: 
                         continue
                     if node == source:
-                        ex_ip = remote_trunk('ipaddress', neighbor)
-                        ex_int = adj_trunk('interface', source)
-                        source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int,
-                                            dist, neighbor, adj_trunk)}
-                        SP_cost[adj_trunk.sntw] = 0
-                    heappush(heap, (dist + adj_trunk('cost', node), 
-                            neighbor, path_trunk + [adj_trunk], ex_int))
+                        ex_ip = remote_plink('ipaddress', neighbor)
+                        ex_int = adj_plink('interface', source)
+                        source.rt[adj_plink.sntw] = {('C', ex_ip, ex_int,
+                                            dist, neighbor, adj_plink)}
+                        SP_cost[adj_plink.sntw] = 0
+                    heappush(heap, (dist + adj_plink('cost', node), 
+                                neighbor, l3_path + [l3vc], ex_int))
                     
-            if path_trunk:
-                trunk = path_trunk[-1]
-                ex_tk = path_trunk[0]
-                nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
-                ex_ip = ex_tk('ipaddress', nh)
+            if l3_path:
+                curr_l3, ex_l3 = l3_path[-1], l3_path[0]
+                ex_tk = ex_l3('link', source)
+                nh = ex_l3.destination if ex_l3.source == source else ex_l3.source
+                ex_ip = ex_l3('link', nh)('ipaddress', nh)
+                plink = curr_l3('link', node)
                 ex_int = ex_tk('interface', source)
                 if isL1:
                     if (node in self.border_routers 
@@ -430,21 +431,21 @@ class ISIS_AS(ASWithArea, IP_AS):
                         source.rt['0.0.0.0'] = {('i*L1', ex_ip, ex_int,
                                                     dist, nh, ex_tk)}
                     else:
-                        if (('i L1', trunk.sntw) not in visited_subnetworks 
-                                        and trunk.AS[self] & ex_tk.AS[self]):
-                            visited_subnetworks.add(('i L1', trunk.sntw))
-                            source.rt[trunk.sntw] = {('i L1', ex_ip, ex_int,
-                                    dist + trunk('cost', node), nh, ex_tk)}
+                        if (('i L1', plink.sntw) not in visited_subnetworks 
+                                        and plink.AS[self] & ex_tk.AS[self]):
+                            visited_subnetworks.add(('i L1', plink.sntw))
+                            source.rt[plink.sntw] = {('i L1', ex_ip, ex_int,
+                                    dist + plink('cost', node), nh, ex_tk)}
                 else:
-                    trunkAS ,= trunk.AS[self]
+                    plinkAS ,= plink.AS[self]
                     exit_area ,= ex_tk.AS[self]
-                    rtype = 'i L1' if (trunk.AS[self] & ex_tk.AS[self] and 
-                                    trunkAS.name != 'Backbone') else 'i L2'
+                    rtype = 'i L1' if (plink.AS[self] & ex_tk.AS[self] and 
+                                    plinkAS.name != 'Backbone') else 'i L2'
                     # we favor intra-area routes by excluding a 
-                    # route if the area of the exit trunk is not
+                    # route if the area of the exit physical link is not
                     # the one of the subnetwork
-                    if (not ex_tk.AS[self] & trunk.AS[self] 
-                                    and trunkAS.name == 'Backbone'):
+                    if (not ex_tk.AS[self] & plink.AS[self] 
+                                    and plinkAS.name == 'Backbone'):
                         continue
                     # if the source is an L1/L2 node and the destination
                     # is an L1 area different from its own, we force it
@@ -453,11 +454,11 @@ class ISIS_AS(ASWithArea, IP_AS):
                     if (rtype == 'i L2' and source in self.border_routers and 
                                 exit_area.name != 'Backbone'):
                         continue
-                    if (('i L1', trunk.sntw) not in visited_subnetworks 
-                        and ('i L2', trunk.sntw) not in visited_subnetworks):
-                        visited_subnetworks.add((rtype, trunk.sntw))
-                        source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int,
-                                dist + trunk('cost', node), nh, ex_tk)}
+                    if (('i L1', plink.sntw) not in visited_subnetworks 
+                        and ('i L2', plink.sntw) not in visited_subnetworks):
+                        visited_subnetworks.add((rtype, plink.sntw))
+                        source.rt[plink.sntw] = {(rtype, ex_ip, ex_int,
+                                dist + plink('cost', node), nh, ex_tk)}
                     # TODO
                     # IS-IS uses per-address unequal cost load balancing 
                     # a user-defined variance defined as a percentage of the
@@ -487,13 +488,13 @@ class OSPF_AS(ASWithArea, IP_AS):
             self.area_factory(
                               'Backbone', 
                               id = 0, 
-                              trunks = self.trunks, 
+                              plinks = self.plinks, 
                               nodes = self.nodes
                               )
                               
             # set the default per-AS properties of all AS objects
-            self.add_to_AS(*(self.nodes | self.trunks))
-            self.add_to_area(self.areas['Backbone'], *(self.nodes | self.trunks))
+            self.add_to_AS(*(self.nodes | self.plinks))
+            self.add_to_area(self.areas['Backbone'], *(self.nodes | self.plinks))
             
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
@@ -502,12 +503,12 @@ class OSPF_AS(ASWithArea, IP_AS):
         super(OSPF_AS, self).add_to_AS(*objects)       
         
         for obj in objects:
-            if obj.type == 'trunk':
+            if obj.type == 'plink':
                 cost = self.ref_bw / obj.bw
                 obj.interfaceS(self.name, 'cost', cost)
                 obj.interfaceD(self.name, 'cost', cost)  
             
-    def RFT_builder(self, source, allowed_nodes, allowed_trunks):
+    def RFT_builder(self, source, allowed_nodes, allowed_plinks):
         K = source.AS_properties[self.name]['LB_paths']
         visited = set()
         # we keep track of all already visited subnetworks so that we 
@@ -521,64 +522,65 @@ class OSPF_AS(ASWithArea, IP_AS):
         SP_cost = {}
         
         while heap:
-            dist, node, path_trunk, ex_int = heappop(heap)  
+            dist, node, l3_path, ex_int = heappop(heap)  
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
                 for neighbor, l3vc in self.ntw.graph[node.id]['l3vc']:
-                    adj_trunk = l3vc('link', node)
-                    remote_trunk = l3vc('link', neighbor)
-                    if adj_trunk in path_trunk:
+                    adj_plink = l3vc('link', node)
+                    remote_plink = l3vc('link', neighbor)
+                    if l3vc in l3_path:
                         continue
                     # excluded and allowed nodes
                     if neighbor not in allowed_nodes:
                         continue
-                    # excluded and allowed trunks
-                    if adj_trunk not in allowed_trunks: 
+                    # excluded and allowed physical links
+                    if adj_plink not in allowed_plinks: 
                         continue
                     if node == source:
-                        ex_ip = remote_trunk('ipaddress', neighbor)
-                        ex_int = adj_trunk('interface', source)
-                        source.rt[adj_trunk.sntw] = {('C', ex_ip, ex_int,
-                                            dist, neighbor, adj_trunk)}
-                        SP_cost[adj_trunk.sntw] = 0
-                    heappush(heap, (dist + adj_trunk('cost', node), 
-                            neighbor, path_trunk + [adj_trunk], ex_int))
+                        ex_ip = remote_plink('ipaddress', neighbor)
+                        ex_int = adj_plink('interface', source)
+                        source.rt[adj_plink.sntw] = {('C', ex_ip, ex_int,
+                                            dist, neighbor, adj_plink)}
+                        SP_cost[adj_plink.sntw] = 0
+                    heappush(heap, (dist + adj_plink('cost', node), 
+                                    neighbor, l3_path + [l3vc], ex_int))
                     
-            if path_trunk:
-                trunk = path_trunk[-1]
-                ex_tk = path_trunk[0]
-                nh = ex_tk.destination if ex_tk.source == source else ex_tk.source
-                ex_ip = ex_tk('ipaddress', nh)
+            if l3_path:
+                curr_l3, ex_l3 = l3_path[-1], l3_path[0]
+                ex_tk = ex_l3('link', source)
+                nh = ex_l3.destination if ex_l3.source == source else ex_l3.source
+                ex_ip = ex_l3('link', nh)('ipaddress', nh)
+                plink = curr_l3('link', node)
                 ex_int = ex_tk('interface', source)
-                # we check if the trunk has any common area with the
-                # exit trunk: if it does not, it is an inter-area route.
-                rtype = 'O' if (trunk.AS[self] & ex_tk.AS[self]) else 'O IA'
-                if trunk.sntw not in source.rt:
-                    SP_cost[trunk.sntw] = dist
-                    source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                # we check if the physical link has any common area with the
+                # exit physical link: if it does not, it is an inter-area route.
+                rtype = 'O' if (plink.AS[self] & ex_tk.AS[self]) else 'O IA'
+                if plink.sntw not in source.rt:
+                    SP_cost[plink.sntw] = dist
+                    source.rt[plink.sntw] = {(rtype, ex_ip, ex_int, 
                                                 dist, nh, ex_tk)}
                 else:
-                    for route in source.rt[trunk.sntw]:
+                    for route in source.rt[plink.sntw]:
                         break
                     if route[0] == 'O' and rtype == 'IA':
                         continue
                     elif route[0] == 'O IA' and rtype == 'O':
-                        SP_cost[trunk.sntw] = dist
-                        source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                        SP_cost[plink.sntw] = dist
+                        source.rt[plink.sntw] = {(rtype, ex_ip, ex_int, 
                                                 dist, nh, ex_tk)}
                     else:
-                        if (dist == SP_cost[trunk.sntw]
-                            and K > len(source.rt[trunk.sntw])):
-                            source.rt[trunk.sntw].add((
+                        if (dist == SP_cost[plink.sntw]
+                            and K > len(source.rt[plink.sntw])):
+                            source.rt[plink.sntw].add((
                                                     rtype, ex_ip, ex_int, 
                                                         dist, nh, ex_tk
                                                         ))
-                if (rtype, trunk.sntw) not in visited_subnetworks:
-                    if ('O', trunk.sntw) in visited_subnetworks:
+                if (rtype, plink.sntw) not in visited_subnetworks:
+                    if ('O', plink.sntw) in visited_subnetworks:
                         continue
                     else:
-                        visited_subnetworks.add((rtype, trunk.sntw))
-                        source.rt[trunk.sntw] = {(rtype, ex_ip, ex_int, 
+                        visited_subnetworks.add((rtype, plink.sntw))
+                        source.rt[plink.sntw] = {(rtype, ex_ip, ex_int, 
                                                         dist, nh, ex_tk)}
         
 class AreaOperation(CustomTopLevel):
@@ -673,7 +675,7 @@ class ASOperation(CustomTopLevel):
         self.destroy()
         
 class ASCreation(CustomTopLevel):
-    def __init__(self, scenario, nodes, trunks):
+    def __init__(self, scenario, nodes, plinks):
         super().__init__()
         self.title('Create AS')
         
@@ -685,7 +687,7 @@ class ASCreation(CustomTopLevel):
         # retrieve and save node data
         button_create_AS = Button(self)
         button_create_AS.text = 'Create AS'
-        button_create_AS.command = lambda: self.create_AS(scenario, nodes, trunks)
+        button_create_AS.command = lambda: self.create_AS(scenario, nodes, plinks)
                         
         # Label for the name/type of the AS
         label_name = Label(self)
@@ -709,7 +711,7 @@ class ASCreation(CustomTopLevel):
         self.AS_type_list.grid(2, 1)
         button_create_AS.grid(3, 0, 1, 2)
 
-    def create_AS(self, scenario, nodes, trunks):
+    def create_AS(self, scenario, nodes, plinks):
         # automatic initialization of the AS id in case it is empty
         id = int(self.entry_id.get()) if self.entry_id.get() else len(scenario.ntw.pnAS) + 1
         
@@ -717,7 +719,7 @@ class ASCreation(CustomTopLevel):
                                          self.AS_type_list.get(), 
                                          self.entry_name.get(), 
                                          id,
-                                         trunks, 
+                                         plinks, 
                                          nodes
                                          )
         self.destroy()

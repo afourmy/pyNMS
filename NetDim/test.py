@@ -38,12 +38,12 @@ class TestExportImport(unittest.TestCase):
         src = cls.netdim.cs.ntw.nf(name="s")
         dest = cls.netdim.cs.ntw.nf(name="d")
         dest.x, src.x = 42, 24
-        trunk = cls.netdim.cs.ntw.lf(
+        plink = cls.netdim.cs.ntw.lf(
                                      name="t", 
                                      source=src, 
                                      destination=dest
                                      )
-        trunk.distance = 666
+        plink.distance = 666
         route = cls.netdim.cs.ntw.lf(
                                      subtype="static route",
                                      source=src, 
@@ -63,8 +63,8 @@ class TestExportImport(unittest.TestCase):
         self.netdim.import_graph(path_parent + "\\Tests\\test_export." + ext)
         x_coord = set(map(lambda n: n.x, self.netdim.cs.ntw.pn["node"].values()))
         self.assertEqual(x_coord, {42, 24})
-        trunk ,= self.netdim.cs.ntw.pn["trunk"].values()
-        self.assertEqual(trunk.distance, 666)
+        plink ,= self.netdim.cs.ntw.pn["plink"].values()
+        self.assertEqual(plink.distance, 666)
         self.assertEqual(len(self.netdim.cs.ntw.pn["route"].values()), 1)
         
     def test_object_import_xls(self):
@@ -107,15 +107,15 @@ class TestMST(unittest.TestCase):
  
     def test_kruskal(self):
         mst = self.ntw.kruskal(self.ntw.pn["node"].values())
-        mst_costs = set(map(lambda trunk: trunk.costSD, mst))
+        mst_costs = set(map(lambda plink: plink.costSD, mst))
         self.assertEqual(mst_costs, {1, 2, 4})
         
 class TestSP(unittest.TestCase):
     
     results = (
-    ["trunk1", "trunk3", "trunk5"], 
-    ["trunk1", "trunk7"],
-    ["trunk1", "trunk3"]
+    ["plink1", "plink3", "plink5"], 
+    ["plink1", "plink7"],
+    ["plink1", "plink3"]
     )
  
     @start_and_import("test_SP.xls")
@@ -139,12 +139,12 @@ class TestSP(unittest.TestCase):
             self.assertEqual(list(map(str, path)), self.results[i])
         
     def test_floyd_warshall(self):
-        cost_trunk = lambda trunk: trunk.costSD
+        cost_plink = lambda plink: plink.costSD
         all_length = self.ntw.floyd_warshall()
         for i, r in enumerate((self.route9, self.route10, self.route11)):
             path_length = all_length[r[0]][r[1]]
             _, path = self.ntw.A_star(r[0], r[1])
-            self.assertEqual(sum(map(cost_trunk, path)), path_length)
+            self.assertEqual(sum(map(cost_plink, path)), path_length)
             
     def test_LP(self):
         for i, r in enumerate((self.route9, self.route10, self.route11)):
@@ -154,11 +154,11 @@ class TestSP(unittest.TestCase):
 class TestMCF(unittest.TestCase):
     
     results = (
-    ("trunk1", 5),
-    ("trunk2", 7),
-    ("trunk3", 3),
-    ("trunk4", 10),
-    ("trunk5", 2)
+    ("plink1", 5),
+    ("plink2", 7),
+    ("plink3", 3),
+    ("plink4", 10),
+    ("plink5", 2)
     )
     
     @start_and_import("test_mcf.xls")
@@ -171,15 +171,15 @@ class TestMCF(unittest.TestCase):
         self.netdim.destroy()
  
     def test_MCF(self):
-        for trunk_name, flow in self.results:
-            trunk = self.ntw.pn["trunk"][self.ntw.name_to_id[trunk_name]]
-            self.assertEqual(trunk.flowSD, flow)
+        for plink_name, flow in self.results:
+            plink = self.ntw.pn["plink"][self.ntw.name_to_id[plink_name]]
+            self.assertEqual(plink.flowSD, flow)
         
 # class TestISIS(unittest.TestCase):
 #     
 #     results = (
-#     ("traffic9", {"trunk0", "trunk1", "trunk4", "trunk5"}),
-#     ("traffic10", {"trunk2", "trunk3", "trunk5"})
+#     ("traffic9", {"plink0", "plink1", "plink4", "plink5"}),
+#     ("traffic10", {"plink2", "plink3", "plink5"})
 #     )
 #  
 #     @start_and_import("test_ISIS.xls")
@@ -200,8 +200,8 @@ class TestMCF(unittest.TestCase):
 # class TestOSPF(unittest.TestCase):
 #     
 #     results = (
-#     ("traffic16", {"trunk14", "trunk2", "trunk3", "trunk6", "trunk8", "trunk15"}),
-#     ("traffic15", {"trunk14", "trunk2", "trunk4", "trunk5", "trunk6", "trunk8", "trunk15"})
+#     ("traffic16", {"plink14", "plink2", "plink3", "plink6", "plink8", "plink15"}),
+#     ("traffic15", {"plink14", "plink2", "plink4", "plink5", "plink6", "plink8", "plink15"})
 #     )
 #  
 #     @start_and_import("test_ospf.xls")
@@ -222,14 +222,14 @@ class TestMCF(unittest.TestCase):
 # class TestCSPF(unittest.TestCase):
 #     
 #     results = (
-#     ["trunk13", "trunk3", "trunk5", "trunk8", "trunk9", "trunk11"],
-#     ["trunk14", "trunk15", "trunk15", "trunk14", "trunk13", "trunk3", "trunk5", 
-#     "trunk8", "trunk9", "trunk11"],
-#     ["trunk13", "trunk3", "trunk3", "trunk13", "trunk14", "trunk15", "trunk15", 
-#     "trunk14", "trunk13", "trunk3", "trunk5", "trunk8", "trunk9", "trunk11"],
-#     ["trunk14", "trunk15", "trunk1", "trunk4", "trunk3", "trunk5", "trunk8", 
-#     "trunk9", "trunk11"],
-#     ["trunk14", "trunk15", "trunk2", "trunk5", "trunk8", "trunk9", "trunk11"],
+#     ["plink13", "plink3", "plink5", "plink8", "plink9", "plink11"],
+#     ["plink14", "plink15", "plink15", "plink14", "plink13", "plink3", "plink5", 
+#     "plink8", "plink9", "plink11"],
+#     ["plink13", "plink3", "plink3", "plink13", "plink14", "plink15", "plink15", 
+#     "plink14", "plink13", "plink3", "plink5", "plink8", "plink9", "plink11"],
+#     ["plink14", "plink15", "plink1", "plink4", "plink3", "plink5", "plink8", 
+#     "plink9", "plink11"],
+#     ["plink14", "plink15", "plink2", "plink5", "plink8", "plink9", "plink11"],
 #     []
 #     )
 #  
@@ -247,10 +247,10 @@ class TestMCF(unittest.TestCase):
 #         node4 = self.ntw.nf(name="node4")
 #         node6 = self.ntw.nf(name="node6")
 #         node7 = self.ntw.nf(name="node7")
-#         # trunk between node4 and node6
-#         trunk13 = self.ntw.lf(name="trunk13")
-#         # trunk between node2 and node5
-#         trunk15 = self.ntw.lf(name="trunk15")
+#         # plink between node4 and node6
+#         plink13 = self.ntw.lf(name="plink13")
+#         # plink between node2 and node5
+#         plink15 = self.ntw.lf(name="plink15")
 #         
 #         _, path = self.ntw.A_star(node6, node7)
 #         self.assertEqual(list(map(str, path)), self.results[0])
@@ -261,13 +261,13 @@ class TestMCF(unittest.TestCase):
 #                                             path_constraints=[node3, node2])
 #         self.assertEqual(list(map(str, path)), self.results[2])                  
 #         _, path = self.ntw.A_star(node6, node7, 
-#                                                     excluded_trunks={trunk13})
+#                                                     excluded_plinks={plink13})
 #         self.assertEqual(list(map(str, path)), self.results[3])
 #         _, path = self.ntw.A_star(node6, node7, 
-#                             excluded_trunks={trunk13}, excluded_nodes={node1})
+#                             excluded_plinks={plink13}, excluded_nodes={node1})
 #         self.assertEqual(list(map(str, path)), self.results[4])
 #         _, path = self.ntw.A_star(node6, node7, 
-#                             excluded_trunks={trunk15}, excluded_nodes={node4})
+#                             excluded_plinks={plink15}, excluded_nodes={node4})
 #         self.assertEqual(list(map(str, path)), self.results[5])
         
 class TestRWA(unittest.TestCase):

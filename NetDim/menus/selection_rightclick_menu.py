@@ -47,10 +47,10 @@ class SelectionRightClickMenu(tk.Menu):
                         command=lambda: self.show_object_properties())
             self.add_separator()
             
-        # exacly one node and one trunk: menu for the associated interface
+        # exacly one node and one physical link: menu for the associated interface
         if len(self.cs.so['node']) == 1 and len(self.cs.so['link']) == 1:
             link ,= self.cs.so['link']
-            if link.type == 'trunk':
+            if link.type == 'plink':
                 node ,= self.cs.so['node']
                 interface = link('interface', node)
                 self.add_command(label='Interface menu', 
@@ -97,7 +97,7 @@ class SelectionRightClickMenu(tk.Menu):
         
         # we compute the set of common AS among all selected objects
         self.common_AS = set(self.cs.ntw.pnAS.values())  
-        cmd = lambda o: o.type in ('node', 'trunk')
+        cmd = lambda o: o.type in ('node', 'plink')
         for obj in filter(cmd, self.all_so):
             self.common_AS &= obj.AS.keys()
             
@@ -122,23 +122,23 @@ class SelectionRightClickMenu(tk.Menu):
                         
         self.add_separator()
         
-        # exactly one trunk: 
+        # exactly one physical link: 
         if not self.cs.so['node'] and len(self.cs.so['link']) == 1:
-            trunk ,= self.cs.so['link']
+            plink ,= self.cs.so['link']
             # failure simulation menu
-            if trunk.type == 'trunk':
+            if plink.type == 'plink':
                 self.add_command(label='Simulate failure', 
-                        command=lambda: self.simulate_failure(trunk))
-                if trunk in self.cs.ntw.fdtks:
+                        command=lambda: self.simulate_failure(plink))
+                if plink in self.cs.ntw.fdtks:
                     self.add_command(label='Remove failure', 
-                        command=lambda: self.remove_failure(trunk))
+                        command=lambda: self.remove_failure(plink))
                         
                 # interface menu 
                 menu_interfaces = tk.Menu(self, tearoff=0)
-                source_if = trunk('interface', trunk.source)
+                source_if = plink('interface', plink.source)
                 menu_interfaces.add_command(label='Source interface', 
                 command=lambda: InterfaceWindow(self.cs.master, source_if))
-                destination_if = trunk('interface', trunk.destination)
+                destination_if = plink('interface', plink.destination)
                 menu_interfaces.add_command(label='Destination interface', 
                 command=lambda: InterfaceWindow(self.cs.master, destination_if))
                 self.add_cascade(label='Interface menu', menu=menu_interfaces)
@@ -213,12 +213,12 @@ class SelectionRightClickMenu(tk.Menu):
         AS.AreaOperation(self.cs, mode, self.all_so, self.common_AS)
         
     @empty_selection_and_destroy_menu
-    def simulate_failure(self, trunk):
-        self.cs.simulate_failure(trunk)
+    def simulate_failure(self, plink):
+        self.cs.simulate_failure(plink)
         
     @empty_selection_and_destroy_menu
-    def remove_failure(self, trunk):
-        self.cs.remove_failure(trunk)
+    def remove_failure(self, plink):
+        self.cs.remove_failure(plink)
         
     @empty_selection_and_destroy_menu
     def arp_table(self, node):
@@ -277,6 +277,6 @@ class SelectionRightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def create_AS(self):
-        nodes, trunks = set(self.cs.so['node']), set(self.cs.so['link'])
-        AS.ASCreation(self.cs, nodes, trunks)
+        nodes, plinks = set(self.cs.so['node']), set(self.cs.so['link'])
+        AS.ASCreation(self.cs, nodes, plinks)
         

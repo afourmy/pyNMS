@@ -25,7 +25,7 @@ class ASManagement(CustomTopLevel):
         lf_properties = Labelframe(common_frame)
         lf_properties.text = 'AS properties'
         
-        obj_types = ('trunk', 'node') 
+        obj_types = ('plink', 'node') 
         
         label_name = Label(common_frame)
         label_name.text = 'AS name'
@@ -75,18 +75,18 @@ class ASManagement(CustomTopLevel):
             listbox.grid(1, 2 * index, in_=lf_objects)
             yscroll.grid(1, 1 + 2 * index, in_=lf_objects)
         
-        # find domain trunks: the trunks between nodes of the AS
-        button_find_trunks = Button(common_frame) 
-        button_find_trunks.text = 'Find trunks'
-        button_find_trunks.command=lambda: self.find_trunks()
+        # find domain physical links: the physical links between nodes of the AS
+        button_find_plinks = Button(common_frame) 
+        button_find_plinks.text = 'Find physical links'
+        button_find_plinks.command=lambda: self.find_plinks()
         
         # operation on nodes
         button_remove_node_from_AS = Button(common_frame) 
         button_remove_node_from_AS.text='Remove node'
         button_remove_node_from_AS.command = lambda: self.remove_selected('node')
         
-        # buttons under the trunks column
-        button_find_trunks.grid(2, 0, in_=lf_objects)
+        # buttons under the physical links column
+        button_find_plinks.grid(2, 0, in_=lf_objects)
         
         # button under the nodes column
         button_remove_node_from_AS.grid(2, 2, in_=lf_objects)
@@ -104,7 +104,7 @@ class ASManagement(CustomTopLevel):
     # refresh display
     def refresh_display(self):
         # populate the listbox with all AS objects
-        for obj_type in ('trunk', 'node'):
+        for obj_type in ('plink', 'node'):
             self.dict_listbox[obj_type].clear()
             for obj in self.AS.pAS[obj_type]:
                 self.dict_listbox[obj_type].insert(obj)
@@ -130,13 +130,13 @@ class ASManagement(CustomTopLevel):
         for obj in objects:
             self.dict_listbox[obj.type].insert(obj)
             
-    def find_trunks(self):
-        trunks_between_domain_nodes = set()
+    def find_plinks(self):
+        plinks_between_domain_nodes = set()
         for node in self.AS.pAS['node']:
-            for neighbor, adj_trunk in self.AS.cs.ntw.graph[node.id]['trunk']:
+            for neighbor, adj_plink in self.AS.cs.ntw.graph[node.id]['plink']:
                 if neighbor in self.AS.pAS['node']:
-                    trunks_between_domain_nodes.add(adj_trunk)
-        self.add_to_AS(*trunks_between_domain_nodes)
+                    plinks_between_domain_nodes.add(adj_plink)
+        self.add_to_AS(*plinks_between_domain_nodes)
             
     ## Functions used to modify AS from the right-click menu
                 
@@ -146,8 +146,8 @@ class ASManagement(CustomTopLevel):
             if obj.type == 'node':
                 # remove the node from nodes listbox
                 self.dict_listbox['node'].pop(obj)
-            elif obj.type == 'trunk':
-                self.dict_listbox['trunk'].pop(obj)
+            elif obj.type == 'plink':
+                self.dict_listbox['plink'].pop(obj)
             
 class ASManagementWithArea(ASManagement):
     
@@ -161,7 +161,7 @@ class ASManagementWithArea(ASManagement):
         
         self.area_frame = CustomFrame(self.frame_notebook)
         self.frame_notebook.add(self.area_frame, text='Area management')
-        self.area_listbox = ('name', 'trunk', 'node')
+        self.area_listbox = ('name', 'plink', 'node')
         self.dict_area_listbox = {}
         
         # listbox for areas
@@ -224,13 +224,13 @@ class ASManagementWithArea(ASManagement):
         for area in self.dict_area_listbox['name'].selected():
             area = self.AS.area_factory(area)
             self.AS.cs.unhighlight_all()
-            self.AS.cs.highlight_objects(*(area.pa['node'] | area.pa['trunk']))
+            self.AS.cs.highlight_objects(*(area.pa['node'] | area.pa['plink']))
             self.dict_area_listbox['node'].clear()
-            self.dict_area_listbox['trunk'].clear()
+            self.dict_area_listbox['plink'].clear()
             for node in area.pa['node']:
                 self.dict_area_listbox['node'].insert(node)
-            for trunk in area.pa['trunk']:
-                self.dict_area_listbox['trunk'].insert(trunk)
+            for plink in area.pa['plink']:
+                self.dict_area_listbox['plink'].insert(plink)
                 
     ## Functions used to modify AS from the right-click menu
     
@@ -282,7 +282,7 @@ class STP_Management(ASManagement):
         button_elect_root.grid(2, 0, in_=lf_stp_specifics)
         
     def highlight_SPT(self):
-        self.AS.cs.highlight_objects(*self.AS.SPT_trunks)
+        self.AS.cs.highlight_objects(*self.AS.SPT_plinks)
         
 class VLAN_Management(ASManagementWithArea):
     
@@ -295,7 +295,7 @@ class ISIS_Management(ASManagementWithArea):
         super().__init__(*args)
         
         # interface to cost dictionnary. This is used for OSPF and IS-IS, 
-        # because the cost of a trunk depends on the bandwidth.
+        # because the cost of a physical link depends on the bandwidth.
         # Trunk_cost = Ref_BW / BW
         self.if_to_cost = {
         'FE': 10**7,
@@ -316,46 +316,46 @@ class ISIS_Management(ASManagementWithArea):
     def update_AS_topology(self):
         
         self.AS.border_routers.clear()
-        # reset all area trunks
-        self.AS.areas['Backbone'].pa['trunk'].clear()
+        # reset all area physical links
+        self.AS.areas['Backbone'].pa['plink'].clear()
         
         for node in self.AS.pAS['node']:
             
             # In IS-IS, a router has only one area
             node_area ,= node.AS[self.AS]
             
-            for neighbor, adj_trunk in self.AS.cs.ntw.graph[node.id]['trunk']:
+            for neighbor, adj_plink in self.AS.cs.ntw.graph[node.id]['plink']:
                 
                 # A multi-area IS-IS AS is defined by the status of its nodes.
-                # we automatically update the trunk area status, by considering 
-                # that a trunk belong to an area as soon as both of its ends do.
-                # A trunk between two L1/L2 routers that belong to different
+                # we automatically update the link area status, by considering 
+                # that a link belongs to an area as soon as both of its ends do.
+                # A link between two L1/L2 routers that belong to different
                 # areas will be considered as being part of the backbone.
 
                 # we check that the neighbor belongs to the AS
                 if self.AS in neighbor.AS:
                     # we retrieve the neighbor's area
                     neighbor_area ,= neighbor.AS[self.AS]
-                    # if they are the same, we add the trunk to the area
+                    # if they are the same, we add the link to the area
                     if node_area == neighbor_area:
-                        node_area.add_to_area(adj_trunk)
+                        node_area.add_to_area(adj_plink)
                     # if not, it is at the edge of two areas
                     # a router is considered L1/L2 if it has at least
                     # one neighbor which is in a different area.
                     else:
-                        # we consider that the trunk belongs to the backbone,
+                        # we consider that the link belongs to the backbone,
                         # for interfaces to have IP addresses.
-                        self.AS.areas['Backbone'].add_to_area(adj_trunk)
+                        self.AS.areas['Backbone'].add_to_area(adj_plink)
                         self.AS.border_routers.add(node)
                 
     def update_cost(self):
-        for trunk in self.AS.pAS['trunk']:
-            bw = self.if_to_cost[trunk.interface]
+        for plink in self.AS.pAS['plink']:
+            bw = self.if_to_cost[plink.interface]
             # the cost of a link cannot be less than 1. This also means that,
             # by default, all interfaces from GE to 100GE will result in the
             # same metric: 1.
             cost = max(1, self.AS.ref_bw / bw)
-            trunk.costSD = trunk.costDS = cost
+            plink.costSD = plink.costDS = cost
         
 class OSPF_Management(ASManagementWithArea):
     
@@ -363,7 +363,7 @@ class OSPF_Management(ASManagementWithArea):
         super().__init__(*args)
         
         # interface to cost dictionnary. This is used for OSPF and IS-IS, 
-        # because the cost of a trunk depends on the bandwidth.
+        # because the cost of a physical link depends on the bandwidth.
         # Trunk_cost = Ref_BW / BW
         self.if_to_cost = {
         'FE': 10**7,
@@ -401,7 +401,7 @@ class OSPF_Management(ASManagementWithArea):
         for node in self.AS.pAS['node']:
                 
             # in OSPF, a router is considered ABR if it has attached
-            # trunks that are in different area. Since we just updated 
+            # links that are in different area. Since we just updated 
             # the router's areas, all we need to check is that it has
             # at least 2 distinct areas.
             # an ABR is automatically part of the backbone area.
@@ -409,22 +409,22 @@ class OSPF_Management(ASManagementWithArea):
                 self.AS.border_routers.add(node)
                 self.AS.areas['Backbone'].add_to_area(node)
             
-            for neighbor, adj_trunk in self.AS.cs.ntw.graph[node.id]['trunk']:
+            for neighbor, adj_plink in self.AS.cs.ntw.graph[node.id]['plink']:
 
-                # a multi-area OSPF AS is defined by the area of its trunk.
+                # a multi-area OSPF AS is defined by the area of its link.
                 # we automatically update the node area status, by considering that a 
-                # node belongs to an area as soon as one of its adjacent trunk does.
-                for area in adj_trunk.AS[self.AS]:
+                # node belongs to an area as soon as one of its adjacent link does.
+                for area in adj_plink.AS[self.AS]:
                     area.add_to_area(node)
                 
     def update_cost(self):
-        for trunk in self.AS.pAS['trunk']:
-            bw = self.if_to_cost[trunk.interface]
+        for plink in self.AS.pAS['plink']:
+            bw = self.if_to_cost[plink.interface]
             # the cost of a link cannot be less than 1. This also means that,
             # by default, all interfaces from GE to 100GE will result in the
             # same metric: 1.
             cost = max(1, self.AS.ref_bw / bw)
-            trunk.costSD = trunk.costDS = cost 
+            plink.costSD = plink.costDS = cost 
             
     ## saving function: used when closing the window
     

@@ -29,9 +29,9 @@ class Ping(FocusTopLevel):
     def ping_IP(self, source):
         dest_IP = self.entry_IP.get()
         self.ST.delete('1.0', tk.END)
-        for trunk in self.cs.ntw.pn['trunk'].values():
-            if dest_IP in (trunk.ipaddressS, trunk.ipaddressD):
-                sntw = trunk.sntw
+        for plink in self.cs.ntw.pn['plink'].values():
+            if dest_IP in (plink.ipaddressS, plink.ipaddressD):
+                sntw = plink.sntw
                 for rt_entry in self.cs.ntw.ping(source, sntw):
                     self.ST.insert('insert', str(rt_entry) + '\n')
                 break
