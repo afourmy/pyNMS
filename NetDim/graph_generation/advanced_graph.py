@@ -2,8 +2,6 @@
 # Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
 # Released under the GNU General Public License GPLv3
 
-import tkinter as tk
-from tkinter import ttk
 from pythonic_tkinter.preconfigured_widgets import *
 from os.path import join
 from PIL import ImageTk
@@ -40,21 +38,21 @@ class AdvancedGraph(FocusTopLevel):
         )
         
         # label frame for the infinite graph generation button
-        self.lf_inf_graph = ttk.Labelframe(self, padding=(6, 6, 12, 12), 
-                                            text='Infinite graph generation')
-        self.lf_inf_graph.grid(row=1, column=0, columnspan=2, pady=5, padx=5, 
-                                                                sticky='nsew')
+        lf_inf_graph = Labelframe(self)
+        lf_inf_graph.text = 'Infinite graph generation'
+        lf_inf_graph.grid(1, 0, 1, 2)
                                                         
         for bt_type, (row, col), bt_text in button_config:
-            bt = tk.Button(self, bg='#A1DBCD', text=bt_text, 
-                    command=lambda t=bt_type: NetworkDimension(self.ms.cs, t))
-            bt.grid(in_=self.lf_inf_graph, row=row, column=col, pady=5, padx=5)
+            bt = TKButton(self)
+            bt.text = bt_text
+            bt.command = lambda t=bt_type: NetworkDimension(self.ms.cs, t)
+            
+            bt.grid(row, col, in_=lf_inf_graph)
             bt.config(image=self.dict_images[bt_type], compound='top', font=font)
                                                         
-        self.lf_classic_graph = ttk.Labelframe(self, padding=(6, 6, 12, 12), 
-                                            text='Classic graph generation')
-        self.lf_classic_graph.grid(row=1, column=3, columnspan=2, pady=5, 
-                                                        padx=5, sticky='nsew')
+        lf_classic_graph = Labelframe(self)
+        lf_classic_graph.text = 'Classic graph generation'
+        lf_classic_graph.grid(1, 3, 1, 2)
                                         
         self.graph_properties = {
         'Desargues': (3, 4, 2),
@@ -62,13 +60,12 @@ class AdvancedGraph(FocusTopLevel):
         }
         
         # List of classic graphs
-        self.graph_list = ttk.Combobox(self, width=9)
+        self.graph_list = Combobox(self, width=9)
         self.graph_list['values'] = tuple(self.graph_properties.keys())
         self.graph_list.current(0)
-        self.graph_list.grid(in_=self.lf_classic_graph, row=0, column=0,
-                                columnspan=2, pady=5, padx=5, sticky='nsew')
-        self.graph_list.bind('<<ComboboxSelected>>',
-                                        lambda e: self.update_properties())
+        self.graph_list.grid(0, 0, 1, 2, in_=lf_classic_graph)
+        self.graph_list.bind('<<ComboboxSelected>>', lambda e: self.update_properties())
+                                        
         
         properties = (
         'Number of nodes :',
@@ -79,17 +76,19 @@ class AdvancedGraph(FocusTopLevel):
         self.var_labels = []
         
         for idx, property in enumerate(properties, 1):
-            label_property = ttk.Label(self, text=property)
-            label_property.grid(in_=self.lf_classic_graph, row=idx, column=0, 
-                                                pady=5, padx=5, sticky=tk.W)
-            label_value = ttk.Label(self, text='', width=3)
-            label_value.grid(in_=self.lf_classic_graph, row=idx, column=1, 
-                                                pady=5, padx=5, sticky=tk.W)
+            
+            label_property = Label(self)
+            label_property.text = property
+            label_property.grid(idx, 0, in_=lf_classic_graph)
+
+            label_value = Label(self, width=3)
+            label_value.grid(idx, 1, in_=lf_classic_graph)
             self.var_labels.append(label_value)
             
-        self.bt_gen = ttk.Button(self, text='Generate', command=self.generate)
-        self.bt_gen.grid(in_=self.lf_classic_graph, row=len(properties)+1, 
-                                        column=0, columnspan=2, pady=5, padx=5)
+        bt_gen = Button(self)
+        bt_gen.text = 'Generate'
+        bt_gen.command = self.generate
+        bt_gen.grid(len(properties)+1, 0, 1, 2, in_=lf_classic_graph)
                                         
         self.graph_generation = {
         'Desargues': lambda: self.ms.cs.ntw.petersen(5, 2, 'oxc'),
@@ -103,11 +102,11 @@ class AdvancedGraph(FocusTopLevel):
                                         
     # when a graph is selected, the properties are updated accordingly
     def update_properties(self):
-        selected_graph = self.graph_list.get()
+        selected_graph = self.graph_list.text
         for idx, value in enumerate(self.graph_properties[selected_graph]):
             self.var_labels[idx].configure(text=value)
             
     def generate(self):
-        selected_graph = self.graph_list.get()
+        selected_graph = self.graph_list.text
         self.graph_generation[selected_graph]()
         self.ms.cs.draw_all(random=False)

@@ -6,6 +6,7 @@ import tkinter as tk
 import network
 import miscellaneous.search as search
 import re
+from pythonic_tkinter.preconfigured_widgets import *
 from objects.objects import *
 from menus.general_rightclick_menu import GeneralRightClickMenu
 from menus.selection_rightclick_menu import SelectionRightClickMenu
@@ -172,6 +173,11 @@ class Scenario(tk.Canvas):
             if self._creation_mode in self.ntw.node_class:
                 # add bindings to create a node with left-click
                 self.bind('<ButtonPress-1>', self.create_node_on_binding)
+                
+            elif self._creation_mode == 'rectangle':
+                # add binding to draw a rectangle
+                self.bind('<ButtonPress-1>', self.start_point_rectangle)
+                self.bind('<B1-Motion>', self.rectangle_drawing)
             
             else:
                 # add bindings to create a link between two nodes
@@ -186,6 +192,22 @@ class Scenario(tk.Canvas):
             event.x, event.y = self.canvasx(event.x), self.canvasy(event.y)
             function(self, event, *others)
         return wrapper
+                
+    ## Drawing modes
+    
+    def start_point_rectangle(self, event):
+        x, y = self.canvasx(event.x), self.canvasy(event.y)
+        self._start_position = x, y
+        self.temp_line_x_top = self.create_line(x, y, x, y)
+        self.temp_line_y_left = self.create_line(x, y, x, y)
+        self.temp_line_y_right = self.create_line(x, y, x, y)
+        self.temp_line_x_bottom = self.create_line(x, y, x, y)
+                
+    def draw(self, mode):
+        if self._creation_mode == 'text':
+            LabelCreation(self)
+        elif self._creation_mode == 'rectangle':
+            pass
         
     def invert_layer_display(self, layer):
         self.display_layer[layer] = not self.display_layer[layer]
@@ -673,6 +695,7 @@ class Scenario(tk.Canvas):
 
     @adapt_coordinates
     def end_point_select_nodes(self, event):
+        print('noooo')
         if self._start_position != [None]*2:
             # delete the temporary lines
             self.delete(self.temp_line_x_top)
@@ -1078,4 +1101,29 @@ class Scenario(tk.Canvas):
             for link in self.ntw.pn[type].values():
                 self.itemconfig(link.line, state=new_state)
                 self.itemconfig(link.lid, state=new_state)
+                
+class LabelCreation(CustomTopLevel):
+            
+    def __init__(self, scenario):
+        super().__init__()
+        self.cs = scenario
+        
+        # labelframe
+        lf_label_creation = Labelframe(self)
+        lf_label_creation.text = 'Create a label'
+        lf_label_creation.grid(0, 0)
+
+        self.entry_label = Entry(self, width=20)
+        
+        OK_button = Button(self, width=20)
+        OK_button.text = 'OK'
+        OK_button.command = self.OK
+        
+        lf_label_creation.grid(0, 0)
+        self.entry_label.grid(0, 0, in_=lf_label_creation)
+        OK_button.grid(1, 0, in_=lf_label_creation)
+
+    def OK(self):
+        pass
+        self.destroy()
         

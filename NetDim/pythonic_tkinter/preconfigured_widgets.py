@@ -126,7 +126,14 @@ class MainWindow(tk.Tk):
                        ):
             ttk.Style().configure('T' + widget, background=color)
             
+class ImprovedTKButton(tk.Button):
+    
+    @defaultizer(bg='#A1DBCD')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)  
+            
 class MenuEntry(object):
+    
     
     def __init__(self, menu):
         menu.menu_entries.append(self)
@@ -255,13 +262,17 @@ subwidget_creation = (
                       ('Text', tk.Text, (4, 4, 'w')),
                       ('Entry', ttk.Entry, (4, 4, 'w')),
                       ('Button', ttk.Button, (4, 4, 'w')),
+                      # ttk buttons do not have a relief option:
+                      # tk buttons can therefore be useful too
+                      ('TKButton', ImprovedTKButton, (4, 4, 'w')),
                       ('Radiobutton', ttk.Radiobutton, (4, 4, 'w')),
                       ('Labelframe', LF, (10, 10, 'w')),
                       ('Listbox', ImprovedListbox, (0, 0, 'w')),
                       ('ObjectListbox', NoDuplicateListbox, (0, 0, 'w')),
                       ('Scrollbar', tk.Scrollbar, (0, 0, 'ns')),
                       ('Combobox', ttk.Combobox, (4, 4, 'w')),
-                      ('Checkbutton', ttk.Checkbutton, (4, 4, 'w'))
+                      ('Checkbutton', ttk.Checkbutton, (4, 4, 'w')),
+                      ('Separator', ttk.Separator, (4, 4, 'ew'))               
                       )
     
 for subwidget, ttk_class, defaults in subwidget_creation:

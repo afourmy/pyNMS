@@ -3,6 +3,7 @@
 # Released under the GNU General Public License GPLv3
 
 from pythonic_tkinter.preconfigured_widgets import *
+from objects.objects import *
 
 class InterfaceWindow(FocusTopLevel):
     
@@ -27,7 +28,7 @@ class InterfaceWindow(FocusTopLevel):
         for index, property in enumerate(interface.public_properties):
             # creation of the label associated to the property
             label = Label(self)
-            label.text = self.ms.prop_to_nice_name[property]
+            label.text = prop_to_nice_name[property]
             
             property_entry = Entry(self, width=15)
             property_entry.text = str(getattr(self.interface, property))
@@ -53,7 +54,7 @@ class InterfaceWindow(FocusTopLevel):
             for index, property in enumerate(interface.perAS_properties):
                 # creation of the label associated to the property
                 label = Label(self)
-                label.text = self.ms.prop_to_nice_name[property]
+                label.text = prop_to_nice_name[property]
                 
                 property_entry = Entry(self, width=15)
                 property_entry.text = str(self.interface(self.AS_combobox.text, property))
@@ -73,7 +74,7 @@ class InterfaceWindow(FocusTopLevel):
         
     def save_and_destroy(self):
         for property, entry in self.dict_global_properties.items():
-            value = self.ms.prop_to_type[property](entry.get())
+            value = self.ms.cs.ntw.prop_to_type[property](entry.get())
             setattr(self.interface, property, value)
             
         if self.interface.AS_properties:

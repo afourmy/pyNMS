@@ -116,7 +116,7 @@ class NetDim(MainWindow):
         
         drawing_menu.create_menu()
         
-        netdim_menu.add_cascade(label='Network drawing',menu=drawing_menu)
+        netdim_menu.add_cascade(label='Drawing',menu=drawing_menu)
         
         # routing menu:
         
@@ -168,6 +168,40 @@ class NetDim(MainWindow):
         
         self.config(menu=netdim_menu)
         
+        ## Images
+        
+        # dict of nodes image for node creation
+        self.dict_image = defaultdict(dict)
+        
+        self.node_size_image = {
+        'router': (33, 25), 
+        'switch': (54, 36),
+        'oxc': (35, 32), 
+        'host': (35, 32), 
+        'regenerator': (64, 50), 
+        'splitter': (64, 50),
+        'antenna': (35, 35),
+        'cloud': (60, 35),
+        }
+        
+        for color in colors:
+            for node_type in self.cs.ntw.node_subtype:
+                img_path = join(self.path_icon, ''.join(
+                                            (color, '_', node_type, '.gif')))
+                img_pil = ImageTk.Image.open(img_path).resize(
+                                            self.node_size_image[node_type])
+                img = ImageTk.PhotoImage(img_pil)
+                # set the default image for the button of the frame
+                # if color == 'default':
+                #     self.main_menu.type_to_button[node_type].config(image=img, 
+                #                                         width=50, height=50)
+                self.dict_image[color][node_type] = img
+                
+        # image for a link failure
+        img_pil = ImageTk.Image.open(join(self.path_icon, 'failure.png'))\
+                                                                .resize((25,25))
+        self.img_failure = ImageTk.PhotoImage(img_pil)
+        
         # object management windows
         self.dict_obj_mgmt_window = {}
         for obj in object_properties:
@@ -193,74 +227,6 @@ class NetDim(MainWindow):
         self.main_menu = main_menu.MainMenu(self)
         self.main_menu.pack(fill=tk.BOTH, side=tk.LEFT)
         self.scenario_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
-        
-        # dict of nodes image for node creation
-        self.dict_image = defaultdict(dict)
-        
-        self.node_size_image = {
-        'router': (33, 25), 
-        'switch': (54, 36),
-        'oxc': (35, 32), 
-        'host': (35, 32), 
-        'regenerator': (64, 50), 
-        'splitter': (64, 50),
-        'antenna': (35, 35),
-        'cloud': (60, 35),
-        }
-        
-        self.dict_size_image = {
-        'general': {
-        'netdim': (75, 75), 
-        'motion': (75, 75), 
-        'multi-layer': (75, 75)
-        },
-        
-        'l_type': {
-        'ethernet': (85, 15),
-        'wdm': (85, 15),
-        'static route': (85, 15),
-        'BGP peering': (85, 15),
-        'OSPF virtual link': (85, 15),
-        'Label Switched Path': (85, 15),
-        'routed traffic': (85, 15),
-        'static traffic': (85, 15)
-        },
-        
-        'ntw_topo': {
-        'ring': (38, 33), 
-        'tree': (35, 21), 
-        'star': (36, 35), 
-        'full-mesh': (40, 36)
-        }}
-        
-        for color in colors:
-            for node_type in self.cs.ntw.node_subtype:
-                img_path = join(self.path_icon, ''.join(
-                                            (color, '_', node_type, '.gif')))
-                img_pil = ImageTk.Image.open(img_path).resize(
-                                            self.node_size_image[node_type])
-                img = ImageTk.PhotoImage(img_pil)
-                # set the default image for the button of the frame
-                if color == 'default':
-                    self.main_menu.type_to_button[node_type].config(image=img, 
-                                                        width=50, height=50)
-                self.dict_image[color][node_type] = img
-        
-        for category_type, dict_size in self.dict_size_image.items():
-            for image_type, image_size in dict_size.items():
-                x, y = image_size
-                img_path = join(self.path_icon, image_type + '.png')
-                img_pil = ImageTk.Image.open(img_path).resize(image_size)
-                img = ImageTk.PhotoImage(img_pil)
-                self.dict_image[category_type][image_type] = img
-                self.main_menu.type_to_button[image_type].config(image=img, 
-                                                        width=x, height=y+10)
-                
-        # image for a link failure
-        img_pil = ImageTk.Image.open(join(self.path_icon, 'failure.png'))\
-                                                                .resize((25,25))
-        self.img_failure = ImageTk.PhotoImage(img_pil)
-        
             
     def change_cs(self, event=None):
         cs_name = self.scenario_notebook.tab(self.scenario_notebook.select(), 'text')
