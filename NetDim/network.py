@@ -37,21 +37,21 @@ class Network(object):
     ('cloud', objects.Cloud)
     ])
     
-    VC_class = OrderedDict([
-    ('l2vc', objects.L2VC),
-    ('l3vc', objects.L3VC)
+    l2link_class = OrderedDict([
+    ('l2vc', objects.L2VC)
+    ])
+    
+    l3link_class = OrderedDict([
+    ('l3vc', objects.L3VC),
+    ('static route', objects.StaticRoute),
+    ('BGP peering', objects.BGPPeering),
+    ('OSPF virtual link', objects.VirtualLink),
+    ('Label Switched Path', objects.LSP)
     ])
     
     plink_class = OrderedDict([
     ('ethernet', objects.Ethernet),
     ('wdm', objects.WDMFiber)
-    ])
-    
-    route_class = OrderedDict([
-    ('static route', objects.StaticRoute),
-    ('BGP peering', objects.BGPPeering),
-    ('OSPF virtual link', objects.VirtualLink),
-    ('Label Switched Path', objects.LSP)
     ])
     
     traffic_class = OrderedDict([
@@ -68,11 +68,11 @@ class Network(object):
     ])
     
     link_class = {}
-    for dclass in (plink_class, route_class, traffic_class, VC_class):
+    for dclass in (plink_class, l2link_class, l3link_class, traffic_class):
         link_class.update(dclass)
     
     node_subtype = tuple(node_class.keys())
-    link_type = ('plink', 'route', 'traffic', 'l2vc', 'l3vc')
+    link_type = ('plink', 'l2link', 'l3link', 'traffic')
     link_subtype = tuple(link_class.keys())
     all_subtypes = node_subtype + link_subtype
     
@@ -80,18 +80,16 @@ class Network(object):
         self.nodes = {}
         self.plinks = {}
         self.interfaces = {'ethernet': set(), 'wdm': set()}
-        self.routes = {}
+        self.l2links = {}
+        self.l3links = {}
         self.traffics = {}
-        self.l2vc = {}
-        self.l3vc = {}
         # pn for 'pool network'
         self.pn = {
                    'node': self.nodes, 
                    'plink': self.plinks, 
-                   'route': self.routes, 
+                   'l2link': self.l2links, 
+                   'l3link': self.l3links,
                    'traffic': self.traffics, 
-                   'l2vc': self.l2vc, 
-                   'l3vc': self.l3vc
                    }
         self.pnAS = {}
         self.cs = scenario
@@ -201,7 +199,7 @@ class Network(object):
     # corresponding subtypes, else we check that 'src' is the source
     def gftr(self, src, type, *sts, ud=True):
         keep = lambda r: r[1].subtype in sts and (ud or r[1].source == src)
-        return filter(keep, self.graph[src][type])
+        return filter(keep, self.graph[src.id][type])
         
     # function filtering AS either per layer or per subtype
     def ASftr(self, filtering_mode, *sts):
@@ -375,8 +373,12 @@ class Network(object):
                 AS.pAS['edge'].add(node)
                 yield node
             
-    def is_connected(self, nodeA, nodeB, link_type):
-        return any(n == nodeA for n, _ in self.graph[nodeB.id][link_type])
+    def is_connected(self, nodeA, nodeB, link_type, subtype=None):
+        if not subtype:
+            return any(n == nodeA for n, _ in self.graph[nodeB.id][link_type])
+        else:
+            print('test')
+            return any(n == nodeA for n, _ in self.gftr(nodeB, link_type, subtype))
         
     # given a node, retrieves nodes attached with a link which subtype 
     # is in sts
@@ -410,7 +412,7 @@ class Network(object):
                 node.bgp_AS = AS.name
                 
         # update all BGP peering type based on the source and destination AS
-        for bgp_pr in self.ftr('route', 'BGP peering'):
+        for bgp_pr in self.ftr('l3link', 'BGP peering'):
             same_AS = bgp_pr.source.bgp_AS == bgp_pr.destination.bgp_AS
             bgp_pr.bgp_type = 'iBGP' if same_AS else 'eBGP'
         
@@ -466,13 +468,14 @@ class Network(object):
     def multi_access_network(self, layer):
         # we create the virtual connnections at layer 2 and 3, that is the 
         # links between adjacent Ln devices (L2-L2, L3-L3).
+        link_type = 'l{layer}link'.format(layer = layer)
         vc_type = 'l{layer}vc'.format(layer = layer)
         
         for ma_network in self.ma_segments[layer]:
             for source_plink, node in ma_network:
                 allowed_neighbors = ma_network - {(source_plink, node)}
                 for destination_plink, neighbor in allowed_neighbors:
-                    if not self.is_connected(node, neighbor, vc_type):
+                    if not self.is_connected(node, neighbor, link_type, vc_type):
                         vc = self.lf(
                                      source = node, 
                                      destination = neighbor, 
@@ -767,7 +770,7 @@ class Network(object):
             except KeyError:
                 pass
 
-        for _, sr in self.gftr(source, 'route', 'static route', False):
+        for _, sr in self.gftr(source, 'l3link', 'static route', False):
             # if the static route next-hop ip is not properly configured, 
             # we ignore it.
             try:
@@ -804,7 +807,7 @@ class Network(object):
                     source.bgpt[ip] |= {(32768, nh, source, ())}
             
             # we fill the heap so that 
-            for src_nb, bgp_pr in self.gftr(source, 'route', 'BGP peering'):
+            for src_nb, bgp_pr in self.gftr(source, 'l3link', 'BGP peering'):
                 first_AS = [source.bgp_AS, src_nb.bgp_AS]
                 if bgp_pr('weight', source):
                     weight = 1 / bgp_pr('weight', source)
@@ -826,7 +829,7 @@ class Network(object):
                         real_weight = 0 if weight == float('inf') else 1/weight
                         source.bgpt[ip] |= {(real_weight, nh, node, tuple(AS_path))}
                     visited.add(node)
-                    for bgp_nb, bgp_pr in self.gftr(node, 'route', 'BGP peering'):
+                    for bgp_nb, bgp_pr in self.gftr(node, 'l3link', 'BGP peering'):
                         # excluded and allowed nodes
                         if bgp_nb in visited:
                             continue

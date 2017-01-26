@@ -59,7 +59,7 @@ class DisplayMenu(CustomFrame):
         self.type_to_button = {}
                 
         # multi-layer button
-        ml_button = TKButton(self, relief=tk.FLAT)
+        ml_button = Button(self)
         ml_button.config(image=self.dict_image['multi-layer'])
         ml_button.command = self.ms.cs.switch_display_mode
         ml_button.grid(0, 0, in_=lf_multilayer_display)

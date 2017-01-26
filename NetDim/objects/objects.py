@@ -56,12 +56,12 @@ subtype_to_type = {
 'cloud': 'node',
 'ethernet': 'plink',
 'wdm': 'plink',
-'l2vc': 'l2vc',
-'l3vc': 'l3vc',
-'static route': 'route',
-'BGP peering': 'route',
-'OSPF virtual link': 'route',
-'Label Switched Path': 'route',
+'l2vc': 'l2link',
+'l3vc': 'l3link',
+'static route': 'l3link',
+'BGP peering': 'l3link',
+'OSPF virtual link': 'l3link',
+'Label Switched Path': 'l3link',
 'routed traffic': 'traffic',
 'static traffic': 'traffic'
 }
@@ -378,28 +378,16 @@ object_labels = OrderedDict([
 'WCTraffic',
 )),
 
-('L2vc',
+('L2link',
 (
 'None', 
 'Name', 
 )),
 
-('L3vc',
+('L3link',
 (
 'None', 
 'Name', 
-)),
-
-('Route', 
-(
-'None', 
-'Name', 
-'Distance', 
-'Type', 
-'Path', 
-'Cost', 
-'Subnet', 
-'Traffic'
 )),
 
 ('Traffic', 
@@ -592,10 +580,10 @@ class Node(NDobject):
     @initializer(ie_properties)
     def __init__(self):
         # self id and id of the corresponding label on the canvas
-        self.oval = {layer: None for layer in range(5)}
+        self.oval = {layer: None for layer in range(1, 5)}
         # image of the node at all three layers: physical, logical and traffic
-        self.image = {layer: None for layer in range(5)}
-        self.layer_line = {layer: None for layer in range(5)}
+        self.image = {layer: None for layer in range(1, 5)}
+        self.layer_line = {layer: None for layer in range(1, 5)}
         self.lid = None
         self.lpos = None
         self.size = 8
@@ -793,7 +781,7 @@ class Link(NDobject):
 class PhysicalLink(Link):
     
     type = 'plink'
-    layer = 0
+    layer = 1
     dash = ()
     
     ie_properties = {
@@ -944,9 +932,9 @@ class WDMInterface(Interface):
             
 class L2VC(Link):
     
-    type = 'l2vc'
+    type = 'l2link'
     subtype = 'l2vc'
-    layer = 1
+    layer = 2
     color = 'pink'
     dash = ()
     
@@ -977,9 +965,9 @@ class L2VC(Link):
         
 class L3VC(Link):
     
-    type = 'l3vc'
+    type = 'l3link'
     subtype = 'l3vc'
-    layer = 2
+    layer = 3
     color = 'black'
     dash = ()
     
@@ -1010,7 +998,7 @@ class L3VC(Link):
         
 class Route(Link):
     
-    type = 'route'
+    type = 'l3link'
     dash = (3,5)
     layer = 3
     
