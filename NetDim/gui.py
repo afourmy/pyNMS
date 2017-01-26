@@ -47,7 +47,7 @@ class NetDim(MainWindow):
         colors = ['default', 'red', 'purple']
         
         # scenario notebook
-        self.scenario_notebook = ttk.Notebook(self)
+        self.scenario_notebook = Notebook(self)
         self.scenario_notebook.bind('<ButtonRelease-1>', self.change_cs)
         self.dict_scenario = {}
         
@@ -191,10 +191,6 @@ class NetDim(MainWindow):
                 img_pil = ImageTk.Image.open(img_path).resize(
                                             self.node_size_image[node_type])
                 img = ImageTk.PhotoImage(img_pil)
-                # set the default image for the button of the frame
-                # if color == 'default':
-                #     self.main_menu.type_to_button[node_type].config(image=img, 
-                #                                         width=50, height=50)
                 self.dict_image[color][node_type] = img
                 
         # image for a link failure
@@ -223,9 +219,17 @@ class NetDim(MainWindow):
         ('limit', True)
         ])}
         
-        # create a menu
-        self.main_menu = main_menu.MainMenu(self)
+        self.menu_notebook = Notebook(self)
+        
+        # main menu for creation and selection of objects
+        self.main_menu = main_menu.MainMenu(self.menu_notebook, self)
         self.main_menu.pack(fill=tk.BOTH, side=tk.LEFT)
+        
+        self.menu_notebook.add(self.main_menu, text='Creation')
+        
+        self.menu_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+        
+        # notebooks of scenarios
         self.scenario_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
             
     def change_cs(self, event=None):
@@ -252,7 +256,6 @@ class NetDim(MainWindow):
     def objectizer(self, properties, values, obj_type):
         kwargs = {}
         for property, value in zip(properties, values):
-            print(property, value)
             value = self.cs.ntw.prop_to_type[property](value)
             if value == "None":
                 value = None

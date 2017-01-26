@@ -18,20 +18,33 @@ def defaultizer(**default_kwargs_values):
             init(self, *args, **kwargs)
         return wrapper
     return inner_decorator
+    
+class Canvas(tk.Canvas):
+    
+    @defaultizer(background='white', width=1000, height=800)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 class CustomFrame(tk.Frame):
     
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
         color = '#A1DBCD'
-        self.configure(background=color)        
+        self.configure(background=color)    
+        
+class CustomScrolledText(ScrolledText):
+    
+    def __init__(self, parent_frame):
+        super().__init__(parent_frame, wrap='word', bg='beige')
+        default_font = ('Helvetica', '12', 'bold underline')
+        self.tag_config('title', foreground='blue', font=default_font)    
         
 class CustomTopLevel(tk.Toplevel):
     
     def __init__(self):
         super().__init__()
         color = '#A1DBCD'
-        self.configure(background=color)        
+        self.configure(background=color)
         
 class FocusTopLevel(CustomTopLevel):
     
@@ -45,13 +58,6 @@ class FocusTopLevel(CustomTopLevel):
             
     def change_focus(self):
         self.wm_attributes('-topmost', self.var_focus.get())
-        
-class CustomScrolledText(ScrolledText):
-    
-    def __init__(self, parent_frame):
-        super().__init__(parent_frame, wrap='word', bg='beige')
-        default_font = ('Helvetica', '12', 'bold underline')
-        self.tag_config('title', foreground='blue', font=default_font)
 
 class ImprovedListbox(tk.Listbox):
     
@@ -104,12 +110,17 @@ class ImprovedListbox(tk.Listbox):
             self.insert(value, row_id + 1 - 2*(row_id > self.cur_index))
             self.cur_index = row_id
             
-class NoDuplicateListbox(ImprovedListbox):
+class ImprovedTKButton(tk.Button):
     
-    @overrider(ImprovedListbox)
-    def insert(self, obj, i='end'):
-        if str(obj) not in self:
-            super(NoDuplicateListbox, self).insert(obj, i)
+    @defaultizer(bg='#A1DBCD')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+class LF(ttk.LabelFrame):
+    
+    @defaultizer(padding=(6, 6, 12, 12))
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         
 class MainWindow(tk.Tk):
     
@@ -126,11 +137,22 @@ class MainWindow(tk.Tk):
                        ):
             ttk.Style().configure('T' + widget, background=color)
             
-class ImprovedTKButton(tk.Button):
+class Menu(tk.Menu):
     
-    @defaultizer(bg='#A1DBCD')
+    @defaultizer(tearoff=0)
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)  
+        super().__init__(*args, **kwargs)
+        self.menu_entries = []
+        
+    def separator(self):
+        self.menu_entries.append('separator')
+        
+    def create_menu(self):
+        for entry in self.menu_entries:
+            if entry == 'separator':
+                self.add_separator()
+            else:
+                self.add('command', {'label': entry.label, 'command': entry.cmd})  
             
 class MenuEntry(object):
     
@@ -156,37 +178,15 @@ class MenuEntry(object):
     def command(self, cmd):
         self.cmd = cmd
             
-class Menu(tk.Menu):
+class NoDuplicateListbox(ImprovedListbox):
     
-    @defaultizer(tearoff=0)
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.menu_entries = []
-        
-    def separator(self):
-        self.menu_entries.append('separator')
-        
-    def create_menu(self):
-        for entry in self.menu_entries:
-            if entry == 'separator':
-                self.add_separator()
-            else:
-                self.add('command', {'label': entry.label, 'command': entry.cmd})  
+    @overrider(ImprovedListbox)
+    def insert(self, obj, i='end'):
+        if str(obj) not in self:
+            super(NoDuplicateListbox, self).insert(obj, i)
         
 class Notebook(ttk.Notebook):
     
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-class Canvas(tk.Canvas):
-    
-    @defaultizer(background='white', width=1000, height=800)
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-class LF(ttk.LabelFrame):
-    
-    @defaultizer(padding=(6, 6, 12, 12))
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
     

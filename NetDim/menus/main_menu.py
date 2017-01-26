@@ -14,7 +14,7 @@ from drawing import drawing_options_window
 
 class MainMenu(CustomFrame):
     
-    def __init__(self, master):
+    def __init__(self, notebook, master):
         super().__init__(width=200, height=600, borderwidth=1, relief='solid')
         self.ms = master
         font = ('Helvetica', 8, 'bold')
@@ -28,6 +28,11 @@ class MainMenu(CustomFrame):
         lf_creation = Labelframe(self)
         lf_creation.text = 'Creation mode'
         lf_creation.grid(2, 0, sticky='nsew')
+        
+        # label frame for automatic generation of classic graph
+        lf_generation = Labelframe(self)
+        lf_generation.text = 'Graph generation'
+        lf_generation.grid(3, 0, sticky='nsew')
         
         self.dict_image = {}
         
@@ -43,10 +48,10 @@ class MainMenu(CustomFrame):
         'Label Switched Path': (85, 15),
         'routed traffic': (85, 15),
         'static traffic': (85, 15),
-        'ring': (38, 33), 
-        'tree': (35, 21), 
-        'star': (36, 35), 
-        'full-mesh': (40, 36)
+        'ring': (50, 40), 
+        'tree': (50, 30), 
+        'star': (50, 50), 
+        'full-mesh': (50, 45)
         }
         
         for image_type, image_size in self.dict_size_image.items():
@@ -54,6 +59,7 @@ class MainMenu(CustomFrame):
             img_path = join(self.ms.path_icon, image_type + '.png')
             img_pil = ImageTk.Image.open(img_path).resize(image_size)
             img = ImageTk.PhotoImage(img_pil)
+            print(image_type)
             self.dict_image[image_type] = img
         
         self.type_to_button = {}
@@ -93,13 +99,14 @@ class MainMenu(CustomFrame):
                 button.configure(compound='top', font=font, text=button_type)
             else:
                 button.configure(compound='top', font=font)                                                        
-            self.type_to_button[button_type] = button
             if button_type not in self.ms.cs.ntw.node_subtype:
-                self.type_to_button[button_type].config(image=self.dict_image[button_type])
+                button.config(image=self.dict_image[button_type])
             else:
-                self.type_to_button[button_type].config(
-                                    image=self.ms.dict_image['default'][button_type])
-                self.type_to_button[button_type].config(width=50, height=50)
+                button.config(image=self.ms.dict_image['default'][button_type])
+                button.config(width=50, height=50)
+            if button_type in ('tree', 'star', 'full-mesh', 'ring'):
+                button.config(width=50, height=50)
+            self.type_to_button[button_type] = button
                 
         # netdim mode: motion or creation
         self.type_to_button['netdim'].grid(0, 0, sticky='ew')
@@ -112,17 +119,16 @@ class MainMenu(CustomFrame):
         selection_value.set('node') 
 
         node_selection = Radiobutton(self, variable=selection_value, value='node')
-        node_selection.text = 'Node selection'
+        node_selection.text = 'Select nodes'
         node_selection.command = lambda: self.change_selection('node')
 
         link_selection = Radiobutton(self, variable=selection_value, value='link')
-        link_selection.text = 'Link selection'
+        link_selection.text = 'Select links'
         link_selection.command = lambda: self.change_selection('link')
         
         # affichage des radio button
         node_selection.grid(0, 1, in_=lf_selection)
         link_selection.grid(1, 1, in_=lf_selection)
-        
 
         # creation mode: type of node or link
         self.type_to_button['router'].grid(0, 0, padx=2, in_=lf_creation)
@@ -134,58 +140,25 @@ class MainMenu(CustomFrame):
         self.type_to_button['antenna'].grid(1, 2, padx=2, in_=lf_creation)
         self.type_to_button['cloud'].grid(1, 3, padx=2, in_=lf_creation)
         
-        sep = Separator(self, orient=tk.HORIZONTAL)
+        sep = Separator(self)
         sep.grid(2, 0, 1, 4, in_=lf_creation)
-        # 
-        # label_physical_links = tk.Label(self, text='Physical links', 
-        #                                     bg='#A1DBCD', font=font)
-        # label_physical_links.grid(row=11, columnspan=4, sticky='ew')
-        # 
-        # self.type_to_button['ethernet'].grid(row=12, column=0, columnspan=2, 
-        #                                         pady=5, padx=5, sticky='nsew')
-        # self.type_to_button['wdm'].grid(row=12, column=2, columnspan=2, 
-        #                                         pady=5, padx=5, sticky='nsew')
-        #                                         
-        # sep = ttk.Separator(self, orient=tk.HORIZONTAL)
-        # sep.grid(row=13, columnspan=4, sticky='ew')
-        # 
-        # label_logical_links = tk.Label(self, text='Logical links', 
-        #                                     bg='#A1DBCD', font=font)
-        # label_logical_links.grid(row=14, columnspan=4, sticky='ew')
-        #                                         
-        # self.type_to_button['static route'].grid(row=15, column=0, columnspan=2, 
-        #                                         pady=5, padx=5, sticky='nsew')
-        # self.type_to_button['BGP peering'].grid(row=15, column=2, columnspan=2, 
-        #                                         pady=5, padx=5, sticky='nsew')
-        # self.type_to_button['OSPF virtual link'].grid(row=16, column=0, columnspan=2, 
-        #                                         pady=5, padx=5, sticky='nsew')
-        # self.type_to_button['Label Switched Path'].grid(row=16, column=2, columnspan=2, 
-        #                                         pady=5, padx=5, sticky='nsew')
-        #                                         
-        # sep = ttk.Separator(self, orient=tk.HORIZONTAL)
-        # sep.grid(row=17, columnspan=4, sticky='ew')
-        # 
-        # label_logical_links = tk.Label(self, text='Traffic links', 
-        #                                     bg='#A1DBCD', font=font)
-        # label_logical_links.grid(row=18, columnspan=4, sticky='ew')
-        # 
-        # self.type_to_button['routed traffic'].grid(row=19, column=0, columnspan=2, 
-        #                                         pady=5, padx=5, sticky='nsew')
-        #                                         
-        # self.type_to_button['static traffic'].grid(row=19, column=2, columnspan=2, 
-        #                                         pady=5, padx=5, sticky='nsew')
-        #                                         
-        # sep = ttk.Separator(self, orient=tk.HORIZONTAL)
-        # sep.grid(row=20, columnspan=4, sticky='ew')
-        # 
-        # # graph generation
-        # label_graph_generation = tk.Label(self, text='Graph generation', 
-        #                                     bg='#A1DBCD', font=font)
-        # label_graph_generation.grid(row=21, columnspan=4, sticky='ew')
-        # self.type_to_button['tree'].grid(row=22, column=0, sticky='w')
-        # self.type_to_button['star'].grid(row=22, column=1, sticky='w')
-        # self.type_to_button['full-mesh'].grid(row=22, column=2, sticky='w')
-        # self.type_to_button['ring'].grid(row=22, column=3, sticky='w')
+        
+        self.type_to_button['ethernet'].grid(3, 0, 1, 2, in_=lf_creation)
+        self.type_to_button['wdm'].grid(3, 2, 1, 2, in_=lf_creation)
+                                                
+        self.type_to_button['static route'].grid(4, 0, 1, 2, in_=lf_creation)
+        self.type_to_button['BGP peering'].grid(4, 2, 1, 2, in_=lf_creation)
+        self.type_to_button['OSPF virtual link'].grid(5, 0, 1, 2, in_=lf_creation)
+        self.type_to_button['Label Switched Path'].grid(5, 2, 1, 2, in_=lf_creation)
+        
+        self.type_to_button['routed traffic'].grid(6, 0, 1, 2, in_=lf_creation)
+        self.type_to_button['static traffic'].grid(6, 2, 1, 2, in_=lf_creation)
+        
+        # graph generation
+        self.type_to_button['tree'].grid(0, 0, in_=lf_generation)
+        self.type_to_button['star'].grid(0, 1, in_=lf_generation)
+        self.type_to_button['full-mesh'].grid(0, 2, in_=lf_generation)
+        self.type_to_button['ring'].grid(0, 3, in_=lf_generation)
         # 
         # # label frame for display settings
         # self.lf_display = Labelframe(self)
