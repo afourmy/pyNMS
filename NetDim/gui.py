@@ -23,7 +23,7 @@ from drawing import drawing_options_window as dow
 from graph_generation import advanced_graph as adv_gr
 from optical_networks import rwa_window as rwaw
 from miscellaneous.network_functions import IPAddress
-from menus import main_menu
+from menus import creation_menu, display_menu
 from PIL import ImageTk
 try:
     import xlrd
@@ -142,10 +142,10 @@ class NetDim(MainWindow):
         netdim_menu.add_cascade(label='Network routing',menu=routing_menu)
 
         # choose which label to display per type of object
-        display_menu = Menu(netdim_menu)
+        label_menu = Menu(netdim_menu)
         for obj_type, label_type in object_labels.items():
             menu_type = Menu(netdim_menu)
-            display_menu.add_cascade(label=obj_type + ' label', menu=menu_type)
+            label_menu.add_cascade(label=obj_type + ' label', menu=menu_type)
             for lbl in label_type:
                 cmd = lambda o=obj_type, l=lbl: self.cs.refresh_labels(o, l)
                 type_entry = MenuEntry(menu_type)
@@ -163,8 +163,8 @@ class NetDim(MainWindow):
             show_entry.command = cmd
         show_menu.create_menu()
             
-        display_menu.add_cascade(label='Show/hide object', menu=show_menu)
-        netdim_menu.add_cascade(label='Options', menu=display_menu)
+        label_menu.add_cascade(label='Show/hide object', menu=show_menu)
+        netdim_menu.add_cascade(label='Options', menu=label_menu)
         
         self.config(menu=netdim_menu)
         
@@ -222,10 +222,15 @@ class NetDim(MainWindow):
         self.menu_notebook = Notebook(self)
         
         # main menu for creation and selection of objects
-        self.main_menu = main_menu.MainMenu(self.menu_notebook, self)
-        self.main_menu.pack(fill=tk.BOTH, side=tk.LEFT)
+        self.creation_menu = creation_menu.CreationMenu(self.menu_notebook, self)
+        self.creation_menu.pack(fill=tk.BOTH, side=tk.LEFT)
         
-        self.menu_notebook.add(self.main_menu, text='Creation')
+        # display menu to control the display
+        self.display_menu = display_menu.DisplayMenu(self.menu_notebook, self)
+        self.display_menu.pack(fill=tk.BOTH, side=tk.LEFT)
+        
+        self.menu_notebook.add(self.creation_menu, text='Creation')
+        self.menu_notebook.add(self.display_menu, text='Display')
         
         self.menu_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
         

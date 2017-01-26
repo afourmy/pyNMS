@@ -12,7 +12,7 @@ from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
 from drawing import drawing_options_window
 
-class MainMenu(CustomFrame):
+class CreationMenu(CustomFrame):
     
     def __init__(self, notebook, master):
         super().__init__(width=200, height=600, borderwidth=1, relief='solid')
