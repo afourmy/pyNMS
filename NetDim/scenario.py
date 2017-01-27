@@ -493,7 +493,9 @@ class Scenario(tk.Canvas):
     
     def create_link(self, new_link):
         edges = (new_link.source, new_link.destination)
+        print(self.display_layer)
         real_layer = sum(self.display_layer[:(new_link.layer+1)])
+        print(new_link, real_layer)
         for node in edges:
             # we always have to create the nodes at layer 0, no matter whether
             # the layered display option is activated or not.
@@ -1083,17 +1085,15 @@ class Scenario(tk.Canvas):
                 AS.management.listbox_edges.insert(tk.END, obj)
                 
     # show/hide display menu per type of objects
-    def show_hide(self, menu, type, index):
+    def show_hide(self, type):
         self.display_per_type[type] = not self.display_per_type[type]
-        new_label = self.display_per_type[type]*'Hide' or 'Show'
-        menu.entryconfigure(index, label=' '.join((new_label, type)))
         new_state = tk.NORMAL if self.display_per_type[type] else tk.HIDDEN
         if type in self.ntw.node_subtype:
             for node in self.ntw.ftr('node', type):
-                self.itemconfig(node.image[0] if self.display_image 
+                self.itemconfig(node.image[1] if self.display_image 
                                             else node.oval, state=new_state)
                 self.itemconfig(node.lid, state=new_state)
-        elif type in self.ntw.plink_subtype:
+        elif type in self.ntw.link_subtype:
             for plink in self.ntw.ftr('plink', type):
                 self.itemconfig(plink.line, state=new_state)
                 self.itemconfig(plink.lid, state=new_state)
@@ -1101,6 +1101,8 @@ class Scenario(tk.Canvas):
             for link in self.ntw.pn[type].values():
                 self.itemconfig(link.line, state=new_state)
                 self.itemconfig(link.lid, state=new_state)
+        return self.display_per_type[type]
+                
                 
 class LabelCreation(CustomTopLevel):
             

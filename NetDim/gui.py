@@ -152,18 +152,7 @@ class NetDim(MainWindow):
                 type_entry.text = lbl
                 type_entry.command = cmd
             menu_type.create_menu()
-        
-        # show / hide option per type of objects
-        show_menu = Menu(netdim_menu)
-        for index, type in enumerate(object_properties):
-            new_label = ' '.join(('Hide', type))
-            cmd = lambda t=type, i=index: self.cs.show_hide(show_menu, t, i)
-            show_entry = MenuEntry(show_menu)
-            show_entry.text = new_label
-            show_entry.command = cmd
-        show_menu.create_menu()
-            
-        label_menu.add_cascade(label='Show/hide object', menu=show_menu)
+                    
         netdim_menu.add_cascade(label='Options', menu=label_menu)
         
         self.config(menu=netdim_menu)
