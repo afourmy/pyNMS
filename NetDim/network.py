@@ -646,12 +646,12 @@ class Network(object):
             node, path_node, path_plink, ex_int = heappop(heap)  
             if node not in visited:
                 visited.add(node)
-                for neighbor, l2vc in self.graph[node.id]['l2vc']:
+                for neighbor, l2vc in self.gftr(node, 'l2link', 'l2vc'):
                     adj_plink = l2vc('link', node)
                     remote_plink = l2vc('link', neighbor)
                     if adj_plink in path_plink:
                         continue
-                    if adj_plink in excluded_plinks: 
+                    if {adj_plink, remote_plink} & excluded_plinks: 
                         continue
                     if node == source:
                         ex_int = adj_plink('interface', source)
@@ -661,12 +661,9 @@ class Network(object):
                                             path_plink + [adj_plink], ex_int))
                     
             if path_plink:
-                plink = path_plink[-1]
-                node = path_node[-1]
-                ex_tk = path_plink[0]
-                ex_int = ex_tk('interface', source)
-                mac = plink('macaddress', node)
-                source.st[mac] = ex_int
+                plink, ex_tk = path_plink[-1], path_plink[0]
+                source.st[plink.interfaceS.macaddress] = ex_tk('interface', source)
+                source.st[plink.interfaceD.macaddress] = ex_tk('interface', source)
         
     ## 0) Ping / traceroute
     
@@ -863,15 +860,14 @@ class Network(object):
             self.segment_finder(i)
             self.multi_access_network(i)
         self.mac_allocation()
-        self.STP_update()
-        self.st_creation()
         if not self.ip_to_oip:
             self.ip_allocation()
         else:
             self.subnetwork_allocation()
-            print('test')
         self.interface_allocation()
         self.arpt_creation()
+        self.STP_update()
+        self.st_creation()
         self.route()
         
     ## Graph functions

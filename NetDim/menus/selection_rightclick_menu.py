@@ -11,10 +11,8 @@ import ip_networks.switching_table as switching_table
 import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
 import ip_networks.bgp_table as ip_bgpt
-import drawing.drawing_options_window
 import graph_generation.multiple_objects as mobj
 from .alignment_menu import AlignmentMenu
-from drawing.drawing_menu import DrawingMenu
 from objects.object_management_window import PropertyChanger
 from collections import OrderedDict
 from operator import xor
@@ -145,9 +143,6 @@ class SelectionRightClickMenu(tk.Menu):
             
         # only nodes: 
         if not self.cs.so['link']:
-            # drawing submenu
-            self.add_cascade(label='Automatic layout', 
-                            menu=DrawingMenu(self.cs, self.cs.so['node']))
             
             # alignment submenu
             self.add_cascade(label='Align nodes', 

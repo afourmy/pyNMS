@@ -19,7 +19,6 @@ from objects.objects import *
 from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous import graph_algorithms as galg
 from miscellaneous import debug
-from drawing import drawing_options_window as dow
 from graph_generation import advanced_graph as adv_gr
 from optical_networks import rwa_window as rwaw
 from miscellaneous.network_functions import IPAddress

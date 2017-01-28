@@ -10,7 +10,6 @@ from PIL import ImageTk
 from pythonic_tkinter.preconfigured_widgets import *
 from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
-from drawing import drawing_options_window
 
 class CreationMenu(CustomFrame):
     

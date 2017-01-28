@@ -11,7 +11,6 @@ from tkinter.colorchooser import askcolor
 from pythonic_tkinter.preconfigured_widgets import *
 from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
-from drawing import drawing_options_window
 
 class DrawingMenu(CustomFrame):
     
@@ -34,6 +33,7 @@ class DrawingMenu(CustomFrame):
         
         self.dict_size_image = {
         'draw': self.draw,
+        'stop': lambda: 42,
         'text': lambda: self.change_creation_mode('text'),
         'rectangle': lambda: self.change_creation_mode('rectangle'),
         'circle': lambda: 43,
@@ -52,13 +52,14 @@ class DrawingMenu(CustomFrame):
         self.type_to_button = {}
         
         for obj_type, command in self.dict_size_image.items():
-            button = TKButton(self, relief=tk.SUNKEN, command=command)
+            button = TKButton(self, command=command)
             button.config(image=self.dict_image[obj_type])
             if obj_type == 'draw':
                 button.config(width=150, height=150)
+                button.configure(relief=tk.RAISED)
             else:
                 button.config(width=65, height=65)
-                button.configure(text=obj_type, compound='top', font=font)
+                button.configure(text=obj_type, compound='top', font=font, relief=tk.SUNKEN)
             self.type_to_button[obj_type] = button
         
         # drawing algorithm and parameters: per project
@@ -74,7 +75,7 @@ class DrawingMenu(CustomFrame):
         
         self.stay_withing_screen_bounds = False
         
-        self.type_to_button['draw'].grid(0, 0, 2, 2, sticky='ew', in_=lf_fb_drawing)
+        self.type_to_button['draw'].grid(0, 0, 2, 2, padx=100, in_=lf_fb_drawing)
         
         sep = Separator(self)
         sep.grid(2, 0, 1, 2, in_=lf_fb_drawing)
@@ -107,14 +108,23 @@ class DrawingMenu(CustomFrame):
             self.entries.append(entry)
             label.grid(index, 0, in_=lf_fb_drawing)
             entry.grid(index, 1, in_=lf_fb_drawing)
+            
+        # check button to randomly distribute the selected nodes on the canvas 
+        # before starting the actual force-based algorithm
+        self.random_distribution = tk.BooleanVar()
+        button_distribute = Checkbutton(self, variable=self.random_distribution)
+        button_distribute.text = 'Randomly distribution first'
+        self.random_distribution.set(True)
+        
+        button_distribute.grid(9, 0, 1, 2, in_=lf_fb_drawing)
                                         
-        # check button for nodes to stay in the screen 
+        # check button for nodes to stay within the screen bounds
         self.stay_withing_screen_bounds = tk.BooleanVar()
-        self.button_limit = Checkbutton(self, text='Screen limit', 
-                                                        variable=self.stay_withing_screen_bounds)
+        button_limit = Checkbutton(self, variable=self.stay_withing_screen_bounds)
+        button_limit.text = 'Screen limit'
         self.stay_withing_screen_bounds.set(False)
         
-        self.button_limit.grid(9, 0, 1, 2, in_=lf_fb_drawing)
+        button_limit.grid(10, 0, 1, 2, in_=lf_fb_drawing)
         
         # shapes and text drawing
         self.type_to_button['text'].grid(0, 0, in_=lf_shapes_drawing)
@@ -131,7 +141,7 @@ class DrawingMenu(CustomFrame):
             self.ms.cs.move_nodes(nodes)
         else:
             # replace true with a BooleanVar randomly spread nodes on the canvas beforehand
-            self.ms.cs.draw_objects(nodes, True)            
+            self.ms.cs.draw_objects(nodes, self.random_distribution.get())            
             self.drawing_algorithms[self.drawing_type_list.text](nodes)
             
     def get_color(self):

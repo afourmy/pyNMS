@@ -482,9 +482,7 @@ class Scenario(tk.Canvas):
     
     def create_link(self, new_link):
         edges = (new_link.source, new_link.destination)
-        print(self.display_layer)
         real_layer = sum(self.display_layer[:(new_link.layer+1)])
-        print(new_link, real_layer)
         for node in edges:
             # we always have to create the nodes at layer 0, no matter whether
             # the layered display option is activated or not.
@@ -595,9 +593,9 @@ class Scenario(tk.Canvas):
                 for AS in list(obj.AS):
                     AS.management.remove_from_AS(obj)
             if obj.class_type == 'node':
-                del self.object_id_to_object[obj.oval[0]]
-                del self.object_id_to_object[obj.image[0]]
-                self.delete(obj.oval[0], obj.image[0], obj.lid)
+                del self.object_id_to_object[obj.oval[1]]
+                del self.object_id_to_object[obj.image[1]]
+                self.delete(obj.oval[1], obj.image[1], obj.lid)
                 self.remove_objects(*self.ntw.remove_node(obj))
                 if self.layered_display:
                     for layer in range(2, self.nbl + 1):
@@ -688,7 +686,6 @@ class Scenario(tk.Canvas):
 
     @adapt_coordinates
     def end_point_select_nodes(self, event):
-        print('noooo')
         if self._start_position != [None]*2:
             # delete the temporary lines
             self.delete(self.temp_line_x_top)

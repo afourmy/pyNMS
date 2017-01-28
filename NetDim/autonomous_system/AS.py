@@ -209,7 +209,7 @@ class STP_AS(Ethernet_AS):
                 if path_plink:
                     self.SPT_plinks.add(path_plink[-1])
                 visited.add(node)
-                for neighbor, l2vc in self.ntw.graph[node.id]['l2vc']:
+                for neighbor, l2vc in self.ntw.gftr(node, 'l2link', 'l2vc'):
                     adj_plink = l2vc('link', node)
                     remote_plink = l2vc('link', neighbor)
                     if adj_plink in path_plink:
@@ -523,7 +523,6 @@ class OSPF_AS(ASWithArea, IP_AS):
         
         while heap:
             dist, node, l3_path, ex_int = heappop(heap)
-            print(source, node, l3_path)
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
                 for neighbor, l3vc in self.ntw.gftr(node, 'l3link', 'l3vc'):
