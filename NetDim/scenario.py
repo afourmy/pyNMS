@@ -52,8 +52,6 @@ class Scenario(tk.Canvas):
         self._mode = 'motion'
         self._creation_mode = 'router'
         
-        # the default display is: with image
-        self.display_image = True
         # 2D display or 3D display
         self.layered_display = False
         # number of layers
@@ -343,14 +341,6 @@ class Scenario(tk.Canvas):
                             self.unhighlight_objects(self.co)
                         self.co = None
                         self.pwindow.destroy()  
-        
-    def change_display(self):
-        # flip the display from icon to oval and vice-versa, depend on display_image boolean
-        self.display_image = not self.display_image
-        for node in self.ntw.nodes.values():
-            for layer in self.layers[self.layered_display]:
-                self.itemconfig(node.oval[layer], state=tk.HIDDEN if self.display_image else tk.NORMAL)
-                self.itemconfig(node.image[layer], state=tk.NORMAL if self.display_image else tk.HIDDEN)
                 
     ## Menus
         
@@ -445,8 +435,7 @@ class Scenario(tk.Canvas):
         node.oval[layer] = self.create_oval(node.x-s, y-s, node.x+s, y+s, 
                                 outline=node.color, fill=node.color, tags=tags)
         # create/hide the image/the oval depending on the current mode
-        self.itemconfig(node.oval[layer] if self.display_image 
-                                        else node.image[layer], state=tk.HIDDEN)
+        self.itemconfig(node.oval[layer], state=tk.HIDDEN)
         self.object_id_to_object[node.oval[layer]] = node
         self.object_id_to_object[node.image[layer]] = node
         if layer == 1:
@@ -999,7 +988,6 @@ class Scenario(tk.Canvas):
     ## Multi-layer display
                 
     def switch_display_mode(self):
-        print('test')
         self.layered_display = not self.layered_display
         
         if self.layered_display:
@@ -1010,6 +998,8 @@ class Scenario(tk.Canvas):
             
         self.unhighlight_all()
         self.draw_all(False)
+        
+        return self.layered_display
             
     def planal_move(self, angle=45):
         min_y = min(node.y for node in self.ntw.nodes.values())
@@ -1084,24 +1074,28 @@ class Scenario(tk.Canvas):
                 AS.edges.add(node)
                 AS.management.listbox_edges.insert(tk.END, obj)
                 
-    # show/hide display menu per type of objects
-    def show_hide(self, type):
-        self.display_per_type[type] = not self.display_per_type[type]
-        new_state = tk.NORMAL if self.display_per_type[type] else tk.HIDDEN
-        if type in self.ntw.node_subtype:
-            for node in self.ntw.ftr('node', type):
-                self.itemconfig(node.image[1] if self.display_image 
-                                            else node.oval, state=new_state)
+    # show/hide display per type of objects
+    def show_hide(self, subtype):
+        self.display_per_type[subtype] = not self.display_per_type[subtype]
+        new_state = tk.NORMAL if self.display_per_type[subtype] else tk.HIDDEN
+        if subtype in self.ntw.node_subtype:
+            for node in self.ntw.ftr('node', subtype):
                 self.itemconfig(node.lid, state=new_state)
-        elif type in self.ntw.link_subtype:
-            for plink in self.ntw.ftr('plink', type):
-                self.itemconfig(plink.line, state=new_state)
-                self.itemconfig(plink.lid, state=new_state)
+                for layer in range(1, self.nbl + 1):
+                    self.itemconfig(node.image[layer], state=new_state)
+                    self.itemconfig(node.layer_line[layer], state=new_state)
+                for link in self.ntw.attached_links(node):
+                    # if the display is activated for the link's layer, we 
+                    # update the state
+                    if self.display_layer[link.layer]:
+                        self.itemconfig(link.line, state=new_state)
+                        self.itemconfig(link.lid, state=new_state)
         else:
-            for link in self.ntw.pn[type].values():
+            type = subtype_to_type[subtype]
+            for link in self.ntw.ftr(type, subtype):
                 self.itemconfig(link.line, state=new_state)
                 self.itemconfig(link.lid, state=new_state)
-        return self.display_per_type[type]
+        return self.display_per_type[subtype]
                 
                 
 class LabelCreation(CustomTopLevel):

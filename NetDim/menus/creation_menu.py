@@ -95,6 +95,7 @@ class CreationMenu(CustomFrame):
                                        'routed traffic': 'Routed traffic',
                                        'static traffic': 'Static traffic' 
                             }[button_type], compound='top', font=font)
+                button.config(width=160, height=40)
             elif button_type in ('text', 'rectangle'):
                 button.configure(compound='top', font=font, text=button_type)
             else:
@@ -103,9 +104,9 @@ class CreationMenu(CustomFrame):
                 button.config(image=self.dict_image[button_type])
             else:
                 button.config(image=self.ms.dict_image['default'][button_type])
-                button.config(width=50, height=50)
+                button.config(width=75, height=75)
             if button_type in ('tree', 'star', 'full-mesh', 'ring'):
-                button.config(width=50, height=50)
+                button.config(width=75, height=75)
             self.type_to_button[button_type] = button
                 
         # netdim mode: motion or creation
@@ -159,31 +160,7 @@ class CreationMenu(CustomFrame):
         self.type_to_button['star'].grid(0, 1, in_=lf_generation)
         self.type_to_button['full-mesh'].grid(0, 2, in_=lf_generation)
         self.type_to_button['ring'].grid(0, 3, in_=lf_generation)
-        # 
-        # # label frame for display settings
-        # self.lf_display = Labelframe(self)
-        # self.lf_display.text = 'Display setting'
-        # self.lf_display.grid(23, 0, 1, 4)
-        #                                                 
-        # self.layer_boolean = []
-        # for layer in range(5):
-        #     layer_bool = tk.BooleanVar()
-        #     layer_bool.set(True)
-        #     self.layer_boolean.append(layer_bool)
-        #     self.button_limit = ttk.Checkbutton(
-        #                                         self, 
-        #                                         text = 'L' + str(layer), 
-        #                                         variable = layer_bool,
-        #                                         command = self.update_display
-        #                                         )
-        #                                                 
-        #     self.button_limit.grid(in_=self.lf_display, row=0, padx=5, column=layer)
-        #     
-        # # display filter
-        # self.filter_label = tk.Label(self, text='Display filters', bg='#A1DBCD')
-        # self.filter_entry = tk.Entry(self, width=16)
-        # self.filter_label.grid(in_=self.lf_display, row=1, padx=5, column=0, columnspan=2)
-        # self.filter_entry.grid(in_=self.lf_display, row=1, padx=5, column=2, columnspan=3)
+
         # 
         # # drawing
         # label_drawing = tk.Label(self, text='Graph generation', 

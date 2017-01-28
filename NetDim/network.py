@@ -386,6 +386,12 @@ class Network(object):
         for subtype in subtypes:
             for neighbor, _ in self.graph[node.id][subtype]:
                 yield neighbor
+                
+    # given a node, retrieves all attached links    
+    def attached_links(self, node):
+        for link_type in self.link_type:
+            for _, link in self.graph[node.id][link_type]:
+                yield link
         
     def number_of_links_between(self, nodeA, nodeB):
         return sum(

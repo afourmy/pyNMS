@@ -23,7 +23,7 @@ from drawing import drawing_options_window as dow
 from graph_generation import advanced_graph as adv_gr
 from optical_networks import rwa_window as rwaw
 from miscellaneous.network_functions import IPAddress
-from menus import creation_menu, display_menu
+from menus import creation_menu, display_menu, drawing_menu
 from PIL import ImageTk
 try:
     import xlrd
@@ -106,18 +106,7 @@ class NetDim(MainWindow):
 
         general_menu.create_menu()
         netdim_menu.add_cascade(label='Main',menu=general_menu)
-        
-        # drawing menu: for default drawing parameters
-        drawing_menu = Menu(netdim_menu)
-        
-        drawing_parameters_entry = MenuEntry(drawing_menu)
-        drawing_parameters_entry.text = 'Default drawing parameters'
-        drawing_parameters_entry.command = lambda: dow.DrawingOptions(self)
-        
-        drawing_menu.create_menu()
-        
-        netdim_menu.add_cascade(label='Drawing',menu=drawing_menu)
-        
+                
         # routing menu:
         
         routing_menu = Menu(netdim_menu)
@@ -218,10 +207,15 @@ class NetDim(MainWindow):
         self.display_menu = display_menu.DisplayMenu(self.menu_notebook, self)
         self.display_menu.pack(fill=tk.BOTH, side=tk.LEFT)
         
-        self.menu_notebook.add(self.creation_menu, text='Creation')
-        self.menu_notebook.add(self.display_menu, text='Display')
+        # drawing menu (force-based algorithm parameters + paint-like drawing)
+        self.drawing_menu = drawing_menu.DrawingMenu(self.menu_notebook, self)
+        self.drawing_menu.pack(fill=tk.BOTH, side=tk.LEFT)
         
-        self.menu_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+        self.menu_notebook.add(self.creation_menu, text=' Creation ')
+        self.menu_notebook.add(self.display_menu, text=' Display ')
+        self.menu_notebook.add(self.drawing_menu, text=' Drawing ')
+        
+        self.menu_notebook.pack(side=tk.LEFT, fill=tk.BOTH)
         
         # notebooks of scenarios
         self.scenario_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
