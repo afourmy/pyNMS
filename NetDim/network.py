@@ -651,7 +651,7 @@ class Network(object):
                     remote_plink = l2vc('link', neighbor)
                     if adj_plink in path_plink:
                         continue
-                    if {adj_plink, remote_plink} & excluded_plinks: 
+                    if adj_plink in excluded_plinks: 
                         continue
                     if node == source:
                         ex_int = adj_plink('interface', source)
