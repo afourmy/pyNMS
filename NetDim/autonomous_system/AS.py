@@ -295,7 +295,7 @@ class RIP_AS(IP_AS):
             dist, node, l3_path, ex_int = heappop(heap)  
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
-                for neighbor, l3vc in self.ntw.graph[node.id]['l3vc']:
+                for neighbor, l3vc in self.ntw.gftr(node, 'l3link', 'l3vc'):
                     adj_plink = l3vc('link', node)
                     remote_plink = l3vc('link', neighbor)
                     if l3vc in l3_path:
@@ -398,7 +398,7 @@ class ISIS_AS(ASWithArea, IP_AS):
             dist, node, l3_path, ex_int = heappop(heap)  
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
-                for neighbor, l3vc in self.ntw.graph[node.id]['l3vc']:
+                for neighbor, l3vc in self.ntw.gftr(node, 'l3link', 'l3vc'):
                     adj_plink = l3vc('link', node)
                     remote_plink = l3vc('link', neighbor)
                     if l3vc in l3_path:
@@ -522,10 +522,11 @@ class OSPF_AS(ASWithArea, IP_AS):
         SP_cost = {}
         
         while heap:
-            dist, node, l3_path, ex_int = heappop(heap)  
+            dist, node, l3_path, ex_int = heappop(heap)
+            print(source, node, l3_path)
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
-                for neighbor, l3vc in self.ntw.graph[node.id]['l3vc']:
+                for neighbor, l3vc in self.ntw.gftr(node, 'l3link', 'l3vc'):
                     adj_plink = l3vc('link', node)
                     remote_plink = l3vc('link', neighbor)
                     if l3vc in l3_path:

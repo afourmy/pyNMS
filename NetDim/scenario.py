@@ -911,6 +911,12 @@ class Scenario(tk.Canvas):
             self.draw_objects(self.ntw.pn[type].values(), random)
             
     # 2) Force-based drawing
+    
+    def retrieve_parameters(self):
+        entry_value = lambda entry: float(entry.text)
+        parameters = list(map(entry_value, self.ms.drawing_menu.entries)) 
+        parameters.append(self.ms.drawing_menu.stay_withing_screen_bounds.get())
+        return parameters
 
     def spring_based_drawing(self, nodes):
         if not self._job:
@@ -919,8 +925,8 @@ class Scenario(tk.Canvas):
         else:
             self._cancel()
         self.drawing_iteration += 1
-        params = self.ms.drawing_params['Spring layout'].values()
-        self.ntw.spring_layout(nodes, *params)
+        params = self.retrieve_parameters()
+        self.ntw.spring_layout(nodes, *params[:4])
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)
@@ -935,8 +941,9 @@ class Scenario(tk.Canvas):
         else:
             self._cancel()
         self.drawing_iteration += 1
-        params = self.ms.drawing_params['F-R layout'].values()
-        self.ntw.fruchterman_reingold_layout(nodes, *params)
+        # retrieve the optimal pairwise distance and the screen limit boolean
+        params = self.retrieve_parameters()
+        self.ntw.fruchterman_reingold_layout(nodes, *params[-2:])
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)
@@ -950,19 +957,11 @@ class Scenario(tk.Canvas):
             self.drawing_iteration = 0
         else:
             self._cancel()
-        params = self.ms.drawing_params['Spring layout'].values()
-        self.ntw.bfs_spring(nodes, *params)
+        params = self.retrieve_parameters()
+        self.ntw.bfs_spring(nodes, *params[:4])
         for node in nodes:
             self.move_node(node)
         self._job = self.after(1, lambda: self.bfs_cluster_drawing(nodes))
-        
-    def automatic_drawing(self, nodes):
-        if self.ms.drawing_algorithm == 'Spring layout':
-            self.spring_based_drawing(nodes)
-        elif self.ms.drawing_algorithm == 'BFS-cluster layout':
-            self.bfs_cluster_drawing(nodes)
-        else:
-            self.FR_drawing(nodes)
     
     # 3) Alignment / distribution
     

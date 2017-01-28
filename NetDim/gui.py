@@ -180,23 +180,7 @@ class NetDim(MainWindow):
         self.dict_obj_mgmt_window = {}
         for obj in object_properties:
             self.dict_obj_mgmt_window[obj] = omw.ObjectManagementWindow(self, obj)
-        
-        # drawing algorithm and parameters: per project
-        self.drawing_algorithm = 'Spring layout'
-
-        self.drawing_params = {
-        'Spring layout': OrderedDict([
-        ('Coulomb factor', 10000),
-        ('Spring stiffness', 0.5),
-        ('Speed factor', 0.35),
-        ('Equilibrium length', 8.)
-        ]),
-        
-        'F-R layout': OrderedDict([
-        ('OPD', 0.),
-        ('limit', True)
-        ])}
-        
+                
         self.menu_notebook = Notebook(self)
         
         # main menu for creation and selection of objects

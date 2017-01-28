@@ -131,7 +131,7 @@ class DisplayMenu(CustomFrame):
         # display filter
         self.filter_label = Label(self)
         self.filter_label.text = 'Display filters for sites'
-        self.filter_entry = Entry(self, width=16)
+        self.filter_entry = Entry(self, width=12)
         self.filter_label.grid(2, 0, 1, 2, in_=lf_site_display)
         self.filter_entry.grid(2, 2, 1, 2, in_=lf_site_display)
         

@@ -68,10 +68,6 @@ class CreationMenu(CustomFrame):
         'netdim': lambda: Computation(self.ms),
         'motion': lambda: self.switch_to('motion'),
         'multi-layer': lambda: self.ms.cs.switch_display_mode(),
-        # 'text': lambda: self.change_creation_mode('text'),
-        # 'rectangle': lambda: self.change_creation_mode('rectangle'),
-        # 'circle': lambda: 43,
-        # 'color': lambda: 44
         }
         
         for topo in ('tree', 'star', 'full-mesh', 'ring'):
@@ -160,16 +156,6 @@ class CreationMenu(CustomFrame):
         self.type_to_button['star'].grid(0, 1, in_=lf_generation)
         self.type_to_button['full-mesh'].grid(0, 2, in_=lf_generation)
         self.type_to_button['ring'].grid(0, 3, in_=lf_generation)
-
-        # 
-        # # drawing
-        # label_drawing = tk.Label(self, text='Graph generation', 
-        #                                     bg='#A1DBCD', font=font)
-        # label_drawing.grid(row=24, columnspan=4, sticky='ew')
-        # self.type_to_button['text'].grid(row=25, column=0, sticky='w')
-        # self.type_to_button['rectangle'].grid(row=25, column=1, sticky='w')
-        # self.type_to_button['circle'].grid(row=25, column=2, sticky='w')
-        # self.type_to_button['color'].grid(row=25, column=3, sticky='w')
 
     def update_display(self):
         display_settings = list(map(lambda x: x.get(), self.layer_boolean))
