@@ -264,22 +264,6 @@ class NetDim(MainWindow):
                         self.cs.ntw.nf(node_type=obj_type, **kwargs)
                     if obj_type in self.cs.ntw.link_subtype: 
                         self.cs.ntw.lf(subtype=obj_type, **kwargs)
-                        
-            # interface properties update
-            for i in range(16, 18):
-                interface_sheet = book.sheets()[i]
-                if_properties = interface_sheet.row_values(0)
-                # creation of ethernet interfaces
-                for row_index in range(1, interface_sheet.nrows):
-                    link, node, *args = interface_sheet.row_values(row_index)
-                    link = self.cs.ntw.convert_link(link)
-                    node = self.cs.ntw.convert_node(node)
-                    interface = link('interface', node)
-                    for property, value in zip(if_properties[2:], args):
-                        # we convert all string IPs to an OIPs
-                        if property == 'ipaddress':
-                            value = self.cs.ntw.OIPf(value, interface)
-                        setattr(interface, property, value)
                                                         
             AS_sheet = book.sheets()[18]
         
@@ -319,6 +303,23 @@ class NetDim(MainWindow):
                 interface = link('interface', node)
                 for idx, property in enumerate(ethernet_interface_perAS_properties):
                     interface(AS.name, property, args[idx])
+                    
+            # interface properties update
+            for i in range(16, 18):
+                interface_sheet = book.sheets()[i]
+                if_properties = interface_sheet.row_values(0)
+                # creation of ethernet interfaces
+                for row_index in range(1, interface_sheet.nrows):
+                    link, node, *args = interface_sheet.row_values(row_index)
+                    link = self.cs.ntw.convert_link(link)
+                    node = self.cs.ntw.convert_node(node)
+                    interface = link('interface', node)
+                    for property, value in zip(if_properties[2:], args):
+                        # we convert all string IPs to an OIPs
+                        if property == 'ipaddress':
+                            if value != 'none':
+                                value = self.cs.ntw.OIPf(value, interface)
+                        setattr(interface, property, value)
                 
         # if_AS_sheet = excel_workbook.add_sheet('per-AS interface properties')
         # 

@@ -20,6 +20,7 @@ class IPAddress(object):
         self.mask = tomask(self.subnet)
         self.network = compute_network(self.ip_addr, self.mask)
         # interface to which the IP address is attached
+        print(ip_addr, interface, 'creation')
         self.interface = interface
         
     def __repr__(self):

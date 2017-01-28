@@ -164,6 +164,8 @@ class Network(object):
         'destination': self.convert_node, 
         'node': self.convert_node, 
         'link': self.convert_link, 
+        'linkS': self.convert_link, 
+        'linkD': self.convert_link, 
         'nh_tk': str,
         'nh_ip': str,
         'ipS': self.convert_IP,
@@ -184,6 +186,7 @@ class Network(object):
         'sites': str,
         'role': str,
         'priority': int,
+        'router_id': str,
         'base_macaddress': str,
         'AS': self.convert_AS
         }
@@ -268,14 +271,15 @@ class Network(object):
         # the interface should always be specified at creation
         if str_ip in self.ip_to_oip:
             return self.ip_to_oip[str_ip]
-        try:
-            ip_addr, subnet = str_ip.split('/')
-            OIP = IPAddress(ip_addr, int(subnet), interface)
-        except ValueError:
-            # wrong IP address format
-            OIP = None
-        self.ip_to_oip[str_ip] = OIP
-        return OIP
+        if interface:
+            try:
+                ip_addr, subnet = str_ip.split('/')
+                OIP = IPAddress(ip_addr, int(subnet), interface)
+            except ValueError:
+                # wrong IP address format
+                OIP = None
+            self.ip_to_oip[str_ip] = OIP
+            return OIP
         
     def AS_factory(
                    self, 
@@ -519,6 +523,7 @@ class Network(object):
             
     def subnetwork_allocation(self):
         for ip in self.ip_to_oip.values():
+            print(ip, ip.interface, ip.network)
             if ip and ip.interface:
                 ip.interface.link.sntw = ip.network
             
@@ -695,10 +700,11 @@ class Network(object):
         
         if valid:
             dst_ntw = dst_ip.network
-        heap = [(source, None)]
+        # (current node, physical link from which the data flow comes, dataflow)
+        heap = [(source, None, None)]
         path = set()
         while heap and valid:
-            curr_node, dataflow = heap.pop()
+            curr_node, curr_plink, dataflow = heap.pop()
             path.add(curr_node)
             # data flow creation
             if not dataflow:
@@ -735,6 +741,7 @@ class Network(object):
                     # corresponding to the next-hop IP address in the ARP table
                     # we take the first element as the ARP table is built as 
                     # a mapping IP <-> (MAC, outgoing interface)
+                    print(new_dataflow, curr_node, curr_node.arpt, nh_ip)
                     new_dataflow.dst_mac = curr_node.arpt[nh_ip][0]
                     sd = (curr_node == ex_tk.source)*'SD' or 'DS'
                     ex_tk.__dict__['traffic' + sd] += new_dataflow.throughput
@@ -742,10 +749,10 @@ class Network(object):
                     path.add(ex_tk)
                     # the next-hop is the node at the end of the exit physical link
                     next_hop = ex_tk.source if sd == 'DS' else ex_tk.destination
-                    heap.append((next_hop, new_dataflow))
+                    heap.append((next_hop, ex_tk, new_dataflow))
                     
             if curr_node.subtype == 'switch':
-                # the find the exit interface based on the destination MAC
+                # we find the exit interface based on the destination MAC
                 # address in the switching table, the dataflow itself remains
                 # unaltered
                 ex_int = curr_node.st[dataflow.dst_mac]
@@ -756,7 +763,7 @@ class Network(object):
                     next_hop = ex_tk.destination
                 else:
                     next_hop = ex_tk.source
-                heap.append((next_hop, dataflow))
+                heap.append((next_hop, ex_tk, dataflow))
              
         traffic.path = path
         return path
@@ -783,11 +790,12 @@ class Network(object):
             source.rt[sr.dst_sntw] = {('S', sr.nh_ip, None, 0, nh_node, None)}
                                                                 
                     
-        for neighbor, adj_plink in self.graph[source.id]['plink']:
-            if adj_plink in self.fdtks:
-                continue
-            ex_ip = adj_plink('ipaddress', neighbor)
-            ex_int = adj_plink('interface', source)
+        for neighbor, adj_l3vc in self.gftr(source, 'l3link', 'l3vc'):
+            # if adj_plink in self.fdtks:
+            #     continue
+            ex_ip = adj_l3vc('ipaddress', neighbor)
+            ex_int = adj_l3vc('interface', source)
+            adj_plink = adj_l3vc('link', neighbor)
             # we compute the subnetwork of the attached
             # interface: it is a directly connected interface
             source.rt[adj_plink.sntw] = {('C', ex_ip, ex_int, 

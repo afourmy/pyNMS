@@ -834,6 +834,7 @@ class PhysicalLink(Link):
             elif value:
                 setattr(interface, property, value)
             else:
+                print(getattr(interface, property))
                 return getattr(interface, property)
 
 class Ethernet(PhysicalLink):
@@ -994,7 +995,7 @@ class L3VC(Link):
             else:
                 return getattr(self, property + dir)
         else:
-            getattr(self, 'link' + dir)(property, node, value)
+            return getattr(self, 'link' + dir)(property, node, value)
         
 class Route(Link):
     
