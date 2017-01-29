@@ -930,10 +930,39 @@ class WDMInterface(Interface):
     @initializer(ie_properties)
     def __init__(self, node, link, **kwargs):
         super().__init__(node, link)
-            
-class L2VC(Link):
-    
+        
+class VirtualConnection(Link):  
+
     type = 'l2link'
+    subtype = 'l2vc'
+    
+    ie_properties = {}
+
+    @initializer(ie_properties)
+    def __init__(self, **kwargs):
+        self.linkS = None
+        self.linkD = None
+        super().__init__()
+        
+    def __lt__(self, other):
+        return hash(self.name)
+        
+    def __call__(self, property, node, value=None):
+        # can be used both as a getter and a setter, depending on 
+        # whether a value is provided or not
+        # if the property doesn't exist for a virtual connection, we look at
+        # the equivalent property for the associated physical link
+        dir = (node == self.source)*'S' or 'D'
+        if hasattr(self, property + dir):
+            if value:
+                setattr(self, property + dir, value)
+            else:
+                return getattr(self, property + dir)
+        else:
+            return getattr(self, 'link' + dir)(property, node, value)  
+            
+class L2VC(VirtualConnection):
+    
     subtype = 'l2vc'
     layer = 2
     color = 'pink'
@@ -943,30 +972,10 @@ class L2VC(Link):
 
     @initializer(ie_properties)
     def __init__(self, **kwargs):
-        self.linkS = None
-        self.linkD = None
         super().__init__()
         
-    def __lt__(self, other):
-        return hash(self.name)
-        
-    def __call__(self, property, node, value=None):
-        # can be used both as a getter and a setter, depending on 
-        # whether a value is provided or not
-        # if the property doesn't exist for a virtual connection, we look at
-        # the equivalent property for the associated physical link
-        dir = (node == self.source)*'S' or 'D'
-        if hasattr(self, property + dir):
-            if value:
-                setattr(self, property + dir, value)
-            else:
-                return getattr(self, property + dir)
-        else:
-            getattr(self, 'link' + dir)(property, node, value)
-        
-class L3VC(Link):
+class L3VC(VirtualConnection):
     
-    type = 'l3link'
     subtype = 'l3vc'
     layer = 3
     color = 'black'
@@ -976,26 +985,7 @@ class L3VC(Link):
 
     @initializer(ie_properties)
     def __init__(self, **kwargs):
-        self.linkS = None
-        self.linkD = None
         super().__init__()
-        
-    def __lt__(self, other):
-        return hash(self.name)
-        
-    def __call__(self, property, node, value=None):
-        # can be used both as a getter and a setter, depending on 
-        # whether a value is provided or not
-        # if the property doesn't exist for a virtual connection, we look at
-        # the equivalent property for the associated physical link
-        dir = (node == self.source)*'S' or 'D'
-        if hasattr(self, property + dir):
-            if value:
-                setattr(self, property + dir, value)
-            else:
-                return getattr(self, property + dir)
-        else:
-            return getattr(self, 'link' + dir)(property, node, value)
         
 class Route(Link):
     

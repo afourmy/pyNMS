@@ -58,7 +58,6 @@ class CreationMenu(CustomFrame):
             img_path = join(self.ms.path_icon, image_type + '.png')
             img_pil = ImageTk.Image.open(img_path).resize(image_size)
             img = ImageTk.PhotoImage(img_pil)
-            print(image_type)
             self.dict_image[image_type] = img
         
         self.type_to_button = {}
