@@ -166,7 +166,6 @@ class ObjectManagementWindow(FocusTopLevel):
     def save_obj(self):
         for property, property_widget in self.dict_global_properties.items():
             value = property_widget.text
-            print(property, value)
             # convert 'None' to None if necessary
             value = None if value == 'None' else value              
             if property == 'path':

@@ -23,9 +23,9 @@ class SelectionRightClickMenu(tk.Menu):
         super().__init__(tearoff=0)
         self.cs = scenario
         
-        x, y = self.cs.canvasx(event.x), self.cs.canvasy(event.y)
+        x, y = self.cs.cvs.canvasx(event.x), self.cs.cvs.canvasy(event.y)
 
-        closest_obj = self.cs.find_closest(x, y)[0]
+        closest_obj = self.cs.cvs.find_closest(x, y)[0]
         selected_obj = self.cs.object_id_to_object[closest_obj]
         # if the object from which the menu was started does not belong to
         # the current selection, it means the current selection is no longer

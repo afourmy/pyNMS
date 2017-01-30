@@ -103,8 +103,6 @@ class Network(object):
         # dicts used for IP networks 
         # - associates a subnetwork to a set of IP addresses
         self.sntw_to_ip = defaultdict(set)
-        # - associates an IP to its mask
-        self.ip_to_mask = {}
         # - associates an IP to a node. when a default / static route is 
         # defined, only the next-hop ip is specified: we need to translate it 
         # into a next-hop node to properly fill the routing table.
@@ -381,7 +379,6 @@ class Network(object):
         if not subtype:
             return any(n == nodeA for n, _ in self.graph[nodeB.id][link_type])
         else:
-            print('test')
             return any(n == nodeA for n, _ in self.gftr(nodeB, link_type, subtype))
         
     # given a node, retrieves nodes attached with a link which subtype 
@@ -523,7 +520,6 @@ class Network(object):
             
     def subnetwork_allocation(self):
         for ip in self.ip_to_oip.values():
-            print(ip, ip.interface, ip.network)
             if ip and ip.interface:
                 ip.interface.link.sntw = ip.network
             
@@ -741,7 +737,6 @@ class Network(object):
                     # corresponding to the next-hop IP address in the ARP table
                     # we take the first element as the ARP table is built as 
                     # a mapping IP <-> (MAC, outgoing interface)
-                    print(new_dataflow, curr_node, curr_node.arpt, nh_ip)
                     new_dataflow.dst_mac = curr_node.arpt[nh_ip][0]
                     sd = (curr_node == ex_tk.source)*'SD' or 'DS'
                     ex_tk.__dict__['traffic' + sd] += new_dataflow.throughput
@@ -795,7 +790,7 @@ class Network(object):
             #     continue
             ex_ip = adj_l3vc('ipaddress', neighbor)
             ex_int = adj_l3vc('interface', source)
-            adj_plink = adj_l3vc('link', neighbor)
+            adj_plink = adj_l3vc('link', source)
             # we compute the subnetwork of the attached
             # interface: it is a directly connected interface
             source.rt[adj_plink.sntw] = {('C', ex_ip, ex_int, 

@@ -11,33 +11,33 @@ from pythonic_tkinter.preconfigured_widgets import *
 from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
 
-class CreationMenu(CustomFrame):
+class CreationMenu(ScrolledFrame):
     
     def __init__(self, notebook, master):
-        super().__init__(width=200, height=600, borderwidth=1, relief='solid')
+        super().__init__(notebook, width=200, height=600, borderwidth=1, relief='solid')
         self.ms = master
         font = ('Helvetica', 8, 'bold')
         
         # label frame for object selection
-        lf_selection = Labelframe(self)
+        lf_selection = Labelframe(self.infr)
         lf_selection.text = 'Selection mode'
         lf_selection.grid(1, 0, sticky='nsew')
         
         # label frame for object creation
-        lf_creation = Labelframe(self)
+        lf_creation = Labelframe(self.infr)
         lf_creation.text = 'Creation mode'
         lf_creation.grid(2, 0, sticky='nsew')
         
         # label frame for automatic generation of classic graph
-        lf_generation = Labelframe(self)
+        lf_generation = Labelframe(self.infr)
         lf_generation.text = 'Graph generation'
         lf_generation.grid(3, 0, sticky='nsew')
         
         self.dict_image = {}
         
         self.dict_size_image = {
-        'netdim': (75, 75), 
-        'motion': (75, 75), 
+        'netdim': (125, 125), 
+        'motion': (100, 100), 
         'multi-layer': (75, 75),
         'ethernet': (85, 15),
         'wdm': (85, 15),
@@ -77,7 +77,7 @@ class CreationMenu(CustomFrame):
                 self.type_to_action[obj_type] = cmd
         
         for button_type, cmd in self.type_to_action.items():
-            button = TKButton(self, relief=tk.FLAT, command=cmd)                
+            button = TKButton(self.infr, relief=tk.FLAT, command=cmd)                
             if button_type in self.ms.cs.ntw.link_class:
                 button.configure(text={
                                        'ethernet': 'Ethernet link',
@@ -107,17 +107,15 @@ class CreationMenu(CustomFrame):
         self.type_to_button['netdim'].grid(0, 0, sticky='ew')
         self.type_to_button['motion'].grid(0, 0, 2, padx=20, in_=lf_selection)
         
-        #self.type_to_button['multi-layer'].grid(row=2, column=2, columnspan=2)
-        
         # radio button to choose between link and node selection
         selection_value = tk.StringVar()
         selection_value.set('node') 
 
-        node_selection = Radiobutton(self, variable=selection_value, value='node')
+        node_selection = Radiobutton(self.infr, variable=selection_value, value='node')
         node_selection.text = 'Select nodes'
         node_selection.command = lambda: self.change_selection('node')
 
-        link_selection = Radiobutton(self, variable=selection_value, value='link')
+        link_selection = Radiobutton(self.infr, variable=selection_value, value='link')
         link_selection.text = 'Select links'
         link_selection.command = lambda: self.change_selection('link')
         
@@ -135,7 +133,7 @@ class CreationMenu(CustomFrame):
         self.type_to_button['antenna'].grid(1, 2, padx=2, in_=lf_creation)
         self.type_to_button['cloud'].grid(1, 3, padx=2, in_=lf_creation)
         
-        sep = Separator(self)
+        sep = Separator(self.infr)
         sep.grid(2, 0, 1, 4, in_=lf_creation)
         
         self.type_to_button['ethernet'].grid(3, 0, 1, 2, in_=lf_creation)

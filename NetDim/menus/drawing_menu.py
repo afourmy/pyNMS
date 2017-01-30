@@ -12,20 +12,20 @@ from pythonic_tkinter.preconfigured_widgets import *
 from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
 
-class DrawingMenu(CustomFrame):
+class DrawingMenu(ScrolledFrame):
     
     def __init__(self, notebook, master):
-        super().__init__(width=200, height=600, borderwidth=1, relief='solid')
+        super().__init__(notebook, width=200, height=600, borderwidth=1, relief='solid')
         self.ms = master
         font = ('Helvetica', 8, 'bold')
-        
+
         # label frame for multi-layer display
-        lf_fb_drawing = Labelframe(self)
+        lf_fb_drawing = Labelframe(self.infr)
         lf_fb_drawing.text = 'Force-based drawing parameters'
         lf_fb_drawing.grid(0, 0, sticky='nsew')
                 
         # label frame to manage sites
-        lf_shapes_drawing = Labelframe(self)
+        lf_shapes_drawing = Labelframe(self.infr)
         lf_shapes_drawing.text = 'Shapes and text drawing'
         lf_shapes_drawing.grid(1, 0, sticky='nsew')
         
@@ -52,7 +52,7 @@ class DrawingMenu(CustomFrame):
         self.type_to_button = {}
         
         for obj_type, command in self.dict_size_image.items():
-            button = TKButton(self, command=command)
+            button = TKButton(self.infr, command=command)
             button.config(image=self.dict_image[obj_type])
             if obj_type == 'draw':
                 button.config(width=150, height=150)
@@ -77,11 +77,11 @@ class DrawingMenu(CustomFrame):
         
         self.type_to_button['draw'].grid(0, 0, 2, 2, padx=100, in_=lf_fb_drawing)
         
-        sep = Separator(self)
+        sep = Separator(self.infr)
         sep.grid(2, 0, 1, 2, in_=lf_fb_drawing)
         
         # combobox for the user to change the drawing algorithm
-        self.drawing_type_list = Combobox(self, width=30)
+        self.drawing_type_list = Combobox(self.infr, width=30)
         self.drawing_type_list['values'] = (
                                         'Spring-based layout', 
                                         'Fructhermann-Reingold layout',
@@ -102,8 +102,8 @@ class DrawingMenu(CustomFrame):
         self.entries = []
         # parameters labels and entries
         for index, (param, value) in enumerate(self.drawing_params.items(), 4):
-            label = Label(self, text=param)
-            entry = Entry(self, width=12)
+            label = Label(self.infr, text=param)
+            entry = Entry(self.infr, width=12)
             entry.text = value
             self.entries.append(entry)
             label.grid(index, 0, in_=lf_fb_drawing)
@@ -112,7 +112,7 @@ class DrawingMenu(CustomFrame):
         # check button to randomly distribute the selected nodes on the canvas 
         # before starting the actual force-based algorithm
         self.random_distribution = tk.BooleanVar()
-        button_distribute = Checkbutton(self, variable=self.random_distribution)
+        button_distribute = Checkbutton(self.infr, variable=self.random_distribution)
         button_distribute.text = 'Randomly distribution first'
         self.random_distribution.set(True)
         
@@ -120,7 +120,7 @@ class DrawingMenu(CustomFrame):
                                         
         # check button for nodes to stay within the screen bounds
         self.stay_withing_screen_bounds = tk.BooleanVar()
-        button_limit = Checkbutton(self, variable=self.stay_withing_screen_bounds)
+        button_limit = Checkbutton(self.infr, variable=self.stay_withing_screen_bounds)
         button_limit.text = 'Screen limit'
         self.stay_withing_screen_bounds.set(False)
         

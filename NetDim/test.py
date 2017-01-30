@@ -65,7 +65,7 @@ class TestExportImport(unittest.TestCase):
         self.assertEqual(x_coord, {42, 24})
         plink ,= self.netdim.cs.ntw.pn["plink"].values()
         self.assertEqual(plink.distance, 666)
-        self.assertEqual(len(self.netdim.cs.ntw.pn["route"].values()), 1)
+        self.assertEqual(len(self.netdim.cs.ntw.pn["l3link"].values()), 1)
         
     def test_object_import_xls(self):
         self.object_import("xls")
@@ -113,9 +113,9 @@ class TestMST(unittest.TestCase):
 class TestSP(unittest.TestCase):
     
     results = (
-    ["plink1", "plink3", "plink5"], 
-    ["plink1", "plink7"],
-    ["plink1", "plink3"]
+    ["ethernet link1", "ethernet link3", "ethernet link5"], 
+    ["ethernet link1", "ethernet link7"],
+    ["ethernet link1", "ethernet link3"]
     )
  
     @start_and_import("test_SP.xls")
@@ -154,11 +154,11 @@ class TestSP(unittest.TestCase):
 class TestMCF(unittest.TestCase):
     
     results = (
-    ("plink1", 5),
-    ("plink2", 7),
-    ("plink3", 3),
-    ("plink4", 10),
-    ("plink5", 2)
+    ("ethernet link1", 5),
+    ("ethernet link2", 7),
+    ("ethernet link3", 3),
+    ("ethernet link4", 10),
+    ("ethernet link5", 2)
     )
     
     @start_and_import("test_mcf.xls")

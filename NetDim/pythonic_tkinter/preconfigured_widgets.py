@@ -189,6 +189,49 @@ class Notebook(ttk.Notebook):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+class VerticalScrolledFrame(CustomFrame):
+    
+    def __init__(self, parent, *args, **kw):
+        CustomFrame.__init__(self, parent, *args, **kw)            
+
+        # create a canvas object and a vertical scrollbar for scrolling it
+        vscrollbar = Scrollbar(self)
+        vscrollbar.pack(fill='y', side='right', expand=0)
+        canvas = tk.Canvas(
+                           self, 
+                           bd = 0, 
+                           highlightthickness = 0,
+                           yscrollcommand = vscrollbar.set, 
+                           background = '#A1DBCD'
+                           )
+        canvas.pack(side='left', fill='both', expand=1)
+        vscrollbar.config(command=canvas.yview)
+
+        # reset the view
+        canvas.xview_moveto(0)
+        canvas.yview_moveto(0)
+
+        # inner frame
+        self.infr = CustomFrame(canvas)
+        self.infr_id = canvas.create_window(0, 0, window=self.infr, anchor='nw')
+
+        # track changes to the canvas and frame width and sync them,
+        # also updating the scrollbar
+        def configure_infr(event):
+            # update the scrollbars to match the size of the inner frame
+            size = (self.infr.winfo_reqwidth(), self.infr.winfo_reqheight())
+            canvas.config(scrollregion="0 0 %s %s" % size)
+            if self.infr.winfo_reqwidth() != canvas.winfo_width():
+                # update the canvas's width to fit the inner frame
+                canvas.config(width=self.infr.winfo_reqwidth())
+        self.infr.bind('<Configure>', configure_infr)
+
+        def _configure_canvas(event):
+            if self.infr.winfo_reqwidth() != canvas.winfo_width():
+                # fill the canvas with the inner frame
+                canvas.itemconfigure(self.infr_id, width=canvas.winfo_width())
+        canvas.bind('<Configure>', _configure_canvas)
     
 def class_factory(name, OriginalWidget, defaults):
     
@@ -272,7 +315,8 @@ subwidget_creation = (
                       ('Scrollbar', tk.Scrollbar, (0, 0, 'ns')),
                       ('Combobox', ttk.Combobox, (4, 4, 'w')),
                       ('Checkbutton', ttk.Checkbutton, (4, 4, 'w')),
-                      ('Separator', ttk.Separator, (4, 4, 'ew'))               
+                      ('Separator', ttk.Separator, (4, 4, 'ew')),
+                      ('ScrolledFrame', VerticalScrolledFrame, (4, 4, 'w'))               
                       )
     
 for subwidget, ttk_class, defaults in subwidget_creation:

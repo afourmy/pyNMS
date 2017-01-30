@@ -11,6 +11,19 @@ class DataFlow(object):
         self.src_mac = None
         self.dst_mac = None
         
+    def __repr__(self):
+        return '''Data flow:
+        Source IP: {src_ip} Destination IP: {dst_ip}
+        Source MAC: {src_mac} Destination MAC: {dst_mac}
+        Throughput: {throughput}
+        '''.format(
+                   src_ip = self.src_ip,
+                   dst_ip = self.dst_ip,
+                   src_mac = self.src_mac,
+                   dst_mac = self.dst_mac,
+                   throughput = self.throughput
+                   )
+        
 class IPAddress(object):
 
     # an IP address object is defined as an IP and a subnet ('IP/subnet')
@@ -20,7 +33,6 @@ class IPAddress(object):
         self.mask = tomask(self.subnet)
         self.network = compute_network(self.ip_addr, self.mask)
         # interface to which the IP address is attached
-        print(ip_addr, interface, 'creation')
         self.interface = interface
         
     def __repr__(self):

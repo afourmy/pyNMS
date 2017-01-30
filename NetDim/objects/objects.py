@@ -834,7 +834,6 @@ class PhysicalLink(Link):
             elif value:
                 setattr(interface, property, value)
             else:
-                print(getattr(interface, property))
                 return getattr(interface, property)
 
 class Ethernet(PhysicalLink):

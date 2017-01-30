@@ -122,7 +122,6 @@ class ASManagement(CustomTopLevel):
         for selected_obj in self.dict_listbox[obj_type].pop_selected():
             # remove it from the AS as well
             so = self.AS.cs.ntw.of(name=selected_obj, _type=obj_type)
-            print(so)
             self.AS.remove_from_AS(so)
         
     def add_to_AS(self, *objects):

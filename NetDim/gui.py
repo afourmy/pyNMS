@@ -311,7 +311,6 @@ class NetDim(MainWindow):
                     
                 # interface import
                 elif name in ('ethernet interface', 'wdm interface'):
-                    print('yes')
                     if_properties = sheet.row_values(0)
                     # creation of ethernet interfaces
                     for row_index in range(1, sheet.nrows):
@@ -322,7 +321,6 @@ class NetDim(MainWindow):
                         for property, value in zip(if_properties[2:], args):
                             # we convert all (valid) string IPs to an OIPs
                             if property == 'ipaddress' and value != 'none':
-                                print(value)
                                 value = self.cs.ntw.OIPf(value, interface)
                             setattr(interface, property, value)
                             
@@ -362,87 +360,6 @@ class NetDim(MainWindow):
                         interface = link('interface', node)
                         for idx, property in enumerate(ethernet_interface_perAS_properties):
                             interface(AS.name, property, args[idx])      
-                            
-            # for id, obj_type in enumerate(object_ie):
-            #     xls_sheet = book.sheets()[id]
-            #     properties = xls_sheet.row_values(0)
-            #     for row in range(1, xls_sheet.nrows):
-            #         values = xls_sheet.row_values(row)
-            #         kwargs = self.objectizer(properties, values, obj_type)
-            #         if obj_type in self.cs.ntw.node_subtype: 
-            #             self.cs.ntw.nf(node_type=obj_type, **kwargs)
-            #         if obj_type in self.cs.ntw.link_subtype: 
-            #             self.cs.ntw.lf(subtype=obj_type, **kwargs)
-                        
-            # interface properties update
-            # for i in range(16, 18):
-            #     interface_sheet = book.sheets()[i]
-            #     if_properties = interface_sheet.row_values(0)
-            #     # creation of ethernet interfaces
-            #     for row_index in range(1, interface_sheet.nrows):
-            #         link, node, *args = interface_sheet.row_values(row_index)
-            #         link = self.cs.ntw.convert_link(link)
-            #         node = self.cs.ntw.convert_node(node)
-            #         interface = link('interface', node)
-            #         for property, value in zip(if_properties[2:], args):
-            #             # we convert all string IPs to an OIPs
-            #             if property == 'ipaddress':
-            #                 if value != 'none':
-            #                     value = self.cs.ntw.OIPf(value, interface)
-            #             setattr(interface, property, value)
-                                                        
-            # AS_sheet = book.sheets()[18]
-        
-            # creation of the AS
-            # for row_index in range(1, AS_sheet.nrows):
-            #     name, type, id, nodes, plinks = AS_sheet.row_values(row_index)
-            #     id = int(id)
-            #     nodes = self.cs.ntw.convert_node_set(nodes)
-            #     plinks = self.cs.ntw.convert_link_set(plinks)
-            #     self.cs.ntw.AS_factory(type, name, id, plinks, nodes, True)
-                
-            # area_sheet = book.sheets()[19]
-            
-            # creation of the area
-            # for row_index in range(1, area_sheet.nrows):
-            #     name, AS, id, nodes, plinks = area_sheet.row_values(row_index)
-            #     AS = self.cs.ntw.AS_factory(name=AS)
-            #     nodes = self.cs.ntw.convert_node_set(nodes)
-            #     plinks = self.cs.ntw.convert_link_set(plinks)
-            #     new_area = AS.area_factory(name, int(id), plinks, nodes)
-            #     
-            # node_AS_sheet = book.sheets()[20]
-            # 
-            
-            # for row_index in range(1, node_AS_sheet.nrows):
-            #     AS, node, *args = node_AS_sheet.row_values(row_index)
-            #     node = self.cs.ntw.convert_node(node)
-            #     for idx, property in enumerate(perAS_properties[node.subtype]):
-            #         node(AS, property, args[idx])
-            #         
-            # if_AS_sheet = book.sheets()[21]
-            # 
-            # for row_index in range(1, if_AS_sheet.nrows):
-            #     AS, link, node, *args = if_AS_sheet.row_values(row_index)
-            #     AS = self.cs.ntw.AS_factory(name=AS)
-            #     link = self.cs.ntw.convert_link(link)
-            #     node = self.cs.ntw.convert_node(node)
-            #     interface = link('interface', node)
-            #     for idx, property in enumerate(ethernet_interface_perAS_properties):
-            #         interface(AS.name, property, args[idx])
-                
-        # if_AS_sheet = excel_workbook.add_sheet('per-AS interface properties')
-        # 
-        # cpt = 1
-        # for AS in self.cs.ntw.pnAS.values():
-        #     for link in AS.plinks:
-        #         for interface in (link.interfaceS, link.interfaceD):
-        #             if_AS_sheet.write(cpt, 0, AS.name)
-        #             if_AS_sheet.write(cpt, 1, str(interface.link))
-        #             if_AS_sheet.write(cpt, 2, str(interface.node)) 
-        #             for idx, property in enumerate(ethernet_interface_perAS_properties, 3):
-        #                 if_AS_sheet.write(cpt, idx, str(interface(AS.name, property)))
-        #             cpt += 1
                 
         # for the topology zoo network graphs
         elif filepath.endswith('.graphml'):

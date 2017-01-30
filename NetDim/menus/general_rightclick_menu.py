@@ -9,7 +9,7 @@ class GeneralRightClickMenu(tk.Menu):
     def __init__(self, event, scenario):
         super().__init__(tearoff=0)
         self.cs = scenario
-        x, y = self.cs.canvasx(event.x), self.cs.canvasy(event.y)
+        x, y = self.cs.cvs.canvasx(event.x), self.cs.cvs.canvasy(event.y)
                 
         # remove all failures if there is at least one
         if self.cs.ntw.fdtks:
