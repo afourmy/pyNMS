@@ -11,25 +11,25 @@ from pythonic_tkinter.preconfigured_widgets import *
 from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
 
-class DisplayMenu(CustomFrame):
+class DisplayMenu(ScrolledFrame):
     
     def __init__(self, notebook, master):
-        super().__init__(width=200, height=600, borderwidth=1, relief='solid')
+        super().__init__(notebook, width=200, height=600, borderwidth=1, relief='solid')
         self.ms = master
         font = ('Helvetica', 8, 'bold')
         
         # label frame for multi-layer display
-        lf_multilayer_display = Labelframe(self)
+        lf_multilayer_display = Labelframe(self.infr)
         lf_multilayer_display.text = 'Multi-layer display'
         lf_multilayer_display.grid(0, 0, sticky='nsew')
         
         # label frame to control the display per subtype
-        lf_object_display = Labelframe(self)
+        lf_object_display = Labelframe(self.infr)
         lf_object_display.text = 'Per-object display'
         lf_object_display.grid(1, 0, sticky='nsew')
         
         # label frame to manage sites
-        lf_site_display = Labelframe(self)
+        lf_site_display = Labelframe(self.infr)
         lf_site_display.text = 'Per-site display'
         lf_site_display.grid(2, 0, sticky='nsew')
         
@@ -63,7 +63,7 @@ class DisplayMenu(CustomFrame):
         self.type_to_button = {}
                 
         # multi-layer button
-        ml_button = TKButton(self)
+        ml_button = TKButton(self.infr)
         ml_button.config(image=self.dict_image['multi-layer'])
         ml_button.command = self.ml_display_mode
         ml_button.config(width=150, height=150)
@@ -75,7 +75,7 @@ class DisplayMenu(CustomFrame):
             layer_bool = tk.BooleanVar()
             layer_bool.set(True)
             self.layer_boolean.append(layer_bool)
-            self.button_limit = Checkbutton(self, variable = layer_bool)
+            self.button_limit = Checkbutton(self.infr, variable = layer_bool)
             self.button_limit.text = 'L' + str(layer)
             self.button_limit.command = self.update_display
             row, col = layer > 2, 2 + (layer + 1)%2
@@ -84,7 +84,7 @@ class DisplayMenu(CustomFrame):
         for obj_type in object_properties:
             if obj_type not in ('l2vc', 'l3vc'):
                 cmd = lambda o=obj_type: self.invert_display(o)
-                button = TKButton(self, relief=tk.SUNKEN, command=cmd)
+                button = TKButton(self.infr, relief=tk.SUNKEN, command=cmd)
                 if obj_type in self.ms.cs.ntw.link_class:
                     button.configure(text={
                                         'ethernet': 'Ethernet link',
@@ -113,7 +113,7 @@ class DisplayMenu(CustomFrame):
         self.type_to_button['antenna'].grid(1, 2, padx=2, in_=lf_object_display)
         self.type_to_button['cloud'].grid(1, 3, padx=2, in_=lf_object_display)
         
-        sep = Separator(self)
+        sep = Separator(self.infr)
         sep.grid(2, 0, 1, 4, in_=lf_object_display)
         
         self.type_to_button['ethernet'].grid(3, 0, 1, 2, in_=lf_object_display)
@@ -128,9 +128,9 @@ class DisplayMenu(CustomFrame):
         self.type_to_button['static traffic'].grid(6, 2, 1, 2, in_=lf_object_display)
         
         # display filter
-        self.filter_label = Label(self)
+        self.filter_label = Label(self.infr)
         self.filter_label.text = 'Display filters for sites'
-        self.filter_entry = Entry(self, width=12)
+        self.filter_entry = Entry(self.infr, width=12)
         self.filter_label.grid(2, 0, 1, 2, in_=lf_site_display)
         self.filter_entry.grid(2, 2, 1, 2, in_=lf_site_display)
         

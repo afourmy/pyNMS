@@ -394,7 +394,7 @@ class Scenario(CustomFrame):
         self.diff_y *= factor
         self.NODE_SIZE *= factor
         self.cvs.scale('all', event.x, event.y, factor, factor)
-        self.cvs.configure(scrollregion = self.cvs.bbox('all'))
+        self.cvs.configure(scrollregion=self.cvs.bbox('all'))
         self.update_nodes_coordinates()
         
     @adapt_coordinates
@@ -402,7 +402,7 @@ class Scenario(CustomFrame):
         ''' Zoom for Linux '''
         self._cancel()
         self.cvs.scale('all', event.x, event.y, 1.1, 1.1)
-        self.cvs.configure(scrollregion = self.cvs.bbox('all'))
+        self.cvs.configure(scrollregion=self.cvs.bbox('all'))
         self.update_nodes_coordinates()
         
     @adapt_coordinates
@@ -410,7 +410,7 @@ class Scenario(CustomFrame):
         ''' Zoom for Linux '''
         self._cancel()
         self.cvs.scale('all', event.x, event.y, 0.9, 0.9)
-        self.cvs.configure(scrollregion = self.cvs.bbox('all'))
+        self.cvs.configure(scrollregion=self.cvs.bbox('all'))
         self.update_nodes_coordinates()
     
     def update_nodes_coordinates(self):
