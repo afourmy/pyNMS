@@ -149,6 +149,7 @@ class NetDim(MainWindow):
         
         # dict of nodes image for node creation
         self.dict_image = defaultdict(dict)
+        self.dict_pil = defaultdict(dict)
         
         self.node_size_image = {
         'router': (33, 25), 
@@ -169,6 +170,7 @@ class NetDim(MainWindow):
                                             self.node_size_image[node_type])
                 img = ImageTk.PhotoImage(img_pil)
                 self.dict_image[color][node_type] = img
+                self.dict_pil[color][node_type] = img_pil
                 
         # image for a link failure
         img_pil = ImageTk.Image.open(join(self.path_icon, 'failure.png'))\
@@ -223,14 +225,17 @@ class NetDim(MainWindow):
         del self.dict_scenario[self.cs.name]
         self.scenario_notebook.forget(self.cs)
         self.change_cs()
+        
+    def objectizer(self, property, value):
+        if value == 'None': 
+            return None
+        else:
+            return self.cs.ntw.prop_to_type[property](value)
                         
-    def objectizer(self, properties, values, obj_type):
+    def mass_objectizer(self, properties, values):
         kwargs = {}
         for property, value in zip(properties, values):
-            value = self.cs.ntw.prop_to_type[property](value)
-            if value == "None":
-                value = None
-            kwargs[property] = value
+            kwargs[property] = self.objectizer(property, value)
         return kwargs
                 
     def import_graph(self, filepath=None):
@@ -238,11 +243,10 @@ class NetDim(MainWindow):
         # filepath is set for unittest
         if not filepath:
             filepath = filedialog.askopenfilenames(
-                            initialdir=self.path_workspace, 
-                            title='Import graph', 
-                            filetypes=(
+                            initialdir = self.path_workspace, 
+                            title = 'Import graph', 
+                            filetypes = (
                             ('all files','*.*'),
-                            ('csv files','*.csv'),
                             ('xls files','*.xls'),
                             ))
             
@@ -252,162 +256,115 @@ class NetDim(MainWindow):
             else: 
                 filepath ,= filepath
                   
-        if filepath.endswith('.xls'):
-            book = xlrd.open_workbook(filepath)
+        book = xlrd.open_workbook(filepath)
+        
+        # the order in which objects are imported is extremely important:
+        # - nodes must be imported first, before links
+        # - physical links must be imported second, before interface
+        # - interface must be imported third, for IP addresses to be created
+        # at interface import (the interface being specified at IP creation),
+        # else if a traffic link was imported before the interface, the IP
+        # address would be created via the ipS/D parameter and it would have
+        # no attached interface
+        # - then, the remaining links can be imported (routes, traffic)
+        # - AS and area can be imported
+        # - Finally, per-AS object properties can be imported
+        sheet_names_import_order = (
+                                    'router',
+                                    'switch',
+                                    'oxc', 
+                                    'host',
+                                    'antenna',
+                                    'regenerator',
+                                    'splitter',
+                                    'cloud',
+                                    'ethernet',
+                                    'ethernet interface',
+                                    'wdm', 
+                                    'wdm interface',
+                                    'static route',
+                                    'BGP peering',
+                                    'OSPF virtual link',
+                                    'Label Switched Path',
+                                    'routed traffic',
+                                    'static traffic',
+                                    'AS',
+                                    'area',
+                                    'per-AS node properties',
+                                    'per-AS interface properties'
+                                    )
+                                        
+        for name in sheet_names_import_order:
+            try:
+                sheet = book.sheet_by_name(name)
+            # if the sheet cannot be found, there's nothing to import
+            except xlrd.biffh.XLRDError:
+                continue
             
-            # the order in which objects are imported is extremely important:
-            # - nodes must be imported first, before links
-            # - physical links must be imported second, before interface
-            # - interface must be imported third, for IP addresses to be created
-            # at interface import (the interface being specified at IP creation),
-            # else if a traffic link was imported before the interface, the IP
-            # address would be created via the ipS/D parameter and it would have
-            # no attached interface
-            # - then, the remaining links can be imported (routes, traffic)
-            # - AS and area can be imported
-            # - Finally, per-AS object properties can be imported
-            sheet_names_import_order = (
-                                        'router',
-                                        'switch',
-                                        'oxc', 
-                                        'host',
-                                        'antenna',
-                                        'regenerator',
-                                        'splitter',
-                                        'cloud',
-                                        'ethernet',
-                                        'ethernet interface',
-                                        'wdm', 
-                                        'wdm interface',
-                                        'static route',
-                                        'BGP peering',
-                                        'OSPF virtual link',
-                                        'Label Switched Path',
-                                        'routed traffic',
-                                        'static traffic',
-                                        'AS',
-                                        'area',
-                                        'per-AS node properties',
-                                        'per-AS interface properties'
-                                        )
-                                            
-            for name in sheet_names_import_order:
-                try:
-                    sheet = book.sheet_by_name(name)
-                except xlrd.biffh.XLRDError:
-                    warnings.warn('Excel sheet name error: ' + name)
-                    continue
+            # nodes and links import
+            if name in self.cs.ntw.all_subtypes:
+                properties = sheet.row_values(0)
+                for row in range(1, sheet.nrows):
+                    values = sheet.row_values(row)
+                    kwargs = self.mass_objectizer(properties, values)
+                    if name in self.cs.ntw.node_subtype: 
+                        self.cs.ntw.nf(node_type=name, **kwargs)
+                    if name in self.cs.ntw.link_subtype: 
+                        self.cs.ntw.lf(subtype=name, **kwargs)
                 
-                # nodes and links import
-                if name in self.cs.ntw.all_subtypes:
-                    properties = sheet.row_values(0)
-                    for row in range(1, sheet.nrows):
-                        values = sheet.row_values(row)
-                        kwargs = self.objectizer(properties, values, name)
-                        if name in self.cs.ntw.node_subtype: 
-                            self.cs.ntw.nf(node_type=name, **kwargs)
-                        if name in self.cs.ntw.link_subtype: 
-                            self.cs.ntw.lf(subtype=name, **kwargs)
-                    
-                # interface import
-                elif name in ('ethernet interface', 'wdm interface'):
-                    if_properties = sheet.row_values(0)
-                    # creation of ethernet interfaces
-                    for row_index in range(1, sheet.nrows):
-                        link, node, *args = sheet.row_values(row_index)
-                        link = self.cs.ntw.convert_link(link)
-                        node = self.cs.ntw.convert_node(node)
-                        interface = link('interface', node)
-                        for property, value in zip(if_properties[2:], args):
-                            # we convert all (valid) string IPs to an OIPs
-                            if property == 'ipaddress' and value != 'none':
-                                value = self.cs.ntw.OIPf(value, interface)
-                            setattr(interface, property, value)
-                            
-                # AS import
-                elif name == 'AS':
-                    for row_index in range(1, sheet.nrows):
-                        name, type, id, nodes, plinks = sheet.row_values(row_index)
-                        id = int(id)
-                        nodes = self.cs.ntw.convert_node_set(nodes)
-                        plinks = self.cs.ntw.convert_link_set(plinks)
-                        self.cs.ntw.AS_factory(type, name, id, plinks, nodes, True)
-                    
-                # area import
-                elif name == 'area':
-                    for row_index in range(1, sheet.nrows):
-                        name, AS, id, nodes, plinks = sheet.row_values(row_index)
-                        AS = self.cs.ntw.AS_factory(name=AS)
-                        nodes = self.cs.ntw.convert_node_set(nodes)
-                        plinks = self.cs.ntw.convert_link_set(plinks)
-                        new_area = AS.area_factory(name, int(id), plinks, nodes)
+            # interface import
+            elif name in ('ethernet interface', 'wdm interface'):
+                if_properties = sheet.row_values(0)
+                # creation of ethernet interfaces
+                for row_index in range(1, sheet.nrows):
+                    link, node, *args = sheet.row_values(row_index)
+                    link = self.cs.ntw.convert_link(link)
+                    node = self.cs.ntw.convert_node(node)
+                    interface = link('interface', node)
+                    for property, value in zip(if_properties[2:], args):
+                        # we convert all (valid) string IPs to an OIPs
+                        if property == 'ipaddress' and value != 'none':
+                            value = self.cs.ntw.OIPf(value, interface)
+                        setattr(interface, property, value)
                         
-                # per-AS node properties import
-                elif name == 'per-AS node properties':
-                    for row_index in range(1, sheet.nrows):
-                        AS, node, *args = sheet.row_values(row_index)
-                        node = self.cs.ntw.convert_node(node)
-                        for idx, property in enumerate(perAS_properties[node.subtype]):
-                            node(AS, property, args[idx])
-                     
-                # per-AS interface properties import
-                else:
-                    for row_index in range(1, sheet.nrows):
-                        AS, link, node, *args = sheet.row_values(row_index)
-                        AS = self.cs.ntw.AS_factory(name=AS)
-                        link = self.cs.ntw.convert_link(link)
-                        node = self.cs.ntw.convert_node(node)
-                        interface = link('interface', node)
-                        for idx, property in enumerate(ethernet_interface_perAS_properties):
-                            interface(AS.name, property, args[idx])      
+            # AS import
+            elif name == 'AS':
+                for row_index in range(1, sheet.nrows):
+                    name, AS_type, id, nodes, plinks = sheet.row_values(row_index)
+                    id = int(id)
+                    nodes = self.cs.ntw.convert_node_set(nodes)
+                    plinks = self.cs.ntw.convert_link_set(plinks)
+                    self.cs.ntw.AS_factory(AS_type, name, id, plinks, nodes, True)
                 
-        # for the topology zoo network graphs
-        elif filepath.endswith('.graphml'):
-            tree = etree.parse(filepath)
-            # dict associating an id ('dxx') to a property ('label', etc)
-            dict_prop_values = {}
-            # dict associating a node id to node properties
-            dict_id_to_prop = collections.defaultdict(dict)
-            # label will be the name of the node
-            properties = ['label', 'Longitude', 'Latitude']
-            
-            for element in tree.iter():
-                for child in element:
-                    if 'key' in child.tag:
-                        if child.attrib['attr.name'] in properties and child.attrib['for'] == 'node':
-                            dict_prop_values[child.attrib['id']] = child.attrib['attr.name']
-                    if 'node' in child.tag:
-                        node_id = child.attrib['id']
-                        for prop in child:
-                            if prop.attrib['key'] in dict_prop_values:
-                                dict_id_to_prop[node_id][dict_prop_values[prop.attrib['key']]] = prop.text
-                    if 'edge' in child.tag:
-                        s_id, d_id = child.attrib['source'], child.attrib['target']
-                        src_name = dict_id_to_prop[s_id]['label']
-                        src = self.cs.ntw.nf(name=src_name)
-                        dest_name = dict_id_to_prop[d_id]['label']
-                        dest = self.cs.ntw.nf(name=dest_name)
-                        
-                        # set the latitude and longitude of the newly created nodes
-                        for coord in ('latitude', 'longitude'):
-                            # in some graphml files, nodes have no latitude/longitude
-                            try:
-                                p_s = dict_id_to_prop[s_id][coord.capitalize()]
-                                setattr(src, coord, float(p_s))
-                                p_d = dict_id_to_prop[d_id][coord.capitalize()]
-                                setattr(dest, coord, float(p_d))
-                            except KeyError:
-                                # we catch the KeyError exception, but 
-                                # the resulting haversine distance will be wrong
-                                warnings.warn('Wrong geographical coordinates')
-                        
-                        # distance between src and dest
-                        distance = round(self.cs.ntw.haversine_distance(src, dest))
-
-                        # in some graphml files, there are nodes with loopback link
-                        if src_name != dest_name:
-                            new_link = self.cs.ntw.lf(source=src, destination=dest)
-                            new_link.distance = distance
+            # area import
+            elif name == 'area':
+                for row_index in range(1, sheet.nrows):
+                    name, AS, id, nodes, plinks = sheet.row_values(row_index)
+                    AS = self.cs.ntw.AS_factory(name=AS)
+                    nodes = self.cs.ntw.convert_node_set(nodes)
+                    plinks = self.cs.ntw.convert_link_set(plinks)
+                    new_area = AS.area_factory(name, int(id), plinks, nodes)
+                    
+            # per-AS node properties import
+            elif name == 'per-AS node properties':
+                for row_index in range(1, sheet.nrows):
+                    AS, node, *args = sheet.row_values(row_index)
+                    node = self.cs.ntw.convert_node(node)
+                    for idx, property in enumerate(perAS_properties[node.subtype]):
+                        value = self.objectizer(property, args[idx])
+                        node(AS, property, value)
+                    
+            # per-AS interface properties import
+            else:
+                for row_index in range(1, sheet.nrows):
+                    AS, link, node, *args = sheet.row_values(row_index)
+                    AS = self.cs.ntw.AS_factory(name=AS)
+                    link = self.cs.ntw.convert_link(link)
+                    node = self.cs.ntw.convert_node(node)
+                    interface = link('interface', node)
+                    for idx, property in enumerate(ethernet_interface_perAS_properties):
+                        value = self.objectizer(property, args[idx])
+                        interface(AS.name, property, value)      
         
         self.cs.draw_all(False)        
         
@@ -420,85 +377,89 @@ class NetDim(MainWindow):
         # filepath is set for unittest
         if not filepath:
             selected_file = filedialog.asksaveasfile(
-                                    initialdir=self.path_workspace, 
-                                    title='Export graph', 
-                                    mode='w', 
-                                    defaultextension='.xls'
+                                    initialdir = self.path_workspace, 
+                                    title = 'Export graph', 
+                                    mode = 'w', 
+                                    defaultextension = '.xls'
                                     )
+                                    
             if not selected_file: 
                 return 
             else:
                 filename, file_format = os.path.splitext(selected_file.name)
+                
         else:
             filename, file_format = os.path.splitext(filepath)
             selected_file = open(filepath, 'w')
             
         excel_workbook = xlwt.Workbook()
-        for obj_type, properties in object_ie.items():
-            xls_sheet = excel_workbook.add_sheet(obj_type)
-            for id, property in enumerate(properties):
-                xls_sheet.write(0, id, property)
-                # we have one excel sheet per subtype of object.
-                # we filter the network pool based on the subtype to 
-                # retrieve only the object of the corresponding subtype
-                # this was done because objects have different properties
-                # depending on the subtype, and we want to avoid using 
-                # hasattr() all the time to check if a property exists.
-                ftr = lambda o: o.subtype == obj_type
-                if obj_type in self.cs.ntw.link_class:
-                    type = subtype_to_type[obj_type]
-                    pool_obj = filter(ftr, self.cs.ntw.pn[type].values())
-                elif obj_type in self.cs.ntw.node_subtype:
-                    pool_obj = filter(ftr, self.cs.ntw.pn['node'].values()) 
-                # if it is neither a node nor an interface, it is a node
-                else:
-                    pool_obj = self.cs.ntw.interfaces[obj_type.split()[0]]
-                for i, t in enumerate(pool_obj, 1):
-                    xls_sheet.write(i, id, str(getattr(t, property)))
+        for obj_subtype, properties in object_ie.items():
+            # we have one excel sheet per subtype of object.
+            # we filter the network pool based on the subtype to 
+            # retrieve only the object of the corresponding subtype
+            # this was done because objects have different properties
+            # depending on the subtype, and we want to avoid using 
+            # hasattr() all the time to check if a property exists.
+            obj_type = subtype_to_type[obj_subtype]
+            pool_obj = list(self.cs.ntw.ftr(obj_type, obj_subtype))
+            # we create an excel sheet only if there's at least one object
+            # of a given subtype
+            if pool_obj:
+                xls_sheet = excel_workbook.add_sheet(obj_subtype)
+                for id, property in enumerate(properties):
+                    xls_sheet.write(0, id, property)
+                    for i, obj in enumerate(pool_obj, 1):
+                        xls_sheet.write(i, id, str(getattr(obj, property)))
                     
-        AS_sheet = excel_workbook.add_sheet('AS')
+        pool_AS = list(self.cs.ntw.pnAS.values())
         
-        for i, AS in enumerate(self.cs.ntw.pnAS.values(), 1):
-            AS_sheet.write(i, 0, str(AS.name))
-            AS_sheet.write(i, 1, str(AS.AS_type))
-            AS_sheet.write(i, 2, str(AS.id))
-            AS_sheet.write(i, 3, to_string(AS.pAS['node']))
-            AS_sheet.write(i, 4, to_string(AS.pAS['plink']))
+        if pool_AS:
+            AS_sheet = excel_workbook.add_sheet('AS')
+            for i, AS in enumerate(self.cs.ntw.pnAS.values(), 1):
+                AS_sheet.write(i, 0, str(AS.name))
+                AS_sheet.write(i, 1, str(AS.AS_type))
+                AS_sheet.write(i, 2, str(AS.id))
+                AS_sheet.write(i, 3, to_string(AS.pAS['node']))
+                AS_sheet.write(i, 4, to_string(AS.pAS['plink']))
+                
+            node_AS_sheet = excel_workbook.add_sheet('per-AS node properties')
+                
+            cpt = 1
+            for AS in self.cs.ntw.pnAS.values():
+                for node in AS.nodes:
+                    node_AS_sheet.write(cpt, 0, AS.name)
+                    node_AS_sheet.write(cpt, 1, node.name)
+                    for idx, property in enumerate(perAS_properties[node.subtype], 2):
+                        node_AS_sheet.write(cpt, idx, str(node(AS.name, property)))
+                    cpt += 1
+                    
+            if_AS_sheet = excel_workbook.add_sheet('per-AS interface properties')
             
-        area_sheet = excel_workbook.add_sheet('area')
+            cpt = 1
+            for AS in self.cs.ntw.pnAS.values():
+                for link in AS.plinks:
+                    for interface in (link.interfaceS, link.interfaceD):
+                        if_AS_sheet.write(cpt, 0, AS.name)
+                        if_AS_sheet.write(cpt, 1, str(interface.link))
+                        if_AS_sheet.write(cpt, 2, str(interface.node)) 
+                        for idx, property in enumerate(ethernet_interface_perAS_properties, 3):
+                            if_AS_sheet.write(cpt, idx, str(interface(AS.name, property)))
+                        cpt += 1
+            
+        has_area = lambda a: a.has_area
+        pool_area = list(filter(has_area, self.cs.ntw.pnAS.values()))
         
-        cpt = 1
-        for AS in filter(lambda a: a.has_area, self.cs.ntw.pnAS.values()):
-            for area in AS.areas.values():
-                area_sheet.write(cpt, 0, str(area.name))
-                area_sheet.write(cpt, 1, str(area.AS))
-                area_sheet.write(cpt, 2, str(area.id))
-                area_sheet.write(cpt, 3, to_string(area.pa['node']))
-                area_sheet.write(cpt, 4, to_string(area.pa['plink']))
-                cpt += 1
-                
-        node_AS_sheet = excel_workbook.add_sheet('per-AS node properties')
+        if pool_area:
+            area_sheet = excel_workbook.add_sheet('area')
         
-        cpt = 1
-        for AS in self.cs.ntw.pnAS.values():
-            for node in AS.nodes:
-                node_AS_sheet.write(cpt, 0, AS.name)
-                node_AS_sheet.write(cpt, 1, node.name)
-                for idx, property in enumerate(perAS_properties[node.subtype], 2):
-                    node_AS_sheet.write(cpt, idx, str(node(AS.name, property)))
-                cpt += 1
-                
-        if_AS_sheet = excel_workbook.add_sheet('per-AS interface properties')
-        
-        cpt = 1
-        for AS in self.cs.ntw.pnAS.values():
-            for link in AS.plinks:
-                for interface in (link.interfaceS, link.interfaceD):
-                    if_AS_sheet.write(cpt, 0, AS.name)
-                    if_AS_sheet.write(cpt, 1, str(interface.link))
-                    if_AS_sheet.write(cpt, 2, str(interface.node)) 
-                    for idx, property in enumerate(ethernet_interface_perAS_properties, 3):
-                        if_AS_sheet.write(cpt, idx, str(interface(AS.name, property)))
+            cpt = 1
+            for AS in filter(lambda a: a.has_area, self.cs.ntw.pnAS.values()):
+                for area in AS.areas.values():
+                    area_sheet.write(cpt, 0, str(area.name))
+                    area_sheet.write(cpt, 1, str(area.AS))
+                    area_sheet.write(cpt, 2, str(area.id))
+                    area_sheet.write(cpt, 3, to_string(area.pa['node']))
+                    area_sheet.write(cpt, 4, to_string(area.pa['plink']))
                     cpt += 1
                 
         excel_workbook.save(selected_file.name)

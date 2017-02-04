@@ -79,10 +79,10 @@ class Network(object):
     def __init__(self, scenario):
         self.nodes = {}
         self.plinks = {}
-        self.interfaces = {'ethernet': set(), 'wdm': set()}
         self.l2links = {}
         self.l3links = {}
         self.traffics = {}
+        self.interfaces = set()
         # pn for 'pool network'
         self.pn = {
                    'node': self.nodes, 
@@ -90,6 +90,7 @@ class Network(object):
                    'l2link': self.l2links, 
                    'l3link': self.l3links,
                    'traffic': self.traffics, 
+                   'interface': self.interfaces
                    }
         self.pnAS = {}
         self.cs = scenario
@@ -186,13 +187,20 @@ class Network(object):
         'priority': int,
         'router_id': str,
         'base_macaddress': str,
-        'AS': self.convert_AS
+        'AS': self.convert_AS,
+        'LB_paths': int,
+        'role': str,
+        'priority': int,
+        'router_id': str
         }
         
     # function filtering pn to retrieve all objects of given subtypes
     def ftr(self, type, *sts):
         keep = lambda r: r.subtype in sts
-        return filter(keep, self.pn[type].values())
+        if type == 'interface':
+            return filter(keep, self.pn[type])
+        else:
+            return filter(keep, self.pn[type].values())
         
     # function filtering graph to retrieve all links of given subtypes
     # attached to the source node. 
@@ -243,8 +251,7 @@ class Network(object):
             self.graph[s.id][link_type].add((d, new_link))
             self.graph[d.id][link_type].add((s, new_link))
             if subtype in ('ethernet', 'wdm'):
-                link_if = {new_link.interfaceS, new_link.interfaceD}
-                self.interfaces[subtype] |= link_if
+                self.interfaces |= {new_link.interfaceS, new_link.interfaceD}
             self.cpt_link += 1
         return self.pn[link_type][id]
         
@@ -2233,7 +2240,7 @@ class Network(object):
     ## 2) Star generation
             
     def star(self, n, subtype):
-        nb_node = len(self.nodes)
+        nb_node = self.cpt_node + 1
         for i in range(n):
             n1, n2 = str(nb_node), str(nb_node+1+i)
             self.lf(
@@ -2244,7 +2251,7 @@ class Network(object):
     ## 3) Full-meshed network generation
             
     def full_mesh(self, n, subtype):
-        nb_node = len(self.nodes)
+        nb_node = self.cpt_node + 1
         for i in range(n):
             for j in range(i):
                 n1, n2 = str(nb_node+j), str(nb_node+i)
@@ -2256,7 +2263,7 @@ class Network(object):
     ## 4) Ring generation
                 
     def ring(self, n, subtype):
-        nb_node = len(self.nodes)
+        nb_node = self.cpt_node + 1
         for i in range(n):
             n1, n2 = str(nb_node+i), str(nb_node+(1+i)%n)
             self.lf(
@@ -2376,7 +2383,7 @@ class Network(object):
     ## Multiple object creation
     
     def multiple_nodes(self, n, subtype):
-        nb_nodes = len(self.nodes)
+        nb_nodes = self.cpt_node + 1
         for k in range(n):
             yield self.nf(name = str(k + nb_nodes), node_type = subtype)
             

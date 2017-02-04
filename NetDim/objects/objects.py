@@ -63,7 +63,9 @@ subtype_to_type = {
 'OSPF virtual link': 'l3link',
 'Label Switched Path': 'l3link',
 'routed traffic': 'traffic',
-'static traffic': 'traffic'
+'static traffic': 'traffic',
+'ethernet interface': 'interface',
+'wdm interface': 'interface'
 }
     
 ## OBJECT PROPERTIES
@@ -617,10 +619,10 @@ class Node(NDobject):
     def __lt__(self, other):
         return hash(self.name)
         
-    def __call__(self, AS, property, value=None):
+    def __call__(self, AS, property, value=False):
         # can be used both as a getter and a setter, depending on 
         # whether a value is provided or not
-        if value:
+        if value != False:
             self.AS_properties[AS][property] = value
         return self.AS_properties[AS][property]
         
@@ -817,24 +819,47 @@ class PhysicalLink(Link):
     def __lt__(self, other):
         return hash(self.name)
         
-    def __call__(self, property, node, value=None):
+    # value is initialied to False instead of None, because we may want
+    # to set a property to None
+    def __call__(self, property, node, value=False, AS=None):
         # can be used both as a getter and a setter, depending on 
         # whether a value is provided or not
+        
+        # first of all, this call function can be used to retrieve a 
+        # link directional property ('SD', 'DS')
+        # these properties are used for classic algorithms such as 
+        # shortest paths and flow algorithms
         dir = (node == self.source)*'SD' or 'DS'
-        if property in ('flow', 'cost', 'capacity', 'traffic', 'wctraffic'):
-            if value:
+        if not AS and property in ('flow', 'cost', 'capacity', 'traffic', 'wctraffic'):
+            if value != False:
                 setattr(self, property + dir, value)
             else:
                 return getattr(self, property + dir)
                 
         else:
+            # it can also be used to retrieve the value of a property of the 
+            # interface attached to the node
+            # if that property is 'interface', this interface object itself
+            # will be retrieve
             interface = getattr(self, 'interface' + dir[:-1])
-            if property == 'interface':
-                return interface
-            elif value:
-                setattr(interface, property, value)
+            if not AS:
+                if property == 'interface':
+                    return interface
+                elif value == False:
+                    return getattr(interface, property)
+                else:
+                    setattr(interface, property, value)
+                
+            # finally, if an AS is defined, it will retrieve the value of the 
+            # per-AS property of the interface attached to the node
+            # NOTE: it is the AS name, not the AS object itself
             else:
-                return getattr(interface, property)
+                if value == False:
+                    return interface(AS, property)
+                else:
+                    interface(AS, property, value)
+            
+            
 
 class Ethernet(PhysicalLink):
     
@@ -894,10 +919,10 @@ class Interface(NDobject):
     def __hash__(self):
         return hash(self.name)
         
-    def __call__(self, AS, property, value=None):
+    def __call__(self, AS, property, value=False):
         # can be used both as a getter and a setter, depending on 
         # whether a value is provided or not
-        if value:
+        if value != False:
             self.AS_properties[AS][property] = value
         if property in self.AS_properties[AS]:
             return self.AS_properties[AS][property]
@@ -906,7 +931,7 @@ class Interface(NDobject):
                     
 class EthernetInterface(Interface):
     
-    subtype = 'ethernet'
+    subtype = 'ethernet interface'
     public_properties = ethernet_interface_public_properties
     perAS_properties = ethernet_interface_perAS_properties
     
@@ -922,7 +947,7 @@ class EthernetInterface(Interface):
         
 class WDMInterface(Interface):
     
-    subtype = 'wdm'
+    subtype = 'wdm interface'
     
     ie_properties = {}
     
@@ -932,7 +957,6 @@ class WDMInterface(Interface):
         
 class VirtualConnection(Link):  
 
-    type = 'l2link'
     subtype = 'l2vc'
     
     ie_properties = {}
@@ -946,14 +970,14 @@ class VirtualConnection(Link):
     def __lt__(self, other):
         return hash(self.name)
         
-    def __call__(self, property, node, value=None):
+    def __call__(self, property, node, value=False):
         # can be used both as a getter and a setter, depending on 
         # whether a value is provided or not
         # if the property doesn't exist for a virtual connection, we look at
         # the equivalent property for the associated physical link
         dir = (node == self.source)*'S' or 'D'
         if hasattr(self, property + dir):
-            if value:
+            if value != False:
                 setattr(self, property + dir, value)
             else:
                 return getattr(self, property + dir)
@@ -962,6 +986,7 @@ class VirtualConnection(Link):
             
 class L2VC(VirtualConnection):
     
+    type = 'l2link'
     subtype = 'l2vc'
     layer = 2
     color = 'pink'
@@ -975,6 +1000,7 @@ class L2VC(VirtualConnection):
         
 class L3VC(VirtualConnection):
     
+    type = 'l3link'
     subtype = 'l3vc'
     layer = 3
     color = 'black'

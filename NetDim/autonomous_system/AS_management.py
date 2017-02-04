@@ -317,6 +317,8 @@ class ISIS_Management(ASManagementWithArea):
         self.AS.border_routers.clear()
         # reset all area physical links
         self.AS.areas['Backbone'].pa['plink'].clear()
+        for link in self.AS.pAS['plink']:
+            link.AS[self.AS].clear()
         
         for node in self.AS.pAS['node']:
             

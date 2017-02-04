@@ -54,6 +54,10 @@ class ObjectManagementWindow(FocusTopLevel):
         
         for index, property in enumerate(object_properties[type]):
             
+            # too much trouble handling interfaces here
+            if property in ('interfaceS', 'interfaceD'):
+                continue
+            
             # creation of the label associated to the property
             text = prop_to_nice_name[property]
             label = Label(self)

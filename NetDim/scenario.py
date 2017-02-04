@@ -17,7 +17,7 @@ class Scenario(CustomFrame):
     
     def __init__(self, master, name):
         super().__init__(width=1300, height=800)
-        self.grid(row=0, column=0)
+        self.pack(side=tk.LEFT)
 
         self.cvs = tk.Canvas(
                              self, 
@@ -36,7 +36,7 @@ class Scenario(CustomFrame):
         
         self.cvs.config(width=1300, height=800)
         self.cvs.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
-        self.cvs.pack(side=tk.LEFT,expand=1,fill=tk.BOTH)
+        self.cvs.pack(side=tk.LEFT, expand=1, fill=tk.BOTH)
         
         self.name = name
         self.ntw = network.Network(self)
@@ -198,7 +198,10 @@ class Scenario(CustomFrame):
                 # add binding to draw a rectangle
                 self.cvs.bind('<ButtonPress-1>', self.start_point_rectangle)
                 self.cvs.bind('<B1-Motion>', self.rectangle_drawing)
-            
+                
+            elif self._creation_mode == 'text':
+                self.cvs.bind('<ButtonPress-1>', self.draw)
+                
             else:
                 # add bindings to create a link between two nodes
                 self.cvs.tag_bind('node', '<Button-1>', self.start_link)
@@ -222,10 +225,11 @@ class Scenario(CustomFrame):
         self.temp_line_y_left = self.cvs.create_line(x, y, x, y)
         self.temp_line_y_right = self.cvs.create_line(x, y, x, y)
         self.temp_line_x_bottom = self.cvs.create_line(x, y, x, y)
-                
-    def draw(self, mode):
+              
+    @adapt_coordinates
+    def draw(self, event):
         if self._creation_mode == 'text':
-            LabelCreation(self)
+            LabelCreation(self, event.x, event.y)
         elif self._creation_mode == 'rectangle':
             pass
         
@@ -609,7 +613,7 @@ class Scenario(CustomFrame):
                     
     def remove_objects(self, *objects):
         for obj in objects:
-            if obj.type not in ('traffic', 'route', 'l2vc', 'l3vc'):
+            if hasattr(obj, 'AS'):
                 for AS in list(obj.AS):
                     AS.management.remove_from_AS(obj)
             if obj.class_type == 'node':
@@ -794,7 +798,7 @@ class Scenario(CustomFrame):
             self.cvs.itemconfig(label_id, text=text)
         elif label_type == 'coordinates':
             text = '({}, {})'.format(obj.longitude, obj.latitude)
-        elif label_type in ('capacity', 'flow', 'cost', 'traffic', 'wctraffic'):
+        elif label_type in ('capacity', 'flow', 'traffic', 'wctraffic'):
             # retrieve the value of the parameter depending on label type
             valueSD = getattr(obj, label_type + 'SD')
             valueDS = getattr(obj, label_type + 'DS')
@@ -807,11 +811,19 @@ class Scenario(CustomFrame):
             else:
                 text = str(valueSD + valueDS)
                 self.cvs.itemconfig(label_id, text=text)
-        elif itf and label_type in ('name', 'ipaddress'):
+        elif itf and label_type in ('name', 'ipaddress', 'cost'):
             # to display the name of the interface, we retrieve the 'interface'
             # parameters of the corresponding physical link
-            valueS = getattr(obj.interfaceS, label_type)
-            valueD = getattr(obj.interfaceD, label_type)
+            # or if it is the cost and there is a single AS, we retrieve the
+            # AS interface cost
+            if label_type == 'cost':
+                if len(obj.interfaceS.AS_properties) == 1:
+                    AS ,= obj.interfaceS.AS_properties
+                    valueS = obj.interfaceS(AS, 'cost')
+                    valueD = obj.interfaceD(AS, 'cost')
+            else:
+                valueS = getattr(obj.interfaceS, label_type)
+                valueD = getattr(obj.interfaceD, label_type)
             self.cvs.itemconfig(label_id[0], text=valueS)
             self.cvs.itemconfig(label_id[1], text=valueD)
         else:
@@ -924,7 +936,8 @@ class Scenario(CustomFrame):
              
     def draw_all(self, random=True):
         self.erase_all()
-        for type in self.ntw.pn:
+        # we draw everything except interface
+        for type in set(self.ntw.pn) - {'interface'}:
             self.draw_objects(self.ntw.pn[type].values(), random)
             
     # 2) Force-based drawing
@@ -1116,7 +1129,7 @@ class Scenario(CustomFrame):
                 
 class LabelCreation(CustomTopLevel):
             
-    def __init__(self, scenario):
+    def __init__(self, scenario, x, y):
         super().__init__()
         self.cs = scenario
         
@@ -1129,13 +1142,14 @@ class LabelCreation(CustomTopLevel):
         
         OK_button = Button(self, width=20)
         OK_button.text = 'OK'
-        OK_button.command = self.OK
+        OK_button.command = lambda: self.OK(x, y)
         
         lf_label_creation.grid(0, 0)
         self.entry_label.grid(0, 0, in_=lf_label_creation)
         OK_button.grid(1, 0, in_=lf_label_creation)
 
-    def OK(self):
-        pass
+    def OK(self, x, y):
+        font= ("Purisa", '6', 'bold')
+        self.cs.cvs.create_text(x, y, text=self.entry_label.text, font=font)
         self.destroy()
         

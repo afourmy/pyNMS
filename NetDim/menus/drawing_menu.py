@@ -154,13 +154,8 @@ class DrawingMenu(ScrolledFrame):
         
     def change_creation_mode(self, mode):
         # change the mode to creation 
-        self.switch_to('creation')
+        self.ms.cs._mode = mode
         self.ms.cs._creation_mode = mode
-        for obj_type in self.type_to_button:
-            if mode == obj_type:
-                self.type_to_button[obj_type].config(relief=tk.SUNKEN)
-            else:
-                self.type_to_button[obj_type].config(relief=tk.FLAT)
         self.ms.cs.switch_binding()
 
         

@@ -88,7 +88,7 @@ class RouterConfiguration(tk.Toplevel):
             yield ' {name}(config)# interface {interface}\n'\
                                     .format(name=node.name, interface=interface)
             yield ' {name}(config-if)# ip address {ip} {mask}\n'\
-                                    .format(name=node.name, ip=ip, mask=mask)
+                            .format(name=node.name, ip=ip.ip_addr, mask=ip.mask)
             yield ' {name}(config-if)# no shutdown\n'.format(name=node.name)
             
             if any(AS.AS_type == 'OSPF' for AS in adj_plink.AS):

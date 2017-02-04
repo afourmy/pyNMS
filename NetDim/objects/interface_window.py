@@ -74,12 +74,13 @@ class InterfaceWindow(FocusTopLevel):
         
     def save_and_destroy(self):
         for property, entry in self.dict_global_properties.items():
-            value = self.ms.cs.ntw.prop_to_type[property](entry.get())
+            value = self.ms.objectizer(property, entry.get())
             setattr(self.interface, property, value)
             
         if self.interface.AS_properties:
             AS = self.AS_combobox.text
             for property, entry in self.dict_perAS_properties.items():
-                self.interface(AS, property, entry.text)
+                value = self.ms.objectizer(property, entry.text)
+                self.interface(AS, property, value)
                 
         self.destroy()

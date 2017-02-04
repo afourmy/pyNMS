@@ -220,7 +220,8 @@ class STP_AS(Ethernet_AS):
                     # excluded and allowed physical links
                     if adj_plink not in allowed_plinks: 
                         continue
-                    heappush(heap, (dist + adj_plink('cost', node), 
+                    ex_int_cost = adj_plink('cost', node, AS=self.name)
+                    heappush(heap, (dist + ex_int_cost, 
                                         neighbor, path_plink + [adj_plink]))
     
 class IP_AS(AutonomousSystem):
@@ -312,7 +313,8 @@ class RIP_AS(IP_AS):
                         source.rt[adj_plink.sntw] = {('C', ex_ip, ex_int,
                                             dist, neighbor, adj_plink)}
                         SP_cost[adj_plink.sntw] = 0
-                    heappush(heap, (dist + adj_plink('cost', node), 
+                    ex_int_cost = adj_plink('cost', node, AS=self.name)
+                    heappush(heap, (dist + ex_int_cost, 
                             neighbor, l3_path + [l3vc], ex_int))
                     
             if l3_path:
@@ -355,9 +357,9 @@ class ISIS_AS(ASWithArea, IP_AS):
                               nodes = self.nodes
                               )
                               
-        # set the default per-AS properties of all AS objects
-        self.add_to_AS(*(self.nodes | self.plinks))
-        self.add_to_area(self.areas['Backbone'], *(self.nodes | self.plinks))
+            # set the default per-AS properties of all AS objects
+            self.add_to_AS(*(self.nodes | self.plinks))
+            self.add_to_area(self.areas['Backbone'], *(self.nodes | self.plinks))
         
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
@@ -379,9 +381,7 @@ class ISIS_AS(ASWithArea, IP_AS):
         # don't add them more than once to the mapping dict.
         visited_subnetworks = set()
         heap = [(0, source, [], None)]
-        # source area: we make sure that if the node is connected to an area,
-        # the path we find to any subnetwork in that area is an intra-area path.
-        src_areas = source.AS[self]
+
         # cost of the shortesth path to a subnetwork
         SP_cost = {}
                 
@@ -415,7 +415,8 @@ class ISIS_AS(ASWithArea, IP_AS):
                         source.rt[adj_plink.sntw] = {('C', ex_ip, ex_int,
                                             dist, neighbor, adj_plink)}
                         SP_cost[adj_plink.sntw] = 0
-                    heappush(heap, (dist + adj_plink('cost', node), 
+                    ex_int_cost = adj_plink('cost', node, AS=self.name)
+                    heappush(heap, (dist + ex_int_cost, 
                                 neighbor, l3_path + [l3vc], ex_int))
                     
             if l3_path:
@@ -425,9 +426,12 @@ class ISIS_AS(ASWithArea, IP_AS):
                 ex_ip = ex_l3('link', nh)('ipaddress', nh)
                 plink = curr_l3('link', node)
                 ex_int = ex_tk('interface', source)
+                plink_int_cost = plink('cost', node, AS=self.name)
                 if isL1:
                     if (node in self.border_routers 
                                         and '0.0.0.0' not in source.rt):
+                        if source.name == 'router4':
+                            print(node, self.border_routers, plink, plink.sntw)
                         source.rt['0.0.0.0'] = {('i*L1', ex_ip, ex_int,
                                                     dist, nh, ex_tk)}
                     else:
@@ -435,7 +439,7 @@ class ISIS_AS(ASWithArea, IP_AS):
                                         and plink.AS[self] & ex_tk.AS[self]):
                             visited_subnetworks.add(('i L1', plink.sntw))
                             source.rt[plink.sntw] = {('i L1', ex_ip, ex_int,
-                                    dist + plink('cost', node), nh, ex_tk)}
+                                    dist + plink_int_cost, nh, ex_tk)}
                 else:
                     plinkAS ,= plink.AS[self]
                     exit_area ,= ex_tk.AS[self]
@@ -458,7 +462,7 @@ class ISIS_AS(ASWithArea, IP_AS):
                         and ('i L2', plink.sntw) not in visited_subnetworks):
                         visited_subnetworks.add((rtype, plink.sntw))
                         source.rt[plink.sntw] = {(rtype, ex_ip, ex_int,
-                                dist + plink('cost', node), nh, ex_tk)}
+                                dist + plink_int_cost, nh, ex_tk)}
                     # TODO
                     # IS-IS uses per-address unequal cost load balancing 
                     # a user-defined variance defined as a percentage of the
@@ -542,7 +546,8 @@ class OSPF_AS(ASWithArea, IP_AS):
                         source.rt[adj_plink.sntw] = {('C', ex_ip, ex_int,
                                             dist, neighbor, adj_plink)}
                         SP_cost[adj_plink.sntw] = 0
-                    heappush(heap, (dist + adj_plink('cost', node), 
+                    ex_int_cost = adj_plink('cost', node, AS=self.name)
+                    heappush(heap, (dist + ex_int_cost, 
                                     neighbor, l3_path + [l3vc], ex_int))
                     
             if l3_path:

@@ -23,7 +23,7 @@ def start_and_import(filename):
         def wrapper(self):
             self.netdim = gui.NetDim(path_app)
             self.ntw = self.netdim.cs.ntw
-            path_test = path_parent + "\\Tests\\"
+            path_test = path_parent + '\\Tests\\'
             self.netdim.import_graph(path_test + filename)
             function(self)
         return wrapper
@@ -35,24 +35,24 @@ class TestExportImport(unittest.TestCase):
     def setUpClass(cls):
         super(TestExportImport, cls).setUpClass()
         cls.netdim = gui.NetDim(path_app)
-        src = cls.netdim.cs.ntw.nf(name="s")
-        dest = cls.netdim.cs.ntw.nf(name="d")
+        src = cls.netdim.cs.ntw.nf(name='s')
+        dest = cls.netdim.cs.ntw.nf(name='d')
         dest.x, src.x = 42, 24
         plink = cls.netdim.cs.ntw.lf(
-                                     name="t", 
+                                     name='t', 
                                      source=src, 
                                      destination=dest
                                      )
         plink.distance = 666
         route = cls.netdim.cs.ntw.lf(
-                                     subtype="static route",
+                                     subtype='static route',
                                      source=src, 
                                      destination=dest
                                      )
         # export in excel and csv
-        path = "\\Tests\\test_export."
-        for extension in ("xls", "csv"):
-            cls.netdim.export_graph("".join((path_parent, path, extension)))
+        path = '\\Tests\\test_export.'
+        for extension in ('xls', 'csv'):
+            cls.netdim.export_graph(''.join((path_parent, path, extension)))
         cls.netdim.destroy()
         
     def tearDown(self):
@@ -60,22 +60,22 @@ class TestExportImport(unittest.TestCase):
         
     def object_import(self, ext):
         self.netdim = gui.NetDim(path_app)
-        self.netdim.import_graph(path_parent + "\\Tests\\test_export." + ext)
-        x_coord = set(map(lambda n: n.x, self.netdim.cs.ntw.pn["node"].values()))
+        self.netdim.import_graph(path_parent + '\\Tests\\test_export.' + ext)
+        x_coord = set(map(lambda n: n.x, self.netdim.cs.ntw.pn['node'].values()))
         self.assertEqual(x_coord, {42, 24})
-        plink ,= self.netdim.cs.ntw.pn["plink"].values()
+        plink ,= self.netdim.cs.ntw.pn['plink'].values()
         self.assertEqual(plink.distance, 666)
-        self.assertEqual(len(self.netdim.cs.ntw.pn["l3link"].values()), 1)
+        self.assertEqual(len(self.netdim.cs.ntw.pn['l3link'].values()), 1)
         
     def test_object_import_xls(self):
-        self.object_import("xls")
+        self.object_import('xls')
 
 class TestFlow(unittest.TestCase):
  
-    @start_and_import("test_flow1.xls")
+    @start_and_import('test_flow1.xls')
     def setUp(self):
-        self.source = self.ntw.pn["node"][self.ntw.name_to_id["s"]]
-        self.target = self.ntw.pn["node"][self.ntw.name_to_id["t"]]
+        self.source = self.ntw.pn['node'][self.ntw.name_to_id['s']]
+        self.target = self.ntw.pn['node'][self.ntw.name_to_id['t']]
  
     def tearDown(self):
         self.netdim.destroy()
@@ -98,7 +98,7 @@ class TestFlow(unittest.TestCase):
         
 class TestMST(unittest.TestCase):
  
-    @start_and_import("test_mst1.xls")
+    @start_and_import('test_mst1.xls')
     def setUp(self):
         pass
  
@@ -106,24 +106,24 @@ class TestMST(unittest.TestCase):
         self.netdim.destroy()
  
     def test_kruskal(self):
-        mst = self.ntw.kruskal(self.ntw.pn["node"].values())
+        mst = self.ntw.kruskal(self.ntw.pn['node'].values())
         mst_costs = set(map(lambda plink: plink.costSD, mst))
         self.assertEqual(mst_costs, {1, 2, 4})
         
 class TestSP(unittest.TestCase):
     
     results = (
-    ["ethernet link1", "ethernet link3", "ethernet link5"], 
-    ["ethernet link1", "ethernet link7"],
-    ["ethernet link1", "ethernet link3"]
+    ['ethernet link1', 'ethernet link3', 'ethernet link5'], 
+    ['ethernet link1', 'ethernet link7'],
+    ['ethernet link1', 'ethernet link3']
     )
  
-    @start_and_import("test_SP.xls")
+    @start_and_import('test_SP.xls')
     def setUp(self):
-        get_node = lambda node_name: self.ntw.pn["node"][self.ntw.name_to_id[node_name]]
-        self.route9 = (get_node("node0"), get_node("node4"))
-        self.route10 = (get_node("node0"), get_node("node5"))
-        self.route11 = (get_node("node0"), get_node("node3"))
+        get_node = lambda node_name: self.ntw.pn['node'][self.ntw.name_to_id[node_name]]
+        self.route9 = (get_node('node0'), get_node('node4'))
+        self.route10 = (get_node('node0'), get_node('node5'))
+        self.route11 = (get_node('node0'), get_node('node3'))
  
     def tearDown(self):
         self.netdim.destroy()
@@ -154,17 +154,17 @@ class TestSP(unittest.TestCase):
 class TestMCF(unittest.TestCase):
     
     results = (
-    ("ethernet link1", 5),
-    ("ethernet link2", 7),
-    ("ethernet link3", 3),
-    ("ethernet link4", 10),
-    ("ethernet link5", 2)
+    ('ethernet link1', 5),
+    ('ethernet link2', 7),
+    ('ethernet link3', 3),
+    ('ethernet link4', 10),
+    ('ethernet link5', 2)
     )
     
-    @start_and_import("test_mcf.xls")
+    @start_and_import('test_mcf.xls')
     def setUp(self):
-        source = self.ntw.pn["node"][self.ntw.name_to_id["node1"]]
-        target = self.ntw.pn["node"][self.ntw.name_to_id["node4"]]
+        source = self.ntw.pn['node'][self.ntw.name_to_id['node1']]
+        target = self.ntw.pn['node'][self.ntw.name_to_id['node4']]
         self.ntw.LP_MCF_formulation(source, target, 12)
  
     def tearDown(self):
@@ -172,107 +172,159 @@ class TestMCF(unittest.TestCase):
  
     def test_MCF(self):
         for plink_name, flow in self.results:
-            plink = self.ntw.pn["plink"][self.ntw.name_to_id[plink_name]]
+            plink = self.ntw.pn['plink'][self.ntw.name_to_id[plink_name]]
             self.assertEqual(plink.flowSD, flow)
         
-# class TestISIS(unittest.TestCase):
-#     
-#     results = (
-#     ("traffic9", {"plink0", "plink1", "plink4", "plink5"}),
-#     ("traffic10", {"plink2", "plink3", "plink5"})
-#     )
-#  
-#     @start_and_import("test_ISIS.xls")
-#     def setUp(self):
-#         self.ntw.calculate_all()
-#  
-#     def tearDown(self):
-#         self.netdim.destroy()
-#  
-#     def test_ISIS(self):
-#         self.assertEqual(len(self.ntw.pn["traffic"]), 2)
-#         for traffic, path in self.results:
-#             # we retrieve the actual route from its name in pn
-#             traffic_link = self.ntw.pn["traffic"][self.ntw.name_to_id[traffic]]
-#             # we check that the path is conform to IS-IS protocol
-#             self.assertEqual(set(map(str, traffic_link.path)), path)
-#             
-# class TestOSPF(unittest.TestCase):
-#     
-#     results = (
-#     ("traffic16", {"plink14", "plink2", "plink3", "plink6", "plink8", "plink15"}),
-#     ("traffic15", {"plink14", "plink2", "plink4", "plink5", "plink6", "plink8", "plink15"})
-#     )
-#  
-#     @start_and_import("test_ospf.xls")
-#     def setUp(self):
-#         self.ntw.calculate_all()
-#  
-#     def tearDown(self):
-#         self.netdim.destroy()
-#  
-#     def test_OSPF(self):
-#         self.assertEqual(len(self.ntw.pn["traffic"]), 2)
-#         for traffic_link, path in self.results:
-#             # we retrieve the actual route from its name in pn
-#             traffic_link = self.ntw.pn["traffic"][self.ntw.name_to_id[traffic_link]]
-#             # we check that the path is conform to OSPF protocol
-#             self.assertEqual(set(map(str, traffic_link.path)), path)
+class TestISIS(unittest.TestCase):
+    
+    results = (
+    ('routed traffic link16', {
+    'ethernet link1', 
+    'ethernet link2', 
+    'ethernet link6', 
+    'ethernet link7',
+    'router5',
+    'router4',
+    'router3',
+    'router2',
+    'router6'
+    }),
+    
+    ('routed traffic link15', {
+    'ethernet link1', 
+    'ethernet link3', 
+    'ethernet link4',
+    'ethernet link5',
+    'ethernet link7',
+    'router5',
+    'router0',
+    'router1',
+    'router4',
+    'router2',
+    'router6'
+    }))
+ 
+    @start_and_import('test_ISIS.xls')
+    def setUp(self):
+        self.ntw.calculate_all()
+ 
+    def tearDown(self):
+        self.netdim.destroy()
+ 
+    def test_ISIS(self):
+        self.assertEqual(len(self.ntw.pn['traffic']), 2)
+        for traffic, path in self.results:
+            # we retrieve the actual route from its name in pn
+            traffic_link = self.ntw.pn['traffic'][self.ntw.name_to_id[traffic]]
+            # we check that the path is conform to IS-IS protocol
+            self.assertEqual(set(map(str, traffic_link.path)), path)
             
-# class TestCSPF(unittest.TestCase):
-#     
-#     results = (
-#     ["plink13", "plink3", "plink5", "plink8", "plink9", "plink11"],
-#     ["plink14", "plink15", "plink15", "plink14", "plink13", "plink3", "plink5", 
-#     "plink8", "plink9", "plink11"],
-#     ["plink13", "plink3", "plink3", "plink13", "plink14", "plink15", "plink15", 
-#     "plink14", "plink13", "plink3", "plink5", "plink8", "plink9", "plink11"],
-#     ["plink14", "plink15", "plink1", "plink4", "plink3", "plink5", "plink8", 
-#     "plink9", "plink11"],
-#     ["plink14", "plink15", "plink2", "plink5", "plink8", "plink9", "plink11"],
-#     []
-#     )
-#  
-#     @start_and_import("test_cspf.xls")
-#     def setUp(self):
-#         pass
-#  
-#     def tearDown(self):
-#         self.netdim.destroy()
-#  
-#     def test_CSPF(self):
-#         node1 = self.ntw.nf(name="node1")
-#         node2 = self.ntw.nf(name="node2")
-#         node3 = self.ntw.nf(name="node3")
-#         node4 = self.ntw.nf(name="node4")
-#         node6 = self.ntw.nf(name="node6")
-#         node7 = self.ntw.nf(name="node7")
-#         # plink between node4 and node6
-#         plink13 = self.ntw.lf(name="plink13")
-#         # plink between node2 and node5
-#         plink15 = self.ntw.lf(name="plink15")
-#         
-#         _, path = self.ntw.A_star(node6, node7)
-#         self.assertEqual(list(map(str, path)), self.results[0])
-#         _, path = self.ntw.A_star(node6, node7, 
-#                                                     path_constraints=[node2])
-#         self.assertEqual(list(map(str, path)), self.results[1])
-#         _, path = self.ntw.A_star(node6, node7, 
-#                                             path_constraints=[node3, node2])
-#         self.assertEqual(list(map(str, path)), self.results[2])                  
-#         _, path = self.ntw.A_star(node6, node7, 
-#                                                     excluded_plinks={plink13})
-#         self.assertEqual(list(map(str, path)), self.results[3])
-#         _, path = self.ntw.A_star(node6, node7, 
-#                             excluded_plinks={plink13}, excluded_nodes={node1})
-#         self.assertEqual(list(map(str, path)), self.results[4])
-#         _, path = self.ntw.A_star(node6, node7, 
-#                             excluded_plinks={plink15}, excluded_nodes={node4})
-#         self.assertEqual(list(map(str, path)), self.results[5])
+class TestOSPF(unittest.TestCase):
+    
+    results = (
+    ('routed traffic link14', {
+    'ethernet link1', 
+    'ethernet link2', 
+    'ethernet link9', 
+    'ethernet link10', 
+    'ethernet link11', 
+    'ethernet link12',
+    'ethernet link13',
+    'router9',
+    'router7',
+    'router5',
+    'router4',
+    'router6',
+    'router3',
+    'router1',
+    'router0'
+    }),
+    
+    ('routed traffic link15', {
+    'ethernet link1', 
+    'ethernet link2', 
+    'ethernet link9', 
+    'ethernet link8',  
+    'ethernet link12',
+    'ethernet link13',
+    'router9',
+    'router7',
+    'router5',
+    'router4',
+    'router3',
+    'router1',
+    'router0'
+    }))
+ 
+    @start_and_import('test_ospf.xls')
+    def setUp(self):
+        self.ntw.calculate_all()
+ 
+    def tearDown(self):
+        self.netdim.destroy()
+ 
+    def test_OSPF(self):
+        self.assertEqual(len(self.ntw.pn['traffic']), 2)
+        for traffic_link, path in self.results:
+            # we retrieve the actual route from its name in pn
+            traffic_link = self.ntw.pn['traffic'][self.ntw.name_to_id[traffic_link]]
+            # we check that the path is conform to OSPF protocol
+            self.assertEqual(set(map(str, traffic_link.path)), path)
+            
+class TestCSPF(unittest.TestCase):
+    
+    results = (
+    ['plink13', 'plink3', 'plink5', 'plink8', 'plink9', 'plink11'],
+    ['plink14', 'plink15', 'plink15', 'plink14', 'plink13', 'plink3', 'plink5', 
+    'plink8', 'plink9', 'plink11'],
+    ['plink13', 'plink3', 'plink3', 'plink13', 'plink14', 'plink15', 'plink15', 
+    'plink14', 'plink13', 'plink3', 'plink5', 'plink8', 'plink9', 'plink11'],
+    ['plink14', 'plink15', 'plink1', 'plink4', 'plink3', 'plink5', 'plink8', 
+    'plink9', 'plink11'],
+    ['plink14', 'plink15', 'plink2', 'plink5', 'plink8', 'plink9', 'plink11'],
+    []
+    )
+ 
+    @start_and_import('test_cspf.xls')
+    def setUp(self):
+        pass
+ 
+    def tearDown(self):
+        self.netdim.destroy()
+ 
+    def test_CSPF(self):
+        node1 = self.ntw.nf(name='node1')
+        node2 = self.ntw.nf(name='node2')
+        node3 = self.ntw.nf(name='node3')
+        node4 = self.ntw.nf(name='node4')
+        node6 = self.ntw.nf(name='node6')
+        node7 = self.ntw.nf(name='node7')
+        # plink between node4 and node6
+        plink13 = self.ntw.lf(name='plink13')
+        # plink between node2 and node5
+        plink15 = self.ntw.lf(name='plink15')
+        
+        _, path = self.ntw.A_star(node6, node7)
+        self.assertEqual(list(map(str, path)), self.results[0])
+        _, path = self.ntw.A_star(node6, node7, 
+                                                    path_constraints=[node2])
+        self.assertEqual(list(map(str, path)), self.results[1])
+        _, path = self.ntw.A_star(node6, node7, 
+                                            path_constraints=[node3, node2])
+        self.assertEqual(list(map(str, path)), self.results[2])                  
+        _, path = self.ntw.A_star(node6, node7, 
+                                                    excluded_plinks={plink13})
+        self.assertEqual(list(map(str, path)), self.results[3])
+        _, path = self.ntw.A_star(node6, node7, 
+                            excluded_plinks={plink13}, excluded_nodes={node1})
+        self.assertEqual(list(map(str, path)), self.results[4])
+        _, path = self.ntw.A_star(node6, node7, 
+                            excluded_plinks={plink15}, excluded_nodes={node4})
+        self.assertEqual(list(map(str, path)), self.results[5])
         
 class TestRWA(unittest.TestCase):
      
-    @start_and_import("test_RWA.xls")
+    @start_and_import('test_RWA.xls')
     def setUp(self):
         pass
  

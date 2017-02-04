@@ -48,24 +48,24 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
                     rtype = rtype + ' '*(8 - len(rtype))
                     if not idx:
                         line = '{rtype}{sntw} [{AD}/{cost}] via {ex_ip}, {ex_int}\n'\
-                                                        .format(
-                                                                cost = cost, 
-                                                                rtype = rtype, 
-                                                                sntw = sntw, 
-                                                                AD = AD[rtype[0]],
-                                                                ex_ip = ex_ip, 
-                                                                ex_int = ex_int
-                                                                )
+                                                    .format(
+                                                            cost = int(cost), 
+                                                            rtype = rtype, 
+                                                            sntw = sntw, 
+                                                            AD = AD[rtype[0]],
+                                                            ex_ip = ex_ip.ip_addr, 
+                                                            ex_int = ex_int
+                                                            )
                     else:
                         spaces = ' '*(len(rtype) + len(sntw))
                         line = '{spaces} [{AD}/{cost}] via {ex_ip}, {ex_int}\n'\
-                                                            .format(
-                                                                    spaces = spaces,
-                                                                    AD = AD[rtype[0]],
-                                                                    cost = cost,
-                                                                    ex_ip = ex_ip,
-                                                                    ex_int = ex_int
-                                                                    )
+                                                    .format(
+                                                            spaces = spaces,
+                                                            AD = AD[rtype[0]],
+                                                            cost = int(cost),
+                                                            ex_ip = ex_ip.ip_addr,
+                                                            ex_int = ex_int
+                                                            )
                     self.ST.insert('insert', line)
                         
             else:
@@ -74,26 +74,26 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
                 rtype = rtype + ' '*(8 - len(rtype))
                 if rtype[0] in ('O', 'i', 'R'):
                     route = '{rtype}{sntw} [{AD}/{cost}] via {ex_ip}, {ex_int}\n'\
-                                                    .format(
-                                                            cost = cost, 
-                                                            rtype = rtype, 
-                                                            sntw = sntw,
-                                                            AD = AD[rtype[0]],
-                                                            ex_ip = ex_ip, 
-                                                            ex_int = ex_int
-                                                            )
+                                                .format(
+                                                        cost = int(cost),
+                                                        rtype = rtype, 
+                                                        sntw = sntw,
+                                                        AD = AD[rtype[0]],
+                                                        ex_ip = ex_ip.ip_addr,
+                                                        ex_int = ex_int
+                                                        )
                 elif rtype[0] == 'S':
                     route = '{rtype}{sntw} [{AD}/{cost}] via {ex_ip}\n'\
-                                                    .format(
-                                                            cost = cost, 
-                                                            rtype = rtype, 
-                                                            sntw = sntw,
-                                                            AD = AD[rtype[0]],
-                                                            ex_ip = ex_ip, 
-                                                            )
+                                                .format(
+                                                        cost = int(cost),
+                                                        rtype = rtype, 
+                                                        sntw = sntw,
+                                                        AD = AD[rtype[0]],
+                                                        ex_ip = ex_ip.ip_addr, 
+                                                        )
                 else:
                     route = '{rtype}{sntw} is directly connected, {ex_int}\n'\
-                        .format(rtype=rtype, sntw=sntw, ex_ip=ex_ip, ex_int=ex_int)
+                        .format(rtype=rtype, sntw=sntw, ex_int=ex_int)
                 self.ST.insert('insert', route)
                                         
         self.ST.pack(fill=tk.BOTH, expand=tk.YES)
