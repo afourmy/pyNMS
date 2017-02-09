@@ -3,8 +3,6 @@
 # Released under the GNU General Public License GPLv3
 
 from . import area
-import tkinter as tk
-from tkinter import ttk
 from pythonic_tkinter.preconfigured_widgets import *
 
 class ASManagement(CustomTopLevel):
@@ -18,14 +16,14 @@ class ASManagement(CustomTopLevel):
         # A ttk notebook made of two frames
         self.frame_notebook = ttk.Notebook(self)
         common_frame = CustomFrame(self.frame_notebook)
-        self.frame_notebook.add(common_frame, text='Common management')
+        self.frame_notebook.add(common_frame, text=' Common management ')
         self.frame_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
         
         # label frame for properties
         lf_properties = Labelframe(common_frame)
         lf_properties.text = 'AS properties'
         
-        obj_types = ('plink', 'node') 
+        obj_types = ('link', 'node') 
         
         label_name = Label(common_frame)
         label_name.text = 'AS name'
@@ -61,7 +59,7 @@ class ASManagement(CustomTopLevel):
             label = Label(common_frame)
             label.text = 'AS ' + type + 's'
     
-            listbox = ObjectListbox(common_frame, width=15, height=7)
+            listbox = ObjectListbox(common_frame, width=15, height=10)
                                             
             self.dict_listbox[type] = listbox
             yscroll = Scrollbar(common_frame)
@@ -76,9 +74,9 @@ class ASManagement(CustomTopLevel):
             yscroll.grid(1, 1 + 2 * index, in_=lf_objects)
         
         # find domain physical links: the physical links between nodes of the AS
-        button_find_plinks = Button(common_frame) 
-        button_find_plinks.text = 'Find physical links'
-        button_find_plinks.command=lambda: self.find_plinks()
+        button_find_links = Button(common_frame) 
+        button_find_links.text = 'Find links'
+        button_find_links.command=lambda: self.find_links()
         
         # operation on nodes
         button_remove_node_from_AS = Button(common_frame) 
@@ -86,7 +84,7 @@ class ASManagement(CustomTopLevel):
         button_remove_node_from_AS.command = lambda: self.remove_selected('node')
         
         # buttons under the physical links column
-        button_find_plinks.grid(2, 0, in_=lf_objects)
+        button_find_links.grid(2, 0, in_=lf_objects)
         
         # button under the nodes column
         button_remove_node_from_AS.grid(2, 2, in_=lf_objects)
@@ -104,7 +102,7 @@ class ASManagement(CustomTopLevel):
     # refresh display
     def refresh_display(self):
         # populate the listbox with all AS objects
-        for obj_type in ('plink', 'node'):
+        for obj_type in ('link', 'node'):
             self.dict_listbox[obj_type].clear()
             for obj in self.AS.pAS[obj_type]:
                 self.dict_listbox[obj_type].insert(obj)
@@ -127,15 +125,15 @@ class ASManagement(CustomTopLevel):
     def add_to_AS(self, *objects):
         self.AS.add_to_AS(*objects)
         for obj in objects:
-            self.dict_listbox[obj.type].insert(obj)
+            self.dict_listbox[obj.class_type].insert(obj)
             
-    def find_plinks(self):
-        plinks_between_domain_nodes = set()
+    def find_links(self):
+        links_between_domain_nodes = set()
         for node in self.AS.pAS['node']:
-            for neighbor, adj_plink in self.AS.cs.ntw.graph[node.id]['plink']:
+            for neighbor, adj_link in self.AS.cs.ntw.graph[node.id]['plink']:
                 if neighbor in self.AS.pAS['node']:
-                    plinks_between_domain_nodes.add(adj_plink)
-        self.add_to_AS(*plinks_between_domain_nodes)
+                    links_between_domain_nodes.add(adj_link)
+        self.add_to_AS(*links_between_domain_nodes)
             
     ## Functions used to modify AS from the right-click menu
                 
@@ -145,44 +143,77 @@ class ASManagement(CustomTopLevel):
             if obj.type == 'node':
                 # remove the node from nodes listbox
                 self.dict_listbox['node'].pop(obj)
-            elif obj.type == 'plink':
-                self.dict_listbox['plink'].pop(obj)
+            elif obj.class_type == 'link':
+                self.dict_listbox['link'].pop(obj)
             
 class ASManagementWithArea(ASManagement):
     
     def __init__(self, *args):
         super().__init__(*args)
-        
+                
         if self.AS.AS_type == 'VLAN':
             mode = 'VLAN'
         else:
-            mode = 'area'
+            mode = 'Area'
         
         self.area_frame = CustomFrame(self.frame_notebook)
-        self.frame_notebook.add(self.area_frame, text='Area management')
-        self.area_listbox = ('name', 'plink', 'node')
+        self.frame_notebook.add(self.area_frame, text=' Area management ')
+        self.area_listbox = ('name', 'link', 'node')
         self.dict_area_listbox = {}
         
-        # listbox for areas
-        for index, type in enumerate(self.area_listbox):
-            lbl = Label(self.area_frame)
-            lbl.text = ' '.join((mode, type))
-            listbox = ObjectListbox(self.area_frame, width=15, height=7)
-            self.dict_area_listbox[type] = listbox
-            
-            yscroll = Scrollbar(self.area_frame, orient=tk.VERTICAL)
-            yscroll.command = self.dict_area_listbox[type].yview
-            listbox.configure(yscrollcommand=yscroll.set)
-            
-            if type == 'name':
-                listbox.bind('<<ListboxSelect>>', lambda e: self.display_area(e))
-            else:
-                listbox.bind('<<ListboxSelect>>', lambda e, type=type: self.highlight_area_object(e, type))
-                            
-            lbl.grid(6, 2 * index)
-            listbox.grid(7, 2*index)
-            yscroll.grid(7, 1+2*index)
-                                                  
+        # label frame for area properties
+        lf_area_main = Labelframe(self.area_frame)
+        lf_area_main.text = 'Area properties'
+        lf_area_main.grid(0, 0)
+        
+        area_names_label = Label(self.area_frame)
+        area_names_label.text = 'List of all ' + mode
+        
+        self.area_names = ObjectListbox(self.area_frame, width=15, height=7)
+        yscroll_names = Scrollbar(self.area_frame)
+        yscroll_names.command = self.area_names.yview
+        self.area_names.configure(yscrollcommand=yscroll_names.set)
+        self.area_names.bind('<<ListboxSelect>>', lambda e: self.display_area(e))
+        
+        #TODO add entry / label for all area properties
+        
+        area_names_label.grid(0, 0, in_=lf_area_main)
+        self.area_names.grid(1, 0, in_=lf_area_main)
+        yscroll_names.grid(1, 1, in_=lf_area_main)
+        
+        # label frame for area objects
+        lf_area_objects = Labelframe(self.area_frame)
+        lf_area_objects.text = 'Area objects'
+        lf_area_objects.grid(1, 0)
+                    
+        # listbox for area nodes
+        area_nodes_label = Label(self.area_frame)
+        area_nodes_label.text = mode + ' nodes'
+        
+        self.area_nodes = ObjectListbox(self.area_frame, width=15, height=7)
+        yscroll_nodes = Scrollbar(self.area_frame)
+        yscroll_nodes.command = self.area_nodes.yview
+        self.area_nodes.configure(yscrollcommand=yscroll_nodes.set)
+        self.area_nodes.bind('<<ListboxSelect>>', lambda e: self.display_area(e))
+        
+        area_nodes_label.grid(0, 0, in_=lf_area_objects)
+        self.area_nodes.grid(1, 0, in_=lf_area_objects)
+        yscroll_nodes.grid(1, 1, in_=lf_area_objects)
+        
+        # listbox for area physical links
+        area_links_label = Label(self.area_frame)
+        area_links_label.text = mode + ' physical links'
+        
+        self.area_links = ObjectListbox(self.area_frame, width=15, height=7)
+        yscroll_links = Scrollbar(self.area_frame)
+        yscroll_links.command = self.area_links.yview
+        self.area_links.configure(yscrollcommand=yscroll_links.set)
+        self.area_links.bind('<<ListboxSelect>>', lambda e: self.display_area(e))
+        
+        area_links_label.grid(0, 2, in_=lf_area_objects)
+        self.area_links.grid(1, 2, in_=lf_area_objects)
+        yscroll_links.grid(1, 3, in_=lf_area_objects)
+                                                          
         # button to create an area
         button_create_area = Button(self.area_frame) 
         button_create_area.text = 'Create ' + mode
@@ -194,17 +225,18 @@ class ASManagementWithArea(ASManagement):
         button_delete_area.command = lambda: self.delete_area()
             
         # button under the area column
-        button_create_area.grid(8, 0)
-        button_delete_area.grid(9, 0)
+        button_create_area.grid(2, 0, in_=lf_area_objects)
+        button_delete_area.grid(2, 2, in_=lf_area_objects)
         
         # at first, the backbone is the only area: we insert it in the listbox
         self.default_area = 'Default VLAN' if mode == 'VLAN' else 'Backbone'
-        self.dict_area_listbox['name'].insert(self.default_area)
-        
+        self.area_names.insert(self.default_area)
+            
     # function to highlight the selected object on the canvas
     def highlight_area_object(self, event, obj_type):        
         self.AS.cs.unhighlight_all()
-        for selected_object in self.dict_area_listbox[obj_type].selected():
+        lb = self.area_nodes if obj_type == 'node' else self.area_links
+        for selected_object in lb.selected():
             so = self.AS.cs.ntw.of(name=selected_object, _type=obj_type)
             self.AS.cs.highlight_objects(so)
         
@@ -212,30 +244,29 @@ class ASManagementWithArea(ASManagement):
 
     def create_area(self, name, id):
         self.AS.area_factory(name, id)
-        self.dict_area_listbox['name'].insert(name)
+        self.area_names.insert(name)
 
     def delete_area(self):
-        for area_name in self.dict_area_listbox['name'].pop_selected():
+        for area_name in self.area_names.pop_selected():
             selected_area = self.AS.area_factory(name=area_name)
             self.AS.delete_area(selected_area)
                 
     def display_area(self, event):
-        for area in self.dict_area_listbox['name'].selected():
+        for area in self.area_names.selected():
             area = self.AS.area_factory(area)
             self.AS.cs.unhighlight_all()
-            self.AS.cs.highlight_objects(*(area.pa['node'] | area.pa['plink']))
-            self.dict_area_listbox['node'].clear()
-            self.dict_area_listbox['plink'].clear()
+            self.AS.cs.highlight_objects(*(area.pa['node'] | area.pa['link']))
+            self.area_nodes.clear()
+            self.area_links.clear()
             for node in area.pa['node']:
-                self.dict_area_listbox['node'].insert(node)
-            for plink in area.pa['plink']:
-                self.dict_area_listbox['plink'].insert(plink)
+                self.area_nodes.insert(node)
+            for link in area.pa['link']:
+                self.area_links.insert(link)
                 
     ## Functions used to modify AS from the right-click menu
     
     def add_to_AS(self, *objects):
         super(ASManagementWithArea, self).add_to_AS(*objects)  
-        self.add_to_area(self.default_area, *objects)
     
     def add_to_area(self, area, *objects):
         self.AS.areas[area].add_to_area(*objects)
@@ -281,7 +312,7 @@ class STP_Management(ASManagement):
         button_elect_root.grid(2, 0, in_=lf_stp_specifics)
         
     def highlight_SPT(self):
-        self.AS.cs.highlight_objects(*self.AS.SPT_plinks)
+        self.AS.cs.highlight_objects(*self.AS.SPT_links)
         
 class VLAN_Management(ASManagementWithArea):
     
@@ -312,51 +343,15 @@ class ISIS_Management(ASManagementWithArea):
                                 command=lambda: self.update_AS_topology())
         self.button_update_topo.grid(row=2, column=0, pady=5, padx=5, sticky='w') 
         
-    def update_AS_topology(self):
-        
-        self.AS.border_routers.clear()
-        # reset all area physical links
-        self.AS.areas['Backbone'].pa['plink'].clear()
-        for link in self.AS.pAS['plink']:
-            link.AS[self.AS].clear()
-        
-        for node in self.AS.pAS['node']:
-            
-            # In IS-IS, a router has only one area
-            node_area ,= node.AS[self.AS]
-            
-            for neighbor, adj_plink in self.AS.cs.ntw.graph[node.id]['plink']:
-                
-                # A multi-area IS-IS AS is defined by the status of its nodes.
-                # we automatically update the link area status, by considering 
-                # that a link belongs to an area as soon as both of its ends do.
-                # A link between two L1/L2 routers that belong to different
-                # areas will be considered as being part of the backbone.
-
-                # we check that the neighbor belongs to the AS
-                if self.AS in neighbor.AS:
-                    # we retrieve the neighbor's area
-                    neighbor_area ,= neighbor.AS[self.AS]
-                    # if they are the same, we add the link to the area
-                    if node_area == neighbor_area:
-                        node_area.add_to_area(adj_plink)
-                    # if not, it is at the edge of two areas
-                    # a router is considered L1/L2 if it has at least
-                    # one neighbor which is in a different area.
-                    else:
-                        # we consider that the link belongs to the backbone,
-                        # for interfaces to have IP addresses.
-                        self.AS.areas['Backbone'].add_to_area(adj_plink)
-                        self.AS.border_routers.add(node)
                 
     def update_cost(self):
-        for plink in self.AS.pAS['plink']:
-            bw = self.if_to_cost[plink.interface]
+        for link in self.AS.pAS['link']:
+            bw = self.if_to_cost[link.interface]
             # the cost of a link cannot be less than 1. This also means that,
             # by default, all interfaces from GE to 100GE will result in the
             # same metric: 1.
             cost = max(1, self.AS.ref_bw / bw)
-            plink.costSD = plink.costDS = cost
+            link.costSD = link.costDS = cost
         
 class OSPF_Management(ASManagementWithArea):
     
@@ -392,40 +387,15 @@ class OSPF_Management(ASManagementWithArea):
         
         # hide the window when closed
         self.protocol('WM_DELETE_WINDOW', self.save_parameters)
-        
-    def update_AS_topology(self):
-        
-        self.AS.border_routers.clear()
-        # reset all area nodes
-        self.AS.areas['Backbone'].pa['node'].clear()
-        
-        for node in self.AS.pAS['node']:
-                
-            # in OSPF, a router is considered ABR if it has attached
-            # links that are in different area. Since we just updated 
-            # the router's areas, all we need to check is that it has
-            # at least 2 distinct areas.
-            # an ABR is automatically part of the backbone area.
-            if len(node.AS[self.AS]) > 1:
-                self.AS.border_routers.add(node)
-                self.AS.areas['Backbone'].add_to_area(node)
-            
-            for neighbor, adj_plink in self.AS.cs.ntw.graph[node.id]['plink']:
-
-                # a multi-area OSPF AS is defined by the area of its link.
-                # we automatically update the node area status, by considering that a 
-                # node belongs to an area as soon as one of its adjacent link does.
-                for area in adj_plink.AS[self.AS]:
-                    area.add_to_area(node)
                 
     def update_cost(self):
-        for plink in self.AS.pAS['plink']:
-            bw = self.if_to_cost[plink.interface]
+        for link in self.AS.pAS['link']:
+            bw = self.if_to_cost[link.interface]
             # the cost of a link cannot be less than 1. This also means that,
             # by default, all interfaces from GE to 100GE will result in the
             # same metric: 1.
             cost = max(1, self.AS.ref_bw / bw)
-            plink.costSD = plink.costDS = cost 
+            link.costSD = link.costDS = cost 
             
     ## saving function: used when closing the window
     
@@ -435,3 +405,7 @@ class OSPF_Management(ASManagementWithArea):
             self.AS.exit_point = exit_asbr
         self.withdraw()
         
+class BGP_Management(ASManagementWithArea):
+    
+    def __init__(self, *args):
+        super().__init__(*args)

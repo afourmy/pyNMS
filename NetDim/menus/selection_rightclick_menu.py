@@ -15,7 +15,6 @@ import graph_generation.multiple_objects as mobj
 from .alignment_menu import AlignmentMenu
 from objects.object_management_window import PropertyChanger
 from collections import OrderedDict
-from operator import xor
 from objects.interface_window import InterfaceWindow
                                 
 class SelectionRightClickMenu(tk.Menu):
@@ -40,7 +39,8 @@ class SelectionRightClickMenu(tk.Menu):
         self.all_so = self.cs.so['node'] | self.cs.so['link']
                             
         # exactly one object: property window 
-        if xor(len(self.cs.so['node']) == 1, len(self.cs.so['link']) == 1):
+        if (len(self.cs.so['node']) == 1 and not self.cs.so['link']
+            or len(self.cs.so['link']) == 1 and not self.cs.so['node']):
             self.add_command(label='Properties', 
                         command=lambda: self.show_object_properties())
             self.add_separator()

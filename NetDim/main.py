@@ -1,6 +1,6 @@
 # NetDim
 # Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
- 
+
 import sys
 from inspect import getsourcefile
 from os.path import abspath

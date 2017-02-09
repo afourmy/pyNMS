@@ -221,7 +221,7 @@ traffic_common_ie_properties = (
 # properties shared by all objects of a given subtype
 
 object_properties = OrderedDict([
-('router', node_common_properties + ('default_route', 'bgp_AS')),
+('router', node_common_properties + ('default_route',)),
 ('switch', node_common_properties + ('base_macaddress',)),
 ('oxc', node_common_properties),
 ('host', node_common_properties),
@@ -247,7 +247,8 @@ object_properties = OrderedDict([
 'ipS',
 'ipD',
 'weightS',
-'weightD'
+'weightD',
+'AS'
 )),
 
 ('OSPF virtual link', route_common_properties + (
@@ -268,7 +269,7 @@ object_properties = OrderedDict([
 ## Common Import / Export properties per subtype
 
 object_ie = OrderedDict([
-('router', node_common_ie_properties + ('default_route', 'bgp_AS')),
+('router', node_common_ie_properties + ('default_route',)),
 ('switch', node_common_ie_properties + ('base_macaddress',)),
 ('oxc', node_common_ie_properties),
 ('host', node_common_ie_properties),
@@ -515,8 +516,7 @@ prop_to_nice_name = {
 'macaddressS': 'MAC address (source)',
 'macaddressD': 'MAC address (destination)',
 'macaddress': 'MAC address',
-'weightS': 'Weight (source)',
-'weightD': 'Weight (destination)',
+'local_pref': 'Local preference',
 'sntw': 'Subnetwork',
 'throughput': 'Throughput',
 'lambda_capacity': 'Lambda capacity',
@@ -542,7 +542,9 @@ prop_to_nice_name = {
 'AS': 'Autonomous system',
 'role': 'Role',
 'priority': 'Priority',
-'base_macaddress': 'Base MAC address'
+'base_macaddress': 'Base MAC address',
+'weightS': 'Source weight',
+'weightD': 'Destination weight'
 }
 
 name_to_prop = {v: k for k, v in prop_to_nice_name.items()}
@@ -858,8 +860,6 @@ class PhysicalLink(Link):
                     return interface(AS, property)
                 else:
                     interface(AS, property, value)
-            
-            
 
 class Ethernet(PhysicalLink):
     
@@ -913,11 +913,10 @@ class Interface(NDobject):
         return self.name
         
     def __eq__(self, other):
-        return (isinstance(other, self.__class__) and self.node == other.node
-                                            and self.link == other.link)
-                    
+        return self.node == other.node and self.link == other.link
+                                            
     def __hash__(self):
-        return hash(self.name)
+        return hash(self.node) + hash(self.link)
         
     def __call__(self, AS, property, value=False):
         # can be used both as a getter and a setter, depending on 
@@ -1068,6 +1067,10 @@ class BGPPeering(Route):
     
     @initializer(ie_properties)
     def __init__(self, **kwargs):
+        # list of AS to which the physical links belongs. AS is actually 
+        # a dictionnary associating an AS to a set of area the physical links 
+        # belongs to
+        self.AS = defaultdict(set)
         super().__init__()
         
 class VirtualLink(Route):

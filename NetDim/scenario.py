@@ -648,7 +648,7 @@ class Scenario(CustomFrame):
                             # projection of the edge nodes, and reset the 
                             # associated 'layer to projection id' dictionnary
                             self.cvs.delete(edge.oval[obj.layer], edge.image[obj.layer])
-                            edge.image[obj.layer] = edge.oval[obj.layer] = None
+                            # edge.image[obj.layer] = edge.oval[obj.layer] = None
                             # we delete the dashed 'layer line' and reset the
                             # associated 'layer to layer line id' dictionnary
                             self.cvs.delete(edge.layer_line[obj.layer])
@@ -1093,7 +1093,9 @@ class Scenario(CustomFrame):
         self.refresh_failures() 
         filter = self.ms.display_menu.filter_entry.text
         if filter:
-            self.display_filter(filter)      
+            self.display_filter(filter)   
+        for AS in self.ntw.pnAS.values():
+            AS.management.refresh_display()
             
     ## Other
     
@@ -1149,7 +1151,7 @@ class LabelCreation(CustomTopLevel):
         OK_button.grid(1, 0, in_=lf_label_creation)
 
     def OK(self, x, y):
-        font= ("Purisa", '6', 'bold')
+        font= ("Purisa", '12', 'bold')
         self.cs.cvs.create_text(x, y, text=self.entry_label.text, font=font)
         self.destroy()
         

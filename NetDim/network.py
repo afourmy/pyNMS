@@ -65,6 +65,7 @@ class Network(object):
     ('OSPF', AS.OSPF_AS),
     ('STP', AS.STP_AS),
     ('VLAN', AS.VLAN_AS),
+    ('BGP', AS.BGP_AS)
     ])
     
     link_class = {}
@@ -218,7 +219,6 @@ class Network(object):
             keep = lambda r: r.AS_type in sts
         return filter(keep, self.pnAS.values())
         
-        
     # function that retrieves all IP addresses attached to a node, including
     # it's loopback IP.
     def attached_ips(self, src):
@@ -368,6 +368,11 @@ class Network(object):
                 yield adj_link
 
     def remove_link(self, link):
+        # if it is a physical link, remove the link's interfaces from the model
+
+        if link.type == 'plink':
+            self.interfaces -= {link.interfaceS, link.interfaceD}
+        # remove the link itself from the model
         self.graph[link.source.id][link.type].discard((link.destination, link))
         self.graph[link.destination.id][link.type].discard((link.source, link))
         self.pn[link.type].pop(self.name_to_id.pop(link.name))
@@ -420,22 +425,10 @@ class Network(object):
                     yield link
                     
     def update_AS_topology(self):
-        # update all BGP AS property of nodes in a BGP AS
-        for AS in filter(lambda a: a.AS_type == 'BGP', self.pnAS.values()):
-            for node in AS.nodes:
-                node.bgp_AS = AS.name
-                
-        # update all BGP peering type based on the source and destination AS
-        for bgp_pr in self.ftr('l3link', 'BGP peering'):
-            same_AS = bgp_pr.source.bgp_AS == bgp_pr.destination.bgp_AS
-            bgp_pr.bgp_type = 'iBGP' if same_AS else 'eBGP'
-        
-        for AS in self.pnAS.values():
-            # for all OSPF and IS-IS AS, fill the ABR/L1L2 sets
-            # update physical link area based on nodes area (ISIS) 
-            # and vice-versa (OSPF)
-            if AS.AS_type in ('ISIS', 'OSPF'):
-                AS.management.update_AS_topology()
+        for AS in self.ASftr('subtype', 'ISIS', 'OSPF', 'BGP'):
+            # for all OSPF, IS-IS and BGP AS, fill the ABR/L1L2/nodes/links 
+            # sets based on nodes area (ISIS, BGP) and vice-versa (OSPF)
+            AS.update_AS_topology()
             
     def segment_finder(self, layer):
         # we associate a set of physical links to each layer-n segment.
@@ -500,6 +493,8 @@ class Network(object):
                         self.cs.create_link(vc)
     
     def ip_allocation(self):
+        # remove all existing IP addresses
+        self.ip_to_oip.clear()
         # we will perform the IP addressing of all subnetworks with VLSM
         # we first sort all subnetworks in increasing order of size, then
         # compute which subnet is needed
@@ -802,65 +797,11 @@ class Network(object):
             # interface: it is a directly connected interface
             source.rt[adj_plink.sntw] = {('C', ex_ip, ex_int, 
                                                     0, neighbor, adj_plink)}
-                                            
-                    
-    def BGPT_builder(self):
-        for source in self.ftr('node', 'router'):
-            source.bgpt.clear()
-            visited = {source}
-            heap = []
-            # bgp table
-            bgpt = defaultdict(set)
-            
-            # populate the BGP table with the routes sourced by the source node,
-            # with a default weight of 32768
-            for ip, routes in source.rt.items():
-                for route in routes:
-                    _, nh, *_ = route
-                    source.bgpt[ip] |= {(32768, nh, source, ())}
-            
-            # we fill the heap so that 
-            for src_nb, bgp_pr in self.gftr(source, 'l3link', 'BGP peering'):
-                first_AS = [source.bgp_AS, src_nb.bgp_AS]
-                if bgp_pr('weight', source):
-                    weight = 1 / bgp_pr('weight', source)
-                else: 
-                    weight = float('inf')
-                heappush(heap, (
-                                weight, # weight 
-                                2, # length of the AS_PATH vector
-                                bgp_pr('ip', src_nb), # next-hop IP address
-                                src_nb, # current node
-                                [], # path as a list of BGP peering connections
-                                first_AS # path as a list of AS
-                                ))
-            
-            while heap:
-                weight, length, nh, node, route_path, AS_path = heappop(heap)
-                if node not in visited:
-                    for ip, routes in node.rt.items():
-                        real_weight = 0 if weight == float('inf') else 1/weight
-                        source.bgpt[ip] |= {(real_weight, nh, node, tuple(AS_path))}
-                    visited.add(node)
-                    for bgp_nb, bgp_pr in self.gftr(node, 'l3link', 'BGP peering'):
-                        # excluded and allowed nodes
-                        if bgp_nb in visited:
-                            continue
-                        # we append a new AS if we use an external BGP peering
-                        new_AS = [bgp_nb.bgp_AS]*(bgp_pr.bgp_type == 'eBGP')
-                        heappush(heap, (
-                                        weight, 
-                                        length + (bgp_pr.bgp_type == 'eBGP'), 
-                                        nh, 
-                                        bgp_nb,
-                                        route_path + [bgp_pr], 
-                                        AS_path + new_AS
-                                        ))
+                                        
                                         
     def route(self):
         # create the routing tables and route all traffic flows
         self.rt_creation()
-        self.BGPT_builder()
         self.path_finder()
                 
     def calculate_all(self):
