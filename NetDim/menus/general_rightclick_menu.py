@@ -23,7 +23,7 @@ class GeneralRightClickMenu(tk.Menu):
                 
         # find networks
         self.add_command(label='Refresh', 
-                command=lambda: self.network())
+                command=lambda: self.refresh())
                 
         # make the menu appear    
         self.tk_popup(event.x_root, event.y_root)
@@ -32,6 +32,6 @@ class GeneralRightClickMenu(tk.Menu):
         self.cs.remove_failures()
         self.destroy()
         
-    def network(self):
-        self.cs.refresh()
+    def refresh(self):
+        self.cs.ms.refresh()
         self.destroy()

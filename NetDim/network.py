@@ -103,8 +103,6 @@ class Network(object):
         self.name_to_id = {}
         
         # dicts used for IP networks 
-        # - associates a subnetwork to a set of IP addresses
-        self.sntw_to_ip = defaultdict(set)
         # - associates an IP to a node. when a default / static route is 
         # defined, only the next-hop ip is specified: we need to translate it 
         # into a next-hop node to properly fill the routing table.
@@ -492,10 +490,12 @@ class Network(object):
                         self.cs.create_link(vc)
                         
     def vc_creation(self):
+        # clear all existing multi-access segments
+        self.ma_segments.clear()
         for i in (2, 3):
             type, subtype = 'l{}link'.format(i), 'l{}vc'.format(i)
             for vc in list(self.ftr(type, subtype)):
-                self.remove_link(vc)
+                self.cs.remove_objects(vc)
             self.segment_finder(i)
             self.multi_access_network(i)
     
@@ -556,6 +556,11 @@ class Network(object):
         for node in self.nodes.values():
             for idx, (_, adj_plink) in enumerate(self.graph[node.id]['plink']):
                 adj_plink('name', node, 'Ethernet0/{}'.format(idx))
+                
+    def interface_configuration(self):
+        self.mac_allocation()
+        self.ip_allocation()
+        self.interface_allocation()
                 
     # WC physical link dimensioning: this computes the maximum traffic the physical link
     # may have to carry considering all possible physical link failure. 
@@ -808,19 +813,7 @@ class Network(object):
             AS.build_RFT()
         for router in self.ftr('node', 'router', 'host'):
             self.static_RFT_builder(router)
-                                        
-    def calculate_all(self):
-        pass
-        # self.ma_segments.clear()
-        # self.update_AS_topology()
-        # self.vc_creation()
-        # self.mac_allocation()
-        # self.ip_allocation()
-        # self.interface_allocation()
-
-       ##   self.rt_creation()
-        # self.path_finder()
-        
+                                                
     ## Graph functions
     
     def bfs(self, source):

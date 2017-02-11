@@ -1086,10 +1086,10 @@ class Scenario(CustomFrame):
             
     ## Refresh display
     
-    def refresh(self):
-        self.ntw.calculate_all()
-        self.refresh_all_labels()
-        self.draw_all(False)      
+    def refresh_display(self):
+        # remove selections as the red highlight will go away anyway
+        self.so = {'node': set(), 'link': set()}
+        self.refresh_all_labels()     
         self.refresh_failures() 
         filter = self.ms.display_menu.filter_entry.text
         if filter:

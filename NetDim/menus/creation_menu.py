@@ -63,9 +63,9 @@ class CreationMenu(ScrolledFrame):
         self.type_to_button = {}
         
         self.type_to_action = {
-        'netdim': lambda: Computation(self.ms),
+        'netdim': self.ms.refresh,
         'motion': lambda: self.switch_to('motion'),
-        'multi-layer': lambda: self.ms.cs.switch_display_mode(),
+        'multi-layer': self.ms.cs.switch_display_mode,
         }
         
         for topo in ('tree', 'star', 'full-mesh', 'ring'):

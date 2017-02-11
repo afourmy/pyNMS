@@ -209,6 +209,23 @@ class NetDim(MainWindow):
         
         # notebooks of scenarios
         self.scenario_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+        
+    def refresh(self):
+        
+        commands = (
+                    self.cs.ntw.vc_creation,
+                    self.cs.ntw.interface_configuration,
+                    self.cs.ntw.update_AS_topology,
+                    self.cs.ntw.switching_table_creation,
+                    self.cs.ntw.routing_table_creation,
+                    self.cs.ntw.path_finder,
+                    lambda: self.cs.draw_all(False),
+                    self.cs.refresh_display
+                    )
+        
+        for idx, boolean in enumerate(self.routing_menu.action_booleans):
+            if boolean.get():
+                commands[idx]()
             
     def change_cs(self, event=None):
         cs_name = self.scenario_notebook.tab(self.scenario_notebook.select(), 'text')
