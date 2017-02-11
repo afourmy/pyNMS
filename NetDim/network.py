@@ -243,7 +243,7 @@ class Network(object):
             s, d = kwargs['source'], kwargs['destination']
             id = self.cpt_link
             if not name:
-                name = subtype + ' link' + str(self.cpt_link)
+                name = subtype + str(len(list(self.ftr(link_type, subtype))))
             kwargs.update({'id': id, 'name': name})
             new_link = self.link_class[subtype](**kwargs)
             self.name_to_id[name] = id
@@ -369,7 +369,6 @@ class Network(object):
 
     def remove_link(self, link):
         # if it is a physical link, remove the link's interfaces from the model
-
         if link.type == 'plink':
             self.interfaces -= {link.interfaceS, link.interfaceD}
         # remove the link itself from the model
@@ -491,6 +490,14 @@ class Network(object):
                         vc("link", node, source_plink)
                         vc("link", neighbor, destination_plink)
                         self.cs.create_link(vc)
+                        
+    def vc_creation(self):
+        for i in (2, 3):
+            type, subtype = 'l{}link'.format(i), 'l{}vc'.format(i)
+            for vc in list(self.ftr(type, subtype)):
+                self.remove_link(vc)
+            self.segment_finder(i)
+            self.multi_access_network(i)
     
     def ip_allocation(self):
         # remove all existing IP addresses
@@ -520,10 +527,9 @@ class Network(object):
         for idx, router in enumerate(self.ftr('node', 'router'), 1):
             router.ipaddress = '192.168.{}.{}'.format(idx // 255, idx % 255)
             
-    def subnetwork_allocation(self):
-        for ip in self.ip_to_oip.values():
-            if ip and ip.interface:
-                ip.interface.link.sntw = ip.network
+        # for ip in self.ip_to_oip.values():
+        #     if ip and ip.interface:
+        #         ip.interface.link.sntw = ip.network
             
     def mac_allocation(self):
         # ranges of private MAC addresses
@@ -577,17 +583,7 @@ class Network(object):
                         setattr(plink, 'wctraffic' + dir, curr_traffic)
                         setattr(plink, 'wcfailure', str(failed_plink))
         self.fdtks.clear()
-        
-    def rt_creation(self):
-        # clear the existing routing tables
-        for node in self.ftr('node', 'router', 'host'):
-            node.rt.clear()
-        # we compute the routing table of all routers
-        for AS in self.ASftr('layer', 'IP'):
-            AS.build_RFT()
-        for router in self.ftr('node', 'router', 'host'):
-            self.static_RFT_builder(router)
-            
+                    
     # this function creates both the ARP and the RARP tables
     def arpt_creation(self):
         # clear the existing ARP tables
@@ -797,29 +793,33 @@ class Network(object):
             # interface: it is a directly connected interface
             source.rt[adj_plink.sntw] = {('C', ex_ip, ex_int, 
                                                     0, neighbor, adj_plink)}
-                                        
-                                        
-    def route(self):
-        # create the routing tables and route all traffic flows
-        self.rt_creation()
-        self.path_finder()
-                
-    def calculate_all(self):
-        self.ma_segments.clear()
-        self.update_AS_topology()
-        for i in (2, 3):
-            self.segment_finder(i)
-            self.multi_access_network(i)
-        self.mac_allocation()
-        if not self.ip_to_oip:
-            self.ip_allocation()
-        else:
-            self.subnetwork_allocation()
-        self.interface_allocation()
+                             
+    def switching_table_creation(self):
         self.arpt_creation()
         self.STP_update()
         self.st_creation()
-        self.route()
+        
+    def routing_table_creation(self):
+        # clear the existing routing tables
+        for node in self.ftr('node', 'router', 'host'):
+            node.rt.clear()
+        # we compute the routing table of all routers
+        for AS in self.ASftr('layer', 'IP'):
+            AS.build_RFT()
+        for router in self.ftr('node', 'router', 'host'):
+            self.static_RFT_builder(router)
+                                        
+    def calculate_all(self):
+        pass
+        # self.ma_segments.clear()
+        # self.update_AS_topology()
+        # self.vc_creation()
+        # self.mac_allocation()
+        # self.ip_allocation()
+        # self.interface_allocation()
+
+       ##   self.rt_creation()
+        # self.path_finder()
         
     ## Graph functions
     
@@ -2334,5 +2334,5 @@ class Network(object):
             # in the multiple link window, the source nodes are not excluded,
             # so we check that both nodes are different before creating the link
             if src_node != destination_node:
-                self.lf(s=src_node, d=destination_node)
+                self.lf(source=src_node, destination=destination_node)
             

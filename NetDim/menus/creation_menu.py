@@ -181,37 +181,4 @@ class CreationMenu(ScrolledFrame):
     def erase_graph(self, scenario):
         scenario.erase_graph()
         scenario.ntw.erase_network()
-        
-class Computation(CustomTopLevel):
-            
-    def __init__(self, master):
-        super().__init__()
-        self.ms = master
-
-        self.functions = OrderedDict([
-        ('Update AS topology', self.ms.cs.ntw.update_AS_topology),
-        ('Interface allocation', self.ms.cs.ntw.interface_allocation),
-        ('IP addressing', self.ms.cs.ntw.ip_allocation),
-        ('Create routing tables', self.ms.cs.ntw.rt_creation),
-        ('Route traffic links', self.ms.cs.ntw.path_finder),
-        ('Refresh labels', self.ms.cs.refresh_all_labels)
-        ])
-        
-        self.lb_functions = ObjectListbox(self, activestyle='none', width=15, 
-                                            height=7, selectmode='extended')
-                                            
-        for function in self.functions:
-            self.lb_functions.insert(function) 
-            
-        # button to confirm selection and trigger functions
-        self.OK_button = ttk.Button(self, text='OK', command=self.OK)
-                                
-        self.lb_functions.pack(fill=tk.BOTH, expand=1)
-        self.OK_button.pack()
-        
-    def OK(self):
-        for function in self.lb_functions.selected():
-            print(function)
-            self.functions[function]()
-        self.destroy()
-        
+                

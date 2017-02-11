@@ -701,7 +701,7 @@ class BGP_AS(ASWithArea, IP_AS):
         for ip, routes in source.rt.items():
             for route in routes:
                 _, nh, *_ = route
-                source.bgpt[ip] |= {(32768, nh, source, ())}
+                source.bgpt[ip] |= {(0, nh, source, ())}
         
         # we fill the heap
         for src_nb, bgp_pr in self.ntw.gftr(source, 'l3link', 'BGP peering'):
@@ -724,7 +724,7 @@ class BGP_AS(ASWithArea, IP_AS):
             weight, length, nh, node, route_path, AS_path = heappop(heap)
             if node not in visited:
                 for ip, routes in node.rt.items():
-                    real_weight = 0 if weight == float('inf') else 1/weight
+                    real_weight = 0 if weight == float('inf') else 1 / weight
                     source.bgpt[ip] |= {(real_weight, nh, node, tuple(AS_path))}
                 visited.add(node)
                 for bgp_nb, bgp_pr in self.ntw.gftr(node, 'l3link', 'BGP peering'):

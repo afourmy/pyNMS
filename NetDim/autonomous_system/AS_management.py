@@ -343,6 +343,9 @@ class ISIS_Management(ASManagementWithArea):
                                 command=lambda: self.update_AS_topology())
         self.button_update_topo.grid(row=2, column=0, pady=5, padx=5, sticky='w') 
         
+    def add_to_AS(self, *objects):
+        super(ISIS_Management, self).add_to_AS(*objects)  
+        self.add_to_area(self.default_area, *objects)
                 
     def update_cost(self):
         for link in self.AS.pAS['link']:
@@ -387,6 +390,10 @@ class OSPF_Management(ASManagementWithArea):
         
         # hide the window when closed
         self.protocol('WM_DELETE_WINDOW', self.save_parameters)
+        
+    def add_to_AS(self, *objects):
+        super(OSPF_Management, self).add_to_AS(*objects)  
+        self.add_to_area(self.default_area, *objects)
                 
     def update_cost(self):
         for link in self.AS.pAS['link']:

@@ -22,7 +22,7 @@ from miscellaneous import debug
 from graph_generation import advanced_graph as adv_gr
 from optical_networks import rwa_window as rwaw
 from miscellaneous.network_functions import IPAddress
-from menus import creation_menu, display_menu, drawing_menu
+from menus import creation_menu, display_menu, drawing_menu, routing_menu
 from PIL import ImageTk
 try:
     import xlrd
@@ -106,28 +106,28 @@ class NetDim(MainWindow):
         general_menu.create_menu()
         netdim_menu.add_cascade(label='Main',menu=general_menu)
                 
-        # routing menu:
+        # advanced menu:
         
-        routing_menu = Menu(netdim_menu)
+        advanced_menu = Menu(netdim_menu)
         
-        advanced_graph_entry = MenuEntry(routing_menu)
+        advanced_graph_entry = MenuEntry(advanced_menu)
         advanced_graph_entry.text = 'Advanced graph'
         advanced_graph_entry.command = self.advanced_graph.deiconify
         
-        advanced_algorithms_entry = MenuEntry(routing_menu)
+        advanced_algorithms_entry = MenuEntry(advanced_menu)
         advanced_algorithms_entry.text = 'Advanced algorithms'
         advanced_algorithms_entry.command = self.advanced_graph_options.deiconify
 
-        network_tree_view_entry = MenuEntry(routing_menu)
+        network_tree_view_entry = MenuEntry(advanced_menu)
         network_tree_view_entry.text = 'Network Tree View'
         network_tree_view_entry.command = lambda: NetworkTreeView(self)
         
-        wavelenght_assignment_entry = MenuEntry(routing_menu)
+        wavelenght_assignment_entry = MenuEntry(advanced_menu)
         wavelenght_assignment_entry.text = 'Wavelength assignment'
         wavelenght_assignment_entry.command = self.rwa_window.deiconify
         
-        routing_menu.create_menu()
-        netdim_menu.add_cascade(label='Network routing',menu=routing_menu)
+        advanced_menu.create_menu()
+        netdim_menu.add_cascade(label='Network routing',menu=advanced_menu)
 
         # choose which label to display per type of object
         label_menu = Menu(netdim_menu)
@@ -196,9 +196,14 @@ class NetDim(MainWindow):
         self.drawing_menu = drawing_menu.DrawingMenu(self.menu_notebook, self)
         self.drawing_menu.pack(fill=tk.BOTH, side=tk.LEFT)
         
+        # routing menu (addresss allocation + tables creation + routing)
+        self.routing_menu = routing_menu.RoutingMenu(self.menu_notebook, self)
+        self.routing_menu.pack(fill=tk.BOTH, side=tk.LEFT)
+        
         self.menu_notebook.add(self.creation_menu, text=' Creation ')
         self.menu_notebook.add(self.display_menu, text=' Display ')
         self.menu_notebook.add(self.drawing_menu, text=' Drawing ')
+        self.menu_notebook.add(self.routing_menu, text=' Routing ')
         
         self.menu_notebook.pack(side=tk.LEFT, fill=tk.BOTH)
         
@@ -330,20 +335,20 @@ class NetDim(MainWindow):
             # AS import
             elif name == 'AS':
                 for row_index in range(1, sheet.nrows):
-                    name, AS_type, id, nodes, plinks = sheet.row_values(row_index)
+                    name, AS_type, id, nodes, links = sheet.row_values(row_index)
                     id = int(id)
                     nodes = self.cs.ntw.convert_node_set(nodes)
-                    plinks = self.cs.ntw.convert_link_set(plinks)
-                    self.cs.ntw.AS_factory(AS_type, name, id, plinks, nodes, True)
+                    links = self.cs.ntw.convert_link_set(links)
+                    self.cs.ntw.AS_factory(AS_type, name, id, links, nodes, True)
                 
             # area import
             elif name == 'area':
                 for row_index in range(1, sheet.nrows):
-                    name, AS, id, nodes, plinks = sheet.row_values(row_index)
+                    name, AS, id, nodes, links = sheet.row_values(row_index)
                     AS = self.cs.ntw.AS_factory(name=AS)
                     nodes = self.cs.ntw.convert_node_set(nodes)
-                    plinks = self.cs.ntw.convert_link_set(plinks)
-                    new_area = AS.area_factory(name, int(id), plinks, nodes)
+                    links = self.cs.ntw.convert_link_set(links)
+                    new_area = AS.area_factory(name, int(id), links, nodes)
                     
             # per-AS node properties import
             elif name == 'per-AS node properties':
@@ -371,7 +376,7 @@ class NetDim(MainWindow):
     def export_graph(self, filepath=None):
         
         # to convert a list of object into a string of a list of strings
-        # useful for AS nodes, edges, plinks as well as area nodes and plinks
+        # useful for AS nodes, edges, links as well as area nodes and links
         to_string = lambda s: str(list(map(str, s)))
         
         # filepath is set for unittest
@@ -420,7 +425,7 @@ class NetDim(MainWindow):
                 AS_sheet.write(i, 1, str(AS.AS_type))
                 AS_sheet.write(i, 2, str(AS.id))
                 AS_sheet.write(i, 3, to_string(AS.pAS['node']))
-                AS_sheet.write(i, 4, to_string(AS.pAS['plink']))
+                AS_sheet.write(i, 4, to_string(AS.pAS['link']))
                 
             node_AS_sheet = excel_workbook.add_sheet('per-AS node properties')
                 
@@ -437,7 +442,7 @@ class NetDim(MainWindow):
             
             cpt = 1
             for AS in self.cs.ntw.pnAS.values():
-                for link in AS.plinks:
+                for link in AS.links:
                     for interface in (link.interfaceS, link.interfaceD):
                         if_AS_sheet.write(cpt, 0, AS.name)
                         if_AS_sheet.write(cpt, 1, str(interface.link))
@@ -459,7 +464,7 @@ class NetDim(MainWindow):
                     area_sheet.write(cpt, 1, str(area.AS))
                     area_sheet.write(cpt, 2, str(area.id))
                     area_sheet.write(cpt, 3, to_string(area.pa['node']))
-                    area_sheet.write(cpt, 4, to_string(area.pa['plink']))
+                    area_sheet.write(cpt, 4, to_string(area.pa['link']))
                     cpt += 1
                 
         excel_workbook.save(selected_file.name)
