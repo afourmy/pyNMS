@@ -3,37 +3,57 @@
 # Released under the GNU General Public License GPLv3
 
 from pythonic_tkinter.preconfigured_widgets import *
-from tkinter.scrolledtext import ScrolledText
-import tkinter as tk
-from tkinter import ttk
 from miscellaneous.network_functions import compute_network
 
 class Ping(FocusTopLevel):
     def __init__(self, source, scenario):
         super().__init__() 
         self.cs = scenario
-        self.label_IP = tk.Label(self, bg='#A1DBCD', text='Destination IP :')
-        self.entry_IP  = tk.Entry(self, width=20)
+        
+        # main label frame
+        lf_ping = Labelframe(self)
+        lf_ping.text = 'Ping a distant node'
+        lf_ping.grid(0, 0)
+        
+        label_src_IP = Label(self)
+        label_src_IP.text = 'Source IP :'
+        
+        self.IP_list = Combobox(self, width=15)
+        self.IP_list['values'] = tuple(self.cs.ntw.attached_ips(source))
+        self.IP_list.current(0)
+        
+        label_dst_IP = Label(self)
+        label_dst_IP.text = 'Destination IP :'
+        
+        self.entry_IP  = Entry(self, width=20)
 
-        self.bt_ping = ttk.Button(self, text='Ping', 
-                                command=lambda: self.ping_IP(source), width=10)
+        button_ping = Button(self, width=10)
+        button_ping.text = 'Ping' 
+        button_ping.command = lambda: self.ping_IP(source)
                                 
-        self.ST = ScrolledText(self, wrap='word', bg='beige')
-        self.wm_attributes('-topmost', True)                     
+        self.ST = ScrolledText(self)
+        self.wm_attributes('-topmost', True)                    
 
-        self.label_IP.grid(row=0, column=0, pady=5, padx=5, sticky='e')
-        self.entry_IP.grid(row=0, column=1, pady=5, padx=5)
-        self.bt_ping.grid(row=0, column=2, pady=5, padx=5)
-        self.ST.grid(row=1, column=0, columnspan=3, pady=5, padx=5)
+        label_src_IP.grid(0, 0, in_=lf_ping)
+        self.IP_list.grid(0, 1, in_=lf_ping)
+        label_dst_IP.grid(0, 2, in_=lf_ping)
+        self.entry_IP.grid(0, 3, in_=lf_ping)
+        button_ping.grid(0, 4, in_=lf_ping)
+        self.ST.grid(row=1, column=0, columnspan=5, in_=lf_ping)
         
     def ping_IP(self, source):
-        dest_IP = self.entry_IP.get()
-        self.ST.delete('1.0', tk.END)
-        for plink in self.cs.ntw.pn['plink'].values():
-            if dest_IP in (plink.ipaddressS, plink.ipaddressD):
-                sntw = plink.sntw
-                for rt_entry in self.cs.ntw.ping(source, sntw):
-                    self.ST.insert('insert', str(rt_entry) + '\n')
-                break
-        else:
-            print('ip address not found in the network')
+        src_IP = self.cs.ntw.ip_to_oip[self.IP_list.text]
+        dst_IP = self.cs.ntw.ip_to_oip[self.entry_IP.text]
+        # dummy traffic link to retrieve the path of an IP packet
+        traffic = self.cs.ntw.lf(
+                                    source = source, 
+                                    destination = dst_IP.interface.node, 
+                                    subtype = 'routed traffic'
+                                    )
+        traffic.ipS, traffic.ipD = src_IP, dst_IP
+        self.ST.delete('1.0', 'end')
+        _, path = self.cs.ntw.RFT_path_finder(traffic)
+        self.ST.insert('insert', '\n\n\n'.join(path))
+        # delete the dummy traffic link
+        self.cs.ntw.remove_link(traffic)
+

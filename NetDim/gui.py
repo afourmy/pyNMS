@@ -213,9 +213,9 @@ class NetDim(MainWindow):
     def refresh(self):
         
         commands = (
+                    self.cs.ntw.update_AS_topology,
                     self.cs.ntw.vc_creation,
                     self.cs.ntw.interface_configuration,
-                    self.cs.ntw.update_AS_topology,
                     self.cs.ntw.switching_table_creation,
                     self.cs.ntw.routing_table_creation,
                     self.cs.ntw.path_finder,

@@ -11,7 +11,6 @@ class Troubleshooting(tk.Toplevel):
         super().__init__() 
         
         notebook = ttk.Notebook(self)
-
         
         self.wm_attributes('-topmost', True)
         

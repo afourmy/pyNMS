@@ -527,10 +527,6 @@ class Network(object):
         for idx, router in enumerate(self.ftr('node', 'router'), 1):
             router.ipaddress = '192.168.{}.{}'.format(idx // 255, idx % 255)
             
-        # for ip in self.ip_to_oip.values():
-        #     if ip and ip.interface:
-        #         ip.interface.link.sntw = ip.network
-            
     def mac_allocation(self):
         # ranges of private MAC addresses
         # x2:xx:xx:xx:xx:xx
@@ -671,24 +667,24 @@ class Network(object):
         
     ## 0) Ping / traceroute
     
-    def ping(self, source, dest_sntw):
+    def ping(self, source, dest_IP):
+        dest_sntw = dest_IP.network
         node = source
         while True:
-            if any(tk.sntw == dest_sntw for _, tk in self.graph[node.id]['plink']):
+            if dest_IP in self.attached_ips(node):
                 break
             if dest_sntw in node.rt:
                 routes = node.rt[dest_sntw]
-            # if we wannot find the destination address in the routing table, 
+            # if we cannot find the destination address in the routing table, 
             # and there is a default route, we use it.
             elif '0.0.0.0' in node.rt:
                 routes = node.rt['0.0.0.0']
             else:
-                warnings.warn('Packet discarded by {}:'.format(node))
+                yield 'Packet discarded by {}:'.format(node)
                 break
             for route in routes:
                 yield route
                 *_, node, _ = route
-                break
     
     ## 1) RFT-based routing and dimensioning
     
@@ -702,6 +698,7 @@ class Network(object):
         # (current node, physical link from which the data flow comes, dataflow)
         heap = [(source, None, None)]
         path = set()
+        path_str = []
         while heap and valid:
             curr_node, curr_plink, dataflow = heap.pop()
             path.add(curr_node)
@@ -727,7 +724,7 @@ class Network(object):
                 failed_plinks = sum(r[-1] in self.fdtks for r in routes)
                 # and remove them from share so that they are ignored for 
                 # physical link dimensioning
-                for route in routes:
+                for idx, route in enumerate(routes):
                     _, nh_ip, ex_int, _, router, ex_tk = route
                     # we create a new dataflow based on the old one
                     new_dataflow = copy(dataflow)
@@ -748,6 +745,21 @@ class Network(object):
                     # the next-hop is the node at the end of the exit physical link
                     next_hop = ex_tk.source if sd == 'DS' else ex_tk.destination
                     heap.append((next_hop, ex_tk, new_dataflow))
+                    if not idx:
+                        path_str.append('''
+                Current_node: {curr_node}
+                Next-hop: {next_hop}
+                Next-hop IP address: {nh_ip}
+                Destination MAC address: {dst_mac}
+                Outgoing physical link: {ex_tk}
+                Outgoing interface: {ex_int}'''.format(
+                                                curr_node = curr_node,
+                                                next_hop = next_hop,
+                                                nh_ip = nh_ip,
+                                                dst_mac = new_dataflow.dst_mac,
+                                                ex_tk = ex_tk,
+                                                ex_int = ex_int
+                                                ))
                     
             if curr_node.subtype == 'switch':
                 # we find the exit interface based on the destination MAC
@@ -762,9 +774,18 @@ class Network(object):
                 else:
                     next_hop = ex_tk.source
                 heap.append((next_hop, ex_tk, dataflow))
-             
+                path_str.append('''
+                Current_node: {curr_node}
+                Next-hop: {next_hop}
+                Outgoing physical link: {ex_tk}
+                Outgoing interface: {ex_int}'''.format(
+                                                curr_node = curr_node,
+                                                next_hop = next_hop,
+                                                ex_tk = ex_tk,
+                                                ex_int = ex_int
+                                                ))
         traffic.path = path
-        return path
+        return path, path_str
         
     ## 2) Add connected interfaces to the RFT
     
@@ -804,7 +825,12 @@ class Network(object):
         self.STP_update()
         self.st_creation()
         
+    def subnetwork_update(self):
+        for ip in self.ip_to_oip.values():
+            ip.interface.link.sntw = ip.network
+        
     def routing_table_creation(self):
+        self.subnetwork_update()
         # clear the existing routing tables
         for node in self.ftr('node', 'router', 'host'):
             node.rt.clear()

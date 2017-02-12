@@ -34,9 +34,9 @@ class RoutingMenu(ScrolledFrame):
         button_routing.grid(0, 0, sticky='ew', in_=lf_refresh)
         
         self.actions = (
+                        'Update AS topology',
                         'Creation of all virtual connections',
                         'Names / addresses interface allocation',
-                        'Update AS topology',
                         'Creation of all ARP / MAC tables',
                         'Creation of all routing tables',
                         'Path finding procedure (traffic flows)',
@@ -47,9 +47,8 @@ class RoutingMenu(ScrolledFrame):
         self.action_booleans = []
         for id, action in enumerate(self.actions, 1):
             action_bool = tk.BooleanVar()
-            action_bool.set(True)
+            action_bool.set('interface' not in action)
             self.action_booleans.append(action_bool)
-            img = tk.PhotoImage(width=1, height=1)
             button = Checkbutton(self.infr, variable=action_bool)
             button.text = action
             button.grid(id, 0, in_=lf_refresh)

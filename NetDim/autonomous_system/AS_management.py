@@ -20,8 +20,8 @@ class ASManagement(CustomTopLevel):
         self.frame_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
         
         # label frame for properties
-        lf_properties = Labelframe(common_frame)
-        lf_properties.text = 'AS properties'
+        lf_management = Labelframe(common_frame)
+        lf_management.text = 'AS management'
         
         obj_types = ('link', 'node') 
         
@@ -37,17 +37,23 @@ class ASManagement(CustomTopLevel):
         entry_id  = Entry(common_frame, width=10)
         entry_id.text = AS.id
         
+        # delete the AS
+        button_delete_AS = Button(common_frame) 
+        button_delete_AS.text='Delete AS'
+        button_delete_AS.command = lambda: self.AS.delete_AS()
+        
         # the type of a domain cannot change after domain creation.
         AS_type = Label(common_frame) 
         AS_type.text = AS.AS_type
         
-        lf_properties.grid(0, 0)
-        label_name.grid(1, 0, in_=lf_properties)
-        label_id.grid(2, 0, in_=lf_properties)
-        label_type.grid(3, 0, in_=lf_properties)
-        entry_name.grid(1, 1, in_=lf_properties)
-        entry_id.grid(2, 1, in_=lf_properties)
-        AS_type.grid(3, 1, in_=lf_properties)
+        lf_management.grid(0, 0)
+        label_name.grid(0, 0, in_=lf_management)
+        label_id.grid(1, 0, in_=lf_management)
+        label_type.grid(2, 0, in_=lf_management)
+        entry_name.grid(0, 1, in_=lf_management)
+        entry_id.grid(1, 1, in_=lf_management)
+        AS_type.grid(2, 1, in_=lf_management)
+        button_delete_AS.grid(0, 2, in_=lf_management)
         
         # label frame for links and nodes
         lf_objects = Labelframe(common_frame)

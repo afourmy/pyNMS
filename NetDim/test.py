@@ -206,7 +206,7 @@ class TestISIS(unittest.TestCase):
  
     @start_and_import('test_ISIS.xls')
     def setUp(self):
-        self.ntw.calculate_all()
+        self.netdim.refresh()
  
     def tearDown(self):
         self.netdim.destroy()
@@ -222,7 +222,7 @@ class TestISIS(unittest.TestCase):
 class TestOSPF(unittest.TestCase):
     
     results = (
-    ('routed traffic link14', {
+    ('routed traffic0', {
     'ethernet link1', 
     'ethernet link2', 
     'ethernet link9', 
@@ -240,7 +240,7 @@ class TestOSPF(unittest.TestCase):
     'router0'
     }),
     
-    ('routed traffic link15', {
+    ('routed traffic1', {
     'ethernet link1', 
     'ethernet link2', 
     'ethernet link9', 
@@ -258,7 +258,7 @@ class TestOSPF(unittest.TestCase):
  
     @start_and_import('test_ospf.xls')
     def setUp(self):
-        self.ntw.calculate_all()
+        self.netdim.refresh()
  
     def tearDown(self):
         self.netdim.destroy()

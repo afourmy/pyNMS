@@ -2,15 +2,14 @@
 # Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
 # Released under the GNU General Public License GPLv3
 
-from tkinter.scrolledtext import ScrolledText
+from pythonic_tkinter.preconfigured_widgets import *
 from operator import itemgetter
-import tkinter as tk
 
-class ARPTable(tk.Toplevel):
+class ARPTable(CustomTopLevel):
     def __init__(self, node, scenario):
         super().__init__() 
         self.cs = scenario
-        self.ST = ScrolledText(self, wrap='word', bg='beige')
+        self.ST = ScrolledText(self)
         self.wm_attributes('-topmost', True)
 
         introduction = '''
@@ -25,5 +24,5 @@ class ARPTable(tk.Toplevel):
             line = (oip.ip_addr, mac_addr, 'ARPA', str(outgoing_interface), '\n')
             self.ST.insert('insert', 8*" " + (9*" ").join(line))
                                                                 
-        self.ST.pack(fill=tk.BOTH, expand=tk.YES)
+        self.ST.pack(fill='both', expand='yes')
 

@@ -285,7 +285,7 @@ def class_factory(name, OriginalWidget, defaults):
         
     widget_functions = {'grid': grid, 'text': text}
         
-    if name in ('Button', 'TKButton', 'Checkbutton', 'Scrollbar'):
+    if name in ('Button', 'TKButton', 'Checkbutton', 'Scrollbar', 'Radiobutton'):
         
         @property
         def command(self):
@@ -316,8 +316,10 @@ subwidget_creation = (
                       ('Combobox', ttk.Combobox, (4, 4, 'w')),
                       ('Checkbutton', ttk.Checkbutton, (4, 4, 'w')),
                       ('Separator', ttk.Separator, (4, 4, 'ew')),
-                      ('ScrolledFrame', VerticalScrolledFrame, (4, 4, 'w'))               
+                      ('ScrolledFrame', VerticalScrolledFrame, (4, 4, 'w')),
+                      ('AScrolledText', CustomScrolledText, (4, 4, 'w'))
                       )
     
 for subwidget, ttk_class, defaults in subwidget_creation:
+    print(subwidget)
     class_factory(subwidget, ttk_class, defaults)

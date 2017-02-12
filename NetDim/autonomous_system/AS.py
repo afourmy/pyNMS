@@ -66,6 +66,13 @@ class AutonomousSystem(object):
             # of area it belongs to in this AS
             obj.AS.pop(self)
             
+    def delete_AS(self):
+        for obj in self.nodes | self.links:
+            obj.AS.pop(self)
+            self.pAS[obj.class_type].discard(obj)
+        self.management.destroy()
+        self.ntw.pnAS.pop(self.name)
+            
 class ASWithArea(AutonomousSystem):
     
     has_area = True
@@ -98,6 +105,11 @@ class ASWithArea(AutonomousSystem):
                 # we remove the area to the list of area in the AS 
                 # dictionary, for all objects of the area
                 obj.AS[area.AS].remove(area)
+                
+    def delete_AS(self):
+        for area in tuple(self.areas.values()):
+            self.delete_area(area)
+        super(ASWithArea, self).delete_AS()
             
 class Ethernet_AS(AutonomousSystem):
     
@@ -160,7 +172,7 @@ class STP_AS(Ethernet_AS):
         self.management.refresh_display()
                     
     def add_to_AS(self, *objects):
-        super(Ethernet_AS, self).add_to_AS(*objects)       
+        super(Ethernet_AS, self).add_to_AS(*objects)
         
         for obj in objects:
             # A RSTP AS has no area, each object's area set is initialized 
@@ -750,6 +762,12 @@ class AreaOperation(CustomTopLevel):
         super().__init__()
         
         title = 'Add to area' if mode == 'add' else 'Remove from area'
+        
+        # main label frame
+        lf_area_operation = Labelframe(self)
+        lf_area_operation.text = title
+        lf_area_operation.grid(0, 0)
+        
         self.title(title)
 
         values = tuple(map(str, AS))
@@ -768,9 +786,9 @@ class AreaOperation(CustomTopLevel):
         button_area_operation.text = 'OK'
         button_area_operation.command = lambda: self.area_operation(scenario, mode, *obj)
         
-        self.AS_list.grid(0, 0)
-        self.area_list.grid(1, 0)
-        button_area_operation.grid(2, 0)
+        self.AS_list.grid(0, 0, in_=lf_area_operation)
+        self.area_list.grid(1, 0, in_=lf_area_operation)
+        button_area_operation.grid(2, 0, in_=lf_area_operation)
         
     def update_value(self, scenario):
         selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
@@ -800,6 +818,11 @@ class ASOperation(CustomTopLevel):
         'manage': 'Manage AS'
         }[mode]
         
+        # main label frame
+        lf_AS_operation = Labelframe(self)
+        lf_AS_operation.text = title
+        lf_AS_operation.grid(0, 0)
+        
         self.title(title)
         
         if mode == 'add':
@@ -818,8 +841,8 @@ class ASOperation(CustomTopLevel):
         button_AS_operation.text = 'OK'
         button_AS_operation.command = lambda: self.as_operation(scenario, mode, *obj)
         
-        self.AS_list.grid(0, 0, 1, 2)
-        button_AS_operation.grid(1, 0, 1, 2)
+        self.AS_list.grid(0, 0, 1, 2, in_=lf_AS_operation)
+        button_AS_operation.grid(1, 0, 1, 2, in_=lf_AS_operation)
         
     def as_operation(self, scenario, mode, *objects):
         selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
@@ -837,6 +860,11 @@ class ASCreation(CustomTopLevel):
     def __init__(self, scenario, nodes, links):
         super().__init__()
         self.title('Create AS')
+        
+        # main label frame
+        lf_create_AS = Labelframe(self)
+        lf_create_AS.text = 'Create AS'
+        lf_create_AS.grid(0, 0)
         
         # List of AS type
         self.AS_type_list = Combobox(self, width=10)
@@ -862,13 +890,13 @@ class ASCreation(CustomTopLevel):
         self.entry_name  = Entry(self, width=13)
         self.entry_id  = Entry(self, width=13)
         
-        label_name.grid(0, 0)
-        label_id.grid(1, 0)
-        self.entry_name.grid(0, 1)
-        self.entry_id.grid(1, 1)
-        label_type.grid(2, 0)
-        self.AS_type_list.grid(2, 1)
-        button_create_AS.grid(3, 0, 1, 2)
+        label_name.grid(0, 0, in_=lf_create_AS)
+        label_id.grid(1, 0, in_=lf_create_AS)
+        self.entry_name.grid(0, 1, in_=lf_create_AS)
+        self.entry_id.grid(1, 1, in_=lf_create_AS)
+        label_type.grid(2, 0, in_=lf_create_AS)
+        self.AS_type_list.grid(2, 1, in_=lf_create_AS)
+        button_create_AS.grid(3, 0, 1, 2, in_=lf_create_AS)
 
     def create_AS(self, scenario, nodes, links):
         # automatic initialization of the AS id in case it is empty

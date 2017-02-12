@@ -137,7 +137,7 @@ class RouterConfiguration(tk.Toplevel):
                 
                 for _, adj_plink in self.cs.ntw.graph[node.id]['plink']:
                     interface = adj_plink('interface', node)
-                    if adj_plink in AS.pAS['plink']:
+                    if adj_plink in AS.pAS['link']:
                         ip = interface.ipaddress
                         
                         yield ' {name}(config-router)# network {ip}\n'\
@@ -154,7 +154,7 @@ class RouterConfiguration(tk.Toplevel):
                 
                 for _, adj_plink in self.cs.ntw.graph[node.id]['plink']:
                     interface = adj_plink('interface', node)
-                    if adj_plink in AS.pAS['plink']:
+                    if adj_plink in AS.pAS['link']:
                         ip = interface.ipaddress
                         plink_area ,= adj_plink.AS[AS]
                         yield (' {name}(config-router)# network' 
@@ -309,7 +309,7 @@ class SwitchConfiguration(tk.Toplevel):
                 
                 for _, adj_plink in self.cs.ntw.graph[node.id]['plink']:
                     interface = adj_plink('interface', node)
-                    if adj_plink in AS.pAS['plink']:
+                    if adj_plink in AS.pAS['link']:
                         ip = interface.ipaddress
                         
                         yield ' {name}(config-router)# network {ip}\n'\
