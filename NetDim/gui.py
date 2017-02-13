@@ -218,6 +218,8 @@ class NetDim(MainWindow):
                     self.cs.ntw.interface_configuration,
                     self.cs.ntw.switching_table_creation,
                     self.cs.ntw.routing_table_creation,
+                    self.cs.ntw.bgp_table_creation,
+                    self.cs.ntw.redistribution,
                     self.cs.ntw.path_finder,
                     lambda: self.cs.draw_all(False),
                     self.cs.refresh_display
@@ -354,8 +356,9 @@ class NetDim(MainWindow):
                 for row_index in range(1, sheet.nrows):
                     name, AS_type, id, nodes, links = sheet.row_values(row_index)
                     id = int(id)
+                    subtype = 'ethernet' if AS_type != 'BGP' else 'BGP peering'
                     nodes = self.cs.ntw.convert_node_set(nodes)
-                    links = self.cs.ntw.convert_link_set(links)
+                    links = self.cs.ntw.convert_link_set(links, subtype)
                     self.cs.ntw.AS_factory(AS_type, name, id, links, nodes, True)
                 
             # area import
@@ -459,14 +462,15 @@ class NetDim(MainWindow):
             
             cpt = 1
             for AS in self.cs.ntw.pnAS.values():
-                for link in AS.links:
-                    for interface in (link.interfaceS, link.interfaceD):
-                        if_AS_sheet.write(cpt, 0, AS.name)
-                        if_AS_sheet.write(cpt, 1, str(interface.link))
-                        if_AS_sheet.write(cpt, 2, str(interface.node)) 
-                        for idx, property in enumerate(ethernet_interface_perAS_properties, 3):
-                            if_AS_sheet.write(cpt, idx, str(interface(AS.name, property)))
-                        cpt += 1
+                if AS.AS_type != 'BGP':
+                    for link in AS.links:
+                        for interface in (link.interfaceS, link.interfaceD):
+                            if_AS_sheet.write(cpt, 0, AS.name)
+                            if_AS_sheet.write(cpt, 1, str(interface.link))
+                            if_AS_sheet.write(cpt, 2, str(interface.node)) 
+                            for idx, property in enumerate(ethernet_interface_perAS_properties, 3):
+                                if_AS_sheet.write(cpt, idx, str(interface(AS.name, property)))
+                            cpt += 1
             
         has_area = lambda a: a.has_area
         pool_area = list(filter(has_area, self.cs.ntw.pnAS.values()))

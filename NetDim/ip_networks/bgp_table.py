@@ -36,7 +36,7 @@ RPKI validation codes: V valid, I invalid, N Not found\n'''\
                     weight, nh, source, AS_path = route
                     rtype = 'N*' + ' '*8
                     if not idx:
-                        line = '{rtype} {sntw} {nh}    0    , {weight} {path}\n'\
+                        line = '{rtype} {sntw} {nh}  0  {weight} {path}\n'\
                                         .format(
                                                 rtype = rtype, 
                                                 sntw = sntw, 
@@ -46,13 +46,25 @@ RPKI validation codes: V valid, I invalid, N Not found\n'''\
                                                 )
                     else:
                         spaces = ' '*(len(rtype) + len(sntw))
-                        line = '{spaces} {nh}    0    , {weight} {path}\n'\
+                        line = '{spaces} {nh}  0  {weight} {path}\n'\
                                         .format(
                                                 spaces = spaces,
                                                 nh = nh,
                                                 weight = weight,
                                                 path = ''.join(map(str, AS_path))
                                                 )
-                    self.ST.insert('insert', line)
+            else:
+                route ,= routes
+                weight, nh, source, AS_path = route
+                rtype = 'N*' + ' '*8
+                line = '{rtype} {sntw} {nh}  0  {weight} {path}\n'\
+                                .format(
+                                        rtype = rtype, 
+                                        sntw = sntw, 
+                                        nh = nh,
+                                        weight = weight,
+                                        path = ' '.join(map(str, AS_path))
+                                        )
+                self.ST.insert('insert', line)
                                         
         self.ST.pack(fill='both', expand='yes')

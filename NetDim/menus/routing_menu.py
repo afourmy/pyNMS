@@ -39,6 +39,8 @@ class RoutingMenu(ScrolledFrame):
                         'Names / addresses interface allocation',
                         'Creation of all ARP / MAC tables',
                         'Creation of all routing tables',
+                        'Creation of all BGP tables',
+                        'Route redistribution',
                         'Path finding procedure (traffic flows)',
                         'Redraw the graph',
                         'Refresh the display (including labels)'

@@ -76,6 +76,7 @@ class Network(object):
     link_type = ('plink', 'l2link', 'l3link', 'traffic')
     link_subtype = tuple(link_class.keys())
     all_subtypes = node_subtype + link_subtype
+    AS_subtypes = tuple(AS_class)
     
     def __init__(self, scenario):
         self.nodes = {}
@@ -103,10 +104,6 @@ class Network(object):
         self.name_to_id = {}
         
         # dicts used for IP networks 
-        # - associates an IP to a node. when a default / static route is 
-        # defined, only the next-hop ip is specified: we need to translate it 
-        # into a next-hop node to properly fill the routing table.
-        self.ip_to_node = {}
         # - finds all layer-n segments networks, i.e all layer-n-capable 
         # interfaces that communicate via a layer-(n-1) device
         self.ma_segments = defaultdict(set)
@@ -125,42 +122,40 @@ class Network(object):
         
         # property -> type associations 
         self.prop_to_type = {
-        'name': str, 
-        'protocol': str,
-        'interface': str,
-        'ipaddress': str,
-        'subnetmask': str,
-        'LB_paths': int,
-        'default_route': str,
-        'x': float, 
-        'y': float, 
-        'longitude': float, 
-        'latitude': float,
-        'distance': float, 
+        'capacitySD': int, 
+        'capacityDS': int,
         'costSD': float, 
         'costDS': float, 
         'cost': float,
-        'capacitySD': int, 
-        'capacityDS': int,
+        'default_route': self.convert_IP,
+        'destination': self.convert_node, 
+        'distance': float, 
+        'flowSD': float,
+        'flowDS': float,
+        'interface': str,
+        'interfaceS': str,
+        'interfaceD': str,
+        'ipaddress': str,
+        'lambda_capacity': int,
+        'latitude': float,
+        'LB_paths': int,
+        'longitude': float, 
+        'macaddress': str,
+        'name': str,
+        'node': self.convert_node, 
+        'protocol': str,
+        'sntw': str,
+        'source': self.convert_node,
+        'subnetmask': str,
+        'throughput': float,
         'traffic': float,
         'trafficSD': float,
         'trafficDS': float,
         'wctrafficSD': float,
         'wctrafficDS': float,
         'wcfailure': str,
-        'flowSD': float,
-        'flowDS': float,
-        'interfaceS': str,
-        'interfaceD': str,
-        'ipaddress': str,
-        'subnetmask': str,
-        'macaddress': str,
-        'sntw': str,
-        'throughput': float,
-        'lambda_capacity': int,
-        'source': self.convert_node, 
-        'destination': self.convert_node, 
-        'node': self.convert_node, 
+        'x': float, 
+        'y': float, 
         'link': self.convert_link, 
         'linkS': self.convert_link, 
         'linkD': self.convert_link, 
@@ -325,8 +320,8 @@ class Network(object):
         return self.nf(name=node_name)
     
     # convert a link name to a node
-    def convert_link(self, link_name):
-        return self.lf(name=link_name)
+    def convert_link(self, link_name, subtype='ethernet'):
+        return self.lf(name=link_name, subtype=subtype)
     
     # convert an AS name to an AS
     def convert_AS(self, AS_name):
@@ -345,12 +340,14 @@ class Network(object):
         return list(map(self.convert_node, eval(node_list)))
     
     # convert a string representing a set of links, to an actual set of links
-    def convert_link_set(self, link_set):
-        return set(map(self.convert_link, eval(link_set)))
+    def convert_link_set(self, link_set, subtype='ethernet'):
+        convert = lambda link: self.convert_link(link, subtype)
+        return set(map(convert, eval(link_set)))
     
     # convert a string representing a list of links, to an actual list of links
-    def convert_link_list(self, link_list):
-        return list(map(self.convert_link, eval(link_list)))
+    def convert_link_list(self, link_list, subtype='ethernet'):
+        convert = lambda link: self.convert_link(link, subtype)
+        return list(map(convert, eval(link_list)))
             
     def erase_network(self):
         self.graph.clear()
@@ -498,10 +495,17 @@ class Network(object):
                 self.cs.remove_objects(vc)
             self.segment_finder(i)
             self.multi_access_network(i)
-    
-    def ip_allocation(self):
+            
+    def clear_ip(self):
         # remove all existing IP addresses
         self.ip_to_oip.clear()
+        # reset all traffic links source and destination IP as new IP will
+        # be assigned
+        for traffic in self.traffics.values():
+            traffic.ipS = traffic.ipD = None
+            
+    def ip_allocation(self):
+        self.clear_ip()
         # we will perform the IP addressing of all subnetworks with VLSM
         # we first sort all subnetworks in increasing order of size, then
         # compute which subnet is needed
@@ -609,7 +613,7 @@ class Network(object):
             switch.st.clear()
         for AS in self.ASftr('subtype', 'STP'):
             for switch in AS.nodes:
-                self.ST_builder(switch, AS.pAS['plink'] - AS.SPT_plinks)
+                self.ST_builder(switch, AS.pAS['link'] - AS.SPT_links)
         # if the switch isn't part of an STP AS, we build its switching table
         # without excluding any physical link
         for switch in self.ftr('node', 'switch'):
@@ -664,27 +668,6 @@ class Network(object):
                 plink, ex_tk = path_plink[-1], path_plink[0]
                 source.st[plink.interfaceS.macaddress] = ex_tk('interface', source)
                 source.st[plink.interfaceD.macaddress] = ex_tk('interface', source)
-        
-    ## 0) Ping / traceroute
-    
-    def ping(self, source, dest_IP):
-        dest_sntw = dest_IP.network
-        node = source
-        while True:
-            if dest_IP in self.attached_ips(node):
-                break
-            if dest_sntw in node.rt:
-                routes = node.rt[dest_sntw]
-            # if we cannot find the destination address in the routing table, 
-            # and there is a default route, we use it.
-            elif '0.0.0.0' in node.rt:
-                routes = node.rt['0.0.0.0']
-            else:
-                yield 'Packet discarded by {}:'.format(node)
-                break
-            for route in routes:
-                yield route
-                *_, node, _ = route
     
     ## 1) RFT-based routing and dimensioning
     
@@ -792,18 +775,15 @@ class Network(object):
     def static_RFT_builder(self, source):
         
         if source.default_route:
-            try:
-                nh_node = self.ip_to_node[source.default_route]
-                source.rt['0.0.0.0'] = {('S*', source.default_route, 
-                                                    None, 0, nh_node, None)}
-            except KeyError:
-                pass
+            nh_node = source.default_route.interface.node
+            source.rt['0.0.0.0'] = {('S*', source.default_route, 
+                                                None, 0, nh_node, None)}
 
         for _, sr in self.gftr(source, 'l3link', 'static route', False):
             # if the static route next-hop ip is not properly configured, 
             # we ignore it.
             try:
-                nh_node = self.ip_to_node[sr.nh_ip]
+                nh_node = source.default_route.interface.node
             except KeyError:
                 continue
             source.rt[sr.dst_sntw] = {('S', sr.nh_ip, None, 0, nh_node, None)}
@@ -835,10 +815,34 @@ class Network(object):
         for node in self.ftr('node', 'router', 'host'):
             node.rt.clear()
         # we compute the routing table of all routers
-        for AS in self.ASftr('layer', 'IP'):
+        for AS in self.ASftr('subtype', 'RIP', 'ISIS', 'OSPF'):
             AS.build_RFT()
         for router in self.ftr('node', 'router', 'host'):
             self.static_RFT_builder(router)
+            
+    def bgp_table_creation(self):
+        # populate the BGP table with the routes sourced by the node,
+        # with a default weight of 32768
+        for router in self.ftr('node', 'router'):
+            router.bgpt.clear()
+            for ip, routes in router.rt.items():
+                for route in routes:
+                    _, nh, *_ = route
+                    router.bgpt[ip] |= {(0, nh, router, ())}
+        for AS in self.ASftr('subtype', 'BGP'):
+            AS.build_RFT()
+            
+    def redistribution(self):
+        pass
+    #     # once all tables have been created have been created (IGP + BGP), 
+    #     # we can redistribute the routes
+    #     # first, propagate a default route within an IGP
+    #     for AS in self.ASftr('subtype', 'RIP', 'ISIS', 'OSPF'):
+    #         origin = self.convert_node(AS.management.choose_router.text)
+    #         # if the origin has a default route:
+    #         if '0.0.0.0' in origin.rt:
+    #             for node in AS.nodes - {origin}:
+    #                 node.rt['0.0.0.0'] = origin.rt['0.0.0.0']
                                                 
     ## Graph functions
     
@@ -1113,7 +1117,7 @@ class Network(object):
         # if a_n is None:
         #     a_n = AS.nodes
         # if a_t is None:
-        #     a_t = AS.pAS['plink']
+        #     a_t = AS.pAS['link']
         
         if a_t is None:
             a_t = set(self.plinks.values())
@@ -1744,7 +1748,7 @@ class Network(object):
         self.ip_allocation()
         self.interface_allocation()
         
-        AS_links = list(AS.pAS['plink'])
+        AS_links = list(AS.pAS['link'])
         
         # a cost assignment solution is a vector of 2*n value where n is
         # the number of physical links in the AS, because each physical link
@@ -1769,7 +1773,7 @@ class Network(object):
         # we store the cost value in the flow parameters, since we'll change
         # the links' costs to evaluate each solution
         # at the end, we will revert the cost to their original value
-        for plink in AS.pAS['plink']:
+        for plink in AS.pAS['link']:
             plink.flowSD = plink.costSD
             plink.flowDS = plink.costDS
             
@@ -2073,8 +2077,8 @@ class Network(object):
                     F_coulomb = self.coulomb_force(dx, dy, dist, cf)
                     Fx += F_hooke[0] + F_coulomb[0] * nodeB.virtual_factor
                     Fy += F_hooke[1] + F_coulomb[1] * nodeB.virtual_factor
-            nodeA.vx = 0.5 * nodeA.vx + 0.2 * Fx
-            nodeA.vy = 0.5 * nodeA.vy + 0.2 * Fy
+            nodeA.vx = max(-100, min(100, 0.5 * nodeA.vx + 0.2 * Fx))
+            nodeA.vy = max(-100, min(100, 0.5 * nodeA.vy + 0.2 * Fy))
     
         for node in nodes:
             node.x += round(node.vx * sf)
@@ -2102,7 +2106,7 @@ class Network(object):
                     dist = self.distance(deltax, deltay)
                     if dist:
                         nA.vx += deltax * opd**2 / dist**2
-                        nA.vy += deltay * opd**2 / dist**2   
+                        nA.vy += deltay * opd**2 / dist**2
                     
         for l in self.plinks.values():
             deltax = l.source.x - l.destination.x
@@ -2150,7 +2154,7 @@ class Network(object):
         virtual_node.virtual_factor = n
         return virtual_node
     
-    def bfs_spring(self, nodes, cf, k, sf, L0, size=40, iterations=10):
+    def bfs_spring(self, nodes, cf, k, sf, L0, size=40, iterations=5):
         nodes = set(nodes)
         source = random.choice(list(nodes))
         # all nodes one step ahead of the already drawn area
@@ -2161,6 +2165,15 @@ class Network(object):
         # they are not connected to any another node, but are equivalent to a
         # coulomb forces of all cluster nodes
         virtual_nodes = set()
+        # dict to associate a virtual node to its frontier
+        # knowing this association will later allow us to create links
+        # between virtual nodes before applying a spring algorithm to virtual
+        # nodes
+        vnode_to_frontier = {}
+        # dict to keep track of all virtual node <-> cluster association
+        # this allows us to recompute all cluster nodes position after 
+        # applying the spring algorithm on virtual nodes
+        vnode_to_cluster = {}
         # number of cluster
         nb_cluster = 0
         # total number of nodes
@@ -2175,10 +2188,35 @@ class Network(object):
             i = 0
             for i in range(iterations):
                 self.spring_layout(new_cluster, cf, k, sf, L0, virtual_nodes)
-            virtual_nodes.add(self.create_virtual_nodes(new_cluster, nb_cluster))
+            new_vnode = self.create_virtual_nodes(new_cluster, nb_cluster)
+            vnode_to_cluster[new_vnode] = new_cluster
+            vnode_to_frontier[new_vnode] = new_frontier
+            virtual_nodes |= {new_vnode}
+        
+        # we create the links between virtual nodes
+        for vnodeA in virtual_nodes:
+            for vnodeB in virtual_nodes:
+                if vnode_to_cluster[vnodeA] & vnode_to_frontier[vnodeB]:
+                    self.lf(source=vnodeA, destination=vnodeB)
+        
+        # we then apply a spring algorithm on the virtual nodes only
+        # we first store the initial position to compute the difference 
+        # with the position after the algorithm has been executed
+        # we then move all clusters nodes by the same difference
+        initial_position = {}
+        for vnode in virtual_nodes:
+            initial_position[vnode] = (vnode.x, vnode.y)
+        for i in range(iterations):
+            self.spring_layout(virtual_nodes, cf, k, sf, L0)
+        for vnode, cluster in vnode_to_cluster.items():
+            x0, y0 = initial_position[vnode]
+            dx, dy = vnode.x - x0, vnode.y - y0
+            for node in cluster:
+                node.x, node.y = node.x + dx, node.y + dy
+                        
         for node in virtual_nodes:
-            self.name_to_id.pop(node.name)
-            self.nodes.pop(node.id)
+            for link in self.remove_node(node):
+                self.remove_link(link)
 
         
     ## Graph generation functions

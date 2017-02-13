@@ -585,10 +585,10 @@ class Scenario(CustomFrame):
         if self.layered_display:
             for layer in range(1, self.nbl + 1):
                 if self.display_layer[layer]:
-                    #real_layer = sum(self.display_layer[:(layer + 1)])
-                    if n.layer_line[layer]:
-                        coord = (newx, newy, newx, newy - (layer - 1) * self.diff_y)
-                        self.cvs.coords(n.layer_line[layer], *coord)
+                    real_layer = sum(self.display_layer[:(layer+1)])
+                    if n.layer_line[real_layer]:
+                        coord = (newx, newy, newx, newy - (real_layer-1)*self.diff_y)
+                        self.cvs.coords(n.layer_line[real_layer], *coord)
     
         # update links coordinates
         for type_link in self.ntw.link_type:

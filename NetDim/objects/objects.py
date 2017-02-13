@@ -432,7 +432,7 @@ vc_box_properties = (
 )
 
 box_properties = OrderedDict([
-('router', node_box_properties + ('default_route', 'bgp_AS')),
+('router', node_box_properties + ('default_route',)),
 ('switch', node_box_properties + ('base_macaddress',)),
 ('oxc', node_box_properties),
 ('host', node_box_properties),
@@ -526,7 +526,6 @@ prop_to_nice_name = {
 'nh_ip': 'Next-hop IP',
 'ipS': 'Source IP',
 'ipD': 'Destination IP',
-'bgp_AS': 'BGP AS',
 'dst_sntw': 'Destination subnetwork',
 'ad': 'Administrative distance',
 'router_id': 'Router ID',
@@ -635,8 +634,7 @@ class Router(Node):
     layer = 3
     imagex, imagey = 33, 25
         
-    ie_properties = {
-                    'bgp_AS' : None, 
+    ie_properties = { 
                     # the default route is the gateway of last resort: 
                     # it is the IP address of the next-hop 
                     # (either loopback or interface)

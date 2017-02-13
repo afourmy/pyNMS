@@ -178,7 +178,7 @@ class ObjectManagementWindow(FocusTopLevel):
                 value = set(re.sub(r'\s+', '', value).split(','))
                 setattr(self.current_obj, property, value)
             elif property in self.property_list:
-                if property in ('ipS', 'ipD'):
+                if property in ('ipS', 'ipD', 'default_route'):
                     # convert the IP to a Object IP, if it isn't None
                     if value:
                         value = self.ms.cs.ntw.ip_to_oip[value]

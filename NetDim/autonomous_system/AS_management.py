@@ -10,6 +10,7 @@ class ASManagement(CustomTopLevel):
     def __init__(self, AS, is_imported):
         super().__init__()
         self.AS = AS
+        self.ntw = self.AS.cs.ntw
         self.dict_listbox = {}
         self.title('Manage AS')
         
@@ -117,7 +118,7 @@ class ASManagement(CustomTopLevel):
     def highlight_object(self, event, obj_type):        
         self.AS.cs.unhighlight_all()
         for selected_object in self.dict_listbox[obj_type].selected():
-            so = self.AS.cs.ntw.of(name=selected_object, _type=obj_type)
+            so = self.ntw.of(name=selected_object, _type=obj_type)
             self.AS.cs.highlight_objects(so)
             
     # remove the object selected in 'obj_type' listbox from the AS
@@ -125,7 +126,7 @@ class ASManagement(CustomTopLevel):
         # remove and retrieve the selected object in the listbox
         for selected_obj in self.dict_listbox[obj_type].pop_selected():
             # remove it from the AS as well
-            so = self.AS.cs.ntw.of(name=selected_obj, _type=obj_type)
+            so = self.ntw.of(name=selected_obj, _type=obj_type)
             self.AS.remove_from_AS(so)
         
     def add_to_AS(self, *objects):
@@ -136,9 +137,17 @@ class ASManagement(CustomTopLevel):
     def find_links(self):
         links_between_domain_nodes = set()
         for node in self.AS.pAS['node']:
-            for neighbor, adj_link in self.AS.cs.ntw.graph[node.id]['plink']:
+            for neighbor, adj_link in self.ntw.graph[node.id]['plink']:
                 if neighbor in self.AS.pAS['node']:
-                    links_between_domain_nodes.add(adj_link)
+                    links_between_domain_nodes |= {adj_link}
+            #TODO refactor this
+            for neighbor, vc in self.ntw.gftr(node, 'l2link', 'l2vc'):
+                if neighbor in self.AS.pAS['node']:
+                    links_between_domain_nodes |= {vc.linkS, vc.linkD}
+            for neighbor, vc in self.ntw.gftr(node, 'l3link', 'l3vc'):
+                if neighbor in self.AS.pAS['node']:
+                    links_between_domain_nodes |= {vc.linkS, vc.linkD}
+            
         self.add_to_AS(*links_between_domain_nodes)
             
     ## Functions used to modify AS from the right-click menu
@@ -243,7 +252,7 @@ class ASManagementWithArea(ASManagement):
         self.AS.cs.unhighlight_all()
         lb = self.area_nodes if obj_type == 'node' else self.area_links
         for selected_object in lb.selected():
-            so = self.AS.cs.ntw.of(name=selected_object, _type=obj_type)
+            so = self.ntw.of(name=selected_object, _type=obj_type)
             self.AS.cs.highlight_objects(so)
         
     ## Functions used directly from the AS Management window
@@ -279,6 +288,29 @@ class ASManagementWithArea(ASManagement):
             
     def remove_from_area(self, area, *objects):
         self.AS.areas[area].remove_from_area(*objects)
+        
+class IPManagement(ASManagement):
+    
+    def __init__(self, *args):
+        super().__init__(*args)
+                    
+        self.ip_frame = CustomFrame(self.frame_notebook)
+        self.frame_notebook.add(self.ip_frame, text=' IP management ')
+        
+        # label frame for area properties
+        lf_redistribution = Labelframe(self.ip_frame)
+        lf_redistribution.text = 'Redistribution'
+        lf_redistribution.grid(0, 0)
+        
+        default_route_label = Label(self.ip_frame)
+        default_route_label.text = 'Propagate default route :'
+        
+        self.choose_router = Combobox(self.ip_frame, width=15, height=7)
+        self.choose_router['values'] = tuple(self.AS.nodes)
+        self.choose_router.current(0)
+        
+        default_route_label.grid(0, 0, in_=lf_redistribution)
+        self.choose_router.grid(0, 1, in_=lf_redistribution)
                 
 class RIP_Management(ASManagement):
     
@@ -301,17 +333,17 @@ class STP_Management(ASManagement):
         # compute the spanning tree
         button_compute_SPT = Button(STP_frame) 
         button_compute_SPT.text='Compute STP'
-        button_compute_SPT.command = lambda: self.AS.build_SPT()
+        button_compute_SPT.command = self.AS.build_SPT
         
         # highlight all physical links that are part of the spanning tree
         button_highlight_SPT = Button(STP_frame) 
         button_highlight_SPT.text='Highlight spanning tree'
-        button_highlight_SPT.command = lambda: self.highlight_SPT()
+        button_highlight_SPT.command = self.highlight_SPT
         
         # trigger a root election
         button_elect_root = Button(STP_frame) 
         button_elect_root.text='Elect a root switch'
-        button_elect_root.command = lambda: self.AS.root_election()
+        button_elect_root.command = self.elect_root
         
         button_compute_SPT.grid(0, 0, in_=lf_stp_specifics)
         button_highlight_SPT.grid(1, 0, in_=lf_stp_specifics)
@@ -320,12 +352,16 @@ class STP_Management(ASManagement):
     def highlight_SPT(self):
         self.AS.cs.highlight_objects(*self.AS.SPT_links)
         
+    def elect_root(self):
+        self.AS.root_election()
+        self.AS.cs.highlight_objects(self.AS.root)
+        
 class VLAN_Management(ASManagementWithArea):
     
     def __init__(self, *args):
         super().__init__(*args)
         
-class ISIS_Management(ASManagementWithArea):
+class ISIS_Management(ASManagementWithArea, IPManagement):
     
     def __init__(self, *args):
         super().__init__(*args)
@@ -340,14 +376,6 @@ class ISIS_Management(ASManagementWithArea):
         '40GE': 4*10**9,
         '100GE':10**10
         }
-        
-        self.button_update_cost = ttk.Button(self.area_frame, text='Update costs', 
-                                command=lambda: self.update_cost())
-        self.button_update_cost.grid(row=1, column=0, pady=5, padx=5, sticky='w')    
-        
-        self.button_update_topo = ttk.Button(self.area_frame, text='Update topology', 
-                                command=lambda: self.update_AS_topology())
-        self.button_update_topo.grid(row=2, column=0, pady=5, padx=5, sticky='w') 
         
     def add_to_AS(self, *objects):
         super(ISIS_Management, self).add_to_AS(*objects)  
@@ -362,7 +390,7 @@ class ISIS_Management(ASManagementWithArea):
             cost = max(1, self.AS.ref_bw / bw)
             link.costSD = link.costDS = cost
         
-class OSPF_Management(ASManagementWithArea):
+class OSPF_Management(ASManagementWithArea, IPManagement):
     
     def __init__(self, *args):
         super().__init__(*args)
@@ -377,14 +405,6 @@ class OSPF_Management(ASManagementWithArea):
         '40GE': 4*10**9,
         '100GE':10**10
         }
-
-        # self.button_update_cost = ttk.Button(self, text='Update costs', 
-        #                         command=lambda: self.update_cost())
-        # self.button_update_cost.grid(row=1, column=0, pady=5, padx=5, sticky='w')    
-        # 
-        # self.button_update_topo = ttk.Button(self, text='Update topology', 
-        #                         command=lambda: self.update_AS_topology())
-        # self.button_update_topo.grid(row=2, column=0, pady=5, padx=5, sticky='w')
         
         # combobox to choose the exit ASBR
         self.exit_asbr = tk.StringVar()
@@ -414,7 +434,7 @@ class OSPF_Management(ASManagementWithArea):
     
     def save_parameters(self):
         if self.exit_asbr.get() != 'None':
-            exit_asbr = self.AS.cs.ntw.pn['node'][self.exit_asbr.get()]
+            exit_asbr = self.ntw.pn['node'][self.exit_asbr.get()]
             self.AS.exit_point = exit_asbr
         self.withdraw()
         

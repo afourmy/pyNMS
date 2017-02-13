@@ -161,18 +161,17 @@ class STP_AS(Ethernet_AS):
         # management window of the AS 
         self.management = AS_management.STP_Management(self, is_imported)
                 
-        if not is_imported:
-            # set the default per-AS properties of all AS objects
-            self.add_to_AS(*(self.nodes | self.links))
+        # set the default per-AS properties of all AS objects
+        self.add_to_AS(*(self.nodes | self.links))
             
         # trigger the root switch election. The root is the swith with the
         # highest priority, or in case of tie, the highest MAC address
-        self.root_election()
+        # self.root_election()
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
                     
     def add_to_AS(self, *objects):
-        super(Ethernet_AS, self).add_to_AS(*objects)
+        super(STP_AS, self).add_to_AS(*objects)
         
         for obj in objects:
             # A RSTP AS has no area, each object's area set is initialized 
@@ -202,7 +201,6 @@ class STP_AS(Ethernet_AS):
                 # and the current node has a higher MAC address, it becomes root
                 if mac_comparer(self.root.base_macaddress, node.base_macaddress):
                     self.root = node
-        print(self.root)
         
     def build_SPT(self):
         # clear the current spanning tree physical links
@@ -217,6 +215,7 @@ class STP_AS(Ethernet_AS):
         
         while heap:
             dist, node, path_link = heappop(heap)
+            print(node)
             if node not in visited:
                 if path_link:
                     self.SPT_links.add(path_link[-1])
@@ -276,9 +275,9 @@ class RIP_AS(IP_AS):
         # of the physical link, and a user-defined reference bandwidth.
         self.metric = 'hop count'
         
-        if not is_imported:
-            # set the default per-AS properties of all AS objects
-            self.add_to_AS(*(self.nodes | self.links))
+        # if not is_imported:
+        # set the default per-AS properties of all AS objects
+        self.add_to_AS(*(self.nodes | self.links))
             
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
@@ -361,6 +360,9 @@ class ISIS_AS(ASWithArea, IP_AS):
         # contains all L1/L2 nodes
         self.border_routers = set()
         
+        # set the default per-AS properties of all AS objects
+        self.add_to_AS(*(self.nodes | self.links))
+        
         if not is_imported:
             self.area_factory(
                               'Backbone', 
@@ -369,8 +371,6 @@ class ISIS_AS(ASWithArea, IP_AS):
                               nodes = self.nodes
                               )
                               
-            # set the default per-AS properties of all AS objects
-            self.add_to_AS(*(self.nodes | self.links))
             self.add_to_area(self.areas['Backbone'], *(self.nodes | self.links))
         
         # update the AS management panel by filling all boxes
@@ -537,6 +537,9 @@ class OSPF_AS(ASWithArea, IP_AS):
         # node used to exit the domain (ASBR for OSPF)
         self.exit_point = None
         
+        # set the default per-AS properties of all AS objects
+        self.add_to_AS(*(self.nodes | self.links))
+        
         if not is_imported:
             self.area_factory(
                               'Backbone', 
@@ -545,8 +548,6 @@ class OSPF_AS(ASWithArea, IP_AS):
                               nodes = self.nodes
                               )
                               
-            # set the default per-AS properties of all AS objects
-            self.add_to_AS(*(self.nodes | self.links))
             self.add_to_area(self.areas['Backbone'], *(self.nodes | self.links))
             
         # update the AS management panel by filling all boxes
@@ -673,9 +674,8 @@ class BGP_AS(ASWithArea, IP_AS):
         # management window of the AS
         self.management = AS_management.BGP_Management(self, is_imported)
         
-        if not is_imported:
-            # set the default per-AS properties of all AS objects
-            self.add_to_AS(*(self.nodes | self.links)),
+        # set the default per-AS properties of all AS objects
+        self.add_to_AS(*(self.nodes | self.links))
             
         # update the AS management panel by filling all boxes
         self.management.refresh_display()
@@ -702,22 +702,14 @@ class BGP_AS(ASWithArea, IP_AS):
                     peering.bgp_type = 'eBGP'
             
     def RFT_builder(self, source, allowed_nodes, allowed_links):
-        source.bgpt.clear()
         visited = {source}
         heap = []
-        # bgp table
-        bgpt = defaultdict(set)
-        
-        # populate the BGP table with the routes sourced by the source node,
-        # with a default weight of 32768
-        for ip, routes in source.rt.items():
-            for route in routes:
-                _, nh, *_ = route
-                source.bgpt[ip] |= {(0, nh, source, ())}
         
         # we fill the heap
+        source_area ,= source.AS[self]
         for src_nb, bgp_pr in self.ntw.gftr(source, 'l3link', 'BGP peering'):
-            first_AS = [source.bgp_AS, src_nb.bgp_AS]
+            nb_area ,= src_nb.AS[self]
+            first_AS = [source_area.id] + [nb_area.id]*(nb_area != source_area)
             # Cisco weight is 0 by default
             if bgp_pr('weight', source):
                 weight = 1 / bgp_pr('weight', source)
@@ -733,11 +725,12 @@ class BGP_AS(ASWithArea, IP_AS):
                             ))
         
         while heap:
-            weight, length, nh, node, route_path, AS_path = heappop(heap)
+            weight, length, nh_ip, node, route_path, AS_path = heappop(heap)
+            print(source, node)
             if node not in visited:
                 for ip, routes in node.rt.items():
                     real_weight = 0 if weight == float('inf') else 1 / weight
-                    source.bgpt[ip] |= {(real_weight, nh, node, tuple(AS_path))}
+                    source.bgpt[ip] |= {(real_weight, nh_ip, node, tuple(AS_path))}
                 visited.add(node)
                 for bgp_nb, bgp_pr in self.ntw.gftr(node, 'l3link', 'BGP peering'):
                     # excluded and allowed nodes
@@ -748,7 +741,7 @@ class BGP_AS(ASWithArea, IP_AS):
                     heappush(heap, (
                                     weight, 
                                     length + (bgp_pr.bgp_type == 'eBGP'), 
-                                    nh, 
+                                    nh_ip, 
                                     bgp_nb,
                                     route_path + [bgp_pr], 
                                     AS_path + new_AS
@@ -868,7 +861,7 @@ class ASCreation(CustomTopLevel):
         
         # List of AS type
         self.AS_type_list = Combobox(self, width=10)
-        self.AS_type_list['values'] = ('RIP', 'ISIS', 'OSPF', 'RSTP', 'BGP', 'STP', 'VLAN')
+        self.AS_type_list['values'] = scenario.ntw.AS_subtypes
         self.AS_type_list.current(0)
 
         # retrieve and save node data
