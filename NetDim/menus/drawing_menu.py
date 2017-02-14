@@ -36,7 +36,7 @@ class DrawingMenu(ScrolledFrame):
         'stop': lambda: 42,
         'text': lambda: self.change_creation_mode('text'),
         'rectangle': lambda: self.change_creation_mode('rectangle'),
-        'circle': lambda: 43,
+        'oval': lambda: self.change_creation_mode('oval'),
         'color': self.get_color
         }
         
@@ -45,7 +45,7 @@ class DrawingMenu(ScrolledFrame):
             if image_type == 'draw':
                 img_pil = ImageTk.Image.open(img_path).resize((150, 150))
             else:
-                img_pil = ImageTk.Image.open(img_path).resize((75, 75))
+                img_pil = ImageTk.Image.open(img_path).resize((55, 55))
             img = ImageTk.PhotoImage(img_pil)
             self.dict_image[image_type] = img
         
@@ -58,8 +58,7 @@ class DrawingMenu(ScrolledFrame):
                 button.config(width=150, height=150)
                 button.configure(relief=tk.RAISED)
             else:
-                button.config(width=65, height=65)
-                button.configure(text=obj_type, compound='top', font=font, relief=tk.SUNKEN)
+                button.config(width=75, height=75)
             self.type_to_button[obj_type] = button
         
         # drawing algorithm and parameters: per project
@@ -129,7 +128,7 @@ class DrawingMenu(ScrolledFrame):
         # shapes and text drawing
         self.type_to_button['text'].grid(0, 0, in_=lf_shapes_drawing)
         self.type_to_button['rectangle'].grid(0, 1, in_=lf_shapes_drawing)
-        self.type_to_button['circle'].grid(0, 2, in_=lf_shapes_drawing)
+        self.type_to_button['oval'].grid(0, 2, in_=lf_shapes_drawing)
         self.type_to_button['color'].grid(0, 3, in_=lf_shapes_drawing)
         
     def draw(self):
@@ -157,5 +156,12 @@ class DrawingMenu(ScrolledFrame):
         self.ms.cs._mode = mode
         self.ms.cs._creation_mode = mode
         self.ms.cs.switch_binding()
+        # update the button display
+        for shape in ('text', 'rectangle', 'oval'):
+            if shape == mode:
+                self.type_to_button[shape].configure(relief='sunken')
+            else:
+                self.type_to_button[shape].configure(relief='raised')
+                
 
         

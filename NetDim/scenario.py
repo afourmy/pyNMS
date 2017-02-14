@@ -8,6 +8,7 @@ import miscellaneous.search as search
 import re
 from pythonic_tkinter.preconfigured_widgets import *
 from objects.objects import *
+from miscellaneous.shape_drawing import *
 from menus.general_rightclick_menu import GeneralRightClickMenu
 from menus.selection_rightclick_menu import SelectionRightClickMenu
 from random import randint
@@ -61,16 +62,16 @@ class Scenario(CustomFrame):
         self.drag_item = None
         self.temp_line = None
         
-        # object selected for rectangle selection
-        self.obj_selection = 'node'
-        
         # used to move several node at once
         self._start_pos_main_node = [None]*2
         self._dict_start_position = {}
         
-        # the default motion is creation of nodes
+        # the default mode is motion
         self._mode = 'motion'
+        # the default creation mode is router
         self._creation_mode = 'router'
+        # the default shape creation mode is text
+        self.shape_creation_mode = 'text'
         
         # 2D display or 3D display
         self.layered_display = False
@@ -93,7 +94,7 @@ class Scenario(CustomFrame):
         self.id_fdtks = {}
         
         # list of currently selected object ('so')
-        self.so = {'node': set(), 'link': set()}
+        self.so = defaultdict(set)
         
         # source / destination indicators when a link is selected
         self.src_label = None
@@ -136,7 +137,7 @@ class Scenario(CustomFrame):
         self.co = None
         
         # switch the object rectangle selection by pressing space
-        self.cvs.bind('<space>', self.change_object_selection)
+        self.cvs.bind('<space>', lambda: _)
         
         # add nodes to a current selection by pressing control
         self.ctrl = False
@@ -160,9 +161,13 @@ class Scenario(CustomFrame):
         if self._mode == 'motion':
             # unbind unecessary bindings
             self.cvs.unbind('<Button 1>')
+            self.cvs.unbind('<B1-Motion>')
+            self.cvs.unbind('<ButtonRelease-1>')
             self.cvs.tag_unbind('link', '<Button-1>')
             self.cvs.tag_unbind('node', '<Button-1>')
+            self.cvs.tag_unbind('shape', '<Button-1>')
             self.cvs.tag_unbind('node', '<B1-Motion>')
+            self.cvs.tag_unbind('shape', '<B1-Motion>')
             self.cvs.tag_unbind('node', '<ButtonRelease-1>')
             
             # set the focus on the canvas when clicking on it
@@ -172,9 +177,11 @@ class Scenario(CustomFrame):
             # add bindings to drag a node with left-click
             self.cvs.tag_bind('link', '<Button-1>', self.find_closest_link, add='+')
             self.cvs.tag_bind('node', '<Button-1>', self.find_closest_node, add='+')
+            self.cvs.tag_bind('shape', '<Button-1>', self.find_closest_shape, add='+')
             for tag in ('node', 'link'):
                 self.cvs.tag_bind(tag, '<Button-1>', self.update_mgmt_window, add='+')
             self.cvs.tag_bind('node', '<B1-Motion>', self.node_motion)
+            self.cvs.tag_bind('shape', '<B1-Motion>', self.shape_motion)
             
             # add binding to select all nodes in a rectangle
             self.cvs.bind('<ButtonPress-1>', self.start_point_select_objects, add='+')
@@ -196,11 +203,18 @@ class Scenario(CustomFrame):
                 
             elif self._creation_mode == 'rectangle':
                 # add binding to draw a rectangle
-                self.cvs.bind('<ButtonPress-1>', self.start_point_rectangle)
-                self.cvs.bind('<B1-Motion>', self.rectangle_drawing)
+                self.cvs.bind('<ButtonPress-1>', self.start_drawing_rectangle)
+                self.cvs.bind('<B1-Motion>', self.draw_rectangle)
+                self.cvs.bind('<ButtonRelease-1>', self.create_rectangle)
+                
+            elif self._creation_mode == 'oval':
+                # add binding to draw a rectangle
+                self.cvs.bind('<ButtonPress-1>', self.start_drawing_oval)
+                self.cvs.bind('<B1-Motion>', self.draw_oval)
+                self.cvs.bind('<ButtonRelease-1>', self.create_oval)
                 
             elif self._creation_mode == 'text':
-                self.cvs.bind('<ButtonPress-1>', self.draw)
+                self.cvs.bind('<ButtonPress-1>', self.create_label)
                 
             else:
                 # add bindings to create a link between two nodes
@@ -218,20 +232,49 @@ class Scenario(CustomFrame):
                 
     ## Drawing modes
     
-    def start_point_rectangle(self, event):
-        x, y = self.cvs.canvasx(event.x), self.cvs.canvasy(event.y)
-        self._start_position = x, y
-        self.temp_line_x_top = self.cvs.create_line(x, y, x, y)
-        self.temp_line_y_left = self.cvs.create_line(x, y, x, y)
-        self.temp_line_y_right = self.cvs.create_line(x, y, x, y)
-        self.temp_line_x_bottom = self.cvs.create_line(x, y, x, y)
-              
     @adapt_coordinates
-    def draw(self, event):
-        if self._creation_mode == 'text':
-            LabelCreation(self, event.x, event.y)
-        elif self._creation_mode == 'rectangle':
-            pass
+    def start_drawing_oval(self, event):
+        x, y = event.x, event.y
+        self._start_position = x, y
+        self.oval = self.cvs.create_oval(x, y, x, y, tags=('shape',))
+        self.cvs.tag_lower(self.oval)
+        
+    @adapt_coordinates
+    def draw_oval(self, event):
+        # draw the line only if they were created in the first place
+        if self._start_position != [None]*2:
+            # update the position of the temporary lines
+            x0, y0 = self._start_position
+            self.cvs.coords(self.oval, event.x, event.y, x0, y0)
+        
+    def create_oval(self, event):
+        oval = Oval(self.oval, event.x, event.y)
+        self._start_position = [None]*2
+        self.object_id_to_object[self.oval] = oval
+    
+    @adapt_coordinates
+    def start_drawing_rectangle(self, event):
+        x, y = event.x, event.y
+        self._start_position = x, y
+        self.rectangle = self.cvs.create_rectangle(x, y, x, y, tags=('shape',))
+        self.cvs.tag_lower(self.rectangle)
+        
+    @adapt_coordinates
+    def draw_rectangle(self, event):
+        # draw the line only if they were created in the first place
+        if self._start_position != [None]*2:
+            # update the position of the temporary lines
+            x0, y0 = self._start_position
+            self.cvs.coords(self.rectangle, event.x, event.y, x0, y0)
+        
+    def create_rectangle(self, event):
+        rectangle = Rectangle(self.rectangle, event.x, event.y)
+        self._start_position = [None]*2
+        self.object_id_to_object[self.rectangle] = rectangle
+                  
+    @adapt_coordinates
+    def create_label(self, event):
+        LabelCreation(self, event.x, event.y)
         
     def invert_layer_display(self, layer):
         self.display_layer[layer] = not self.display_layer[layer]
@@ -256,7 +299,7 @@ class Scenario(CustomFrame):
         merged_dict = main_node_selected.image.items()
         layer = [l for l, item_id in merged_dict if item_id == self.drag_item].pop()
         diff = layer * self.diff_y
-        self._start_pos_main_node = main_node_selected.x, main_node_selected.y + diff
+        self._start_pos_main_node = event.x, event.y + diff
         if main_node_selected in self.so['node']:
             # for all selected node (sn), we store the initial position
             for sn in self.so['node']:
@@ -284,7 +327,7 @@ class Scenario(CustomFrame):
         source = main_link_selected.source
         destination = main_link_selected.destination
         if not self.src_label:
-            font= ("Purisa", '12', 'bold')
+            font = ("Purisa", '12', 'bold')
             self.src_label = self.cvs.create_text(
                                               source.x, 
                                               source.y, 
@@ -302,6 +345,27 @@ class Scenario(CustomFrame):
         if main_link_selected.type in ('traffic', 'route'):
             if hasattr(main_link_selected, 'path'):
                 self.highlight_objects(*main_link_selected.path)
+                
+    @adapt_coordinates
+    def find_closest_shape(self, event):
+        self._dict_start_position.clear()
+        self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
+        main_shape_selected = self.object_id_to_object[self.drag_item]
+        self._start_pos_main_node = event.x, event.y
+        if main_shape_selected in self.so['shape']:
+            # for all selected shapes, we store the initial position
+            for ss in self.so['shape']:
+                self._dict_start_position[ss] = [ss.x, ss.y]
+        else:
+            # if ctrl is not pressed, we forget about the old selection, 
+            # consider only the newly selected node, and unhighlight everything
+            if not self.ctrl:
+                self.unhighlight_all()
+            self.highlight_objects(main_shape_selected)
+            # we update the dict of start position
+            x, y = main_shape_selected.x, main_shape_selected.y
+            self._dict_start_position[main_shape_selected] = [x, y]
+        self.highlight_objects(main_shape_selected)
 
     def update_mgmt_window(self, event):
         if self.co:
@@ -318,6 +382,8 @@ class Scenario(CustomFrame):
             co_id = self.cvs.find_closest(x, y)[0]
             if co_id in self.object_id_to_object:
                 co = self.object_id_to_object[co_id]
+                if co.class_type == 'shape':
+                    return
                 # we check if the closest object is under the mouse on the canvas
                 if co_id in self.cvs.find_overlapping(x - 1, y - 1, x + 1, y + 1):
                     if co != self.co:
@@ -566,9 +632,32 @@ class Scenario(CustomFrame):
             selected_node.x = x1 + (event.x - x0)
             selected_node.y = y1 + (event.y + diff - y0)
             self.move_node(selected_node)
-        # update coordinates of the node and move it
-        node.x, node.y = event.x, event.y + diff
-        self.move_node(node)   
+        
+    @adapt_coordinates
+    def shape_motion(self, event):
+        shape = self.object_id_to_object[self.drag_item]
+        for ss in self.so['shape']:
+            self.move_shape(ss, event)
+        
+    def move_shape(self, shape, event):
+        x0, y0 = self._start_pos_main_node
+        x1, y1 = self._dict_start_position[shape]
+        dx, dy = x1 - x0, y1 - y0
+        if shape.subtype == 'label':
+            self.cvs.coords(shape.id, dx + event.x, dy + event.y)
+            shape.x, shape.y = dx + event.x, dy + event.y
+        else:
+            coords = self.cvs.coords(shape.id)
+            initial = coords[2:]
+            shape.x, shape.y = initial
+            self.cvs.coords(
+                            shape.id, 
+                            coords[0] + dx + event.x - initial[0], 
+                            coords[1] + dy + event.y - initial[1],
+                            dx + event.x,
+                            dy + event.y
+                            )
+            
                 
     def move_node(self, n):
         newx, newy = float(n.x), float(n.y)
@@ -657,7 +746,7 @@ class Scenario(CustomFrame):
     def erase_graph(self):
         self.object_id_to_object.clear()
         self.unhighlight_all()
-        self.so = {'node': set(), 'link': set()}
+        self.so.clear()
         self.temp_line = None
         self.drag_item = None
                             
@@ -685,14 +774,11 @@ class Scenario(CustomFrame):
         if not self.cvs.find_overlapping(x-1, y-1, x+1, y+1):
             if not self.ctrl:
                 self.unhighlight_all()
-                self.so = {'node': set(), 'link': set()}
+                self.so.clear()
             self._start_position = x, y
             # create the temporary line
             x, y = self._start_position
-            self.temp_line_x_top = self.cvs.create_line(x, y, x, y)
-            self.temp_line_y_left = self.cvs.create_line(x, y, x, y)
-            self.temp_line_y_right = self.cvs.create_line(x, y, x, y)
-            self.temp_line_x_bottom = self.cvs.create_line(x, y, x, y)
+            self.temp_rectangle = self.cvs.create_rectangle(x, y, x, y)
 
     @adapt_coordinates
     def rectangle_drawing(self, event):
@@ -700,28 +786,21 @@ class Scenario(CustomFrame):
         if self._start_position != [None]*2:
             # update the position of the temporary lines
             x0, y0 = self._start_position
-            self.cvs.coords(self.temp_line_x_top, x0, y0, event.x, y0)
-            self.cvs.coords(self.temp_line_y_left, x0, y0, x0, event.y)
-            self.cvs.coords(self.temp_line_y_right, event.x, y0, event.x, event.y)
-            self.cvs.coords(self.temp_line_x_bottom, x0, event.y, event.x, event.y)
+            self.cvs.coords(self.temp_rectangle, x0, y0, event.x, event.y)
     
-    def change_object_selection(self, event=None):
-        self.obj_selection = (self.obj_selection == 'link')*'node' or 'link' 
-
     @adapt_coordinates
     def end_point_select_nodes(self, event):
+        selection_mode = self.ms.creation_menu.selection_mode
+        allowed = tuple(mode for mode, v in selection_mode.items() if v.get())
         if self._start_position != [None]*2:
             # delete the temporary lines
-            self.cvs.delete(self.temp_line_x_top)
-            self.cvs.delete(self.temp_line_x_bottom)
-            self.cvs.delete(self.temp_line_y_left)
-            self.cvs.delete(self.temp_line_y_right)
+            self.cvs.delete(self.temp_rectangle)
             # select all nodes enclosed in the rectangle
             start_x, start_y = self._start_position
             for obj in self.cvs.find_enclosed(start_x, start_y, event.x, event.y):
                 if obj in self.object_id_to_object:
                     enclosed_obj = self.object_id_to_object[obj]
-                    if enclosed_obj.class_type == self.obj_selection:
+                    if enclosed_obj.class_type in allowed:
                         self.highlight_objects(enclosed_obj)
             self._start_position = [None]*2
         
@@ -741,7 +820,12 @@ class Scenario(CustomFrame):
             elif obj.class_type == 'link':
                 dash = (3, 5) if dash else ()
                 self.cvs.itemconfig(obj.line, fill=color, width=5, dash=dash)
-
+            # object is a shape
+            else:
+                if obj.subtype == 'label':
+                    self.cvs.itemconfig(obj.id, fill=color)
+                else:
+                    self.cvs.itemconfig(obj.id, outline=color)
                 
     def unhighlight_objects(self, *objects):
         for obj in objects:
@@ -754,7 +838,13 @@ class Scenario(CustomFrame):
                                 )
             elif obj.class_type == 'link':
                 self.cvs.itemconfig(obj.line, fill=obj.color, 
-                                        width=self.LINK_WIDTH, dash=obj.dash)  
+                                        width=self.LINK_WIDTH, dash=obj.dash)
+            # object is a shape
+            else:
+                if obj.subtype == 'label':
+                    self.cvs.itemconfig(obj.id, fill=obj.color)
+                else:
+                    self.cvs.itemconfig(obj.id, outline=obj.color)
                 
     def unhighlight_all(self):
         self.cvs.delete(self.src_label)
@@ -1088,7 +1178,7 @@ class Scenario(CustomFrame):
     
     def refresh_display(self):
         # remove selections as the red highlight will go away anyway
-        self.so = {'node': set(), 'link': set()}
+        self.so.clear()
         self.refresh_all_labels()     
         self.refresh_failures() 
         filter = self.ms.display_menu.filter_entry.text
@@ -1128,30 +1218,3 @@ class Scenario(CustomFrame):
                 self.cvs.itemconfig(link.lid, state=new_state)
         return self.display_per_type[subtype]
                 
-                
-class LabelCreation(CustomTopLevel):
-            
-    def __init__(self, scenario, x, y):
-        super().__init__()
-        self.cs = scenario
-        
-        # labelframe
-        lf_label_creation = Labelframe(self)
-        lf_label_creation.text = 'Create a label'
-        lf_label_creation.grid(0, 0)
-
-        self.entry_label = Entry(self, width=20)
-        
-        OK_button = Button(self, width=20)
-        OK_button.text = 'OK'
-        OK_button.command = lambda: self.OK(x, y)
-        
-        lf_label_creation.grid(0, 0)
-        self.entry_label.grid(0, 0, in_=lf_label_creation)
-        OK_button.grid(1, 0, in_=lf_label_creation)
-
-    def OK(self, x, y):
-        font= ("Purisa", '12', 'bold')
-        self.cs.cvs.create_text(x, y, text=self.entry_label.text, font=font)
-        self.destroy()
-        

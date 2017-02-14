@@ -105,23 +105,16 @@ class CreationMenu(ScrolledFrame):
                 
         # netdim mode: motion or creation
         self.type_to_button['netdim'].grid(0, 0, sticky='ew')
-        self.type_to_button['motion'].grid(0, 0, 2, padx=20, in_=lf_selection)
+        self.type_to_button['motion'].grid(0, 0, 3, padx=20, in_=lf_selection)
         
-        # radio button to choose between link and node selection
-        selection_value = tk.StringVar()
-        selection_value.set('node') 
-
-        node_selection = Radiobutton(self.infr, variable=selection_value, value='node')
-        node_selection.text = 'Select nodes'
-        node_selection.command = lambda: self.change_selection('node')
-
-        link_selection = Radiobutton(self.infr, variable=selection_value, value='link')
-        link_selection.text = 'Select links'
-        link_selection.command = lambda: self.change_selection('link')
-        
-        # affichage des radio button
-        node_selection.grid(0, 1, in_=lf_selection)
-        link_selection.grid(1, 1, in_=lf_selection)
+        self.selection_mode = {}
+        for id, mode in enumerate(('node', 'link', 'shape')):
+            bool = tk.BooleanVar()
+            bool.set(not id)
+            self.selection_mode[mode] = bool
+            button = Checkbutton(self.infr, variable=bool)
+            button.text = mode.capitalize() + ' selection'
+            button.grid(id, 1, in_=lf_selection)
 
         # creation mode: type of node or link
         self.type_to_button['router'].grid(0, 0, padx=2, in_=lf_creation)

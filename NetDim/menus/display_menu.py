@@ -75,11 +75,11 @@ class DisplayMenu(ScrolledFrame):
             layer_bool = tk.BooleanVar()
             layer_bool.set(True)
             self.layer_boolean.append(layer_bool)
-            self.button_limit = Checkbutton(self.infr, variable = layer_bool)
-            self.button_limit.text = 'L' + str(layer)
-            self.button_limit.command = self.update_display
+            button_limit = Checkbutton(self.infr, variable = layer_bool)
+            button_limit.text = 'L' + str(layer)
+            button_limit.command = self.update_display
             row, col = layer > 2, 2 + (layer + 1)%2
-            self.button_limit.grid(row, col, in_=lf_multilayer_display)
+            button_limit.grid(row, col, in_=lf_multilayer_display)
         
         for obj_type in object_properties:
             if obj_type not in ('l2vc', 'l3vc'):
