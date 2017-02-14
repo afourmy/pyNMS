@@ -1,41 +1,45 @@
 from pythonic_tkinter.preconfigured_widgets import *
 
-class Label():
+class Shape():
     
     class_type = 'shape'
-    subtype = 'label'
     color = 'black'
     
-    def __init__(self, id, x, y, text):
+    def __init__(self, id, x, y):
         self.id = id
         self.x = x
         self.y = y
-        self.text = text
+
+class Label(Shape):
+    
+    subtype = 'label'
+    
+    def __init__(self, *args):
+        self.text = args[-1]
+        super().__init__(*args[:-1])        
         
     def __repr(self):
         return self.text
         
-class Rectangle():
+class Rectangle(Shape):
     
-    class_type = 'shape'
     subtype = 'rectangle'
-    color = 'black'
     
-    def __init__(self, id, x, y):
-        self.id = id
-        self.x = x
-        self.y = y
+    def __init__(self, *args):
+        super().__init__(*args)        
         
-class Oval():
+    def __repr(self):
+        return '{} {}'.format(self.subtype, self.id)
+        
+class Oval(Shape):
     
-    class_type = 'shape'
     subtype = 'oval'
-    color = 'black'
     
-    def __init__(self, id, x, y):
-        self.id = id
-        self.x = x
-        self.y = y
+    def __init__(self, *args):
+        super().__init__(*args)        
+        
+    def __repr(self):
+        return '{} {}'.format(self.subtype, self.id)
 
 class LabelCreation(CustomTopLevel):
             
