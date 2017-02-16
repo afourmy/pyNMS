@@ -311,8 +311,7 @@ class Scenario(CustomFrame):
                 self.unhighlight_all()
             self.highlight_objects(main_node_selected)
             # we update the dict of start position
-            x, y = main_node_selected.x, main_node_selected.y
-            self._dict_start_position[main_node_selected] = [x, y]
+            self._dict_start_position[main_node_selected] = self._start_pos_main_node 
             # we also need to update the highlight to that the old selection
             # is no longer highlighted but the newly selected node is.
             self.highlight_objects(main_node_selected)
