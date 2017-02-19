@@ -2,16 +2,8 @@
 
 NetDim is a network design and planning software.
 
-A network in NetDim is made of:
-- devices (router, optical switch, host machine, etc)
-- physical links
-- logical links (static route, pseudowires, BGP peer relationship, OSPF virtual link)
-- traffic links (demands in Mbps)
-- [autonomous systems] (https://en.wikipedia.org/wiki/Autonomous_system_%28Internet%29) (AS)
-
-An autonomous system is a set of devices exchanging routing and signalization messages to carry the incoming traffic.
-The path of a traffic flow inside an AS depends on the [protocol] (https://en.wikipedia.org/wiki/Communications_protocol) used
-in the AS.
+[Visit our website] (http://www.netdim.fr)
+Contact us: contact@netdim.fr
 
 # Getting started
 
@@ -221,72 +213,3 @@ From this point on, you can:
 Finally, you can trigger the multi-layer display to dissociate traffic links from trunks and better assess the situation.
 
 ![Multi-layer display](https://github.com/mintoo/networks/raw/master/Readme/use_case_step7.PNG)
-
-# To be done
-
-## Algorithms
-- [ ] Improved Suurbale/Bhandari to find the K (maximally) edge/edge&nodes disjoint paths
-- [ ] Prim algorithm to find the minimum spanning tree
-- [ ] Minimum cut.
-- [ ] Use a genetic algorithm to solve RWA, compare with LP
-- [ ] Degree centrality. number of neighbor of each node (graph + make node size depend on it)
-- [ ] Protection-based link dimensioning: IGP reconvergence, FRR, etc
-
-## Canvas-related tasks
-- [ ] Change the mouse pointeur when going over an object
-- [ ] Modified Dijkstra to find the longest path/widest path
-- [ ] Generate text and shapes on the canvas
-- [ ] Label position issue + label deletion for routes after calculate all
-- [ ] Highlight should include the nodes too
-- [ ] Upload icon with all possible colors and have a special folder for them
-- [ ] Highlight the LL when highlighting the path
-- [ ] Highlight recovery path with dash
-- [ ] Highlight routes / traffic methods should depend on whether there is or not a link in failure.
-
-## Routing
-- [ ] G8032 ring with RPL protection
-- [ ] Ring AS with steering/wrapping protection mode
-- [ ] Dimensioning with Maximally redundant tree
-- [ ] OSPF options: route leaking, multi-ABR, multi-area links, etc (RFC 5086, ...)
-- [ ] IS-IS improvement: route leaking option (RFC 2966)
-
-## Protection
-- [ ] FRR implementation for MPLS.
-- [ ] Highlight the protection path with a different color
-- [ ] K-failure AS dimensioning
-
-## AS
-- [ ] Highlight all elements of a domain
-- [ ] Delete AS button. Rename AS. Delete area. Rename area.
-- [ ] Interaction between rename an object and the AS management. 
-- [ ] Find a way to make the network tree view work, by retrieving the name of the category
-- [ ] Add AS properties in the model, NTV and ASm panel
-
-## Tests
-- [ ] Add test for AS creation, modification, renaming, deletion, etc + area management
-
-## Other
-- [ ] Remove all Var() when not necessary (set, get can be used instead)
-- [ ] Scenario duplication
-- [ ] Message window (display log) + error window: catch error
-- [ ] Add regex for sanity checks in all user input entry boxes
-- [ ] Network links/nodes statistics with plotlib: number of links per type, etc
-- [ ] Save the default drawing parameters when modified. Update the window.
-- [ ] compute the optimal pairwise distance for the spring length
-- [ ] Help menu for links, nodes input
-- [ ] Common top-level window for object property display to avoid having several windows at once
-- [ ] Keyboard shortcut: Ctrl, Suppr, Ctrl Z/Y, etc
-- [ ] Treeview to display the list of object of the network
-- [ ] when clicking on a link, window displaying all routes / traffic link mapped on it
-- [ ] Right-click of the tree view equivalent to a right-click on the canvas
-- [ ] Make a clear distinction between class variable and init
-
-## Config generation
-- [ ] Generate MPLS config
-- [ ] Generate RSTP config 
-
-## Import/Export/Save
-- [ ] Consider all scenario when saving/opening a saved project
-- [ ] Save all scenario
-- [ ] Import Export all scenario
-- [ ] Import new and update mode
