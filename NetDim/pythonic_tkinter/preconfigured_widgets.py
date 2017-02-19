@@ -136,6 +136,7 @@ class MainWindow(tk.Tk):
                        'Checkbutton'
                        ):
             ttk.Style().configure('T' + widget, background=color)
+        ttk.Style().configure('Treeview', rowheight=40)
             
 class Menu(tk.Menu):
     

@@ -495,26 +495,29 @@ class NetworkTreeView(CustomTopLevel):
 
     def __init__(self, master):
         super().__init__()
+        self.ms = master
+        self.ntw = self.ms.cs.ntw
         self.geometry('900x500')
         self.title('Network Tree View')
         # TODO add AS property too, botrh in manage AS and here
         self.ntv = ttk.Treeview(self, selectmode='extended')
-        n = max(map(len, master.object_ie.values()))
+        n = max(map(len, object_ie.values()))
 
         self.ntv['columns'] = tuple(map(str, range(n)))
         for i in range(n):
-            self.ntv.column(str(i), width=70)
+            self.ntv.column(str(i), width=100)
             
         self.ntv.bind('<ButtonRelease-1>', lambda e: self.select(e))
         
-        for obj_subtype, properties in master.object_ie.items():
+        for obj_subtype, properties in object_ie.items():
+            properties = ('type',) + properties
             self.ntv.insert('', 'end', obj_subtype, text=obj_subtype.title(), 
                                                             values=properties)
-            obj_type = master.nd_obj[obj_subtype]
-            flt = lambda o: o.subtype == obj_subtype
-            for obj in filter(flt, master.cs.ntw.pn[obj_type].values()):
+            obj_type = subtype_to_type[obj_subtype]
+            for obj in self.ntw.ftr(obj_type, obj_subtype):
                 values = tuple(map(lambda p: getattr(obj, p), properties))
-                self.ntv.insert(obj_subtype, 'end', text=obj.name, values=values)
+                iid = self.ntv.insert(obj_subtype, 'end', text=obj.name, values=values)
+                self.ntv.item(iid, tags=obj_type)
         
         self.ntv.pack(expand=tk.YES, fill=tk.BOTH)
         
@@ -522,7 +525,9 @@ class NetworkTreeView(CustomTopLevel):
         
     def select(self, event):
         for item in self.ntv.selection():
-            item = self.ntv.item(item)
-            print(item)
-            
-            #item_text = self.ntv.item(item, 'text')
+            tags = self.ntv.item(item, 'tags')
+            if tags:
+                obj_type ,= tags
+                item = self.ntv.item(item)
+                obj = self.ntw.pn[obj_type][self.ntw.name_to_id[item['text']]]
+                print(obj)
