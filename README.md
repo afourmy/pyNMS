@@ -6,6 +6,8 @@ NetDim is a network design and planning software.
 
 Contact us: contact@netdim.fr
 
+Watch a quick demo: on the [website] (http://www.netdim.fr) 
+
 # Getting started
 
 The following modules are used in NetDim:
@@ -19,10 +21,6 @@ In order to use NetDim, you need to run **main.py**.
 ```
 python main.py
 ```
-
-What you should see after running main.py:
-
-![NetDim](https://github.com/mintoo/networks/raw/master/Readme/netdim_app.png)
 
 # Features
 
@@ -163,54 +161,3 @@ Two methods were implemented to solve the wavelength assignment problem:
 - "Largest degree first" heuristic
 
 Choose one of them in the list and click on "Run algorithm": NetDim will find out how many wavelengths are needed.
-
-# A simple use case: create an OSPF tessaract (4-hypercube)
-
-## Create the tessaract
-
-Go to the "Network routing" menu, and select the entry "Graph generation". Click on the "Hypercube" button, leave the dimension to 4 and click on "OK".
-
-![Graph creation](https://github.com/mintoo/networks/raw/master/Readme/use_case_step1.PNG)
-
-## Visualize the graph
-When the graph is created, all nodes are colocated. Right-click on the canvas, and select the "Drawing > Both" entry. 
-Nodes will first be randomly spread accross the canvas, after what the force-directed layout is applied.
-The network is continuously drawing itself until you right-click again and select the "Stop drawing" entry.
-You can use the mouse scroll wheel to center the display on the nodes.
-
-![Graph visualization](https://github.com/mintoo/networks/raw/master/Readme/use_case_step2.PNG)
-
-## Create the AS
-Select all nodes and right-click on one of them. Click on "Create AS" and choose "OSPF" in the "Type" list, then click on "Create AS". The "Manage AS" panel pops up.
-
-![AS creation](https://github.com/mintoo/networks/raw/master/Readme/use_case_step3.PNG)
-
-## Add trunks to the AS
-The AS was created as a set of nodes: it has no trunk yet. Click on the "Find trunks" button.
-This will automatically add all trunks which both ends belong the AS.
-Add a few edge nodes. Click on the "Create traffic" button: traffic links will be automatically created between all pairs of edge nodes.
-This AS management panel also display the area topology. In our case, all nodes and trunks are part of the backbone, there is no other area.
-
-![AS management](https://github.com/mintoo/networks/raw/master/Readme/use_case_step4.PNG)
-
-## Assign IP address and look at the configuration panel
-Right-click on the canvas, and select the "Refresh" entry. NetDim will perform the following actions:
-- Update AS topology
-- Interface allocation: assign Ethernet interfaces to all trunks: these interfaces are used to create the routing table of the attached routers, as well as for the configuration panel.
-- IP addressing: assign IP addressing to all interfaces.
-- Subnetwork allocation: compute a subnetwork address for all trunks. Subnetworks depend on the IP addresses of both interfaces of the trunk. For example, if the IP addresses are 10.0.0.1/24 and 10.0.0.2/24, the "subnetwork" advertised by the router will be 10.0.0.0/24.
-- Create routing tables.
-- Route traffic links: based on the routing tables that were created in the previous step, NetDim finds the path of each traffic flows and map the traffic on physical trunks, just like it's done in real-world networks.
-- Refresh labels: update all label values.
-
-From this point on, you can:
-- Choose which label to display from the "Options" menu (IP address, interface, etc)
-- Click on a route to see how the traffic is routed through the AS
-- Access the configuration panel by right-clicking on a router, and select the "Configuration" entry.
-
-![Routing](https://github.com/mintoo/networks/raw/master/Readme/use_case_step6.PNG)
-
-## Multi-layer display
-Finally, you can trigger the multi-layer display to dissociate traffic links from trunks and better assess the situation.
-
-![Multi-layer display](https://github.com/mintoo/networks/raw/master/Readme/use_case_step7.PNG)

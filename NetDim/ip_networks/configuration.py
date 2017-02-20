@@ -66,19 +66,19 @@ class RouterConfiguration(tk.Toplevel):
                                             nh_ip = sr.nh_ip
                                             )
             
-        if node.bgp_AS:
-            AS = self.cs.ntw.pnAS[node.bgp_AS]
-            yield ' {name}(config)# router bgp {AS_id}\n'\
-                                        .format(name=node.name, AS_id=AS.id)
-            
-        for bgp_nb, bgp_pr in self.cs.ntw.gftr(node, 'route', 'BGP peering'):
-            nb_AS = self.cs.ntw.pnAS[bgp_nb.bgp_AS]
-            yield ' {name}(config-router)# neighbor {ip} remote-as {AS}\n'\
-                                    .format(
-                                            name = node.name, 
-                                            ip = bgp_pr('ip', bgp_nb),
-                                            AS = nb_AS.id
-                                            )
+        # if node.bgp_AS:
+        #     AS = self.cs.ntw.pnAS[node.bgp_AS]
+        #     yield ' {name}(config)# router bgp {AS_id}\n'\
+        #                                 .format(name=node.name, AS_id=AS.id)
+        #     
+        # for bgp_nb, bgp_pr in self.cs.ntw.gftr(node, 'route', 'BGP peering'):
+        #     nb_AS = self.cs.ntw.pnAS[bgp_nb.bgp_AS]
+        #     yield ' {name}(config-router)# neighbor {ip} remote-as {AS}\n'\
+        #                             .format(
+        #                                     name = node.name, 
+        #                                     ip = bgp_pr('ip', bgp_nb),
+        #                                     AS = nb_AS.id
+        #                                     )
         
         for neighbor, adj_plink in self.cs.ntw.graph[node.id]['plink']:
             interface = adj_plink('interface', node)
@@ -141,7 +141,7 @@ class RouterConfiguration(tk.Toplevel):
                         ip = interface.ipaddress
                         
                         yield ' {name}(config-router)# network {ip}\n'\
-                                                .format(name=node.name, ip=ip)
+                                        .format(name=node.name, ip=ip.ip_addr)
                     else:
                         if_name = interface.name
                         yield ' {name}(config-router)# passive-interface {i}\n'\
@@ -159,7 +159,7 @@ class RouterConfiguration(tk.Toplevel):
                         plink_area ,= adj_plink.AS[AS]
                         yield (' {name}(config-router)# network' 
                                         ' {ip} 0.0.0.3 area {area_id}\n')\
-                        .format(name=node.name, ip=ip, area_id=plink_area.id)
+                        .format(name=node.name, ip=ip.ip_addr, area_id=plink_area.id)
                             
                     else:
                         if_name = interface.name

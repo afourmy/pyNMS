@@ -287,7 +287,7 @@ class PropertyChanger(FocusTopLevel):
         
         # list of properties
         self.property_list = Combobox(self, width=15)
-        self.property_list['values'] = self.ms.object_properties[type]
+        self.property_list['values'] = object_properties[type]
         self.property_list.current(0)        
                             
         self.entry_prop = Entry(self, width=15)
@@ -301,7 +301,7 @@ class PropertyChanger(FocusTopLevel):
         
     def confirm(self, objects):
         selected_property = self.property_list.text
-        value = self.ms.prop_to_type[selected_property](self.entry_prop.text)
+        value = self.ms.cs.ntw.prop_to_type[selected_property](self.entry_prop.text)
         for object in objects:
             setattr(object, selected_property, value)
         self.destroy()
