@@ -140,7 +140,7 @@ class MainWindow(tk.Tk):
                        'Checkbutton'
                        ):
             ttk.Style().configure('T' + widget, background=color)
-        ttk.Style().configure('Treeview', rowheight=40)
+        ttk.Style().configure('Treeview', rowheight=25)
             
 class Menu(tk.Menu):
     
@@ -192,6 +192,12 @@ class NoDuplicateListbox(ImprovedListbox):
         
 class Notebook(ttk.Notebook):
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+class ImprovedTreeView(ttk.Treeview):
+    
+    @defaultizer(selectmode='extended')
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
@@ -310,6 +316,7 @@ subwidget_creation = (
                       ('Text', tk.Text, (4, 4, 'w')),
                       ('Entry', ttk.Entry, (4, 4, 'w')),
                       ('Button', ttk.Button, (4, 4, 'w')),
+                      ('Treeview', ImprovedTreeView, (4, 4, 'w')),
                       # ttk buttons do not have a relief option:
                       # tk buttons can therefore be useful too
                       ('TKButton', ImprovedTKButton, (4, 4, 'w')),

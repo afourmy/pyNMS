@@ -18,23 +18,24 @@ from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
                                 
 class SelectionRightClickMenu(tk.Menu):
-    def __init__(self, event, scenario):
+    def __init__(self, event, scenario, from_scenario=True):
         super().__init__(tearoff=0)
         self.cs = scenario
         
         x, y = self.cs.cvs.canvasx(event.x), self.cs.cvs.canvasy(event.y)
 
-        closest_obj = self.cs.cvs.find_closest(x, y)[0]
-        selected_obj = self.cs.object_id_to_object[closest_obj]
-        # if the object from which the menu was started does not belong to
-        # the current selection, it means the current selection is no longer
-        # to be considered, and only the selected objected is considered 
-        # as having been selected by the user
-                
-        if selected_obj not in self.cs.so[selected_obj.class_type]:
-            # we empty / unhighlight the selection
-            self.cs.unhighlight_all()
-            self.cs.highlight_objects(selected_obj)
+        if from_scenario:
+            closest_obj = self.cs.cvs.find_closest(x, y)[0]
+            selected_obj = self.cs.object_id_to_object[closest_obj]
+            # if the object from which the menu was started does not belong to
+            # the current selection, it means the current selection is no longer
+            # to be considered, and only the selected objected is considered 
+            # as having been selected by the user
+                    
+            if selected_obj not in self.cs.so[selected_obj.class_type]:
+                # we empty / unhighlight the selection
+                self.cs.unhighlight_all()
+                self.cs.highlight_objects(selected_obj)
             
         self.all_so = self.cs.so['node'] | self.cs.so['link']
                             
@@ -179,10 +180,13 @@ class SelectionRightClickMenu(tk.Menu):
                                                         )
                                     )
                     self.add_separator()
-                    
-        # at least one object: deletion or create AS
-        self.add_command(label='Delete', 
-                            command=lambda: self.remove_objects())
+        
+        # we allow to delete if the menu was generated from the scenario
+        # (and not the treeview which view cannot be easily updated)
+        if from_scenario:
+            # at least one object: deletion or create AS
+            self.add_command(label='Delete', 
+                                command=lambda: self.remove_objects())
             
         # make the menu appear    
         self.tk_popup(event.x_root, event.y_root)

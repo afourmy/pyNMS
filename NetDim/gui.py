@@ -18,6 +18,7 @@ from objects import object_management_window as omw
 from objects.objects import *
 from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous import graph_algorithms as galg
+from miscellaneous import network_tree_view as ntv
 from miscellaneous import debug
 from graph_generation import advanced_graph as adv_gr
 from optical_networks import rwa_window as rwaw
@@ -120,7 +121,7 @@ class NetDim(MainWindow):
 
         network_tree_view_entry = MenuEntry(advanced_menu)
         network_tree_view_entry.text = 'Network Tree View'
-        network_tree_view_entry.command = lambda: NetworkTreeView(self)
+        network_tree_view_entry.command = lambda: ntv.NetworkTreeView(self)
         
         wavelenght_assignment_entry = MenuEntry(advanced_menu)
         wavelenght_assignment_entry.text = 'Wavelength assignment'
@@ -491,43 +492,3 @@ class NetDim(MainWindow):
         excel_workbook.save(selected_file.name)
         selected_file.close()
         
-class NetworkTreeView(CustomTopLevel):
-
-    def __init__(self, master):
-        super().__init__()
-        self.ms = master
-        self.ntw = self.ms.cs.ntw
-        self.geometry('900x500')
-        self.title('Network Tree View')
-        # TODO add AS property too, botrh in manage AS and here
-        self.ntv = ttk.Treeview(self, selectmode='extended')
-        n = max(map(len, object_ie.values()))
-
-        self.ntv['columns'] = tuple(map(str, range(n)))
-        for i in range(n):
-            self.ntv.column(str(i), width=100)
-            
-        self.ntv.bind('<ButtonRelease-1>', lambda e: self.select(e))
-        
-        for obj_subtype, properties in object_ie.items():
-            properties = ('type',) + properties
-            self.ntv.insert('', 'end', obj_subtype, text=obj_subtype.title(), 
-                                                            values=properties)
-            obj_type = subtype_to_type[obj_subtype]
-            for obj in self.ntw.ftr(obj_type, obj_subtype):
-                values = tuple(map(lambda p: getattr(obj, p), properties))
-                iid = self.ntv.insert(obj_subtype, 'end', text=obj.name, values=values)
-                self.ntv.item(iid, tags=obj_type)
-        
-        self.ntv.pack(expand=tk.YES, fill=tk.BOTH)
-        
-        self.deiconify()
-        
-    def select(self, event):
-        for item in self.ntv.selection():
-            tags = self.ntv.item(item, 'tags')
-            if tags:
-                obj_type ,= tags
-                item = self.ntv.item(item)
-                obj = self.ntw.pn[obj_type][self.ntw.name_to_id[item['text']]]
-                print(obj)
