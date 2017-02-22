@@ -13,6 +13,7 @@ class Shape():
         self.id = id
         self.x = x
         self.y = y
+        self.size = 12
 
 class Label(Shape):
     

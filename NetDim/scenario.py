@@ -51,7 +51,7 @@ class Scenario(CustomFrame):
             
         # default link width and node size
         self.LINK_WIDTH = 5
-        self.NODE_SIZE = 8
+        self.node_size = 8
         
         # default label display
         self.current_label = dict.fromkeys(object_labels, 'none')
@@ -461,10 +461,10 @@ class Scenario(CustomFrame):
         self._cancel()
         factor = 1.1 if event.delta > 0 else 0.9
         self.diff_y *= factor
-        self.NODE_SIZE *= factor
+        self.node_size *= factor
         self.cvs.scale('all', event.x, event.y, factor, factor)
         self.cvs.configure(scrollregion=self.cvs.bbox('all'))
-        self.update_nodes_coordinates()
+        self.update_nodes_coordinates(factor)
         
     @adapt_coordinates
     def zoomerP(self, event):
@@ -472,7 +472,7 @@ class Scenario(CustomFrame):
         self._cancel()
         self.cvs.scale('all', event.x, event.y, 1.1, 1.1)
         self.cvs.configure(scrollregion=self.cvs.bbox('all'))
-        self.update_nodes_coordinates()
+        self.update_nodes_coordinates(factor)
         
     @adapt_coordinates
     def zoomerM(self, event):
@@ -480,9 +480,9 @@ class Scenario(CustomFrame):
         self._cancel()
         self.cvs.scale('all', event.x, event.y, 0.9, 0.9)
         self.cvs.configure(scrollregion=self.cvs.bbox('all'))
-        self.update_nodes_coordinates()
+        self.update_nodes_coordinates(factor)
     
-    def update_nodes_coordinates(self):
+    def update_nodes_coordinates(self, factor):
         # scaling changes the coordinates of the oval, and we update 
         # the corresponding node's coordinates accordingly
         for node in self.ntw.nodes.values():
@@ -506,6 +506,18 @@ class Scenario(CustomFrame):
                     for link in link_to_coords:
                         self.cvs.coords(link.line, *link_to_coords[link])
                         self.update_link_label_coordinates(link)
+        # update rectangles and ovals coordinates as well
+        ftr = lambda obj: obj.subtype in ('oval', 'rectangle')
+        for shape in filter(ftr, self.object_id_to_object.values()):
+            new_coords = self.cvs.coords(shape.id)
+            shape.x, shape.y = new_coords[2:4]
+        # resize label shapes
+        label_only = lambda obj: obj.subtype == 'label'
+        for label in filter(label_only, self.object_id_to_object.values()):
+            label.size *= factor
+            font = self.cvs.itemcget(label.id, 'font').split()
+            font[1] = int(label.size)
+            self.cvs.itemconfigure(label.id, font=font)
 
     ## Object creation
     
@@ -515,7 +527,7 @@ class Scenario(CustomFrame):
         self.create_node(new_node)
     
     def create_node(self, node, layer=1):
-        s = self.NODE_SIZE
+        s = self.node_size
         curr_image = self.ms.dict_image['default'][node.subtype]
         y = node.y - (layer - 1) * self.diff_y
         tags = (node.subtype, node.class_type, 'object')
@@ -660,7 +672,7 @@ class Scenario(CustomFrame):
                 
     def move_node(self, n):
         newx, newy = float(n.x), float(n.y)
-        s = self.NODE_SIZE
+        s = self.node_size
         for layer in range(1, self.nbl + 1):
             if n.image[layer]:
                 y =  newy - (layer - 1) * self.diff_y
