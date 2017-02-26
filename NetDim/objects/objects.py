@@ -25,7 +25,7 @@ def initializer(default_properties):
         return wrapper
     return inner_decorator
     
-## Netdim objects
+## NetDim objects
 
 nd_obj = {
 'router': 'node',
@@ -603,6 +603,8 @@ class Node(NDobject):
         # than AS itself: if we have the AS, AS.name is the name, while if we 
         # have the name, it is more verbose to retrieve the AS itself)
         self.AS_properties = defaultdict(dict)
+        # sites is the set of sites the node belongs to
+        self.sites = set()
         super().__init__()
         
     def __repr__(self):
@@ -627,6 +629,19 @@ class Node(NDobject):
             self.AS_properties[AS][property] = value
         return self.AS_properties[AS][property]
         
+class Site(Node):
+    
+    color = 'black'
+    subtype = 'site'
+        
+    ie_properties = {}
+                    
+    @initializer(ie_properties)
+    def __init__(self, **kwargs):
+        # pool site: nodes and links that belong to the site
+        self.ps = {'node': set(), 'link': set()}
+        super().__init__()
+        
 class Router(Node):
     
     color = 'magenta'
@@ -634,7 +649,7 @@ class Router(Node):
     layer = 3
     imagex, imagey = 33, 25
         
-    ie_properties = { 
+    ie_properties = {
                     # the default route is the gateway of last resort: 
                     # it is the IP address of the next-hop 
                     # (either loopback or interface)
@@ -1141,3 +1156,53 @@ class StaticTraffic(Traffic):
     @initializer(ie_properties)
     def __init__(self, **kwargs):
         super().__init__()
+        
+## NetDim classes
+
+# ordered to keep the order when using the keys 
+node_class = OrderedDict([
+('router', Router),
+('oxc', OXC),
+('host', Host),
+('antenna', Antenna),
+('regenerator', Regenerator),
+('splitter', Splitter),
+('switch', Switch),
+('cloud', Cloud)
+])
+
+# layer 1 (physical links)
+plink_class = OrderedDict([
+('ethernet', Ethernet),
+('wdm', WDMFiber)
+])
+
+# layer 2 (optical and ethernet)
+l2link_class = OrderedDict([
+('l2vc', L2VC)
+])
+
+# layer 3 (IP and above)
+l3link_class = OrderedDict([
+('l3vc', L3VC),
+('static route', StaticRoute),
+('BGP peering', BGPPeering),
+('OSPF virtual link', VirtualLink),
+('Label Switched Path', LSP)
+])
+
+# layer 4 (traffic flows)
+traffic_class = OrderedDict([
+('routed traffic', RoutedTraffic),
+('static traffic', StaticTraffic)
+])
+
+link_class = {}
+for dclass in (plink_class, l2link_class, l3link_class, traffic_class):
+    link_class.update(dclass)
+
+link_type = ('plink', 'l2link', 'l3link', 'traffic')
+node_subtype = tuple(node_class.keys())
+link_subtype = tuple(link_class.keys())
+all_subtypes = node_subtype + link_subtype
+

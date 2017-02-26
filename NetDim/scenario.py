@@ -18,7 +18,7 @@ class Scenario(CustomFrame):
     
     def __init__(self, master, name):
         super().__init__(width=1300, height=800)
-        self.pack(side=tk.LEFT)
+        self.pack(side='left')
 
         self.cvs = tk.Canvas(
                              self, 
@@ -27,12 +27,12 @@ class Scenario(CustomFrame):
                              height = 800,
                              )
                              
-        hbar = Scrollbar(self, orient = tk.HORIZONTAL)
-        hbar.pack(side=tk.BOTTOM,fill=tk.X)
+        hbar = Scrollbar(self, orient='horizontal')
+        hbar.pack(side='bottom', fill='x')
         hbar.config(command=self.cvs.xview)
         
-        vbar = Scrollbar(self, orient = tk.VERTICAL)
-        vbar.pack(side=tk.RIGHT,fill=tk.Y)
+        vbar = Scrollbar(self, orient='vertical')
+        vbar.pack(side='right', fill='y')
         vbar.config(command=self.cvs.yview)
         
         self.cvs.config(width=1300, height=800)
@@ -87,7 +87,7 @@ class Scenario(CustomFrame):
         self.diff_y = 0
         
         # display state per type of objects
-        self.display_per_type = dict.fromkeys(self.ntw.all_subtypes, True)
+        self.display_per_type = dict.fromkeys(all_subtypes, True)
         
         # indexes of the failure icons: dictionnary that bins
         # physical links item to the id of the associated icon
@@ -197,7 +197,7 @@ class Scenario(CustomFrame):
             self.cvs.tag_unbind('node', '<Button-1>')
             self.cvs.tag_unbind('link', '<Button-1>')
             
-            if self._creation_mode in self.ntw.node_class:
+            if self._creation_mode in node_class:
                 # add bindings to create a node with left-click
                 self.cvs.bind('<ButtonPress-1>', self.create_node_on_binding)
                 
@@ -236,7 +236,7 @@ class Scenario(CustomFrame):
     def start_drawing_oval(self, event):
         x, y = event.x, event.y
         self._start_position = x, y
-        self.oval = self.cvs.create_oval(x, y, x, y, tags=('shape',))
+        self.oval = self.cvs.create_oval(x, y, x, y, tags=('shape', 'object'))
         self.cvs.tag_lower(self.oval)
         
     @adapt_coordinates
@@ -256,7 +256,8 @@ class Scenario(CustomFrame):
     def start_drawing_rectangle(self, event):
         x, y = event.x, event.y
         self._start_position = x, y
-        self.rectangle = self.cvs.create_rectangle(x, y, x, y, tags=('shape',))
+        self.rectangle = self.cvs.create_rectangle(x, y, x, y, 
+                                                    tags=('shape', 'object'))
         self.cvs.tag_lower(self.rectangle)
         
     @adapt_coordinates
@@ -499,7 +500,7 @@ class Scenario(CustomFrame):
                     self.cvs.coords(node.layer_line, *coord)
             # the oval was also resized while scaling
             node.size = abs(new_coords[0] - new_coords[2])/2 
-            for type in self.ntw.link_type:
+            for type in link_type:
                 for neighbor, t in self.ntw.graph[node.id][type]:
                     layer = 'all' if not self.layered_display else t.layer
                     link_to_coords = self.link_coordinates(node, neighbor, layer)
@@ -599,7 +600,7 @@ class Scenario(CustomFrame):
                     coords = (node.x, node.y, node.x, 
                                     node.y - (real_layer - 1) * self.diff_y) 
                     node.layer_line[real_layer] = self.cvs.create_line(
-                                *coords, fill='black', width=1, dash=(3,5))
+                                tags=('line',), *coords, fill='black', width=1, dash=(3,5))
                     self.cvs.tag_lower(node.layer_line[real_layer])
         current_layer = 'all' if not self.layered_display else new_link.layer
         link_to_coords = self.link_coordinates(*edges, layer=current_layer)
@@ -680,6 +681,9 @@ class Scenario(CustomFrame):
                 self.cvs.coords(n.image[layer], *coord_image)
                 self.cvs.coords(n.oval[layer], newx - s, y - s, newx + s, y + s)
             self.cvs.coords(n.lid, newx - 15, newy + 10)
+            # move the failure icon if need be
+            if n in self.ntw.fdtks:
+                self.cvs.coords(self.id_fdtks[n], n.x, n.y)
         
         # move also the virtual line, which length depends on what layer exists
         if self.layered_display:
@@ -691,7 +695,7 @@ class Scenario(CustomFrame):
                         self.cvs.coords(n.layer_line[real_layer], *coord)
     
         # update links coordinates
-        for type_link in self.ntw.link_type:
+        for type_link in link_type:
             for neighbor, t in self.ntw.graph[n.id][type_link]:
                 layer = 'all' if not self.layered_display else t.layer
                 link_to_coords = self.link_coordinates(n, neighbor, layer)
@@ -728,7 +732,8 @@ class Scenario(CustomFrame):
                                     obj.image[layer], 
                                     obj.layer_line[layer]
                                     )
-            if obj.class_type == 'link':
+                                    
+            elif obj.class_type == 'link':
                 # we remove the label of the attached interfaces
                 self.cvs.delete(obj.ilid[0], obj.ilid[1])
                 # we remove the line as well as the label on the canvas
@@ -754,6 +759,15 @@ class Scenario(CustomFrame):
                             self.cvs.delete(edge.layer_line[obj.layer])
                             edge.layer_line[obj.layer] = None
                             
+            else:
+                # object is a shape
+                # we remove it from the model and erase it from the canvas
+                self.cvs.delete(obj.id)
+                del self.object_id_to_object[obj.id]
+                            
+            if obj in self.ntw.fdtks:
+                self.remove_failure(obj)
+                            
     def erase_graph(self):
         self.object_id_to_object.clear()
         self.unhighlight_all()
@@ -762,16 +776,15 @@ class Scenario(CustomFrame):
         self.drag_item = None
                             
     def erase_all(self):
-        self.cvs.delete('all')
+        self.cvs.delete('node', 'link', 'line')
+        self.id_fdtks.clear()
         
         for node in self.ntw.nodes.values():
-            #TODO dict from keys
-            node.oval = {layer: None for layer in range(1, self.nbl + 1)}
-            node.image = {layer: None for layer in range(1, self.nbl + 1)}
-            node.layer_line = {layer: None for layer in range(1, self.nbl + 1)}
+            for image in ('oval', 'image', 'layer_line'):
+                setattr(node, image, dict.fromkeys(range(1, self.nbl + 1), None))
             
-        for link_type in self.ntw.link_type:
-            for link in self.ntw.pn[link_type].values():
+        for type in link_type:
+            for link in self.ntw.pn[type].values():
                 link.line = None
                             
     ## Selection / Highlight
@@ -1034,6 +1047,8 @@ class Scenario(CustomFrame):
                     self.create_node(obj)
             else:
                 self.create_link(obj)
+            if obj in self.ntw.fdtks:
+                self.simulate_failure(obj)
              
     def draw_all(self, random=True):
         self.erase_all()
@@ -1043,10 +1058,17 @@ class Scenario(CustomFrame):
             
     # 2) Force-based drawing
     
-    def retrieve_parameters(self):
+    def retrieve_parameters(self, algorithm):
         entry_value = lambda entry: float(entry.text)
-        parameters = list(map(entry_value, self.ms.drawing_menu.entries)) 
-        parameters.append(self.ms.drawing_menu.stay_withing_screen_bounds.get())
+        parameters = []
+        if algorithm in ('Spring-based layout', 'BFS-clusterization layout'):
+            parameters += list(map(entry_value, self.ms.drawing_menu.entries))
+        if algorithm == 'Fructhermann-Reingold layout':
+            bound_limit = self.ms.drawing_menu.stay_withing_screen_bounds.get()
+            parameters.append(bound_limit)
+        if algorithm == 'BFS-clusterization layout':
+            vlinks = self.ms.drawing_menu.virtual_links.get()
+            parameters.append(vlinks)
         return parameters
 
     def spring_based_drawing(self, nodes):
@@ -1056,8 +1078,9 @@ class Scenario(CustomFrame):
         else:
             self._cancel()
         self.drawing_iteration += 1
-        params = self.retrieve_parameters()
-        self.ntw.spring_layout(nodes, *params[:4])
+        params = self.retrieve_parameters('Spring-based layout')
+        print(params)
+        self.ntw.spring_layout(nodes, *params)
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)
@@ -1066,15 +1089,15 @@ class Scenario(CustomFrame):
     def FR_drawing(self, nodes):
         if not self._job:
             # update the optimal pairwise distance
-            self.ms.opd = sqrt(500*500/len(self.ntw.nodes.values()))
+            self.ms.opd = sqrt(500*500/len(self.ntw.nodes))
             # reset the number of iterations
             self.drawing_iteration = 0
         else:
             self._cancel()
         self.drawing_iteration += 1
         # retrieve the optimal pairwise distance and the screen limit boolean
-        params = self.retrieve_parameters()
-        self.ntw.fruchterman_reingold_layout(nodes, *params[-2:])
+        params = self.retrieve_parameters('Fructhermann-Reingold layout')
+        self.ntw.fruchterman_reingold_layout(nodes, *params)
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)
@@ -1083,13 +1106,13 @@ class Scenario(CustomFrame):
     def bfs_cluster_drawing(self, nodes):
         if not self._job:
             # update the optimal pairwise distance
-            self.ms.opd = sqrt(500*500/len(self.ntw.nodes.values()))
+            self.ms.opd = sqrt(500*500/len(self.ntw.nodes))
             # reset the number of iterations
             self.drawing_iteration = 0
         else:
             self._cancel()
-        params = self.retrieve_parameters()
-        self.ntw.bfs_spring(nodes, *params[:4])
+        params = self.retrieve_parameters('BFS-clusterization layout')
+        self.ntw.bfs_spring(nodes, *params)
         for node in nodes:
             self.move_node(node)
         self._job = self.cvs.after(1, lambda: self.bfs_cluster_drawing(nodes))
@@ -1142,10 +1165,11 @@ class Scenario(CustomFrame):
             
     ## Failure simulation
     
-    def remove_failure(self, plink):
-        self.ntw.fdtks.remove(plink)
-        icon_id = self.id_fdtks.pop(plink)
-        self.cvs.delete(icon_id)
+    def remove_failure(self, *objects):
+        for obj in objects:
+            self.ntw.fdtks.remove(obj)
+            icon_id = self.id_fdtks.pop(obj)
+            self.cvs.delete(icon_id)
     
     def remove_failures(self):
         self.ntw.fdtks.clear()
@@ -1153,35 +1177,47 @@ class Scenario(CustomFrame):
             self.cvs.delete(idx)
         self.id_fdtks.clear()
     
-    def simulate_failure(self, plink):
-        self.ntw.fdtks.add(plink)
-        source, destination = plink.source, plink.destination
-        xA, yA, xB, yB = source.x, source.y, destination.x, destination.y
-        id_failure = self.cvs.create_image(
-                                        (xA+xB)/2, 
-                                        (yA+yB)/2, 
-                                        image = self.ms.img_failure
-                                        )
-        self.id_fdtks[plink] = id_failure
+    def simulate_failure(self, *objects):
+        for obj in objects:
+            if obj in self.id_fdtks:
+                continue
+            self.ntw.fdtks.add(obj)
+            if obj.class_type == 'link':
+                source, destination = obj.source, obj.destination
+                xA, yA, xB, yB = source.x, source.y, destination.x, destination.y
+                id_failure = self.cvs.create_image(
+                                                (xA+xB)/2, 
+                                                (yA+yB)/2, 
+                                                image = self.ms.img_failure
+                                                )
+            else:
+                id_failure = self.cvs.create_image(
+                                                obj.x, 
+                                                obj.y, 
+                                                image = self.ms.img_failure
+                                                )
+                for _, plink in self.ntw.graph[obj.id]['plink']:
+                    self.simulate_failure(plink)
+            self.id_fdtks[obj] = id_failure
         
-    def refresh_failures(self):
-        self.id_fdtks.clear()
-        for plink in self.ntw.fdtks:
-            self.simulate_failure(plink)
+    # def refresh_failures(self):
+    #     self.id_fdtks.clear()
+    #     for obj in self.ntw.fdtks:
+    #         self.simulate_failure(obj)
             
     ## Display filtering
     
     def display_filter(self, filter):
         filter_sites = set(re.sub(r'\s+', '', filter).split(','))
         for node in self.ntw.nodes.values():
-            state = tk.NORMAL if node.sites & filter_sites else tk.HIDDEN
+            state = 'normal' if node.sites & filter_sites else 'hidden'
             self.cvs.itemconfig(node.lid, state=state)
             for layer in range(1, self.nbl + 1):
                 if node.image[layer]:
                     self.cvs.itemconfig(node.image[layer], state=state)
-        for link_type in self.ntw.link_type:
+        for link_type in link_type:
             for link in self.ntw.pn[link_type].values():
-                state = tk.NORMAL if link.sites & filter_sites else tk.HIDDEN
+                state = 'normal' if link.sites & filter_sites else 'hidden'
                 self.cvs.itemconfig(link.line, state=state)
                 self.cvs.itemconfig(link.lid, state=state)
             
@@ -1191,7 +1227,7 @@ class Scenario(CustomFrame):
         # remove selections as the red highlight will go away anyway
         self.so.clear()
         self.refresh_all_labels()     
-        self.refresh_failures() 
+        # self.refresh_failures() 
         filter = self.ms.display_menu.filter_entry.text
         if filter:
             self.display_filter(filter)   
@@ -1204,13 +1240,13 @@ class Scenario(CustomFrame):
         for node in nodes:
             if node not in AS.edges:
                 AS.edges.add(node)
-                AS.management.listbox_edges.insert(tk.END, obj)
+                AS.management.listbox_edges.insert('end', obj)
                 
     # show/hide display per type of objects
     def show_hide(self, subtype):
         self.display_per_type[subtype] = not self.display_per_type[subtype]
-        new_state = tk.NORMAL if self.display_per_type[subtype] else tk.HIDDEN
-        if subtype in self.ntw.node_subtype:
+        new_state = 'normal' if self.display_per_type[subtype] else 'hidden'
+        if subtype in node_subtype:
             for node in self.ntw.ftr('node', subtype):
                 self.cvs.itemconfig(node.lid, state=new_state)
                 for layer in range(1, self.nbl + 1):

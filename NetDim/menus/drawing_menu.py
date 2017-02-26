@@ -69,7 +69,7 @@ class DrawingMenu(ScrolledFrame):
         ('Spring stiffness', 0.5),
         ('Speed factor', 0.35),
         ('Equilibrium length', 8.),
-        ('Optimal pairwise distance', 0.)
+        # ('Optimal pairwise distance', 0.)
         ])
         
         self.stay_withing_screen_bounds = False
@@ -124,6 +124,15 @@ class DrawingMenu(ScrolledFrame):
         self.stay_withing_screen_bounds.set(False)
         
         button_limit.grid(10, 0, 1, 2, in_=lf_fb_drawing)
+        
+        # check button to create virtual links between the virtual nodes, for
+        # the BFS-clusterization drawing algorithm
+        self.virtual_links = tk.BooleanVar()
+        button_vlinks = Checkbutton(self.infr, variable=self.virtual_links)
+        button_vlinks.text = 'Create virtual links between virtual nodes'
+        self.virtual_links.set(True)
+        
+        button_vlinks.grid(11, 0, 1, 2, in_=lf_fb_drawing)
         
         # shapes and text drawing
         self.type_to_button['text'].grid(0, 0, in_=lf_shapes_drawing)

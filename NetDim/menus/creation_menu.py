@@ -78,7 +78,7 @@ class CreationMenu(ScrolledFrame):
         
         for button_type, cmd in self.type_to_action.items():
             button = TKButton(self.infr, relief=tk.FLAT, command=cmd)                
-            if button_type in self.ms.cs.ntw.link_class:
+            if button_type in link_class:
                 button.configure(text={
                                        'ethernet': 'Ethernet link',
                                        'wdm': 'WDM link',
@@ -94,7 +94,7 @@ class CreationMenu(ScrolledFrame):
                 button.configure(compound='top', font=font, text=button_type)
             else:
                 button.configure(compound='top', font=font)                                                        
-            if button_type not in self.ms.cs.ntw.node_subtype:
+            if button_type not in node_subtype:
                 button.config(image=self.dict_image[button_type])
             else:
                 button.config(image=self.ms.dict_image['default'][button_type])

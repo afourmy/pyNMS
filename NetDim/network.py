@@ -8,7 +8,7 @@ import random
 import warnings
 import tkinter as tk
 from copy import copy
-from objects.objects import subtype_to_type
+from objects.objects import *
 from miscellaneous.network_functions import *
 from math import cos, sin, asin, radians, sqrt, ceil, log
 from collections import defaultdict, deque, OrderedDict
@@ -23,59 +23,6 @@ except ImportError:
     warnings.warn('Package missing: linear programming functions will fail')
 
 class Network(object):
-    
-    # Ordered to keep the order when using the keys 
-    node_class = OrderedDict([
-    ('router', objects.Router),
-    ('oxc', objects.OXC),
-    ('host', objects.Host),
-    ('antenna', objects.Antenna),
-    ('regenerator', objects.Regenerator),
-    ('splitter', objects.Splitter),
-    ('switch', objects.Switch),
-    ('cloud', objects.Cloud)
-    ])
-    
-    l2link_class = OrderedDict([
-    ('l2vc', objects.L2VC)
-    ])
-    
-    l3link_class = OrderedDict([
-    ('l3vc', objects.L3VC),
-    ('static route', objects.StaticRoute),
-    ('BGP peering', objects.BGPPeering),
-    ('OSPF virtual link', objects.VirtualLink),
-    ('Label Switched Path', objects.LSP)
-    ])
-    
-    plink_class = OrderedDict([
-    ('ethernet', objects.Ethernet),
-    ('wdm', objects.WDMFiber)
-    ])
-    
-    traffic_class = OrderedDict([
-    ('routed traffic', objects.RoutedTraffic),
-    ('static traffic', objects.StaticTraffic)
-    ])
-    
-    AS_class = OrderedDict([
-    ('RIP', AS.RIP_AS),
-    ('ISIS', AS.ISIS_AS),
-    ('OSPF', AS.OSPF_AS),
-    ('STP', AS.STP_AS),
-    ('VLAN', AS.VLAN_AS),
-    ('BGP', AS.BGP_AS)
-    ])
-    
-    link_class = {}
-    for dclass in (plink_class, l2link_class, l3link_class, traffic_class):
-        link_class.update(dclass)
-    
-    node_subtype = tuple(node_class.keys())
-    link_type = ('plink', 'l2link', 'l3link', 'traffic')
-    link_subtype = tuple(link_class.keys())
-    all_subtypes = node_subtype + link_subtype
-    AS_subtypes = tuple(AS_class)
     
     def __init__(self, scenario):
         self.nodes = {}
@@ -237,7 +184,7 @@ class Network(object):
             if not name:
                 name = subtype + str(len(list(self.ftr(link_type, subtype))))
             kwargs.update({'id': id, 'name': name})
-            new_link = self.link_class[subtype](**kwargs)
+            new_link = link_class[subtype](**kwargs)
             self.name_to_id[name] = id
             self.pn[link_type][id] = new_link
             self.graph[s.id][link_type].add((d, new_link))
@@ -258,7 +205,7 @@ class Network(object):
                     return self.nodes[self.name_to_id[kwargs['name']]]
             id = self.cpt_node
             kwargs['id'] = id
-            self.nodes[id] = self.node_class[node_type](**kwargs)
+            self.nodes[id] = node_class[node_type](**kwargs)
             self.name_to_id[kwargs['name']] = id
             self.cpt_node += 1
         return self.nodes[id]
@@ -291,7 +238,7 @@ class Network(object):
             name = 'AS' + str(self.cpt_AS)
         if name not in self.pnAS:
             # creation of the AS
-            self.pnAS[name] = self.AS_class[AS_type](
+            self.pnAS[name] = AS.AS_class[AS_type](
                                                     self.cs,
                                                     name, 
                                                     id,
@@ -398,6 +345,15 @@ class Network(object):
         for link_type in self.link_type:
             for _, link in self.graph[node.id][link_type]:
                 yield link
+                
+    # site management
+    def add_to_site(self, site, *objects):
+        for obj in objects:
+            site.ps[obj.class_type].add(obj)
+            
+    def remove_from_site(self, site, *objects):
+        for obj in objects:
+            site.ps[obj.class_type].remove(obj)
         
     def number_of_links_between(self, nodeA, nodeB):
         return sum(
@@ -408,8 +364,8 @@ class Network(object):
         
     def links_between(self, nodeA, nodeB, _type='all'):
         if _type == 'all':
-            for link_type in self.link_type:
-                for neighbor, link in self.graph[nodeA.id][link_type]:
+            for type in link_type:
+                for neighbor, link in self.graph[nodeA.id][type]:
                     if neighbor == nodeB:
                         yield link
         else:
@@ -2091,7 +2047,7 @@ class Network(object):
     def fr(self, d, k):
         return -(k**2)/d
         
-    def fruchterman_reingold_layout(self, nodes, opd, limit):
+    def fruchterman_reingold_layout(self, nodes, limit, opd=0):
         t = 1
         if not opd:
             opd = sqrt(1200*700/len(self.plinks))
@@ -2153,7 +2109,7 @@ class Network(object):
         virtual_node.virtual_factor = n
         return virtual_node
     
-    def bfs_spring(self, nodes, cf, k, sf, L0, size=40, iterations=5):
+    def bfs_spring(self, nodes, cf, k, sf, L0, vlinks, size=40, iterations=3):
         nodes = set(nodes)
         source = random.choice(list(nodes))
         # all nodes one step ahead of the already drawn area
@@ -2192,11 +2148,12 @@ class Network(object):
             vnode_to_frontier[new_vnode] = new_frontier
             virtual_nodes |= {new_vnode}
         
-        # we create the links between virtual nodes
-        for vnodeA in virtual_nodes:
-            for vnodeB in virtual_nodes:
-                if vnode_to_cluster[vnodeA] & vnode_to_frontier[vnodeB]:
-                    self.lf(source=vnodeA, destination=vnodeB)
+        if vlinks:
+            # we create virtual links between virtual nodes, whenever needed
+            for vnodeA in virtual_nodes:
+                for vnodeB in virtual_nodes:
+                    if vnode_to_cluster[vnodeA] & vnode_to_frontier[vnodeB]:
+                        self.lf(source=vnodeA, destination=vnodeB)
         
         # we then apply a spring algorithm on the virtual nodes only
         # we first store the initial position to compute the difference 

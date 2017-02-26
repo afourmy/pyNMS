@@ -4,6 +4,7 @@
 
 import tkinter as tk
 from autonomous_system import AS
+from objects.objects import *
 import ip_networks.configuration as conf
 import ip_networks.troubleshooting as ip_ts
 import ip_networks.ping as ip_ping
@@ -37,17 +38,24 @@ class SelectionRightClickMenu(tk.Menu):
                 self.cs.unhighlight_all()
                 self.cs.highlight_objects(selected_obj)
             
-        self.all_so = self.cs.so['node'] | self.cs.so['link']
+        # all selected objects
+        self.all_so = self.cs.so['node'] | self.cs.so['link'] | self.cs.so['shape']
+        
+        # useful booleans
+        no_node = not self.cs.so['node']
+        no_link = not self.cs.so['link']
+        no_shape = not self.cs.so['shape']
+        one_node = len(self.cs.so['node']) == 1
+        one_link = len(self.cs.so['link']) == 1
                             
         # exactly one object: property window 
-        if (len(self.cs.so['node']) == 1 and not self.cs.so['link']
-            or len(self.cs.so['link']) == 1 and not self.cs.so['node']):
+        if no_shape and len(self.all_so) == 1:
             self.add_command(label='Properties', 
                         command=lambda: self.show_object_properties())
             self.add_separator()
             
         # exacly one node and one physical link: menu for the associated interface
-        if len(self.cs.so['node']) == 1 and len(self.cs.so['link']) == 1:
+        if one_node and one_link:
             link ,= self.cs.so['link']
             if link.type == 'plink':
                 node ,= self.cs.so['node']
@@ -57,7 +65,7 @@ class SelectionRightClickMenu(tk.Menu):
                 self.add_separator()
                 
         # exactly one node: configuration menu
-        if not self.cs.so['link'] and len(self.cs.so['node']) == 1:
+        if no_link and no_shape and one_node:
             node ,= self.cs.so['node']
             
             self.add_command(label='Configuration', 
@@ -86,52 +94,63 @@ class SelectionRightClickMenu(tk.Menu):
 
             self.add_separator()
         
-        self.add_command(label='Create AS', 
+        if no_shape:
+            self.add_command(label='Create AS', 
                             command=lambda: self.create_AS()) 
       
         # at least one AS in the network: add to AS
-        if self.cs.ntw.pnAS:
+        if self.cs.ntw.pnAS and no_shape:
             self.add_command(label='Add to AS', 
                         command=lambda: self.change_AS('add'))
         
         # we compute the set of common AS among all selected objects
-        self.common_AS = set(self.cs.ntw.pnAS.values())  
-        cmd = lambda o: o.type in ('node', 'plink')
-        for obj in filter(cmd, self.all_so):
-            self.common_AS &= obj.AS.keys()
+        # providing that no shape were selected
+        if no_shape:
+            self.common_AS = set(self.cs.ntw.pnAS.values())  
+            cmd = lambda o: o.type in ('node', 'plink')
+            for obj in filter(cmd, self.all_so):
+                self.common_AS &= obj.AS.keys()
             
         # if at least one common AS: remove from AS or manage AS
-        if self.common_AS:
-            self.add_command(label='Manage AS', 
-                        command=lambda: self.change_AS('manage'))
-            self.add_command(label='Remove from AS', 
-                        command=lambda: self.change_AS('remove'))
+            if self.common_AS:
+                self.add_command(label='Manage AS', 
+                            command=lambda: self.change_AS('manage'))
+                self.add_command(label='Remove from AS', 
+                            command=lambda: self.change_AS('remove'))
+                            
+                keep = lambda AS: AS.has_area
+                self.common_AS_with_area = set(filter(keep, self.common_AS))
+                
+                # if there is at least one AS with area among all common AS
+                # of the current selection, display the area management menu
+                if self.common_AS_with_area:
+                    self.add_command(label='Add to area', 
+                                command=lambda: self.change_area('add'))
+                    self.add_command(label='Remove from area', 
+                                command=lambda: self.change_area('remove'))
                         
-            keep = lambda AS: AS.has_area
-            self.common_AS_with_area = set(filter(keep, self.common_AS))
+            self.add_separator()
             
-            # if there is at least one AS with area among all common AS
-            # of the current selection, display the area management menu
-            if self.common_AS_with_area:
-                self.add_command(label='Add to area', 
-                            command=lambda: self.change_area('add'))
-                self.add_command(label='Remove from area', 
-                            command=lambda: self.change_area('remove'))
-
-                        
-        self.add_separator()
+        if no_shape:
+            self.add_command(label='Add to site', 
+                            command=lambda: self.add_to_site(*self.all_so))
+            self.add_command(label='Remove from site', 
+                            command=lambda: self.remove_from_site(*self.all_so))  
+            self.add_separator()
+        
+        if no_shape:
+            self.add_command(label='Simulate failure', 
+                            command=lambda: self.simulate_failure(*self.all_so))
+            self.add_command(label='Remove failure', 
+                            command=lambda: self.remove_failure(*self.all_so))
+            
+            self.add_separator()
         
         # exactly one physical link: 
-        if not self.cs.so['node'] and len(self.cs.so['link']) == 1:
+        if no_node and no_shape and one_link:
             plink ,= self.cs.so['link']
             # failure simulation menu
-            if plink.type == 'plink':
-                self.add_command(label='Simulate failure', 
-                        command=lambda: self.simulate_failure(plink))
-                if plink in self.cs.ntw.fdtks:
-                    self.add_command(label='Remove failure', 
-                        command=lambda: self.remove_failure(plink))
-                        
+            if plink.type == 'plink':                        
                 # interface menu 
                 menu_interfaces = tk.Menu(self, tearoff=0)
                 source_if = plink('interface', plink.source)
@@ -143,7 +162,7 @@ class SelectionRightClickMenu(tk.Menu):
                 self.add_cascade(label='Interface menu', menu=menu_interfaces)
             
         # only nodes: 
-        if not self.cs.so['link']:
+        if no_shape and no_link:
             
             # alignment submenu
             self.add_cascade(label='Align nodes', 
@@ -157,7 +176,7 @@ class SelectionRightClickMenu(tk.Menu):
             
             # only one subtype of nodes
             if self.cs.so['node']:
-                for subtype in self.cs.ntw.node_subtype:
+                for subtype in node_subtype:
                     ftr = lambda o, st=subtype: o.subtype == st
                     if self.cs.so['node'] == set(filter(ftr, self.cs.so['node'])):
                         self.add_cascade(label='Change property', 
@@ -169,8 +188,8 @@ class SelectionRightClickMenu(tk.Menu):
                         self.add_separator()
             
         # only one subtype of link: property changer
-        if not self.cs.so['node'] and self.cs.so['link']:
-            for subtype in self.cs.ntw.link_subtype:
+        if no_node and no_shape:
+            for subtype in link_subtype:
                 ftr = lambda o, st=subtype: o.subtype == st
                 if self.cs.so['link'] == set(filter(ftr, self.cs.so['link'])):
                     self.add_cascade(label='Change property', 
@@ -200,7 +219,6 @@ class SelectionRightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def remove_objects(self):
-        print(self.all_so)
         self.cs.remove_objects(*self.all_so)
         
     @empty_selection_and_destroy_menu
@@ -212,12 +230,12 @@ class SelectionRightClickMenu(tk.Menu):
         AS.AreaOperation(self.cs, mode, self.all_so, self.common_AS)
         
     @empty_selection_and_destroy_menu
-    def simulate_failure(self, plink):
-        self.cs.simulate_failure(plink)
+    def simulate_failure(self, *objects):
+        self.cs.simulate_failure(*objects)
         
     @empty_selection_and_destroy_menu
-    def remove_failure(self, plink):
-        self.cs.remove_failure(plink)
+    def remove_failure(self, *objects):
+        self.cs.remove_failure(*objects)
         
     @empty_selection_and_destroy_menu
     def arp_table(self, node):

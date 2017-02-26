@@ -4,16 +4,17 @@
 
 import unittest
 import sys
-from inspect import getsourcefile
-from os.path import abspath, pardir, join
+from inspect import stack
+from os.path import abspath, dirname, pardir, join
 
 # prevent python from writing *.pyc files / __pycache__ folders
 sys.dont_write_bytecode = True
 
-path_app = abspath(getsourcefile(lambda: 0))[:-7]
+path_app = dirname(abspath(stack()[0][1]))
 
 if path_app not in sys.path:
     sys.path.append(path_app)
+    
 path_parent = abspath(join(path_app, pardir))
 
 import gui
@@ -335,6 +336,6 @@ class TestRWA(unittest.TestCase):
         sco_new_graph = self.ntw.RWA_graph_transformation()
         self.assertEqual(sco_new_graph.ntw.LP_RWA_formulation(), 3)
         
-if __name__ == '__main__':
+if str.__eq__(__name__, '__main__'):
     unittest.main(warnings='ignore')  
     unittest.main()

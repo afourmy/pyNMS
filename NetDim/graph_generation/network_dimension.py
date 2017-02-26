@@ -3,6 +3,7 @@
 # Released under the GNU General Public License GPLv3
 
 from pythonic_tkinter.preconfigured_widgets import *
+from objects.objects import *
 
 class NetworkDimension(CustomTopLevel):    
     def __init__(self, scenario, type):
@@ -54,7 +55,7 @@ class NetworkDimension(CustomTopLevel):
         node_type = Label(self)
         node_type.text = 'Type of node'
         self.node_type_list = Combobox(self, width=7)
-        self.node_type_list['values'] = scenario.ntw.node_subtype
+        self.node_type_list['values'] = node_subtype
         self.node_type_list.current(0)
     
         # confirmation button

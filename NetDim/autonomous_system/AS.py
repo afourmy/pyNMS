@@ -4,6 +4,7 @@
 
 import tkinter as tk
 from tkinter import ttk
+from objects.objects import *
 from pythonic_tkinter.preconfigured_widgets import *
 from collections import defaultdict
 from miscellaneous.network_functions import mac_comparer
@@ -248,7 +249,7 @@ class IP_AS(AutonomousSystem):
         for obj in objects:            
             if obj.subtype == 'router':
                 obj.AS_properties[self.name].update({
-                                                    'LB_paths': 1,
+                                                    'LB_paths': 4,
                                                     'router_id': None
                                                     })
                                                     
@@ -746,6 +747,19 @@ class BGP_AS(ASWithArea, IP_AS):
                                     route_path + [bgp_pr], 
                                     AS_path + new_AS
                                     ))
+                                    
+# available autonomous systems
+AS_class = OrderedDict([
+('RIP', RIP_AS),
+('ISIS', ISIS_AS),
+('OSPF', OSPF_AS),
+('STP', STP_AS),
+('VLAN', VLAN_AS),
+('BGP', BGP_AS)
+])
+
+AS_subtypes = tuple(AS_class)
+
         
 class AreaOperation(CustomTopLevel):
     
@@ -861,7 +875,7 @@ class ASCreation(CustomTopLevel):
         
         # List of AS type
         self.AS_type_list = Combobox(self, width=10)
-        self.AS_type_list['values'] = scenario.ntw.AS_subtypes
+        self.AS_type_list['values'] = AS_subtypes
         self.AS_type_list.current(0)
 
         # retrieve and save node data

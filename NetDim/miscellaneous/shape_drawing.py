@@ -74,7 +74,7 @@ class LabelCreation(CustomTopLevel):
                                             y, 
                                             text = self.entry_label.text,
                                             font = ("Purisa", '12', 'bold'), 
-                                            tag = ('shape',)
+                                            tag = ('shape', 'object')
                                             ),
                       x, 
                       y,

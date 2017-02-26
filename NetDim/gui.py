@@ -164,7 +164,7 @@ class NetDim(MainWindow):
         }
         
         for color in colors:
-            for node_type in self.cs.ntw.node_subtype:
+            for node_type in node_subtype:
                 img_path = join(self.path_icon, ''.join(
                                             (color, '_', node_type, '.gif')))
                 img_pil = ImageTk.Image.open(img_path).resize(
@@ -175,7 +175,7 @@ class NetDim(MainWindow):
                 
         # image for a link failure
         img_pil = ImageTk.Image.open(join(self.path_icon, 'failure.png'))\
-                                                                .resize((25,25))
+                                                                .resize((20, 20))
         self.img_failure = ImageTk.PhotoImage(img_pil)
         
         # object management windows
@@ -327,14 +327,14 @@ class NetDim(MainWindow):
                 continue
             
             # nodes and links import
-            if name in self.cs.ntw.all_subtypes:
+            if name in all_subtypes:
                 properties = sheet.row_values(0)
                 for row in range(1, sheet.nrows):
                     values = sheet.row_values(row)
                     kwargs = self.mass_objectizer(properties, values)
-                    if name in self.cs.ntw.node_subtype: 
+                    if name in node_subtype: 
                         self.cs.ntw.nf(node_type=name, **kwargs)
-                    if name in self.cs.ntw.link_subtype: 
+                    if name in link_subtype: 
                         self.cs.ntw.lf(subtype=name, **kwargs)
                 
             # interface import

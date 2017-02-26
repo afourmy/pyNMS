@@ -3,13 +3,13 @@
 # Released under the GNU General Public License GPLv3
 
 import sys
-from inspect import getsourcefile
-from os.path import abspath
+from inspect import stack
+from os.path import abspath, dirname
 
 # prevent python from writing *.pyc files / __pycache__ folders
 sys.dont_write_bytecode = True
 
-path_app = abspath(getsourcefile(lambda: _))[:-7]
+path_app = dirname(abspath(stack()[0][1]))
 
 if path_app not in sys.path:
     sys.path.append(path_app)

@@ -85,7 +85,7 @@ class DisplayMenu(ScrolledFrame):
             if obj_type not in ('l2vc', 'l3vc'):
                 cmd = lambda o=obj_type: self.invert_display(o)
                 button = TKButton(self.infr, relief=tk.SUNKEN, command=cmd)
-                if obj_type in self.ms.cs.ntw.link_class:
+                if obj_type in link_class:
                     button.configure(text={
                                         'ethernet': 'Ethernet link',
                                         'wdm': 'WDM link',
