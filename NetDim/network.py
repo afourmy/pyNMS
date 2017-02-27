@@ -1,5 +1,5 @@
 # NetDim
-# Copyright (C) 2016 Antoine Fourmy (antoine.fourmy@gmail.com)
+# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
 # Released under the GNU General Public License GPLv3
 
 from autonomous_system import AS
