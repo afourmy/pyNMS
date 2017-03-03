@@ -86,6 +86,9 @@ class Scenario(CustomFrame):
         # difference between each layer in pixel
         self.diff_y = 0
         
+        # site view
+        self.site_view = 'all'
+        
         # display state per type of objects
         self.display_per_type = dict.fromkeys(all_subtypes, True)
         
@@ -158,7 +161,7 @@ class Scenario(CustomFrame):
         # if there were selected nodes, so that they don't remain highlighted
         self.unhighlight_all()
         
-        if self._mode == 'motion':
+        if self._mode == 'motion':            
             # unbind unecessary bindings
             self.cvs.unbind('<Button 1>')
             self.cvs.unbind('<B1-Motion>')
@@ -178,6 +181,7 @@ class Scenario(CustomFrame):
             self.cvs.tag_bind('link', '<Button-1>', self.find_closest_link, add='+')
             self.cvs.tag_bind('node', '<Button-1>', self.find_closest_node, add='+')
             self.cvs.tag_bind('shape', '<Button-1>', self.find_closest_shape, add='+')
+            
             for tag in ('node', 'link'):
                 self.cvs.tag_bind(tag, '<Button-1>', self.update_mgmt_window, add='+')
             self.cvs.tag_bind('node', '<B1-Motion>', self.node_motion)
@@ -532,6 +536,7 @@ class Scenario(CustomFrame):
         curr_image = self.ms.dict_image['default'][node.subtype]
         y = node.y - (layer - 1) * self.diff_y
         tags = (node.subtype, node.class_type, 'object')
+        print(tags)
         node.image[layer] = self.cvs.create_image(node.x - (node.imagex)/2, 
                 y - (node.imagey)/2, image=curr_image, anchor=tk.NW, tags=tags)
         node.oval[layer] = self.cvs.create_oval(node.x-s, y-s, node.x+s, y+s, 
@@ -838,9 +843,9 @@ class Scenario(CustomFrame):
             if obj.class_type == 'node':
                 self.cvs.itemconfig(obj.oval, fill=color)
                 self.cvs.itemconfig(
-                                obj.image[1], 
-                                image = self.ms.dict_image[color][obj.subtype]
-                                )
+                                    obj.image[1], 
+                                    image = self.ms.dict_image[color][obj.subtype]
+                                    )
             elif obj.class_type == 'link':
                 dash = (3, 5) if dash else ()
                 self.cvs.itemconfig(obj.line, fill=color, width=5, dash=dash)
@@ -1037,10 +1042,13 @@ class Scenario(CustomFrame):
     ## Drawing
     
     # 1) Regular drawing
-    def draw_objects(self, objects, random_drawing=True):
+    def draw_objects(self, objects, random_drawing=True, draw_site=False):
         self._cancel()
         for obj in objects:
+            print(obj)
             if obj.type == 'node':
+                if obj.subtype == 'site' and not draw_site:
+                    continue
                 if random_drawing:
                     obj.x, obj.y = randint(100,700), randint(100,700)
                 if not obj.image[1]:
@@ -1050,11 +1058,15 @@ class Scenario(CustomFrame):
             if obj in self.ntw.fdtks:
                 self.simulate_failure(obj)
              
-    def draw_all(self, random=True):
+    def draw_all(self, random=True, draw_site=False):
         self.erase_all()
         # we draw everything except interface
         for type in set(self.ntw.pn) - {'interface'}:
-            self.draw_objects(self.ntw.pn[type].values(), random)
+            self.draw_objects(self.ntw.pn[type].values(), random, draw_site)
+            
+    def draw_site(self, site):
+        self.erase_all()
+        self.draw_objects(*site.nodes, random_drawing=False)
             
     # 2) Force-based drawing
     
@@ -1199,11 +1211,6 @@ class Scenario(CustomFrame):
                 for _, plink in self.ntw.graph[obj.id]['plink']:
                     self.simulate_failure(plink)
             self.id_fdtks[obj] = id_failure
-        
-    # def refresh_failures(self):
-    #     self.id_fdtks.clear()
-    #     for obj in self.ntw.fdtks:
-    #         self.simulate_failure(obj)
             
     ## Display filtering
     

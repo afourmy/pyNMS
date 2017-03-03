@@ -161,6 +161,7 @@ class NetDim(MainWindow):
         'splitter': (64, 50),
         'antenna': (35, 35),
         'cloud': (60, 35),
+        'site': (50, 50)
         }
         
         for color in colors:

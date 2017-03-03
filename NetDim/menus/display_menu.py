@@ -23,15 +23,15 @@ class DisplayMenu(ScrolledFrame):
         lf_multilayer_display.text = 'Multi-layer display'
         lf_multilayer_display.grid(0, 0, sticky='nsew')
         
-        # label frame to control the display per subtype
-        lf_object_display = Labelframe(self.infr)
-        lf_object_display.text = 'Per-object display'
-        lf_object_display.grid(1, 0, sticky='nsew')
-        
         # label frame to manage sites
         lf_site_display = Labelframe(self.infr)
         lf_site_display.text = 'Per-site display'
-        lf_site_display.grid(2, 0, sticky='nsew')
+        lf_site_display.grid(1, 0, sticky='nsew')
+        
+        # label frame to control the display per subtype
+        lf_object_display = Labelframe(self.infr)
+        lf_object_display.text = 'Per-object display'
+        lf_object_display.grid(2, 0, sticky='nsew')
         
         self.dict_image = {}
         
@@ -39,6 +39,7 @@ class DisplayMenu(ScrolledFrame):
         'netdim': (75, 75), 
         'motion': (75, 75), 
         'multi-layer': (150, 150),
+        'site': (50, 50),
         'ethernet': (85, 15),
         'wdm': (85, 15),
         'static route': (85, 15),
@@ -80,6 +81,26 @@ class DisplayMenu(ScrolledFrame):
             button_limit.command = self.update_display
             row, col = layer > 2, 2 + (layer + 1)%2
             button_limit.grid(row, col, in_=lf_multilayer_display)
+            
+        # site view
+        
+        switch_view = Button(self, width=20)
+        switch_view.text = 'Switch view'
+        switch_view.command = self.switch_view
+        switch_view.grid(0, 0, 4, in_=lf_site_display)
+        
+        site_button = TKButton(self.infr)
+        site_button.config(image=self.dict_image['site'])
+        site_button.command = self.create_site
+        site_button.config(width=75, height=75)
+        site_button.grid(1, 0, 2, 2, in_=lf_site_display)
+        self.type_to_button['site'] = ml_button
+        
+        self.filter_label = Label(self.infr)
+        self.filter_label.text = 'Display filters for sites'
+        self.filter_entry = Entry(self.infr, width=12)
+        self.filter_label.grid(2, 0, 1, 2, in_=lf_site_display)
+        self.filter_entry.grid(2, 2, 1, 2, in_=lf_site_display)
         
         for obj_type in object_properties:
             if obj_type not in ('l2vc', 'l3vc'):
@@ -127,16 +148,9 @@ class DisplayMenu(ScrolledFrame):
         self.type_to_button['routed traffic'].grid(6, 0, 1, 2, in_=lf_object_display)
         self.type_to_button['static traffic'].grid(6, 2, 1, 2, in_=lf_object_display)
         
-        # display filter
-        self.filter_label = Label(self.infr)
-        self.filter_label.text = 'Display filters for sites'
-        self.filter_entry = Entry(self.infr, width=12)
-        self.filter_label.grid(2, 0, 1, 2, in_=lf_site_display)
-        self.filter_entry.grid(2, 2, 1, 2, in_=lf_site_display)
-        
     def ml_display_mode(self):
         value = self.ms.cs.switch_display_mode()
-        relief = tk.SUNKEN if value else tk.RAISED
+        relief = 'sunken' if value else 'raised'
         self.type_to_button['multi-layer'].config(relief=relief)
 
     def update_display(self):
@@ -148,5 +162,32 @@ class DisplayMenu(ScrolledFrame):
         value = self.ms.cs.show_hide(obj_type)
         relief = tk.SUNKEN if value else tk.RAISED
         self.type_to_button[obj_type].config(relief=relief)
+        
+    def switch_view(self, site='site'):
+        print(self.ms.cs.site_view)
+        value = site if self.ms.cs.site_view == 'all' else 'all'
+        self.ms.cs.site_view = value
+        relief = 'sunken' if value == 'site' else 'raised'
+        self.type_to_button['site'].config(relief=relief)
+        # delete eveyrthing on the canvas
+        self.ms.cs.cvs.delete('all')
+        if value == 'site':
+            # draw the sites
+            self.ms.cs.draw_objects(
+                                    self.ms.cs.ntw.ftr('node', 'site'), 
+                                    random_drawing = False, 
+                                    draw_site = True
+                                    )
+        elif value == 'all':
+            # value is all and we draw all network objects
+            self.ms.cs.draw_all(False)
+        else:
+            self.ms.cs.draw_objects(self.ms.cs.ntw.nodes[site.id].get_obj())
+            
+    def create_site(self):
+        # change the mode to creation 
+        self.ms.cs._mode = 'creation'
+        self.ms.cs._creation_mode = 'site'
+        self.ms.cs.switch_binding()
 
         

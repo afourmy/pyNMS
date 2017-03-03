@@ -28,6 +28,7 @@ def initializer(default_properties):
 ## NetDim objects
 
 nd_obj = {
+'site': 'node',
 'router': 'node',
 'oxc': 'node',
 'host': 'node',
@@ -46,6 +47,7 @@ nd_obj = {
 
 # subtype -> type mapping
 subtype_to_type = {
+'site': 'node',
 'router': 'node',
 'oxc': 'node',
 'host': 'node',
@@ -221,6 +223,7 @@ traffic_common_ie_properties = (
 # properties shared by all objects of a given subtype
 
 object_properties = OrderedDict([
+('site', node_common_properties),
 ('router', node_common_properties + ('default_route',)),
 ('switch', node_common_properties + ('base_macaddress',)),
 ('oxc', node_common_properties),
@@ -269,6 +272,7 @@ object_properties = OrderedDict([
 ## Common Import / Export properties per subtype
 
 object_ie = OrderedDict([
+('site', node_common_ie_properties),
 ('router', node_common_ie_properties + ('default_route',)),
 ('switch', node_common_ie_properties + ('base_macaddress',)),
 ('oxc', node_common_ie_properties),
@@ -432,6 +436,7 @@ vc_box_properties = (
 )
 
 box_properties = OrderedDict([
+('site', node_box_properties),
 ('router', node_box_properties + ('default_route',)),
 ('switch', node_box_properties + ('base_macaddress',)),
 ('oxc', node_box_properties),
@@ -633,6 +638,8 @@ class Site(Node):
     
     color = 'black'
     subtype = 'site'
+    imagex, imagey = 50, 50
+    layer = 1
         
     ie_properties = {}
                     
@@ -641,6 +648,10 @@ class Site(Node):
         # pool site: nodes and links that belong to the site
         self.ps = {'node': set(), 'link': set()}
         super().__init__()
+        
+    def get_obj(self):
+        yield from self.ps['node']
+        yield from self.ps['link']
         
 class Router(Node):
     
@@ -1168,7 +1179,8 @@ node_class = OrderedDict([
 ('regenerator', Regenerator),
 ('splitter', Splitter),
 ('switch', Switch),
-('cloud', Cloud)
+('cloud', Cloud),
+('site', Site)
 ])
 
 # layer 1 (physical links)

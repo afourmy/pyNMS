@@ -68,10 +68,16 @@ class SelectionRightClickMenu(tk.Menu):
         if no_link and no_shape and one_node:
             node ,= self.cs.so['node']
             
-            self.add_command(label='Configuration', 
-                        command=lambda: self.configure(node))
-            self.add_command(label='Troubleshooting', 
-                        command=lambda: self.troubleshoot(node))
+            # one site
+            if node.subtype == 'site':
+                self.add_command(label='Enter site', 
+                            command=lambda: self.enter_site(node))
+            
+            else:
+                self.add_command(label='Configuration', 
+                            command=lambda: self.configure(node))
+                self.add_command(label='Troubleshooting', 
+                            command=lambda: self.troubleshoot(node))
                         
             # tables menu 
             menu_tables = tk.Menu(self, tearoff=0)
@@ -85,12 +91,12 @@ class SelectionRightClickMenu(tk.Menu):
                                 command=lambda: self.arp_table(node))
                 self.add_command(label='Ping', 
                             command=lambda: self.ping(node))
+                self.add_cascade(label='Tables', menu=menu_tables)
                             
             if node.subtype == 'switch':
                 menu_tables.add_command(label='Switching table', 
                             command=lambda: self.switching_table(node))
-                            
-            self.add_cascade(label='Tables', menu=menu_tables)
+                self.add_cascade(label='Tables', menu=menu_tables)
 
             self.add_separator()
         
@@ -285,8 +291,8 @@ class SelectionRightClickMenu(tk.Menu):
         mobj.MultipleLinks(scenario, set(self.cs.so['node']))
         
     @empty_selection_and_destroy_menu
-    def bfs(self, nodes):
-        self.cs.bfs_cluster_drawing(nodes)
+    def enter_site(self, site):
+        self.cs.ms.display_menu.switch_view(site)
         
     @empty_selection_and_destroy_menu
     def bgp(self, node):

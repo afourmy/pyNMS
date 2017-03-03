@@ -31,6 +31,7 @@ class Network(object):
         self.l3links = {}
         self.traffics = {}
         self.interfaces = set()
+        
         # pn for 'pool network'
         self.pn = {
                    'node': self.nodes, 
