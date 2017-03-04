@@ -20,6 +20,7 @@ from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous import graph_algorithms as galg
 from miscellaneous import network_tree_view as ntv
 from miscellaneous import debug
+from ip_networks import ssh_management
 from graph_generation import advanced_graph as adv_gr
 from optical_networks import rwa_window as rwaw
 from miscellaneous.network_functions import IPAddress
@@ -68,6 +69,9 @@ class NetDim(MainWindow):
         
         # debug window
         self.debug_window = debug.Debug(self)
+        
+        # SSH management window
+        self.ssh_management_window = ssh_management.SSHWindow(self)
         
         ## ----- Menus : -----
         netdim_menu = Menu(self)
@@ -126,6 +130,10 @@ class NetDim(MainWindow):
         wavelenght_assignment_entry = MenuEntry(advanced_menu)
         wavelenght_assignment_entry.text = 'Wavelength assignment'
         wavelenght_assignment_entry.command = self.rwa_window.deiconify
+        
+        ssh_management_entry = MenuEntry(advanced_menu)
+        ssh_management_entry.text = 'SSH connection management'
+        ssh_management_entry.command = self.ssh_management_window.deiconify
         
         advanced_menu.create_menu()
         netdim_menu.add_cascade(label='Network routing',menu=advanced_menu)

@@ -2,6 +2,7 @@
 # Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
 # Released under the GNU General Public License GPLv3
 
+import os
 import tkinter as tk
 from autonomous_system import AS
 from objects.objects import *
@@ -78,6 +79,11 @@ class SelectionRightClickMenu(tk.Menu):
                             command=lambda: self.configure(node))
                 self.add_command(label='Troubleshooting', 
                             command=lambda: self.troubleshoot(node))
+                            
+                self.add_separator()
+                
+                self.add_command(label='SSH connection', 
+                            command=lambda: self.connection(node))
                         
             # tables menu 
             menu_tables = tk.Menu(self, tearoff=0)
@@ -269,6 +275,13 @@ class SelectionRightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def troubleshoot(self, node):
         ip_ts.Troubleshooting(node, self.cs)
+        
+    @empty_selection_and_destroy_menu
+    def connection(self, node):
+        ssh_data = self.cs.ms.ssh_management_window.get()
+        ssh_data['IP'] = node.ipaddress
+        ssh_connection = '{path} -ssh {username}@{IP} -pw {password}'
+        os.system(ssh_connection.format(**ssh_data))
         
     @empty_selection_and_destroy_menu
     def ping(self, node):

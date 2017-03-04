@@ -293,7 +293,7 @@ class Scenario(CustomFrame):
             
     def highlight_route(self, route):
         self.highlight_objects(*route.path)
-        
+                
     @adapt_coordinates
     def find_closest_node(self, event):
         # record the item and its location
