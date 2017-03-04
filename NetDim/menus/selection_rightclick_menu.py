@@ -14,6 +14,7 @@ import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
 import ip_networks.bgp_table as ip_bgpt
 import graph_generation.multiple_objects as mobj
+from miscellaneous import site_operations
 from .alignment_menu import AlignmentMenu
 from objects.object_management_window import PropertyChanger
 from collections import OrderedDict
@@ -122,6 +123,10 @@ class SelectionRightClickMenu(tk.Menu):
             cmd = lambda o: o.type in ('node', 'plink')
             for obj in filter(cmd, self.all_so):
                 self.common_AS &= obj.AS.keys()
+                
+            self.common_sites = set(self.cs.ntw.ftr('node', 'site'))
+            for obj in self.all_so:
+                self.common_sites &= obj.sites
             
         # if at least one common AS: remove from AS or manage AS
             if self.common_AS:
@@ -143,12 +148,13 @@ class SelectionRightClickMenu(tk.Menu):
                         
             self.add_separator()
             
-        if no_shape:
-            self.add_command(label='Add to site', 
-                            command=lambda: self.add_to_site(*self.all_so))
-            self.add_command(label='Remove from site', 
-                            command=lambda: self.remove_from_site(*self.all_so))  
-            self.add_separator()
+            if set(self.cs.ntw.ftr('node', 'site')):
+                self.add_command(label='Add to site', command=self.add_to_site)
+                
+                if self.common_sites:
+                    self.add_command(label='Remove from site', 
+                                                command=self.remove_from_site)  
+                self.add_separator()
         
         if no_shape:
             self.add_command(label='Simulate failure', 
@@ -305,7 +311,16 @@ class SelectionRightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def enter_site(self, site):
-        self.cs.ms.display_menu.switch_view(site)
+        self.cs.ms.display_menu.enter_site(site)
+        
+    @empty_selection_and_destroy_menu
+    def add_to_site(self):
+        site_operations.SiteOperations(self.cs, 'add', self.all_so)
+        
+    @empty_selection_and_destroy_menu
+    def remove_from_site(self):
+        site_operations.SiteOperations(self.cs, 'remove', self.all_so, 
+                                                            self.common_sites)
         
     @empty_selection_and_destroy_menu
     def bgp(self, node):

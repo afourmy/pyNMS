@@ -170,6 +170,7 @@ class DisplayMenu(ScrolledFrame):
         relief = 'sunken' if value == 'site' else 'raised'
         self.type_to_button['site'].config(relief=relief)
         # delete eveyrthing on the canvas
+        self.ms.cs.erase_all()
         self.ms.cs.cvs.delete('all')
         if value == 'site':
             # draw the sites
@@ -178,11 +179,14 @@ class DisplayMenu(ScrolledFrame):
                                     random_drawing = False, 
                                     draw_site = True
                                     )
-        elif value == 'all':
+        else:
             # value is all and we draw all network objects
             self.ms.cs.draw_all(False)
-        else:
-            self.ms.cs.draw_objects(self.ms.cs.ntw.nodes[site.id].get_obj())
+            
+    def enter_site(self, site):
+        self.ms.cs.erase_all()
+        self.ms.cs.cvs.delete('all')
+        self.ms.cs.draw_objects(self.ms.cs.ntw.nodes[site.id].get_obj())
             
     def create_site(self):
         # change the mode to creation 

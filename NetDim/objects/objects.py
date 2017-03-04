@@ -653,6 +653,14 @@ class Site(Node):
         yield from self.ps['node']
         yield from self.ps['link']
         
+    def add_to_site(self, *objects):
+        for obj in objects:
+            self.ps[obj.class_type].add(obj)
+            
+    def remove_from_site(self, *objects):
+        for obj in objects:
+            self.ps[obj.class_type].remove(obj)
+        
 class Router(Node):
     
     color = 'magenta'

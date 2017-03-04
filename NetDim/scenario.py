@@ -1044,9 +1044,10 @@ class Scenario(CustomFrame):
     # 1) Regular drawing
     def draw_objects(self, objects, random_drawing=True, draw_site=False):
         self._cancel()
+        print('test')
         for obj in objects:
             print(obj)
-            if obj.type == 'node':
+            if obj.class_type == 'node':
                 if obj.subtype == 'site' and not draw_site:
                     continue
                 if random_drawing:
