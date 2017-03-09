@@ -25,6 +25,10 @@ class GeneralRightClickMenu(tk.Menu):
         self.add_command(label='Refresh', 
                 command=lambda: self.refresh())
                 
+        # change view
+        self.add_command(label='Globe', 
+                command=lambda: self.cs.world_map.change_projection('globe'))
+                
         # make the menu appear    
         self.tk_popup(event.x_root, event.y_root)
 

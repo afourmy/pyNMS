@@ -30,12 +30,18 @@ try:
     import xlrd
     import xlwt
 except ImportError:
-    warnings.warn('Excel library missing: excel import/export disabled')
+    warnings.warn('Excel libraries missing: excel import/export disabled')
+try:
+    import map.shapefile as shp
+    import shapely.geometry as sgeo
+except ImportError:
+    warnings.warn('SHP librairies missing: map import disabled')
 
 class NetDim(MainWindow):
     
     def __init__(self, path_app):
         super().__init__()
+        self.path_app = path_app
         path_parent = abspath(join(path_app, pardir))
         self.path_icon = join(path_parent, 'Icons')
         self.path_workspace = join(path_parent, 'Workspace')
@@ -98,6 +104,12 @@ class NetDim(MainWindow):
         export_graph.text = 'Export graph'
         export_graph.command = self.export_graph
 
+        general_menu.separator()
+        
+        import_map = MenuEntry(general_menu)
+        import_map.text = 'Import SHP map'
+        import_map.command = self.import_map
+        
         general_menu.separator()
         
         debug_entry = MenuEntry(general_menu)
@@ -501,3 +513,28 @@ class NetDim(MainWindow):
         excel_workbook.save(selected_file.name)
         selected_file.close()
         
+    def import_map(self, filepath=None):
+                
+        filepath = filedialog.askopenfilenames(
+                                initialdir = join(self.path_workspace, 'map'),
+                                title = 'Import SHP map', 
+                                filetypes = (
+                                ('shp files','*.shp'),
+                                ('all files','*.*')
+                                ))
+        
+        # no error when closing the window
+        if not filepath: 
+            return
+        else: 
+            filepath ,= filepath
+        
+        # shapefile with all countries
+        sf = shp.Reader(filepath)
+        
+        shapes = sf.shapes()
+        
+        for shape in shapes:
+            shape = sgeo.shape(shape)
+            wkt_shape = [('.Mainland', str(shape), 'D',  None, None, None, 'green')]
+            self.cs.world_map.load_shp_file(wkt_shape)

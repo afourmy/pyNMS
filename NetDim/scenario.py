@@ -6,6 +6,8 @@ import tkinter as tk
 import network
 import miscellaneous.search as search
 import re
+from os.path import join
+from map.map import Map
 from pythonic_tkinter.preconfigured_widgets import *
 from objects.objects import *
 from miscellaneous.shape_drawing import *
@@ -34,6 +36,12 @@ class Scenario(CustomFrame):
         vbar = Scrollbar(self, orient='vertical')
         vbar.pack(side='right', fill='y')
         vbar.config(command=self.cvs.yview)
+                
+        # map 
+        self.world_map = Map(self, viewportx=500, viewporty=250)
+        self.world_map.change_projection('mercator')
+        self.world_map.load_map(self.world_map.create_meridians())
+        self.world_map.centerCarta([[7, 49]])
         
         self.cvs.config(width=1300, height=800)
         self.cvs.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
@@ -181,6 +189,7 @@ class Scenario(CustomFrame):
             self.cvs.tag_bind('link', '<Button-1>', self.find_closest_link, add='+')
             self.cvs.tag_bind('node', '<Button-1>', self.find_closest_node, add='+')
             self.cvs.tag_bind('shape', '<Button-1>', self.find_closest_shape, add='+')
+            self.cvs.tag_bind('Area', '<ButtonPress-1>', self.move_sphere, add='+')
             
             for tag in ('node', 'link'):
                 self.cvs.tag_bind(tag, '<Button-1>', self.update_mgmt_window, add='+')
@@ -188,6 +197,7 @@ class Scenario(CustomFrame):
             self.cvs.tag_bind('shape', '<B1-Motion>', self.shape_motion)
             
             # add binding to select all nodes in a rectangle
+            self.cvs.tag_bind('Area', '<ButtonPress-1>', self.start_point_select_objects, add='+')
             self.cvs.bind('<ButtonPress-1>', self.start_point_select_objects, add='+')
             self.cvs.bind('<B1-Motion>', self.rectangle_drawing)
             self.cvs.bind('<ButtonRelease-1>', self.end_point_select_nodes, add='+')
@@ -200,6 +210,7 @@ class Scenario(CustomFrame):
             self.cvs.unbind('<ButtonMotion-1>')
             self.cvs.tag_unbind('node', '<Button-1>')
             self.cvs.tag_unbind('link', '<Button-1>')
+            self.cvs.tag_unbind('.Mainland', '<ButtonPress-1>')
             
             if self._creation_mode in node_class:
                 # add bindings to create a node with left-click
@@ -235,6 +246,13 @@ class Scenario(CustomFrame):
         return wrapper
                 
     ## Drawing modes
+        
+    @adapt_coordinates
+    def move_sphere(self, event):
+        coords = self.world_map.from_points((event.x, event.y), dosphere=1)
+        if coords and self.world_map.is_spherical():
+            self.world_map.map_temp['centerof'] = coords
+            self.world_map.change_projection(self.world_map.mode)
     
     @adapt_coordinates
     def start_drawing_oval(self, event):
@@ -379,6 +397,8 @@ class Scenario(CustomFrame):
     
     @adapt_coordinates
     def motion(self, event):
+        # display geographical coordinates (longitude and latitude)
+        self.world_map.get_geographical_coordinates(event)
         x, y = event.x, event.y
         # if there is at least one object on the canvas
         if self.cvs.find_closest(x, y):
@@ -434,7 +454,12 @@ class Scenario(CustomFrame):
                         if self.co not in self.so[self.co.class_type]:
                             self.unhighlight_objects(self.co)
                         self.co = None
-                        self.pwindow.destroy()  
+                        self.pwindow.destroy()
+            else:
+                if self.co:
+                    self.unhighlight_objects(self.co)
+                    self.co = None
+                    self.pwindow.destroy()
                 
     ## Menus
         
@@ -467,8 +492,9 @@ class Scenario(CustomFrame):
         factor = 1.1 if event.delta > 0 else 0.9
         self.diff_y *= factor
         self.node_size *= factor
-        self.cvs.scale('all', event.x, event.y, factor, factor)
-        self.cvs.configure(scrollregion=self.cvs.bbox('all'))
+        self.world_map.scale_map(ratio=factor)
+        # self.cvs.scale('all', event.x, event.y, factor, factor)
+        # self.cvs.configure(scrollregion=self.cvs.bbox('all'))
         self.update_nodes_coordinates(factor)
         
     @adapt_coordinates
@@ -800,7 +826,10 @@ class Scenario(CustomFrame):
         x, y = self.cvs.canvasx(event.x), self.cvs.canvasy(event.y)
         # create the temporary line, only if there is nothing below
         # this is to avoid drawing a rectangle when moving a node
-        if not self.cvs.find_overlapping(x-1, y-1, x+1, y+1):
+        below = self.cvs.find_overlapping(x-1, y-1, x+1, y+1)
+        tags_below = ''.join(''.join(self.cvs.itemcget(id, 'tags')) for id in below)
+        # if nothing is below, or only the map, the selection process can start
+        if 'object' not in tags_below:
             if not self.ctrl:
                 self.unhighlight_all()
                 self.so.clear()
