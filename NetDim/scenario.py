@@ -21,6 +21,10 @@ class Scenario(CustomFrame):
     def __init__(self, master, name):
         super().__init__(width=1300, height=800)
         self.pack(side='left')
+        self.name = name
+        self.ntw = network.Network(self)
+        self.object_id_to_object = {}
+        self.ms = master
 
         self.cvs = tk.Canvas(
                              self, 
@@ -47,11 +51,8 @@ class Scenario(CustomFrame):
         self.cvs.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
         self.cvs.pack(side=tk.LEFT, expand=1, fill=tk.BOTH)
         
-        self.name = name
-        self.ntw = network.Network(self)
-        self.object_id_to_object = {}
-        self.ms = master
-        
+        # erase the map if one was created before
+        self.update()
         # job running or not (e.g drawing)
         self._job = None
         # number of iteration of the graph layout algorithm
@@ -95,7 +96,7 @@ class Scenario(CustomFrame):
         self.diff_y = 0
         
         # site view
-        self.site_view = 'all'
+        self.viewing_mode = 'network'
         
         # display state per type of objects
         self.display_per_type = dict.fromkeys(all_subtypes, True)
@@ -210,7 +211,7 @@ class Scenario(CustomFrame):
             self.cvs.unbind('<ButtonMotion-1>')
             self.cvs.tag_unbind('node', '<Button-1>')
             self.cvs.tag_unbind('link', '<Button-1>')
-            self.cvs.tag_unbind('.Mainland', '<ButtonPress-1>')
+            self.cvs.tag_unbind('Area', '<ButtonPress-1>')
             
             if self._creation_mode in node_class:
                 # add bindings to create a node with left-click
@@ -397,9 +398,9 @@ class Scenario(CustomFrame):
     
     @adapt_coordinates
     def motion(self, event):
-        # display geographical coordinates (longitude and latitude)
-        self.world_map.get_geographical_coordinates(event)
         x, y = event.x, event.y
+        # display geographical coordinates (longitude and latitude)
+        self.world_map.get_geographical_coordinates(x, y)
         # if there is at least one object on the canvas
         if self.cvs.find_closest(x, y):
             # we retrieve it
@@ -454,12 +455,14 @@ class Scenario(CustomFrame):
                         if self.co not in self.so[self.co.class_type]:
                             self.unhighlight_objects(self.co)
                         self.co = None
+                    else:
                         self.pwindow.destroy()
             else:
                 if self.co:
-                    self.unhighlight_objects(self.co)
-                    self.co = None
-                    self.pwindow.destroy()
+                    if self.co not in self.so[self.co.class_type]:
+                        self.unhighlight_objects(self.co)
+                        self.co = None
+                        self.pwindow.destroy()
                 
     ## Menus
         
@@ -573,6 +576,9 @@ class Scenario(CustomFrame):
         self.object_id_to_object[node.image[layer]] = node
         if layer == 1:
             self.create_node_label(node)
+            # update geographical coordinates
+            lon, lat = self.world_map.get_geographical_coordinates(node.x, node.y)
+            node.longitude, node.latitude = lon, lat
             
     @adapt_coordinates
     def start_link(self, event):
@@ -648,6 +654,11 @@ class Scenario(CustomFrame):
         self.object_id_to_object[new_link.line] = new_link
         self._create_link_label(new_link)
         self.refresh_label(new_link)
+        # the link is now at the bottom of the stack after calling tag_lower
+        # if the map is activated, we need to lower all map objects to be 
+        # able to see the link
+        for map_obj in self.world_map.map_ids:
+            self.cvs.tag_lower(map_obj)
     
     def multiple_nodes(self, n, subtype, x, y):
         for node in self.ntw.multiple_nodes(n, subtype):

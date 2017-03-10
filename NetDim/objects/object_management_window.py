@@ -188,6 +188,7 @@ class ObjectManagementWindow(FocusTopLevel):
                     if property in ('path_constraints', 'excluded_nodes', 'excluded_plinks'): 
                         value = self.conv(property)
                     else:
+                        print(property, value)
                         value = self.ntw.prop_to_type[property](value)
                         if property == 'name':
                             name = getattr(self.current_obj, property)

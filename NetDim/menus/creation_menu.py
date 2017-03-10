@@ -66,6 +66,7 @@ class CreationMenu(ScrolledFrame):
         'netdim': self.ms.refresh,
         'motion': lambda: self.switch_to('motion'),
         'multi-layer': self.ms.cs.switch_display_mode,
+        'site': self.site_creation_mode
         }
         
         for topo in ('tree', 'star', 'full-mesh', 'ring'):
@@ -125,20 +126,21 @@ class CreationMenu(ScrolledFrame):
         self.type_to_button['splitter'].grid(1, 1, padx=2, in_=lf_creation)
         self.type_to_button['antenna'].grid(1, 2, padx=2, in_=lf_creation)
         self.type_to_button['cloud'].grid(1, 3, padx=2, in_=lf_creation)
+        self.type_to_button['site'].grid(2, 0, padx=2, in_=lf_creation)
         
         sep = Separator(self.infr)
-        sep.grid(2, 0, 1, 4, in_=lf_creation)
+        sep.grid(3, 0, 1, 4, in_=lf_creation)
         
-        self.type_to_button['ethernet'].grid(3, 0, 1, 2, in_=lf_creation)
-        self.type_to_button['wdm'].grid(3, 2, 1, 2, in_=lf_creation)
+        self.type_to_button['ethernet'].grid(4, 0, 1, 2, in_=lf_creation)
+        self.type_to_button['wdm'].grid(4, 2, 1, 2, in_=lf_creation)
                                                 
-        self.type_to_button['static route'].grid(4, 0, 1, 2, in_=lf_creation)
-        self.type_to_button['BGP peering'].grid(4, 2, 1, 2, in_=lf_creation)
+        self.type_to_button['static route'].grid(5, 0, 1, 2, in_=lf_creation)
+        self.type_to_button['BGP peering'].grid(5, 2, 1, 2, in_=lf_creation)
         self.type_to_button['OSPF virtual link'].grid(5, 0, 1, 2, in_=lf_creation)
         self.type_to_button['Label Switched Path'].grid(5, 2, 1, 2, in_=lf_creation)
         
-        self.type_to_button['routed traffic'].grid(6, 0, 1, 2, in_=lf_creation)
-        self.type_to_button['static traffic'].grid(6, 2, 1, 2, in_=lf_creation)
+        self.type_to_button['routed traffic'].grid(7, 0, 1, 2, in_=lf_creation)
+        self.type_to_button['static traffic'].grid(7, 2, 1, 2, in_=lf_creation)
         
         # graph generation
         self.type_to_button['tree'].grid(0, 0, in_=lf_generation)
@@ -170,6 +172,12 @@ class CreationMenu(ScrolledFrame):
             else:
                 self.type_to_button[obj_type].config(relief='flat')
         self.ms.cs.switch_binding()
+        
+    def site_creation_mode(self):
+        # switch to site view first
+        self.ms.view_menu.switch_view('site')
+        # then update the bindings
+        self.change_creation_mode('site')
         
     def erase_graph(self, scenario):
         scenario.erase_graph()

@@ -24,7 +24,13 @@ from ip_networks import ssh_management
 from graph_generation import advanced_graph as adv_gr
 from optical_networks import rwa_window as rwaw
 from miscellaneous.network_functions import IPAddress
-from menus import creation_menu, display_menu, drawing_menu, routing_menu
+from menus import (
+                   creation_menu, 
+                   routing_menu,
+                   display_menu, 
+                   drawing_menu, 
+                   view_menu
+                   )
 from PIL import ImageTk
 try:
     import xlrd
@@ -61,7 +67,7 @@ class NetDim(MainWindow):
         # cs for 'current scenario' (the first one, which we create)        
         self.cs = scenario.Scenario(self, 'scenario 0')
         self.cpt_scenario = 0
-        self.scenario_notebook.add(self.cs, text=self.cs.name, compound=tk.TOP)
+        self.scenario_notebook.add(self.cs, text=self.cs.name, compound='top')
         self.dict_scenario['scenario 0'] = self.cs
         
         # advanced graph options
@@ -208,29 +214,34 @@ class NetDim(MainWindow):
         
         # main menu for creation and selection of objects
         self.creation_menu = creation_menu.CreationMenu(self.menu_notebook, self)
-        self.creation_menu.pack(fill=tk.BOTH, side=tk.LEFT)
-        
-        # display menu to control the display
-        self.display_menu = display_menu.DisplayMenu(self.menu_notebook, self)
-        self.display_menu.pack(fill=tk.BOTH, side=tk.LEFT)
+        self.creation_menu.pack(fill='both', side='left')
+    
+        # routing menu (addresss allocation + tables creation + routing)
+        self.routing_menu = routing_menu.RoutingMenu(self.menu_notebook, self)
+        self.routing_menu.pack(fill='both', side='left')
         
         # drawing menu (force-based algorithm parameters + paint-like drawing)
         self.drawing_menu = drawing_menu.DrawingMenu(self.menu_notebook, self)
-        self.drawing_menu.pack(fill=tk.BOTH, side=tk.LEFT)
+        self.drawing_menu.pack(fill='both', side='left')
         
-        # routing menu (addresss allocation + tables creation + routing)
-        self.routing_menu = routing_menu.RoutingMenu(self.menu_notebook, self)
-        self.routing_menu.pack(fill=tk.BOTH, side=tk.LEFT)
+        # display menu to control the display
+        self.display_menu = display_menu.DisplayMenu(self.menu_notebook, self)
+        self.display_menu.pack(fill='both', side='left')
+        
+        # display menu to control the display
+        self.view_menu = view_menu.ViewMenu(self.menu_notebook, self)
+        self.view_menu.pack(fill='both', side='left')
         
         self.menu_notebook.add(self.creation_menu, text=' Creation ')
-        self.menu_notebook.add(self.display_menu, text=' Display ')
-        self.menu_notebook.add(self.drawing_menu, text=' Drawing ')
         self.menu_notebook.add(self.routing_menu, text=' Routing ')
+        self.menu_notebook.add(self.drawing_menu, text=' Drawing ')
+        self.menu_notebook.add(self.display_menu, text=' Display ')
+        self.menu_notebook.add(self.view_menu, text=' View ')
         
-        self.menu_notebook.pack(side=tk.LEFT, fill=tk.BOTH)
+        self.menu_notebook.pack(side='left', fill='both')
         
         # notebooks of scenarios
-        self.scenario_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+        self.scenario_notebook.pack(side='left', fill='both', expand=1)
         
     def refresh(self):
         
@@ -260,7 +271,7 @@ class NetDim(MainWindow):
         if not name:
             name = ' '.join(('scenario', str(self.cpt_scenario)))
         new_scenario = scenario.Scenario(self, name)
-        self.scenario_notebook.add(new_scenario, text=name, compound=tk.TOP)
+        self.scenario_notebook.add(new_scenario, text=name, compound='top')
         self.dict_scenario[name] = new_scenario
         return new_scenario
         

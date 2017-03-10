@@ -37,6 +37,8 @@ class Map():
     map_temp = {}
     
     def __init__(self, parent, **kw):
+        # set of all map ids
+        self.map_ids = set()
         self.scale = 0.05
         self.parent = parent
         self.dw = self.parent.cvs
@@ -77,8 +79,7 @@ class Map():
             self.center_point()
             self.label_point()
         
-    def get_geographical_coordinates(self, event):
-        x, y = event.x, event.y
+    def get_geographical_coordinates(self, x, y):
         # move figure part
         if 'Figure' in self.map_temp:
             coords = self.from_points([x, y], dosphere=1)
@@ -88,7 +89,8 @@ class Map():
                 self.draw_map(coords, 'CurrFigure', 'CurrFigure.1')
                 self.draw_map([coords[1]], 'CurrFigure', '.CurrFigure.1', '%s\n%s km' % tuple(self.map_temp['Figure'][:2]))
         # calc and show coords under cursor
-        coords = self.from_points((x, y), dosphere=1) or [('', '')]
+        coords = self.from_points((x, y), dosphere=1) or [(0, 0)]
+        return coords[0][0], coords[0][1]
 
     #-------------------------------------
 
@@ -279,9 +281,17 @@ class Map():
         if self.is_spherical():
             radii = 180 / pi * self.delta * self.scale
             vx, vy = self.scaleX * self.scale, self.scaleY * self.scale
-            self.dw.create_oval(vx/2.0 - radii, vy/2.0 - radii, vx/2.0 + radii, vy/2.0 + radii,
+            oval_id = self.dw.create_oval(
+                                vx/2.0 - radii, 
+                                vy/2.0 - radii, 
+                                vx/2.0 + radii, 
+                                vy/2.0 + radii,
                                 outline=self.mopt['.Latitude']['fg'], 
-                                fill=self.mopt['.Water']['bg'], tags=('.Water', 'sphereBounds'))            
+                                fill=self.mopt['.Water']['bg'], 
+                                tags=('.Water', 'sphereBounds')
+                                )
+            # add the canvas id to the set of all map ids
+            self.map_ids.add(oval_id)
 
     def draw_map(self, coords, ftype, ftag, ftext='', fimage=None, addcoords=0):
         """Draw object, label, icon.
@@ -317,26 +327,27 @@ class Map():
             self.dw.coords(ftag, tuple(self.dw.coords(ftag) + points))
             self.mflood[ftag]['coords'] += coords
         elif ftext:
-            self.dw.create_text(points, anchor=self.mopt[ftype].get('anchor', 'w'), text=ftext, fill=self.mopt[ftype].get('labelcolor', 'black'), tags=(ftag, ftype))
+            obj_id = self.dw.create_text(points, anchor=self.mopt[ftype].get('anchor', 'w'), text=ftext, fill=self.mopt[ftype].get('labelcolor', 'black'), tags=(ftag, ftype))
         elif fimage:
-            self.dw.create_image(points, anchor=self.mopt[ftype].get('anchor', 'w'), image=fimage, tags=(ftag, ftype))
+            obj_id = self.dw.create_image(points, anchor=self.mopt[ftype].get('anchor', 'w'), image=fimage, tags=(ftag, ftype))
         elif self.mopt[ftype]['cls'] in ('Line'):
             if len(points) < 4:
                 points = points * 2
-            self.dw.create_line(points, fill=fg, 
+            obj_id = self.dw.create_line(points, fill=fg, 
                                 dash=self.mopt[ftype].get('dash'), smooth=self.mopt[ftype].get('smooth'), 
                                 width=self.mopt[ftype].get('width', 1), tags=(ftag, ftype))
         elif self.mopt[ftype]['cls'] in ('Polygon'):
             if len(points) < 4:
                 points = points * 2
-            self.dw.create_polygon(points, fill=bg, outline=fg, tags=(ftag, ftype))
+            obj_id = self.dw.create_polygon(points, fill=bg, outline=fg, tags=(ftag, ftype))
         elif self.mopt[ftype]['cls'] in ('Dot'):
             if len(points) < 4:
                 points = points * 2
             size = self.mopt[ftype].get('size', 0)
-            self.dw.create_oval(points[0] - size/2.0, points[1] - size/2.0,
+            obj_id = self.dw.create_oval(points[0] - size/2.0, points[1] - size/2.0,
                                 points[0] + size/2.0, points[1] + size/2.0,
                                 width=self.mopt[ftype].get('width', 1), fill=bg, outline=fg, tags=(ftag, ftype))
+        self.map_ids.add(obj_id)
                                 
     def load_shp_file(self, data=(), docenter=0):
         """Display WKT-objects. Use loadCarta.
