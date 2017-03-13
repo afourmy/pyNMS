@@ -190,6 +190,7 @@ class Scenario(CustomFrame):
             self.cvs.tag_bind('link', '<Button-1>', self.find_closest_link, add='+')
             self.cvs.tag_bind('node', '<Button-1>', self.find_closest_node, add='+')
             self.cvs.tag_bind('shape', '<Button-1>', self.find_closest_shape, add='+')
+            self.cvs.tag_bind('water', '<ButtonPress-1>', self.move_sphere, add='+')
             self.cvs.tag_bind('Area', '<ButtonPress-1>', self.move_sphere, add='+')
             
             for tag in ('node', 'link'):
@@ -400,7 +401,7 @@ class Scenario(CustomFrame):
     def motion(self, event):
         x, y = event.x, event.y
         # display geographical coordinates (longitude and latitude)
-        self.world_map.get_geographical_coordinates(x, y)
+        coords = self.world_map.get_geographical_coordinates(x, y)
         # if there is at least one object on the canvas
         if self.cvs.find_closest(x, y):
             # we retrieve it
@@ -521,6 +522,10 @@ class Scenario(CustomFrame):
         # the corresponding node's coordinates accordingly
         for node in self.ntw.nodes.values():
             new_coords = self.cvs.coords(node.oval[1])
+            node.logical_x *= factor
+            node.logical_y *= factor
+            node.longitude *= factor
+            node.latitude *= factor
             node.x = (new_coords[0] + new_coords[2]) / 2
             node.y = (new_coords[3] + new_coords[1]) / 2
             self.cvs.coords(node.lid, node.x - 15, node.y + 10)
@@ -557,28 +562,27 @@ class Scenario(CustomFrame):
     
     @adapt_coordinates
     def create_node_on_binding(self, event):
-        new_node = self.ntw.nf(node_type=self._creation_mode, x=event.x, y=event.y)
-        self.create_node(new_node)
+        node = self.ntw.nf(node_type=self._creation_mode, x=event.x, y=event.y)
+        self.create_node(node)
+        # update geographical coordinates
+        lon, lat = self.world_map.get_geographical_coordinates(node.x, node.y)
+        node.longitude, node.latitude = lon, lat
     
     def create_node(self, node, layer=1):
         s = self.node_size
         curr_image = self.ms.dict_image['default'][node.subtype]
         y = node.y - (layer - 1) * self.diff_y
         tags = (node.subtype, node.class_type, 'object')
-        print(tags)
         node.image[layer] = self.cvs.create_image(node.x - (node.imagex)/2, 
-                y - (node.imagey)/2, image=curr_image, anchor=tk.NW, tags=tags)
+                y - (node.imagey)/2, image=curr_image, anchor='nw', tags=tags)
         node.oval[layer] = self.cvs.create_oval(node.x-s, y-s, node.x+s, y+s, 
                                 outline=node.color, fill=node.color, tags=tags)
         # create/hide the image/the oval depending on the current mode
-        self.cvs.itemconfig(node.oval[layer], state=tk.HIDDEN)
+        self.cvs.itemconfig(node.oval[layer], state='hidden')
         self.object_id_to_object[node.oval[layer]] = node
         self.object_id_to_object[node.image[layer]] = node
         if layer == 1:
             self.create_node_label(node)
-            # update geographical coordinates
-            lon, lat = self.world_map.get_geographical_coordinates(node.x, node.y)
-            node.longitude, node.latitude = lon, lat
             
     @adapt_coordinates
     def start_link(self, event):
@@ -828,6 +832,8 @@ class Scenario(CustomFrame):
         for type in link_type:
             for link in self.ntw.pn[type].values():
                 link.line = None
+                
+        self.ms.cs.cvs.delete('all')
                             
     ## Selection / Highlight
     
@@ -1084,9 +1090,7 @@ class Scenario(CustomFrame):
     # 1) Regular drawing
     def draw_objects(self, objects, random_drawing=True, draw_site=False):
         self._cancel()
-        print('test')
         for obj in objects:
-            print(obj)
             if obj.class_type == 'node':
                 if obj.subtype == 'site' and not draw_site:
                     continue
@@ -1281,6 +1285,26 @@ class Scenario(CustomFrame):
             self.display_filter(filter)   
         for AS in self.ntw.pnAS.values():
             AS.management.refresh_display()
+            
+    ## Map Menu
+    
+    def update_geographical_coordinates(self, *nodes):
+        for node in nodes:
+            node.longitude, node.latitude = node.x, node.y
+            
+    def update_logical_coordinates(self, *nodes):
+        for node in nodes:
+            node.logical_x, node.logical_y = node.x, node.y 
+            
+    def move_to_geographical_coordinates(self, *nodes):
+        for node in nodes:
+            node.x, node.y = node.longitude, node.latitude
+        self.move_nodes(nodes)
+        
+    def move_to_logical_coordinates(self, *nodes):
+        for node in nodes:
+            node.x, node.y = node.logical_x, node.logical_y
+        self.move_nodes(nodes)
             
     ## Other
     

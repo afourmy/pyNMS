@@ -2,13 +2,13 @@
 # Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
 # Released under the GNU General Public License GPLv3
 
-import tkinter as tk
+from pythonic_tkinter.preconfigured_widgets import *
 from collections import OrderedDict
 
-class AlignmentMenu(tk.Menu):
+class AlignmentMenu(Menu):
     
     def __init__(self, scenario, nodes):
-        super().__init__(tearoff=0)
+        super().__init__(0)
         self.cs = scenario
         
         cmds = OrderedDict([

@@ -66,7 +66,7 @@ class CreationMenu(ScrolledFrame):
         'netdim': self.ms.refresh,
         'motion': lambda: self.switch_to('motion'),
         'multi-layer': self.ms.cs.switch_display_mode,
-        'site': self.site_creation_mode
+        'site': lambda: self.change_creation_mode('site')
         }
         
         for topo in ('tree', 'star', 'full-mesh', 'ring'):
@@ -172,12 +172,6 @@ class CreationMenu(ScrolledFrame):
             else:
                 self.type_to_button[obj_type].config(relief='flat')
         self.ms.cs.switch_binding()
-        
-    def site_creation_mode(self):
-        # switch to site view first
-        self.ms.view_menu.switch_view('site')
-        # then update the bindings
-        self.change_creation_mode('site')
         
     def erase_graph(self, scenario):
         scenario.erase_graph()

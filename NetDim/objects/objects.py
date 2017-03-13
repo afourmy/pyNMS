@@ -86,6 +86,8 @@ node_common_properties = (
 'y', 
 'longitude', 
 'latitude', 
+'logical_x',
+'logical_y',
 'ipaddress', 
 'subnetmask', 
 'sites',
@@ -223,7 +225,7 @@ traffic_common_ie_properties = (
 # properties shared by all objects of a given subtype
 
 object_properties = OrderedDict([
-('site', node_common_properties),
+('site', node_common_properties + ('site_type',)),
 ('router', node_common_properties + ('default_route',)),
 ('switch', node_common_properties + ('base_macaddress',)),
 ('oxc', node_common_properties),
@@ -272,7 +274,7 @@ object_properties = OrderedDict([
 ## Common Import / Export properties per subtype
 
 object_ie = OrderedDict([
-('site', node_common_ie_properties),
+('site', node_common_ie_properties + ('site_type',)),
 ('router', node_common_ie_properties + ('default_route',)),
 ('switch', node_common_ie_properties + ('base_macaddress',)),
 ('oxc', node_common_ie_properties),
@@ -412,7 +414,11 @@ node_box_properties = (
 'name', 
 'subtype',
 'ipaddress', 
-'subnetmask'
+'subnetmask',
+'longitude',
+'latitude',
+'logical_x',
+'logical_y'
 )
 
 plink_box_properties = (
@@ -436,7 +442,7 @@ vc_box_properties = (
 )
 
 box_properties = OrderedDict([
-('site', node_box_properties),
+('site', node_box_properties + ('site_type',)),
 ('router', node_box_properties + ('default_route',)),
 ('switch', node_box_properties + ('base_macaddress',)),
 ('oxc', node_box_properties),
@@ -499,6 +505,8 @@ prop_to_nice_name = {
 'link': 'Link',
 'linkS': 'Source link',
 'linkD': 'Destination link', 
+'logical_x': 'Logical X coordinate',
+'logical_y': 'Logical Y coordinate',
 'costSD': 'Cost S -> D', 
 'costDS': 'Cost D -> S', 
 'cost': 'Cost',
@@ -542,6 +550,7 @@ prop_to_nice_name = {
 'excluded_plinks': 'Excluded physical links',
 'path': 'Path',
 'subnets': 'Subnets', 
+'site_type': 'Type of site',
 'sites': 'Sites',
 'AS': 'Autonomous system',
 'role': 'Role',
@@ -581,6 +590,8 @@ class Node(NDobject):
                     'y' : 300, 
                     'longitude' : 0, 
                     'latitude' : 0, 
+                    'logical_x': 0,
+                    'logical_y': 0,
                     'ipaddress' : None,
                     'subnetmask' : None
                     }
@@ -647,6 +658,11 @@ class Site(Node):
     def __init__(self, **kwargs):
         # pool site: nodes and links that belong to the site
         self.ps = {'node': set(), 'link': set()}
+        # sites can be either physical or logical: a physical site is a site
+        # like a building or a shelter, that contains colocated network devices,
+        # and a logical site is a way of filtering the view to a subset of 
+        # objects 
+        self.site_type = 'Physical'
         super().__init__()
         
     def get_obj(self):

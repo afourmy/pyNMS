@@ -18,16 +18,23 @@ class ViewMenu(ScrolledFrame):
         self.ms = master
         font = ('Helvetica', 8, 'bold')
         
-        # label frame to manage sites
+        # label frame to switch between site and network view
         lf_site_display = Labelframe(self.infr)
         lf_site_display.text = 'Viewing mode'
-        lf_site_display.grid(1, 0, sticky='nsew')
+        lf_site_display.grid(0, 0, sticky='nsew')
+        
+        # label frame to switch between logical and geographical coordinates
+        lf_coordinates = Labelframe(self.infr)
+        lf_coordinates.text = 'Coordinates'
+        lf_coordinates.grid(1, 0, sticky='nsew')
         
         self.dict_image = {}
         
         self.dict_size_image = {
         'network_view': (125, 125),
         'site': (125, 125),
+        'logical_coord': (125, 125),
+        'geo_coord': (125, 125)
         }
         
         for image_type, image_size in self.dict_size_image.items():
@@ -38,19 +45,52 @@ class ViewMenu(ScrolledFrame):
             self.dict_image[image_type] = img
         
         self.type_to_button = {}
+        font = ('Helvetica', 8, 'bold')
                 
         # site view
         self.network_view_button = TKButton(self.infr)
-        self.network_view_button.config(image=self.dict_image['network_view'])
+        self.network_view_button.config(
+                                        image = self.dict_image['network_view'],
+                                        text = 'Network view',
+                                        compound = 'top', 
+                                        font = font
+                                        )
         self.network_view_button.command = lambda: self.switch_view('network')
         self.network_view_button.config(width=150, height=150, relief='sunken')
         self.network_view_button.grid(0, 0, 2, 2, padx=20, in_=lf_site_display)
         
         self.site_view_button = TKButton(self.infr)
-        self.site_view_button.config(image=self.dict_image['site'])
+        self.site_view_button.config(
+                                     image = self.dict_image['site'],
+                                     text = 'Site view',
+                                     compound = 'top', 
+                                     font = font
+                                     )
         self.site_view_button.command = lambda: self.switch_view('site')
         self.site_view_button.config(width=150, height=150)
         self.site_view_button.grid(0, 2, 2, 2, padx=20, in_=lf_site_display)
+        
+        self.logical_coord_button = TKButton(self.infr)
+        self.logical_coord_button.config(
+                                         image = self.dict_image['logical_coord'],
+                                         text = 'Logical coordinates',
+                                         compound = 'top', 
+                                         font = font
+                                         )
+        self.logical_coord_button.command = lambda: self.ms.cs.move_to_logical_coordinates(*self.ms.cs.so['node'])
+        self.logical_coord_button.config(width=150, height=150)
+        self.logical_coord_button.grid(0, 0, 2, 2, padx=20, in_=lf_coordinates)
+        
+        self.geo_coord_button = TKButton(self.infr)
+        self.geo_coord_button.config(
+                                     image = self.dict_image['geo_coord'],
+                                     text = 'Geo coordinates',
+                                     compound = 'top', 
+                                     font = font
+                                     )
+        self.geo_coord_button.command = lambda: self.ms.cs.move_to_geographical_coordinates(*self.ms.cs.so['node'])
+        self.geo_coord_button.config(width=150, height=150)
+        self.geo_coord_button.grid(0, 2, 2, 2, padx=20, in_=lf_coordinates)
         
     def switch_view(self, view):
         self.ms.cs.viewing_mode = view        
@@ -77,6 +117,5 @@ class ViewMenu(ScrolledFrame):
             
     def enter_site(self, site):
         self.ms.cs.erase_all()
-        self.ms.cs.cvs.delete('all')
         self.ms.cs.draw_objects(self.ms.cs.ntw.nodes[site.id].get_obj())
                     

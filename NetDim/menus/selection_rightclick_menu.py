@@ -16,6 +16,7 @@ import ip_networks.bgp_table as ip_bgpt
 import graph_generation.multiple_objects as mobj
 from miscellaneous import site_operations
 from .alignment_menu import AlignmentMenu
+from .map_menu import MapMenu
 from objects.object_management_window import PropertyChanger
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
@@ -187,6 +188,11 @@ class SelectionRightClickMenu(tk.Menu):
                             menu=AlignmentMenu(self.cs, self.cs.so['node']))
             self.add_separator()
             
+            # map submenu
+            self.add_cascade(label='Map menu', 
+                            menu=MapMenu(self.cs, self.cs.so['node']))
+            self.add_separator()
+            
             # multiple links creation menu
             self.add_command(label='Create multiple links', 
                                 command=lambda: self.multiple_links(self.cs))
@@ -311,7 +317,7 @@ class SelectionRightClickMenu(tk.Menu):
         
     @empty_selection_and_destroy_menu
     def enter_site(self, site):
-        self.cs.ms.display_menu.enter_site(site)
+        self.cs.ms.view_menu.enter_site(site)
         
     @empty_selection_and_destroy_menu
     def add_to_site(self):

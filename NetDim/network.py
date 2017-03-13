@@ -87,6 +87,8 @@ class Network(object):
         'latitude': float,
         'LB_paths': int,
         'longitude': float, 
+        'logical_x': float,
+        'logical_y': float,
         'macaddress': str,
         'name': str,
         'node': self.convert_node, 

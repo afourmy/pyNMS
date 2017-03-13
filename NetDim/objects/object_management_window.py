@@ -22,6 +22,7 @@ class ObjectManagementWindow(FocusTopLevel):
                 
     property_list = {
     'interface': ('FE', 'GE', '10GE', '40GE', '100GE'),
+    'site_type': ('Physical', 'Logical'),
     'default_route': (None,),
     'nh_tk': (None,),
     'nh_ip': (None,),

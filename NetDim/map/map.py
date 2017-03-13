@@ -288,7 +288,7 @@ class Map():
                                 vy/2.0 + radii,
                                 outline=self.mopt['.Latitude']['fg'], 
                                 fill=self.mopt['.Water']['bg'], 
-                                tags=('.Water', 'sphereBounds')
+                                tags=('water', 'sphereBounds')
                                 )
             # add the canvas id to the set of all map ids
             self.map_ids.add(oval_id)
@@ -337,6 +337,12 @@ class Map():
                                 dash=self.mopt[ftype].get('dash'), smooth=self.mopt[ftype].get('smooth'), 
                                 width=self.mopt[ftype].get('width', 1), tags=(ftag, ftype))
         elif self.mopt[ftype]['cls'] in ('Polygon'):
+            # x = points[::2][::10]
+            # y = points[1::2][::10]
+            # o = list(sum(list(zip(x, y)), ()))
+            # if len(o) % 2:
+            #     o += points[-1]
+            # print(o)
             if len(points) < 4:
                 points = points * 2
             obj_id = self.dw.create_polygon(points, fill=bg, outline=fg, tags=(ftag, ftype))
