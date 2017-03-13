@@ -357,6 +357,12 @@ class Network(object):
     def remove_from_site(self, site, *objects):
         for obj in objects:
             site.ps[obj.class_type].remove(obj)
+            
+    # all nodes except sites
+    def network_nodes(self):
+        for node in self.nodes.values():
+            if node.subtype != 'site':
+                yield node
         
     def number_of_links_between(self, nodeA, nodeB):
         return sum(

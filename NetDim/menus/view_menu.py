@@ -16,6 +16,8 @@ class ViewMenu(ScrolledFrame):
     def __init__(self, notebook, master):
         super().__init__(notebook, width=200, height=600, borderwidth=1, relief='solid')
         self.ms = master
+        self.cs = self.ms.cs
+        self.ntw = self.cs.ntw
         font = ('Helvetica', 8, 'bold')
         
         # label frame to switch between site and network view
@@ -93,10 +95,12 @@ class ViewMenu(ScrolledFrame):
         self.geo_coord_button.grid(0, 2, 2, 2, padx=20, in_=lf_coordinates)
         
     def switch_view(self, view):
-        self.ms.cs.viewing_mode = view        
-        # delete eveyrthing on the canvas
+        self.ms.cs.current_view = view        
+        # delete everything on the canvas
         self.ms.cs.erase_all()
-        self.ms.cs.cvs.delete('all')
+        # use longitude and latitude to update canvas coordinates
+        for node in self.ntw.nodes.values():
+            node.x, node.y = self.cs.world_map.to_points([[node.longitude, node.latitude]], 1)
         if view == 'site':
             self.site_view_button.config(relief='sunken')
             self.network_view_button.config(relief='raised')
@@ -118,4 +122,5 @@ class ViewMenu(ScrolledFrame):
     def enter_site(self, site):
         self.ms.cs.erase_all()
         self.ms.cs.draw_objects(self.ms.cs.ntw.nodes[site.id].get_obj())
+        self.ms.cs.current_view = site
                     

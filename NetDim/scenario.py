@@ -96,7 +96,7 @@ class Scenario(CustomFrame):
         self.diff_y = 0
         
         # site view
-        self.viewing_mode = 'network'
+        self.current_view = 'network'
         
         # display state per type of objects
         self.display_per_type = dict.fromkeys(all_subtypes, True)
@@ -199,7 +199,6 @@ class Scenario(CustomFrame):
             self.cvs.tag_bind('shape', '<B1-Motion>', self.shape_motion)
             
             # add binding to select all nodes in a rectangle
-            self.cvs.tag_bind('Area', '<ButtonPress-1>', self.start_point_select_objects, add='+')
             self.cvs.bind('<ButtonPress-1>', self.start_point_select_objects, add='+')
             self.cvs.bind('<B1-Motion>', self.rectangle_drawing)
             self.cvs.bind('<ButtonRelease-1>', self.end_point_select_nodes, add='+')
@@ -516,16 +515,25 @@ class Scenario(CustomFrame):
         self.cvs.scale('all', event.x, event.y, 0.9, 0.9)
         self.cvs.configure(scrollregion=self.cvs.bbox('all'))
         self.update_nodes_coordinates(factor)
+        
+    def to_geo(self, *nodes):
+        for node in nodes:
+            node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
+            self.move_node(node)
     
     def update_nodes_coordinates(self, factor):
         # scaling changes the coordinates of the oval, and we update 
         # the corresponding node's coordinates accordingly
-        for node in self.ntw.nodes.values():
+        if self.current_view == 'network':
+            nodes = self.ntw.network_nodes()
+        elif self.current_view == 'site':
+            nodes = self.ntw.ftr('node', 'site')
+        else:
+            nodes = self.current_view.ps['node']
+        for node in nodes:
             new_coords = self.cvs.coords(node.oval[1])
             node.logical_x *= factor
             node.logical_y *= factor
-            node.longitude *= factor
-            node.latitude *= factor
             node.x = (new_coords[0] + new_coords[2]) / 2
             node.y = (new_coords[3] + new_coords[1]) / 2
             self.cvs.coords(node.lid, node.x - 15, node.y + 10)
@@ -832,8 +840,6 @@ class Scenario(CustomFrame):
         for type in link_type:
             for link in self.ntw.pn[type].values():
                 link.line = None
-                
-        self.ms.cs.cvs.delete('all')
                             
     ## Selection / Highlight
     
@@ -845,7 +851,7 @@ class Scenario(CustomFrame):
         # this is to avoid drawing a rectangle when moving a node
         below = self.cvs.find_overlapping(x-1, y-1, x+1, y+1)
         tags_below = ''.join(''.join(self.cvs.itemcget(id, 'tags')) for id in below)
-        # if nothing is below, or only the map, the selection process can start
+        # if no object is below the selection process can start
         if 'object' not in tags_below:
             if not self.ctrl:
                 self.unhighlight_all()
@@ -854,6 +860,8 @@ class Scenario(CustomFrame):
             # create the temporary line
             x, y = self._start_position
             self.temp_rectangle = self.cvs.create_rectangle(x, y, x, y)
+            self.cvs.tag_raise(self.temp_rectangle)
+            print(self.temp_rectangle)
 
     @adapt_coordinates
     def rectangle_drawing(self, event):
@@ -1290,7 +1298,7 @@ class Scenario(CustomFrame):
     
     def update_geographical_coordinates(self, *nodes):
         for node in nodes:
-            node.longitude, node.latitude = node.x, node.y
+            node.longitude, node.latitude = self.world_map.get_geographical_coordinates(node.x, node.y)
             
     def update_logical_coordinates(self, *nodes):
         for node in nodes:
@@ -1298,7 +1306,7 @@ class Scenario(CustomFrame):
             
     def move_to_geographical_coordinates(self, *nodes):
         for node in nodes:
-            node.x, node.y = node.longitude, node.latitude
+            node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
         self.move_nodes(nodes)
         
     def move_to_logical_coordinates(self, *nodes):

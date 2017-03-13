@@ -116,6 +116,10 @@ class NetDim(MainWindow):
         import_map.text = 'Import SHP map'
         import_map.command = self.import_map
         
+        delete_map = MenuEntry(general_menu)
+        delete_map.text = 'Delete SHP map'
+        delete_map.command = self.delete_map
+        
         general_menu.separator()
         
         debug_entry = MenuEntry(general_menu)
@@ -549,3 +553,12 @@ class NetDim(MainWindow):
             shape = sgeo.shape(shape)
             wkt_shape = [('.Mainland', str(shape), 'D',  None, None, None, 'green')]
             self.cs.world_map.load_shp_file(wkt_shape)
+            
+        for idx in self.cs.world_map.map_ids:
+            self.cs.cvs.tag_lower(idx)
+            
+    def delete_map(self):
+        
+        for idx in self.cs.world_map.map_ids:
+            self.cs.cvs.delete(idx)
+            

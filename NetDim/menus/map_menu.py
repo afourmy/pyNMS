@@ -24,6 +24,7 @@ class MapMenu(Menu):
                     ('Move selected nodes to logical coordinates', 
                         lambda: self.cs.move_to_logical_coordinates(*nodes)
                     ),
+                    ('move to geo', lambda: self.cs.to_geo(*nodes)),
         ])
     
         for label, cmd in cmds.items():
