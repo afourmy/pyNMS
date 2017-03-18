@@ -4,7 +4,6 @@
 
 # ordered dicts are needed to have the same menu order 
 from collections import defaultdict, OrderedDict
-import network
 
 # decorating __init__ to initialize properties
 def initializer(default_properties):
@@ -56,6 +55,9 @@ subtype_to_type = {
 'splitter': 'node',
 'switch': 'node',
 'cloud': 'node',
+'firewall': 'node',
+'load_balancer': 'node',
+'server': 'node',
 'ethernet': 'plink',
 'wdm': 'plink',
 'l2vc': 'l2link',
@@ -234,6 +236,9 @@ object_properties = OrderedDict([
 ('regenerator', node_common_properties),
 ('splitter', node_common_properties),
 ('cloud', node_common_properties),
+('firewall', node_common_properties),
+('load_balancer', node_common_properties),
+('server', node_common_properties),
 
 ('ethernet', plink_common_properties),
 ('wdm', plink_common_properties + ('lambda_capacity',)),
@@ -283,6 +288,9 @@ object_ie = OrderedDict([
 ('regenerator', node_common_ie_properties),
 ('splitter', node_common_ie_properties),
 ('cloud', node_common_ie_properties),
+('firewall', node_common_ie_properties),
+('load_balancer', node_common_ie_properties),
+('server', node_common_ie_properties),
 
 ('ethernet', plink_common_ie_properties),
 ('wdm', plink_common_ie_properties + ('lambda_capacity',)),
@@ -451,6 +459,9 @@ box_properties = OrderedDict([
 ('regenerator', node_box_properties),
 ('splitter', node_box_properties),
 ('cloud', node_box_properties),
+('firewall', node_box_properties),
+('load_balancer', node_box_properties),
+('server', node_box_properties),
 
 ('ethernet', plink_box_properties),
 ('wdm', plink_box_properties + ('lambda_capacity',)),
@@ -796,6 +807,45 @@ class Cloud(Node):
     subtype = 'cloud'
     layer = 3
     imagex, imagey = 60, 35
+    
+    ie_properties = {}
+    
+    @initializer(ie_properties)
+    def __init__(self, **kwargs):
+        super().__init__()
+        
+class Firewall(Node):
+
+    color = 'black'
+    subtype = 'firewall'
+    layer = 3
+    imagex, imagey = 40, 40
+    
+    ie_properties = {}
+    
+    @initializer(ie_properties)
+    def __init__(self, **kwargs):
+        super().__init__()
+        
+class LoadBalancer(Node):
+
+    color = 'black'
+    subtype = 'load_balancer'
+    layer = 3
+    imagex, imagey = 46, 34
+    
+    ie_properties = {}
+    
+    @initializer(ie_properties)
+    def __init__(self, **kwargs):
+        super().__init__()
+        
+class Server(Node):
+
+    color = 'black'
+    subtype = 'server'
+    layer = 3
+    imagex, imagey = 26, 26
     
     ie_properties = {}
     
@@ -1204,6 +1254,9 @@ node_class = OrderedDict([
 ('splitter', Splitter),
 ('switch', Switch),
 ('cloud', Cloud),
+('firewall', Firewall),
+('load_balancer', LoadBalancer),
+('server', Server),
 ('site', Site)
 ])
 

@@ -333,5 +333,4 @@ subwidget_creation = (
                       )
     
 for subwidget, ttk_class, defaults in subwidget_creation:
-    print(subwidget)
     class_factory(subwidget, ttk_class, defaults)

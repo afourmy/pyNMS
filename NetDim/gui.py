@@ -2,16 +2,10 @@
 # Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
 # Released under the GNU General Public License GPLv3
 
-import sys
 import tkinter as tk
-import os
-import copy
-import csv
-import xml.etree.ElementTree as etree
 import warnings
-import network
-import scenario
-from collections import OrderedDict, defaultdict
+from scenarios import network_scenario, site_scenario
+from collections import defaultdict
 from os.path import abspath, pardir, join
 from tkinter import ttk, filedialog
 from objects import object_management_window as omw
@@ -23,7 +17,6 @@ from miscellaneous import debug
 from ip_networks import ssh_management
 from graph_generation import advanced_graph as adv_gr
 from optical_networks import rwa_window as rwaw
-from miscellaneous.network_functions import IPAddress
 from menus import (
                    creation_menu, 
                    routing_menu,
@@ -62,13 +55,22 @@ class NetDim(MainWindow):
         # scenario notebook
         self.scenario_notebook = Notebook(self)
         self.scenario_notebook.bind('<ButtonRelease-1>', self.change_cs)
-        self.dict_scenario = {}
         
-        # cs for 'current scenario' (the first one, which we create)        
-        self.cs = scenario.Scenario(self, 'scenario 0')
-        self.cpt_scenario = 0
-        self.scenario_notebook.add(self.cs, text=self.cs.name, compound='top')
-        self.dict_scenario['scenario 0'] = self.cs
+        # global frame that contains network, site, and node scenarios
+        self.gf = CustomFrame(width=1300, height=800)
+        self.dict_scenario = {}
+        self.scenario_notebook.add(self.gf, text='main', compound='top')
+        
+        # ns for 'network scenario' (contains all network devices on a map)
+        # ss for 'site scenario' (contains all sites on a map)
+        self.ns = network_scenario.NetworkScenario(self, 'scenario 0: network')
+        self.ss = site_scenario.SiteScenario(self, 'scenario 0: site')
+        # self.cpt_scenario = 0
+        # self.dict_scenario['scenario 0'] = self.ns
+        self.ns.pack()
+        
+        # cs for current scenario, the scenario being displayed
+        self.cs = self.ns
         
         # advanced graph options
         self.advanced_graph_options = galg.GraphAlgorithmWindow(self)
@@ -191,6 +193,9 @@ class NetDim(MainWindow):
         'splitter': (64, 50),
         'antenna': (35, 35),
         'cloud': (60, 35),
+        'firewall': (40, 40),
+        'load_balancer': (60, 40),
+        'server': (52, 52),
         'site': (50, 50)
         }
         
@@ -278,9 +283,6 @@ class NetDim(MainWindow):
         self.scenario_notebook.add(new_scenario, text=name, compound='top')
         self.dict_scenario[name] = new_scenario
         return new_scenario
-        
-    def duplicate_scenario(self):
-        pass
         
     def delete_scenario(self):
         del self.dict_scenario[self.cs.name]

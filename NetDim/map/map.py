@@ -281,7 +281,7 @@ class Map():
         if self.is_spherical():
             radii = 180 / pi * self.delta * self.scale
             vx, vy = self.scaleX * self.scale, self.scaleY * self.scale
-            oval_id = self.dw.create_oval(
+            self.oval_id = self.dw.create_oval(
                                 vx/2.0 - radii, 
                                 vy/2.0 - radii, 
                                 vx/2.0 + radii, 
@@ -290,8 +290,6 @@ class Map():
                                 fill=self.mopt['.Water']['bg'], 
                                 tags=('water', 'sphereBounds')
                                 )
-            # add the canvas id to the set of all map ids
-            self.map_ids.add(oval_id)
 
     def draw_map(self, coords, ftype, ftag, ftext='', fimage=None, addcoords=0):
         """Draw object, label, icon.
@@ -337,12 +335,6 @@ class Map():
                                 dash=self.mopt[ftype].get('dash'), smooth=self.mopt[ftype].get('smooth'), 
                                 width=self.mopt[ftype].get('width', 1), tags=(ftag, ftype))
         elif self.mopt[ftype]['cls'] in ('Polygon'):
-            # x = points[::2][::10]
-            # y = points[1::2][::10]
-            # o = list(sum(list(zip(x, y)), ()))
-            # if len(o) % 2:
-            #     o += points[-1]
-            # print(o)
             if len(points) < 4:
                 points = points * 2
             obj_id = self.dw.create_polygon(points, fill=bg, outline=fg, tags=(ftag, ftype))

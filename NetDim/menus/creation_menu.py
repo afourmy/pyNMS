@@ -126,7 +126,10 @@ class CreationMenu(ScrolledFrame):
         self.type_to_button['splitter'].grid(1, 1, padx=2, in_=lf_creation)
         self.type_to_button['antenna'].grid(1, 2, padx=2, in_=lf_creation)
         self.type_to_button['cloud'].grid(1, 3, padx=2, in_=lf_creation)
-        self.type_to_button['site'].grid(2, 0, padx=2, in_=lf_creation)
+        self.type_to_button['firewall'].grid(2, 0, padx=2, in_=lf_creation)
+        self.type_to_button['load_balancer'].grid(2, 1, padx=2, in_=lf_creation)
+        self.type_to_button['server'].grid(2, 2, padx=2, in_=lf_creation)
+        self.type_to_button['site'].grid(2, 3, padx=2, in_=lf_creation)
         
         sep = Separator(self.infr)
         sep.grid(3, 0, 1, 4, in_=lf_creation)
@@ -163,6 +166,12 @@ class CreationMenu(ScrolledFrame):
         self.ms.cs.switch_binding()
         
     def change_creation_mode(self, mode):
+        # change the view and update the current scenario
+        if mode == 'site':
+            # if it is a site, display the site scenario
+            self.ms.view_menu.switch_view('site')
+        else:
+            self.ms.view_menu.switch_view('network')
         # change the mode to creation 
         self.switch_to('creation')
         self.ms.cs._creation_mode = mode

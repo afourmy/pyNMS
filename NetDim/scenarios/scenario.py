@@ -3,14 +3,12 @@
 # Released under the GNU General Public License GPLv3
 
 import tkinter as tk
-import network
 import miscellaneous.search as search
 import re
 from os.path import join
-from map.map import Map
 from pythonic_tkinter.preconfigured_widgets import *
 from objects.objects import *
-from miscellaneous.shape_drawing import *
+from .shape_drawing import *
 from menus.general_rightclick_menu import GeneralRightClickMenu
 from menus.selection_rightclick_menu import SelectionRightClickMenu
 from random import randint
@@ -19,10 +17,8 @@ from math import cos, sin, atan2, sqrt, radians
 class Scenario(CustomFrame):
     
     def __init__(self, master, name):
-        super().__init__(width=1300, height=800)
-        self.pack(side='left')
+        super().__init__(master.gf)
         self.name = name
-        self.ntw = network.Network(self)
         self.object_id_to_object = {}
         self.ms = master
 
@@ -40,12 +36,6 @@ class Scenario(CustomFrame):
         vbar = Scrollbar(self, orient='vertical')
         vbar.pack(side='right', fill='y')
         vbar.config(command=self.cvs.yview)
-                
-        # map 
-        self.world_map = Map(self, viewportx=500, viewporty=250)
-        self.world_map.change_projection('mercator')
-        self.world_map.load_map(self.world_map.create_meridians())
-        self.world_map.centerCarta([[7, 49]])
         
         self.cvs.config(width=1300, height=800)
         self.cvs.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
@@ -170,7 +160,7 @@ class Scenario(CustomFrame):
         # if there were selected nodes, so that they don't remain highlighted
         self.unhighlight_all()
         
-        if self._mode == 'motion':            
+        if self._mode == 'motion':
             # unbind unecessary bindings
             self.cvs.unbind('<Button 1>')
             self.cvs.unbind('<B1-Motion>')
@@ -190,8 +180,6 @@ class Scenario(CustomFrame):
             self.cvs.tag_bind('link', '<Button-1>', self.find_closest_link, add='+')
             self.cvs.tag_bind('node', '<Button-1>', self.find_closest_node, add='+')
             self.cvs.tag_bind('shape', '<Button-1>', self.find_closest_shape, add='+')
-            self.cvs.tag_bind('water', '<ButtonPress-1>', self.move_sphere, add='+')
-            self.cvs.tag_bind('Area', '<ButtonPress-1>', self.move_sphere, add='+')
             
             for tag in ('node', 'link'):
                 self.cvs.tag_bind(tag, '<Button-1>', self.update_mgmt_window, add='+')
@@ -247,13 +235,6 @@ class Scenario(CustomFrame):
         return wrapper
                 
     ## Drawing modes
-        
-    @adapt_coordinates
-    def move_sphere(self, event):
-        coords = self.world_map.from_points((event.x, event.y), dosphere=1)
-        if coords and self.world_map.is_spherical():
-            self.world_map.map_temp['centerof'] = coords
-            self.world_map.change_projection(self.world_map.mode)
     
     @adapt_coordinates
     def start_drawing_oval(self, event):
@@ -399,8 +380,6 @@ class Scenario(CustomFrame):
     @adapt_coordinates
     def motion(self, event):
         x, y = event.x, event.y
-        # display geographical coordinates (longitude and latitude)
-        coords = self.world_map.get_geographical_coordinates(x, y)
         # if there is at least one object on the canvas
         if self.cvs.find_closest(x, y):
             # we retrieve it
@@ -495,9 +474,8 @@ class Scenario(CustomFrame):
         factor = 1.1 if event.delta > 0 else 0.9
         self.diff_y *= factor
         self.node_size *= factor
-        self.world_map.scale_map(ratio=factor)
-        # self.cvs.scale('all', event.x, event.y, factor, factor)
-        # self.cvs.configure(scrollregion=self.cvs.bbox('all'))
+        self.cvs.scale('all', event.x, event.y, factor, factor)
+        self.cvs.configure(scrollregion=self.cvs.bbox('all'))
         self.update_nodes_coordinates(factor)
         
     @adapt_coordinates
@@ -515,22 +493,11 @@ class Scenario(CustomFrame):
         self.cvs.scale('all', event.x, event.y, 0.9, 0.9)
         self.cvs.configure(scrollregion=self.cvs.bbox('all'))
         self.update_nodes_coordinates(factor)
-        
-    def to_geo(self, *nodes):
-        for node in nodes:
-            node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
-            self.move_node(node)
     
     def update_nodes_coordinates(self, factor):
         # scaling changes the coordinates of the oval, and we update 
         # the corresponding node's coordinates accordingly
-        if self.current_view == 'network':
-            nodes = self.ntw.network_nodes()
-        elif self.current_view == 'site':
-            nodes = self.ntw.ftr('node', 'site')
-        else:
-            nodes = self.current_view.ps['node']
-        for node in nodes:
+        for node in self.ntw.nodes.values():
             new_coords = self.cvs.coords(node.oval[1])
             node.logical_x *= factor
             node.logical_y *= factor
@@ -572,9 +539,8 @@ class Scenario(CustomFrame):
     def create_node_on_binding(self, event):
         node = self.ntw.nf(node_type=self._creation_mode, x=event.x, y=event.y)
         self.create_node(node)
-        # update geographical coordinates
-        lon, lat = self.world_map.get_geographical_coordinates(node.x, node.y)
-        node.longitude, node.latitude = lon, lat
+        # update logical coordinates
+        node.logical_x, node.logical_y = node.x, node.y
     
     def create_node(self, node, layer=1):
         s = self.node_size
@@ -666,11 +632,6 @@ class Scenario(CustomFrame):
         self.object_id_to_object[new_link.line] = new_link
         self._create_link_label(new_link)
         self.refresh_label(new_link)
-        # the link is now at the bottom of the stack after calling tag_lower
-        # if the map is activated, we need to lower all map objects to be 
-        # able to see the link
-        for map_obj in self.world_map.map_ids:
-            self.cvs.tag_lower(map_obj)
     
     def multiple_nodes(self, n, subtype, x, y):
         for node in self.ntw.multiple_nodes(n, subtype):
@@ -736,7 +697,7 @@ class Scenario(CustomFrame):
                 self.cvs.coords(n.oval[layer], newx - s, y - s, newx + s, y + s)
             self.cvs.coords(n.lid, newx - 15, newy + 10)
             # move the failure icon if need be
-            if n in self.ntw.fdtks:
+            if n in self.ntw.failed_obj:
                 self.cvs.coords(self.id_fdtks[n], n.x, n.y)
         
         # move also the virtual line, which length depends on what layer exists
@@ -759,7 +720,7 @@ class Scenario(CustomFrame):
                     self.update_link_label_coordinates(link)
                     # if there is a link in failure, we need to update the
                     # failure icon by retrieving the middle position of the arc
-                    if link in self.ntw.fdtks:
+                    if link in self.ntw.failed_obj:
                         mid_x, mid_y = link_to_coords[link][2:4]
                         self.cvs.coords(self.id_fdtks[link], mid_x, mid_y)
                         
@@ -819,7 +780,7 @@ class Scenario(CustomFrame):
                 self.cvs.delete(obj.id)
                 del self.object_id_to_object[obj.id]
                             
-            if obj in self.ntw.fdtks:
+            if obj in self.ntw.failed_obj:
                 self.remove_failure(obj)
                             
     def erase_graph(self):
@@ -861,7 +822,6 @@ class Scenario(CustomFrame):
             x, y = self._start_position
             self.temp_rectangle = self.cvs.create_rectangle(x, y, x, y)
             self.cvs.tag_raise(self.temp_rectangle)
-            print(self.temp_rectangle)
 
     @adapt_coordinates
     def rectangle_drawing(self, event):
@@ -1108,7 +1068,7 @@ class Scenario(CustomFrame):
                     self.create_node(obj)
             else:
                 self.create_link(obj)
-            if obj in self.ntw.fdtks:
+            if obj in self.ntw.failed_obj:
                 self.simulate_failure(obj)
              
     def draw_all(self, random=True, draw_site=False):
@@ -1144,7 +1104,6 @@ class Scenario(CustomFrame):
             self._cancel()
         self.drawing_iteration += 1
         params = self.retrieve_parameters('Spring-based layout')
-        print(params)
         self.ntw.spring_layout(nodes, *params)
         if not self.drawing_iteration % 5:   
             for node in nodes:
@@ -1232,12 +1191,12 @@ class Scenario(CustomFrame):
     
     def remove_failure(self, *objects):
         for obj in objects:
-            self.ntw.fdtks.remove(obj)
+            self.ntw.failed_obj.remove(obj)
             icon_id = self.id_fdtks.pop(obj)
             self.cvs.delete(icon_id)
     
     def remove_failures(self):
-        self.ntw.fdtks.clear()
+        self.ntw.failed_obj.clear()
         for idx in self.id_fdtks.values():
             self.cvs.delete(idx)
         self.id_fdtks.clear()
@@ -1246,7 +1205,7 @@ class Scenario(CustomFrame):
         for obj in objects:
             if obj in self.id_fdtks:
                 continue
-            self.ntw.fdtks.add(obj)
+            self.ntw.failed_obj.add(obj)
             if obj.class_type == 'link':
                 source, destination = obj.source, obj.destination
                 xA, yA, xB, yB = source.x, source.y, destination.x, destination.y
@@ -1288,31 +1247,11 @@ class Scenario(CustomFrame):
         self.so.clear()
         self.refresh_all_labels()     
         # self.refresh_failures() 
-        filter = self.ms.display_menu.filter_entry.text
-        if filter:
-            self.display_filter(filter)   
+        # filter = self.ms.display_menu.filter_entry.text
+        # if filter:
+        #     self.display_filter(filter)   
         for AS in self.ntw.pnAS.values():
             AS.management.refresh_display()
-            
-    ## Map Menu
-    
-    def update_geographical_coordinates(self, *nodes):
-        for node in nodes:
-            node.longitude, node.latitude = self.world_map.get_geographical_coordinates(node.x, node.y)
-            
-    def update_logical_coordinates(self, *nodes):
-        for node in nodes:
-            node.logical_x, node.logical_y = node.x, node.y 
-            
-    def move_to_geographical_coordinates(self, *nodes):
-        for node in nodes:
-            node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
-        self.move_nodes(nodes)
-        
-    def move_to_logical_coordinates(self, *nodes):
-        for node in nodes:
-            node.x, node.y = node.logical_x, node.logical_y
-        self.move_nodes(nodes)
             
     ## Other
     

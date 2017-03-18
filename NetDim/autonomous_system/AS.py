@@ -209,7 +209,7 @@ class STP_AS(Ethernet_AS):
         visited = set()
         # allowed nodes and links
         allowed_nodes = self.pAS['node']
-        allowed_links =  self.pAS['link'] - self.ntw.fdtks
+        allowed_links =  self.pAS['link'] - self.ntw.failed_obj
         # we keep track of all already visited subnetworks so that we 
         # don't add them more than once to the mapping dict.
         heap = [(0, self.root, [])]
@@ -255,7 +255,7 @@ class IP_AS(AutonomousSystem):
                                                     
     def build_RFT(self):
         allowed_nodes = self.nodes
-        allowed_links =  self.links - self.ntw.fdtks
+        allowed_links =  self.links - self.ntw.failed_obj
         for node in self.nodes:
             self.RFT_builder(node, allowed_nodes, allowed_links)
                 

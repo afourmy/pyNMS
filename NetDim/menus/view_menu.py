@@ -33,10 +33,10 @@ class ViewMenu(ScrolledFrame):
         self.dict_image = {}
         
         self.dict_size_image = {
-        'network_view': (125, 125),
-        'site': (125, 125),
-        'logical_coord': (125, 125),
-        'geo_coord': (125, 125)
+        'network_view': (100, 100),
+        'site': (100, 100),
+        'logical_coord': (100, 100),
+        'geo_coord': (100, 100)
         }
         
         for image_type, image_size in self.dict_size_image.items():
@@ -58,7 +58,7 @@ class ViewMenu(ScrolledFrame):
                                         font = font
                                         )
         self.network_view_button.command = lambda: self.switch_view('network')
-        self.network_view_button.config(width=150, height=150, relief='sunken')
+        self.network_view_button.config(width=125, height=125, relief='sunken')
         self.network_view_button.grid(0, 0, 2, 2, padx=20, in_=lf_site_display)
         
         self.site_view_button = TKButton(self.infr)
@@ -69,7 +69,7 @@ class ViewMenu(ScrolledFrame):
                                      font = font
                                      )
         self.site_view_button.command = lambda: self.switch_view('site')
-        self.site_view_button.config(width=150, height=150)
+        self.site_view_button.config(width=125, height=125)
         self.site_view_button.grid(0, 2, 2, 2, padx=20, in_=lf_site_display)
         
         self.logical_coord_button = TKButton(self.infr)
@@ -80,7 +80,7 @@ class ViewMenu(ScrolledFrame):
                                          font = font
                                          )
         self.logical_coord_button.command = lambda: self.ms.cs.move_to_logical_coordinates(*self.ms.cs.so['node'])
-        self.logical_coord_button.config(width=150, height=150)
+        self.logical_coord_button.config(width=125, height=125)
         self.logical_coord_button.grid(0, 0, 2, 2, padx=20, in_=lf_coordinates)
         
         self.geo_coord_button = TKButton(self.infr)
@@ -91,33 +91,26 @@ class ViewMenu(ScrolledFrame):
                                      font = font
                                      )
         self.geo_coord_button.command = lambda: self.ms.cs.move_to_geographical_coordinates(*self.ms.cs.so['node'])
-        self.geo_coord_button.config(width=150, height=150)
+        self.geo_coord_button.config(width=125, height=125)
         self.geo_coord_button.grid(0, 2, 2, 2, padx=20, in_=lf_coordinates)
         
     def switch_view(self, view):
         self.ms.cs.current_view = view        
-        # delete everything on the canvas
-        self.ms.cs.erase_all()
-        # use longitude and latitude to update canvas coordinates
-        for node in self.ntw.nodes.values():
-            node.x, node.y = self.cs.world_map.to_points([[node.longitude, node.latitude]], 1)
         if view == 'site':
             self.site_view_button.config(relief='sunken')
             self.network_view_button.config(relief='raised')
-            # draw the sites
-            self.ms.cs.draw_objects(
-                                    self.ms.cs.ntw.ftr('node', 'site'), 
-                                    random_drawing = False, 
-                                    draw_site = True
-                                    )
+            self.ms.ns.pack_forget()
+            self.ms.ss.pack()
+            # update current scenario
+            self.ms.cs = self.ms.ss
         else:
-            # view is network: we draw all network objects
+            # view is network
             self.site_view_button.config(relief='raised')
             self.network_view_button.config(relief='sunken')
-            # switch back to motion
-            self.ms.cs._mode = 'motion'
-            self.ms.cs.switch_binding()
-            self.ms.cs.draw_all(False)
+            self.ms.ss.pack_forget()
+            self.ms.ns.pack()
+            # update current scenario
+            self.ms.cs = self.ms.ns
             
     def enter_site(self, site):
         self.ms.cs.erase_all()

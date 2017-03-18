@@ -12,7 +12,7 @@ class GeneralRightClickMenu(tk.Menu):
         x, y = self.cs.cvs.canvasx(event.x), self.cs.cvs.canvasy(event.y)
                 
         # remove all failures if there is at least one
-        if self.cs.ntw.fdtks:
+        if self.cs.ntw.failed_obj:
             self.add_command(label='Remove all failures',
                     command=lambda: self.remove_all_failures())
             self.add_separator()
