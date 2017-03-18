@@ -21,7 +21,7 @@ class SiteOperations(CustomTopLevel):
         
         if mode == 'add':
             # All sites are proposed 
-            values = tuple(scenario.ntw.ftr('node', 'site'))
+            values = tuple(scenario.ms.ss.ntw.nodes.values())
         else:
             # Only the common sites among all selected objects
             values = tuple(map(str, sites))
@@ -39,8 +39,8 @@ class SiteOperations(CustomTopLevel):
         button_OK.grid(1, 0, 1, 2, in_=lf_site_operation)
         
     def site_operation(self, scenario, mode, *objects):
-        site_id = scenario.ntw.name_to_id[self.site_list.text]
-        selected_site = scenario.ntw.pn['node'][site_id]
+        site_id = scenario.ms.ss.ntw.name_to_id[self.site_list.text]
+        selected_site = scenario.ms.ss.ntw.pn['node'][site_id]
 
         if mode == 'add':
             selected_site.add_to_site(*objects)

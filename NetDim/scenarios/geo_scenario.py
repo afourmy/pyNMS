@@ -1,4 +1,4 @@
-from .scenario import Scenario
+from .base_scenario import BaseScenario
 from map.map import Map
 
 def overrider(interface_class):
@@ -7,7 +7,7 @@ def overrider(interface_class):
         return method
     return overrider
 
-class GeoScenario(Scenario):
+class GeoScenario(BaseScenario):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -44,7 +44,7 @@ class GeoScenario(Scenario):
             self.move_node(node)
             
     @adapt_coordinates
-    @overrider(Scenario)
+    @overrider(BaseScenario)
     def create_node_on_binding(self, event):
         node = self.ntw.nf(node_type=self._creation_mode, x=event.x, y=event.y)
         self.create_node(node)
@@ -53,7 +53,7 @@ class GeoScenario(Scenario):
         node.longitude, node.latitude = lon, lat
         node.logical_x, node.logical_y = node.x, node.y
         
-    @overrider(Scenario)
+    @overrider(BaseScenario)
     def create_link(self, new_link):
         # create the link
         super(GeoScenario, self).create_link(new_link)
@@ -86,7 +86,7 @@ class GeoScenario(Scenario):
         self.move_nodes(nodes)
     
     @adapt_coordinates
-    @overrider(Scenario)
+    @overrider(BaseScenario)
     def zoomer(self, event):
         ''' Zoom for window '''
         self._cancel()

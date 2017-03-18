@@ -99,7 +99,7 @@ class ViewMenu(ScrolledFrame):
         if view == 'site':
             self.site_view_button.config(relief='sunken')
             self.network_view_button.config(relief='raised')
-            self.ms.ns.pack_forget()
+            self.ms.cs.pack_forget()
             self.ms.ss.pack()
             # update current scenario
             self.ms.cs = self.ms.ss
@@ -107,13 +107,14 @@ class ViewMenu(ScrolledFrame):
             # view is network
             self.site_view_button.config(relief='raised')
             self.network_view_button.config(relief='sunken')
-            self.ms.ss.pack_forget()
+            self.ms.cs.pack_forget()
             self.ms.ns.pack()
             # update current scenario
             self.ms.cs = self.ms.ns
             
     def enter_site(self, site):
-        self.ms.cs.erase_all()
-        self.ms.cs.draw_objects(self.ms.cs.ntw.nodes[site.id].get_obj())
+        self.ms.cs.pack_forget()
+        site.scenario.pack()
+        self.ms.cs = site.scenario
         self.ms.cs.current_view = site
                     

@@ -590,7 +590,8 @@ class NDobject(object):
                     
     @initializer(ie_properties)
     def __init__(self):
-        pass
+        # per-site id
+        self.site_id = {}
 
 ## Nodes
 class Node(NDobject):
@@ -615,8 +616,17 @@ class Node(NDobject):
         self.image = {layer: None for layer in range(1, 5)}
         self.layer_line = {layer: None for layer in range(1, 5)}
         self.lid = None
-        self.lpos = None
         self.size = 8
+        # site coordinates: coordinates of the node for each site it belongs to
+        # associate a site to a list of coordinates [x, y]
+        self.site_coords = {}
+        # site properties for site canvas
+        self.site_oval = {}
+        self.site_image = {}
+        self.site_layer_line = {}
+        self.site_lid = {}
+        self.site_lpos = {}
+        self.site_size = {}
         # velocity of a node for graph drawing algorithm
         self.vx = 0
         self.vy = 0
@@ -683,10 +693,31 @@ class Site(Node):
     def add_to_site(self, *objects):
         for obj in objects:
             self.ps[obj.class_type].add(obj)
+            obj.site_id[self] = None
+            if obj.class_type == 'node':
+                # initialize all site properties
+                obj.site_coords[self] = [600, 300]
+                # site properties for site canvas
+                obj.site_oval[self] = {layer: None for layer in range(1, 5)}
+                obj.site_image[self] = {layer: None for layer in range(1, 5)}
+                obj.site_layer_line[self] = {layer: None for layer in range(1, 5)}
+                obj.site_lid[self] = None
+                obj.site_size[self] = 8
+                # draw the object in the insite view
+                self.scenario.create_node(obj)
+            else:
+                # it is a link
+                obj.site_line[self] = None
+                obj.site_lid[self] = None
+                obj.site_ilid[self] = [None]*2
+                # draw the object in the insite view
+                self.scenario.create_link(obj)
+
             
     def remove_from_site(self, *objects):
         for obj in objects:
             self.ps[obj.class_type].remove(obj)
+            #TODO pop all site properties
         
 class Router(Node):
     
@@ -866,6 +897,10 @@ class Link(NDobject):
         # interfaces specific properties (ip addresses, names, etc) as well
         # as physical link asymmetric (directional) properties (capacity, flow, etc)
         self.ilid = [None]*2
+        # site properties for site canvas
+        self.site_line = {}
+        self.site_lid = {}
+        self.site_ilid = {}
         super().__init__()
         
     def __repr__(self):

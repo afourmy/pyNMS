@@ -170,8 +170,8 @@ class CreationMenu(ScrolledFrame):
         if mode == 'site':
             # if it is a site, display the site scenario
             self.ms.view_menu.switch_view('site')
-        else:
-            self.ms.view_menu.switch_view('network')
+        # else:
+        #     self.ms.view_menu.switch_view('network')
         # change the mode to creation 
         self.switch_to('creation')
         self.ms.cs._creation_mode = mode

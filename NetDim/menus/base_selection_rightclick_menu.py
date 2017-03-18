@@ -21,7 +21,7 @@ from objects.object_management_window import PropertyChanger
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
                                 
-class SelectionRightClickMenu(tk.Menu):
+class BaseSelectionRightClickMenu(tk.Menu):
     def __init__(self, event, scenario, from_scenario=True):
         super().__init__(tearoff=0)
         self.cs = scenario
@@ -45,143 +45,28 @@ class SelectionRightClickMenu(tk.Menu):
         self.all_so = self.cs.so['node'] | self.cs.so['link'] | self.cs.so['shape']
         
         # useful booleans
-        no_node = not self.cs.so['node']
-        no_link = not self.cs.so['link']
-        no_shape = not self.cs.so['shape']
-        one_node = len(self.cs.so['node']) == 1
-        one_link = len(self.cs.so['link']) == 1
+        self.no_node = not self.cs.so['node']
+        self.no_link = not self.cs.so['link']
+        self.no_shape = not self.cs.so['shape']
+        self.one_node = len(self.cs.so['node']) == 1
+        self.one_link = len(self.cs.so['link']) == 1
                             
         # exactly one object: property window 
-        if no_shape and len(self.all_so) == 1:
+        if self.no_shape and len(self.all_so) == 1:
             self.add_command(label='Properties', 
                         command=lambda: self.show_object_properties())
             self.add_separator()
-            
-        # exacly one node and one physical link: menu for the associated interface
-        if one_node and one_link:
-            link ,= self.cs.so['link']
-            if link.type == 'plink':
-                node ,= self.cs.so['node']
-                interface = link('interface', node)
-                self.add_command(label='Interface menu', 
-                    command=lambda: InterfaceWindow(self.cs.master, interface))
-                self.add_separator()
-                
-        # exactly one node: configuration menu
-        if no_link and no_shape and one_node:
-            node ,= self.cs.so['node']
-            
-            # one site
-            if node.subtype == 'site':
-                self.add_command(label='Enter site', 
-                            command=lambda: self.enter_site(node))
-            
-            else:
-                self.add_command(label='Configuration', 
-                            command=lambda: self.configure(node))
-                self.add_command(label='Troubleshooting', 
-                            command=lambda: self.troubleshoot(node))
-                            
-                self.add_separator()
-                
-                self.add_command(label='SSH connection', 
-                            command=lambda: self.connection(node))
-                        
-            # tables menu 
-            menu_tables = tk.Menu(self, tearoff=0)
-                        
-            if node.subtype == 'router':
-                menu_tables.add_command(label='Routing table', 
-                            command=lambda: self.routing_table(node))
-                menu_tables.add_command(label='BGP table', 
-                            command=lambda: self.bgp_table(node))
-                menu_tables.add_command(label='ARP table', 
-                                command=lambda: self.arp_table(node))
-                self.add_command(label='Ping', 
-                            command=lambda: self.ping(node))
-                self.add_cascade(label='Tables', menu=menu_tables)
-                            
-            if node.subtype == 'switch':
-                menu_tables.add_command(label='Switching table', 
-                            command=lambda: self.switching_table(node))
-                self.add_cascade(label='Tables', menu=menu_tables)
-
-            self.add_separator()
         
-        if no_shape:
-            self.add_command(label='Create AS', 
-                            command=lambda: self.create_AS()) 
-      
-        # at least one AS in the network: add to AS
-        if self.cs.ntw.pnAS and no_shape:
-            self.add_command(label='Add to AS', 
-                        command=lambda: self.change_AS('add'))
-        
-        # we compute the set of common AS among all selected objects
-        # providing that no shape were selected
-        if no_shape:
-            self.common_AS = set(self.cs.ntw.pnAS.values())  
-            cmd = lambda o: o.type in ('node', 'plink')
-            for obj in filter(cmd, self.all_so):
-                self.common_AS &= obj.AS.keys()
-                
-            self.common_sites = set(self.cs.ntw.ftr('node', 'site'))
-            for obj in self.all_so:
-                self.common_sites &= obj.sites
-            
-        # if at least one common AS: remove from AS or manage AS
-            if self.common_AS:
-                self.add_command(label='Manage AS', 
-                            command=lambda: self.change_AS('manage'))
-                self.add_command(label='Remove from AS', 
-                            command=lambda: self.change_AS('remove'))
-                            
-                keep = lambda AS: AS.has_area
-                self.common_AS_with_area = set(filter(keep, self.common_AS))
-                
-                # if there is at least one AS with area among all common AS
-                # of the current selection, display the area management menu
-                if self.common_AS_with_area:
-                    self.add_command(label='Add to area', 
-                                command=lambda: self.change_area('add'))
-                    self.add_command(label='Remove from area', 
-                                command=lambda: self.change_area('remove'))
-                        
-            self.add_separator()
-            
-            if set(self.cs.ntw.ftr('node', 'site')):
-                self.add_command(label='Add to site', command=self.add_to_site)
-                
-                if self.common_sites:
-                    self.add_command(label='Remove from site', 
-                                                command=self.remove_from_site)  
-                self.add_separator()
-        
-        if no_shape:
+        if self.no_shape:
             self.add_command(label='Simulate failure', 
                             command=lambda: self.simulate_failure(*self.all_so))
             self.add_command(label='Remove failure', 
                             command=lambda: self.remove_failure(*self.all_so))
             
             self.add_separator()
-        
-        # exactly one physical link: 
-        if no_node and no_shape and one_link:
-            plink ,= self.cs.so['link']
-            # failure simulation menu
-            if plink.type == 'plink':                        
-                # interface menu 
-                menu_interfaces = tk.Menu(self, tearoff=0)
-                source_if = plink('interface', plink.source)
-                menu_interfaces.add_command(label='Source interface', 
-                command=lambda: InterfaceWindow(self.cs.master, source_if))
-                destination_if = plink('interface', plink.destination)
-                menu_interfaces.add_command(label='Destination interface', 
-                command=lambda: InterfaceWindow(self.cs.master, destination_if))
-                self.add_cascade(label='Interface menu', menu=menu_interfaces)
             
         # only nodes: 
-        if no_shape and no_link:
+        if self.no_shape and self.no_link:
             
             # alignment submenu
             self.add_cascade(label='Align nodes', 
@@ -212,7 +97,7 @@ class SelectionRightClickMenu(tk.Menu):
                         self.add_separator()
             
         # only one subtype of link: property changer
-        if no_node and no_shape:
+        if self.no_node and self.no_shape:
             for subtype in link_subtype:
                 ftr = lambda o, st=subtype: o.subtype == st
                 if self.cs.so['link'] == set(filter(ftr, self.cs.so['link'])):
@@ -230,9 +115,6 @@ class SelectionRightClickMenu(tk.Menu):
             # at least one object: deletion or create AS
             self.add_command(label='Delete', 
                                 command=lambda: self.remove_objects())
-            
-        # make the menu appear    
-        self.tk_popup(event.x_root, event.y_root)
     
     def empty_selection_and_destroy_menu(function):
         def wrapper(self, *others):

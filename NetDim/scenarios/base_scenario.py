@@ -10,11 +10,10 @@ from pythonic_tkinter.preconfigured_widgets import *
 from objects.objects import *
 from .shape_drawing import *
 from menus.general_rightclick_menu import GeneralRightClickMenu
-from menus.selection_rightclick_menu import SelectionRightClickMenu
 from random import randint
 from math import cos, sin, atan2, sqrt, radians
 
-class Scenario(CustomFrame):
+class BaseScenario(CustomFrame):
     
     def __init__(self, master, name):
         super().__init__(master.gf)
@@ -115,10 +114,6 @@ class Scenario(CustomFrame):
         # same on linux
         self.cvs.bind('<Button-4>', self.zoomerP)
         self.cvs.bind('<Button-5>', self.zoomerM)
-        
-        # add binding for right-click menu 
-        self.cvs.tag_bind('object', '<ButtonPress-3>',
-                                    lambda e: SelectionRightClickMenu(e, self))
         
         # use the right-click to move the background
         self.cvs.bind('<ButtonPress-3>', self.scroll_start)
@@ -435,13 +430,15 @@ class Scenario(CustomFrame):
                             self.unhighlight_objects(self.co)
                         self.co = None
                     else:
-                        self.pwindow.destroy()
+                        if self.pwindow:
+                            self.pwindow.destroy()
             else:
                 if self.co:
                     if self.co not in self.so[self.co.class_type]:
                         self.unhighlight_objects(self.co)
                         self.co = None
-                        self.pwindow.destroy()
+                        if self.pwindow:
+                            self.pwindow.destroy()
                 
     ## Menus
         

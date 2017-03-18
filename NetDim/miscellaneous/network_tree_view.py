@@ -4,7 +4,7 @@
 
 from objects.objects import *
 from pythonic_tkinter.preconfigured_widgets import *
-from menus.selection_rightclick_menu import SelectionRightClickMenu
+from menus.network_selection_rightclick_menu import NetworkSelectionRightClickMenu
 
 class NetworkTreeView(CustomTopLevel):
 
@@ -25,7 +25,7 @@ class NetworkTreeView(CustomTopLevel):
         # object selection in the treeview
         self.ntv.bind('<ButtonRelease-1>', lambda e: self.select(e))
         # right-click menu
-        self.ntv.bind('<ButtonPress-3>', lambda e: SelectionRightClickMenu(e, self.ms.cs, False))
+        self.ntv.bind('<ButtonPress-3>', lambda e: NetworkSelectionRightClickMenu(e, self.ms.cs, False))
         
         for obj_subtype, properties in object_ie.items():
             obj_type = subtype_to_type[obj_subtype]
