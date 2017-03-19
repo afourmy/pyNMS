@@ -598,10 +598,10 @@ class Node(NDobject):
     
     class_type = type = 'node'
     ie_properties = {
-                    'x' : 600, 
-                    'y' : 300, 
-                    'longitude' : 0, 
-                    'latitude' : 0, 
+                    'x' : 45000, 
+                    'y' : 10000, 
+                    'longitude' : 48.856638, 
+                    'latitude' : 2.352241, 
                     'logical_x': 0,
                     'logical_y': 0,
                     'ipaddress' : None,

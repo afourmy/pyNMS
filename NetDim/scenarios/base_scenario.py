@@ -9,7 +9,7 @@ from os.path import join
 from pythonic_tkinter.preconfigured_widgets import *
 from objects.objects import *
 from .shape_drawing import *
-from random import randint
+from random import randint, choice
 from math import cos, sin, atan2, sqrt, radians
 
 class BaseScenario(CustomFrame):
@@ -1039,11 +1039,11 @@ class BaseScenario(CustomFrame):
     ## Drawing
     
     # 1) Regular drawing
-    def draw_objects(self, objects, random_drawing=True, draw_site=False):
+    def draw_objects(self, objects, random=True, draw_site=False):
         self._cancel()
         for obj in objects:
             if obj.class_type == 'node':
-                if random_drawing:
+                if random:
                     obj.x, obj.y = randint(100,700), randint(100,700)
                 if not obj.image[1]:
                     self.create_node(obj)
@@ -1059,6 +1059,199 @@ class BaseScenario(CustomFrame):
             self.draw_objects(self.ntw.pn[type].values(), random, draw_site)
             
     # 2) Force-based drawing
+    
+    ## Distance functions
+    
+    def distance(self, p, q): 
+        return sqrt(p*p + q*q)
+        
+    def haversine_distance(self, s, d):
+        ''' Earth distance between two nodes '''
+        coord = (s.longitude, s.latitude, d.longitude, d.latitude)
+        # decimal degrees to radians conversion
+        lon_s, lat_s, lon_d, lat_d = map(radians, coord)
+    
+        delta_lon = lon_d - lon_s 
+        delta_lat = lat_d - lat_s 
+        a = sin(delta_lat/2)**2 + cos(lat_s)*cos(lat_d)*sin(delta_lon/2)**2
+        c = 2*asin(sqrt(a)) 
+        # radius of earth (km)
+        r = 6371 
+        return c*r
+ 
+    ## Force-directed layout algorithms
+    
+    ## 1) Eades algorithm 
+    
+    # We use the following constants:
+    # - k is the spring constant (stiffness of the spring)
+    # - L0 is the equilibrium length
+    # - cf is the Coulomb factor (repulsive force factor)
+    # - sf is the speed factor
+    
+    def coulomb_force(self, dx, dy, dist, cf):
+        c = dist and cf/dist**3
+        return (-c*dx, -c*dy)
+        
+    def hooke_force(self, dx, dy, dist, L0, k):
+        const = dist and k*(dist - L0)/dist
+        return (const*dx, const*dy)
+            
+    def spring_layout(self, nodes, cf, k, sf, L0, v_nodes=set()):
+        nodes = set(nodes)
+        for nodeA in nodes:
+            Fx = Fy = 0
+            for nodeB in nodes | v_nodes | set(self.ntw.neighbors(nodeA, 'plink')):
+                if nodeA != nodeB:
+                    dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
+                    dist = self.distance(dx, dy)
+                    F_hooke = (0,)*2
+                    if self.ntw.is_connected(nodeA, nodeB, 'plink'):
+                        F_hooke = self.hooke_force(dx, dy, dist, L0, k)
+                    F_coulomb = self.coulomb_force(dx, dy, dist, cf)
+                    Fx += F_hooke[0] + F_coulomb[0] * nodeB.virtual_factor
+                    Fy += F_hooke[1] + F_coulomb[1] * nodeB.virtual_factor
+            nodeA.vx = max(-100, min(100, 0.5 * nodeA.vx + 0.2 * Fx))
+            nodeA.vy = max(-100, min(100, 0.5 * nodeA.vy + 0.2 * Fy))
+    
+        for node in nodes:
+            node.x += round(node.vx * sf)
+            node.y += round(node.vy * sf)
+            
+    ## 2) Fruchterman-Reingold algorithms
+    
+    def fa(self, d, k):
+        return (d**2)/k
+    
+    def fr(self, d, k):
+        return -(k**2)/d
+        
+    def fruchterman_reingold_layout(self, nodes, limit, opd=0):
+        t = 1
+        if not opd:
+            opd = sqrt(1200*700/len(self.ntw.plinks))
+        opd /= 3
+        for nA in nodes:
+            nA.vx, nA.vy = 0, 0
+            for nB in nodes:
+                if nA != nB:
+                    deltax = nA.x - nB.x
+                    deltay = nA.y - nB.y
+                    dist = self.distance(deltax, deltay)
+                    if dist:
+                        nA.vx += deltax * opd**2 / dist**2
+                        nA.vy += deltay * opd**2 / dist**2
+                    
+        for l in self.ntw.plinks.values():
+            deltax = l.source.x - l.destination.x
+            deltay = l.source.y - l.destination.y
+            dist = self.distance(deltax, deltay)
+            if dist:
+                l.source.vx -= dist * deltax / opd
+                l.source.vy -= dist * deltay / opd
+                l.destination.vx += dist * deltax / opd
+                l.destination.vy += dist * deltay / opd
+            
+        for n in nodes:
+            d = self.distance(n.vx, n.vy)
+            n.x += n.vx / sqrt(d)
+            n.y += n.vy / sqrt(d)
+            if limit:
+                n.x = min(800, max(0, n.x))
+                n.y = min(800, max(0, n.y))
+            
+        t *= 0.95
+        
+    ## 3) BFS-clusterization spring-based algorithm
+    
+    def bfs_cluster(self, source, visited, stop=30):
+        node_number = 0
+        cluster = set()
+        frontier = {source}
+        while frontier and node_number < stop:
+            temp = frontier
+            frontier = set()
+            for node in temp:
+                for neighbor, _ in self.ntw.graph[node.id]['plink']:
+                    if node not in visited:
+                        frontier.add(neighbor)
+                        node_number += 1
+                cluster.add(node)
+        return frontier, cluster
+        
+    def create_virtual_nodes(self, cluster, nb):
+        n = len(cluster)
+        mean_value = lambda axe: sum(getattr(node, axe) for node in cluster)
+        x_mean, y_mean = mean_value('x')/n , mean_value('y')/n
+        virtual_node = self.ntw.nf(name = 'vn' + str(nb), node_type = 'cloud')
+        virtual_node.x, virtual_node.y = x_mean, y_mean
+        virtual_node.virtual_factor = n
+        return virtual_node
+    
+    def bfs_spring(self, nodes, cf, k, sf, L0, vlinks, size=40, iterations=3):
+        nodes = set(nodes)
+        source = choice(list(nodes))
+        # all nodes one step ahead of the already drawn area
+        overall_frontier = {source}
+        # all nodes which location has already been set
+        seen = set(self.ntw.nodes.values()) - nodes
+        # virtuals nodes are the centers of previously clusterized area:
+        # they are not connected to any another node, but are equivalent to a
+        # coulomb forces of all cluster nodes
+        virtual_nodes = set()
+        # dict to associate a virtual node to its frontier
+        # knowing this association will later allow us to create links
+        # between virtual nodes before applying a spring algorithm to virtual
+        # nodes
+        vnode_to_frontier = {}
+        # dict to keep track of all virtual node <-> cluster association
+        # this allows us to recompute all cluster nodes position after 
+        # applying the spring algorithm on virtual nodes
+        vnode_to_cluster = {}
+        # number of cluster
+        nb_cluster = 0
+        # total number of nodes
+        n = len(self.ntw.nodes)
+        while overall_frontier:
+            new_source = overall_frontier.pop()
+            new_frontier, new_cluster = self.bfs_cluster(new_source, seen, size)
+            nb_cluster += 1
+            overall_frontier |= new_frontier
+            seen |= new_cluster
+            overall_frontier -= seen
+            i = 0
+            for i in range(iterations):
+                self.spring_layout(new_cluster, cf, k, sf, L0, virtual_nodes)
+            new_vnode = self.create_virtual_nodes(new_cluster, nb_cluster)
+            vnode_to_cluster[new_vnode] = new_cluster
+            vnode_to_frontier[new_vnode] = new_frontier
+            virtual_nodes |= {new_vnode}
+        
+        if vlinks:
+            # we create virtual links between virtual nodes, whenever needed
+            for vnodeA in virtual_nodes:
+                for vnodeB in virtual_nodes:
+                    if vnode_to_cluster[vnodeA] & vnode_to_frontier[vnodeB]:
+                        self.ntw.lf(source=vnodeA, destination=vnodeB)
+        
+        # we then apply a spring algorithm on the virtual nodes only
+        # we first store the initial position to compute the difference 
+        # with the position after the algorithm has been executed
+        # we then move all clusters nodes by the same difference
+        initial_position = {}
+        for vnode in virtual_nodes:
+            initial_position[vnode] = (vnode.x, vnode.y)
+        for i in range(iterations):
+            self.spring_layout(virtual_nodes, cf, k, sf, L0)
+        for vnode, cluster in vnode_to_cluster.items():
+            x0, y0 = initial_position[vnode]
+            dx, dy = vnode.x - x0, vnode.y - y0
+            for node in cluster:
+                node.x, node.y = node.x + dx, node.y + dy
+                        
+        for node in virtual_nodes:
+            for link in self.ntw.remove_node(node):
+                self.ntw.remove_link(link)
     
     def retrieve_parameters(self, algorithm):
         entry_value = lambda entry: float(entry.text)
@@ -1081,7 +1274,7 @@ class BaseScenario(CustomFrame):
             self._cancel()
         self.drawing_iteration += 1
         params = self.retrieve_parameters('Spring-based layout')
-        self.ntw.spring_layout(nodes, *params)
+        self.spring_layout(nodes, *params)
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)
@@ -1098,7 +1291,7 @@ class BaseScenario(CustomFrame):
         self.drawing_iteration += 1
         # retrieve the optimal pairwise distance and the screen limit boolean
         params = self.retrieve_parameters('Fructhermann-Reingold layout')
-        self.ntw.fruchterman_reingold_layout(nodes, *params)
+        self.fruchterman_reingold_layout(nodes, *params)
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)
@@ -1113,7 +1306,7 @@ class BaseScenario(CustomFrame):
         else:
             self._cancel()
         params = self.retrieve_parameters('BFS-clusterization layout')
-        self.ntw.bfs_spring(nodes, *params)
+        self.bfs_spring(nodes, *params)
         for node in nodes:
             self.move_node(node)
         self._job = self.cvs.after(1, lambda: self.bfs_cluster_drawing(nodes))
@@ -1260,4 +1453,9 @@ class BaseScenario(CustomFrame):
                 self.cvs.itemconfig(link.line, state=new_state)
                 self.cvs.itemconfig(link.lid, state=new_state)
         return self.display_per_type[subtype]
+        
+    def canvas_center(self):
+        x = (self.cvs.xview()[0] + self.cvs.xview()[1]) / 2
+        y = (self.cvs.yview()[0] + self.cvs.yview()[1]) / 2
+        return x, y
                 

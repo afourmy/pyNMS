@@ -1826,14 +1826,16 @@ class MainNetwork(BaseNetwork):
     def tree(self, n, subtype):
         for i in range(2**n-1):
             n1, n2, n3 = str(i), str(2*i+1), str(2*i+2)
-            self.lf(
-                    source = self.nf(name = n1, node_type = subtype), 
-                    destination = self.nf(name = n2, node_type = subtype)
-                    )
-            self.lf(
-                    source = self.nf(name = n1, node_type = subtype), 
-                    destination = self.nf(name = n3, node_type = subtype)
-                    )
+            source = self.nf(name = n1, node_type = subtype)
+            destination = self.nf(name = n2, node_type = subtype)
+            yield source
+            yield destination
+            yield self.lf(source=source, destination=destination)
+            source = self.nf(name = n1, node_type = subtype)
+            destination = self.nf(name = n3, node_type = subtype)
+            yield source
+            yield destination
+            yield self.lf(source=source, destination=destination)
             
     ## 2) Star generation
             
@@ -1841,10 +1843,11 @@ class MainNetwork(BaseNetwork):
         nb_node = self.cpt_node + 1
         for i in range(n):
             n1, n2 = str(nb_node), str(nb_node+1+i)
-            self.lf(
-                    source = self.nf(name = n1, node_type = subtype), 
-                    destination = self.nf(name = n2, node_type = subtype)
-                    )
+            source = self.nf(name = n1, node_type = subtype)
+            destination = self.nf(name = n2, node_type = subtype)
+            yield source
+            yield destination
+            yield self.lf(source=source, destination=destination)
             
     ## 3) Full-meshed network generation
             
@@ -1853,10 +1856,11 @@ class MainNetwork(BaseNetwork):
         for i in range(n):
             for j in range(i):
                 n1, n2 = str(nb_node+j), str(nb_node+i)
-                self.lf(
-                        source = self.nf(name = n1, node_type = subtype), 
-                        destination = self.nf(name = n2, node_type = subtype)
-                        )
+                source = self.nf(name = n1, node_type = subtype)
+                destination = self.nf(name = n2, node_type = subtype)
+                yield source
+                yield destination
+                yield self.lf(source=source, destination=destination)
                 
     ## 4) Ring generation
                 
@@ -1864,10 +1868,11 @@ class MainNetwork(BaseNetwork):
         nb_node = self.cpt_node + 1
         for i in range(n):
             n1, n2 = str(nb_node+i), str(nb_node+(1+i)%n)
-            self.lf(
-                    source = self.nf(name = n1, node_type = subtype), 
-                    destination = self.nf(name = n2, node_type = subtype)
-                    )
+            source = self.nf(name = n1, node_type = subtype)
+            destination = self.nf(name = n2, node_type = subtype)
+            yield source
+            yield destination
+            yield self.lf(source=source, destination=destination)
                     
     ## 5) Square tiling generation
             
@@ -1875,15 +1880,17 @@ class MainNetwork(BaseNetwork):
         for i in range(n**2):
             n1, n2, n3 = str(i), str(i-1), str(i+n)
             if i-1 > -1 and i%n:
-                self.lf(
-                        source = self.nf(name = n1, node_type = subtype), 
-                        destination = self.nf(name = n2, node_type = subtype)
-                        )
+                source = self.nf(name = n1, node_type = subtype)
+                destination = self.nf(name = n2, node_type = subtype)
+                yield source
+                yield destination
+                yield self.lf(source=source, destination=destination)
             if i+n < n**2:
-                self.lf(
-                        source = self.nf(name = n1, node_type = subtype), 
-                        destination = self.nf(name = n3, node_type = subtype)
-                        )
+                source = self.nf(name = n1, node_type = subtype)
+                destination = self.nf(name = n3, node_type = subtype)
+                yield source
+                yield destination
+                yield self.lf(source=source, destination=destination)
                     
     ## 6) Hypercube generation
             
@@ -1921,6 +1928,8 @@ class MainNetwork(BaseNetwork):
                                            )
                                    )
             i += 1
+        yield from graph_plinks
+        yield from graph_nodes
                     
     ## 7) Generalized Kneser graph
     
@@ -1932,10 +1941,11 @@ class MainNetwork(BaseNetwork):
             already_done.add(frozenset(setA))
             for setB in map(set, combinations(range(1, n), k)):
                 if setB not in already_done and not setA & setB:
-                    self.lf(
-                            source = self.nf(name = str(setA), node_type = subtype), 
-                            destination = self.nf(name = str(setB), node_type = subtype)
-                            )
+                    source = self.nf(name = str(setA), node_type = subtype)
+                    destination = self.nf(name = str(setB), node_type = subtype)
+                    yield source
+                    yield destination
+                    yield self.lf(source=source, destination=destination)
                             
     ## 8) Generalized Petersen graph
     
@@ -1945,38 +1955,23 @@ class MainNetwork(BaseNetwork):
         # to build it, we consider that v_i = u_(i+n).
         for i in range(n):
             # (u_i, u_i+1) edges
-            self.lf(
-                    source = self.nf(
-                                     name = str(i), 
-                                     node_type = subtype
-                                     ), 
-                    destination = self.nf(
-                                          name = str((i + 1)%n), 
-                                          node_type = subtype
-                                          )
-                    )
+            source = self.nf(name = str(i), node_type = subtype)
+            destination = self.nf(name = str((i + 1)%n), node_type = subtype)
+            yield source
+            yield destination
+            yield self.lf(source=source, destination=destination)
             # (u_i, v_i) edges
-            self.lf(
-                    source = self.nf(
-                                     name = str(i), 
-                                     node_type = subtype
-                                     ), 
-                    destination = self.nf(
-                                          name = str(i + n), 
-                                          node_type = subtype
-                                          )
-                    )
+            source = self.nf(name = str(i), node_type = subtype)
+            destination = self.nf(name = str(i+n), node_type = subtype)
+            yield source
+            yield destination
+            yield self.lf(source=source, destination=destination)
             # (v_i, v_i+k) edges
-            self.lf(
-                    source = self.nf(
-                                     name = str(i + n), 
-                                     node_type = subtype
-                                     ), 
-                    destination = self.nf(
-                                          name = str((i + n + k)%n + n), 
-                                          node_type = subtype
-                                          )
-                    )
+            source = self.nf(name = str(i+n), node_type = subtype)
+            destination = self.nf(name = str((i+n+k)%n + n), node_type = subtype)
+            yield source
+            yield destination
+            yield self.lf(source=source, destination=destination)
                     
     ## Multiple object creation
     

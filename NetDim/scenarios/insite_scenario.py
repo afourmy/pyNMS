@@ -6,6 +6,7 @@ from .base_scenario import BaseScenario
 from objects.objects import *
 from menus.insite_general_rightclick_menu import InSiteGeneralRightClickMenu
 from math import cos, sin, atan2, sqrt, radians
+from random import randint
 
 
 def overrider(interface_class):

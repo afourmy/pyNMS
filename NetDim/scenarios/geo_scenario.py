@@ -37,12 +37,7 @@ class GeoScenario(BaseScenario):
         if coords and self.world_map.is_spherical():
             self.world_map.map_temp['centerof'] = coords
             self.world_map.change_projection(self.world_map.mode)
-            
-    def to_geo(self, *nodes):
-        for node in nodes:
-            node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
-            self.move_node(node)
-            
+                        
     @adapt_coordinates
     @overrider(BaseScenario)
     def create_node_on_binding(self, event):

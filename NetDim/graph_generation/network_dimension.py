@@ -10,7 +10,7 @@ class NetworkDimension(CustomTopLevel):
         super().__init__()
         self.title('Dimension')
         self.type = type
-        self.scenario = scenario
+        self.cs = scenario
         
         # main label frame
         lf_network_dimension = Labelframe(self)
@@ -83,8 +83,8 @@ class NetworkDimension(CustomTopLevel):
                       self.node_type_list.text
                       )
 
-        self.dict_type_to_function[self.type](*params)
-        
-        # convergence
-        self.scenario.draw_all(random=False)
+        objects = set(self.dict_type_to_function[self.type](*params))
+        self.cs.draw_objects(objects, random=False)
+        for node in filter(lambda o: o.class_type == 'node', objects):
+            self.cs.move_to_geographical_coordinates(node)
         self.destroy()
