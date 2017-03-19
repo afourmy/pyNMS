@@ -2,6 +2,7 @@ from .geo_scenario import GeoScenario
 from .insite_scenario import InSiteScenario
 from networks import site_network
 from menus.site_selection_rightclick_menu import SiteSelectionRightClickMenu
+from menus.site_general_rightclick_menu import SiteGeneralRightClickMenu
 
 def overrider(interface_class):
     def overrider(method):
@@ -19,9 +20,11 @@ class SiteScenario(GeoScenario):
         self.cvs.tag_bind('object', '<ButtonPress-3>',
                                 lambda e: SiteSelectionRightClickMenu(e, self))
         
-    @overrider(GeoScenario)
-    def create_node(self, site, layer=1):
-        super(GeoScenario, self).create_node(site)
-        # we create the insite scenario for the new site
-        site.scenario = InSiteScenario(site, self.ms, site.name)
+    def general_menu(self, event):
+        x, y = self._start_pos_main_node
+        # if the right-click button was pressed, but the position of the 
+        # canvas when the button is released hasn't changed, we create
+        # the general right-click menu
+        if (x, y) == (event.x, event.y):
+            SiteGeneralRightClickMenu(event, self)
         

@@ -4,6 +4,8 @@
 
 from .base_scenario import BaseScenario
 from objects.objects import *
+from menus.insite_general_rightclick_menu import InSiteGeneralRightClickMenu
+from math import cos, sin, atan2, sqrt, radians
 
 
 def overrider(interface_class):
@@ -18,12 +20,21 @@ class InSiteScenario(BaseScenario):
         super().__init__(*args, **kwargs)
         self.site = site
         self.ns = self.ms.ns
+        self.ntw = self.ns.ntw
         
     def adapt_coordinates(function):
         def wrapper(self, event, *others):
             event.x, event.y = self.cvs.canvasx(event.x), self.cvs.canvasy(event.y)
             function(self, event, *others)
         return wrapper
+        
+    def general_menu(self, event):
+        x, y = self._start_pos_main_node
+        # if the right-click button was pressed, but the position of the 
+        # canvas when the button is released hasn't changed, we create
+        # the general right-click menu
+        if (x, y) == (event.x, event.y):
+            InSiteGeneralRightClickMenu(event, self)
                 
     @adapt_coordinates
     @overrider(BaseScenario)
@@ -132,6 +143,7 @@ class InSiteScenario(BaseScenario):
         # the corresponding node's coordinates accordingly
         for node in self.site.ps['node']:
             new_coords = self.cvs.coords(node.site_oval[self.site][1])
+            print(new_coords, node)
             node.site_coords[self.site][0] = (new_coords[0] + new_coords[2]) / 2
             node.site_coords[self.site][1] = (new_coords[3] + new_coords[1]) / 2
             self.cvs.coords(node.site_lid[self.site], node.site_coords[self.site][0] - 15, node.site_coords[self.site][1] + 10)
@@ -170,19 +182,43 @@ class InSiteScenario(BaseScenario):
     
     @adapt_coordinates
     def create_node_on_binding(self, event):
-        node = self.ns.ntw.nf(node_type=self._creation_mode, x=event.x, y=event.y)
+        # we create the node in both the insite scenario and the network scenario
+        # the node will be at its geographical coordinates in the network scenario,
+        # and the event coordinates in the insite scenario
+        node = self.ns.ntw.nf(
+                              node_type = self._creation_mode,
+                              longitude = self.site.longitude,
+                              latitude = self.site.latitude
+                              )
+        # since the node is created from within a site, it is immediately 
+        # added to the site (and drawn in the insite view at the same time)
         self.site.add_to_site(node)
-        self.create_node(node)
+        node.site_coords[self.site] = [event.x, event.y]
+        self.move_node(node)
+        # create the node in the network view and move to the site coordinates
+        self.ns.create_node(node)
+        self.ns.move_to_geographical_coordinates(node)
     
     def create_node(self, node, layer=1):
         s = self.node_size
         curr_image = self.ms.dict_image['default'][node.subtype]
         y = node.site_coords[self.site][1] - (layer - 1) * self.diff_y
         tags = (node.subtype, node.class_type, 'object')
-        node.site_image[self.site][layer] = self.cvs.create_image(node.site_coords[self.site][0] - (node.imagex)/2, 
-                y - (node.imagey)/2, image=curr_image, anchor='nw', tags=tags)
-        node.site_oval[self.site][layer] = self.cvs.create_oval(node.site_coords[self.site][0]-s, y-s, node.site_coords[self.site][0]+s, y+s, 
-                                outline=node.color, fill=node.color, tags=tags)
+        node.site_image[self.site][layer] = self.cvs.create_image(
+                            node.site_coords[self.site][0] - (node.imagex)/2, 
+                            y - (node.imagey)/2, 
+                            image = curr_image, 
+                            anchor = 'nw', 
+                            tags = tags)
+        node.site_oval[self.site][layer] = self.cvs.create_oval(
+                            node.site_coords[self.site][0] - s, 
+                            y - s, 
+                            node.site_coords[self.site][0] + s, 
+                            y + s, 
+                            outline = node.color, 
+                            fill = node.color, 
+                            tags = tags
+                            )
         # create/hide the image/the oval depending on the current mode
         self.cvs.itemconfig(node.site_oval[self.site][layer], state='hidden')
         self.object_id_to_object[node.site_oval[self.site][layer]] = node
@@ -194,8 +230,14 @@ class InSiteScenario(BaseScenario):
     def start_link(self, event):
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
         start_node = self.object_id_to_object[self.drag_item]
-        self.temp_line = self.cvs.create_line(start_node.site_coords[self.site][0], start_node.site_coords[self.site][1], 
-                        event.x, event.y, arrow=tk.LAST, arrowshape=(6,8,3))
+        self.temp_line = self.cvs.create_line(
+                                        start_node.site_coords[self.site][0], 
+                                        start_node.site_coords[self.site][1], 
+                                        event.x, 
+                                        event.y, 
+                                        arrow = 'last', 
+                                        arrowshape = (6,8,3)
+                                        )
         
     @adapt_coordinates
     def line_creation(self, event):
@@ -207,7 +249,13 @@ class InSiteScenario(BaseScenario):
         # node from which the link starts
         start_node = self.object_id_to_object[self.drag_item]
         # create a line to show the link
-        self.cvs.coords(self.temp_line, start_node.site_coords[self.site][0], start_node.site_coords[self.site][1], event.x, event.y)
+        self.cvs.coords(
+                        self.temp_line, 
+                        start_node.site_coords[self.site][0], 
+                        start_node.site_coords[self.site][1], 
+                        event.x, 
+                        event.y
+                        )
         
     @adapt_coordinates
     def link_creation(self, event, subtype):
@@ -223,11 +271,14 @@ class InSiteScenario(BaseScenario):
                 # create the link and the associated line
                 if start_node != destination_node:
                     new_link = self.ns.ntw.lf(
-                                           subtype = subtype,
-                                           source = start_node, 
-                                           destination = destination_node
-                                           )
-                    self.create_link(new_link)
+                                            subtype = subtype,
+                                            source = start_node, 
+                                            destination = destination_node
+                                            )
+                    self.site.add_to_site(new_link)
+                    # add in the network scenario as well
+                    self.ns.create_link(new_link)
+                    
     
     def create_link(self, new_link):
         edges = (new_link.source, new_link.destination)
@@ -244,20 +295,39 @@ class InSiteScenario(BaseScenario):
                 # and the associated 'layer line' does not yet exist
                 # we create it
                 if real_layer > 1 and not node.site_layer_line[self.site][real_layer]:
-                    coords = (node.site_coords[self.site][0], node.site_coords[self.site][1], node.site_coords[self.site][0], 
-                                    node.site_coords[self.site][1] - (real_layer - 1) * self.diff_y) 
+                    coords = (
+                              node.site_coords[self.site][0], 
+                              node.site_coords[self.site][1], 
+                              node.site_coords[self.site][0], 
+                              node.site_coords[self.site][1] - (real_layer - 1) * self.diff_y
+                              ) 
                     node.site_layer_line[self.site][real_layer] = self.cvs.create_line(
-                                tags=('line',), *coords, fill='black', width=1, dash=(3,5))
+                                        *coords, 
+                                        tags = ('line',), 
+                                        fill = 'black', 
+                                        width = 1, dash = (3,5)
+                                        )
                     self.cvs.tag_lower(node.site_layer_line[self.site][real_layer])
         current_layer = 'all' if not self.layered_display else new_link.layer
         link_to_coords = self.link_coordinates(*edges, layer=current_layer)
         for link in link_to_coords:
             coords = link_to_coords[link]
             if not link.site_line[self.site]:
-                link.site_line[self.site] = self.cvs.create_line(*coords, tags=(link.subtype, 
-                        link.type, link.class_type, 'object'), fill=link.color, 
-                        width=self.LINK_WIDTH, dash=link.dash, smooth=True,
-                        state=tk.NORMAL if self.display_layer[link.layer] else tk.HIDDEN)
+                state = 'normal' if self.display_layer[link.layer] else 'hidden'
+                link.site_line[self.site] = self.cvs.create_line(
+                                            *coords, 
+                                            tags = (
+                                                    link.subtype, 
+                                                    link.type, 
+                                                    link.class_type, 
+                                                    'object'
+                                                    ), 
+                                            fill = link.color, 
+                                            width = self.LINK_WIDTH, 
+                                            dash = link.dash, 
+                                            smooth = True,
+                                            state = state
+                                            )
             else:
                 self.cvs.coords(link.site_line[self.site], *coords)
         self.cvs.tag_lower(new_link.site_line[self.site])
@@ -322,12 +392,12 @@ class InSiteScenario(BaseScenario):
         newx, newy = float(n.site_coords[self.site][0]), float(n.site_coords[self.site][1])
         s = self.node_size
         for layer in range(1, self.nbl + 1):
-            if n.image[layer]:
+            if n.site_image[self.site][layer]:
                 y =  newy - (layer - 1) * self.diff_y
                 coord_image = (newx - (n.imagex)//2, y - (n.imagey)//2)
                 self.cvs.coords(n.site_image[self.site][layer], *coord_image)
                 self.cvs.coords(n.site_oval[self.site][layer], newx - s, y - s, newx + s, y + s)
-            self.cvs.coords(n.lid, newx - 15, newy + 10)
+            self.cvs.coords(n.site_lid[self.site], newx - 15, newy + 10)
             # move the failure icon if need be
             if n in self.ns.ntw.failed_obj:
                 self.cvs.coords(self.id_fdtks[n], n.site_coords[self.site][0], n.site_coords[self.site][1])
@@ -337,9 +407,9 @@ class InSiteScenario(BaseScenario):
             for layer in range(1, self.nbl + 1):
                 if self.display_layer[layer]:
                     real_layer = sum(self.display_layer[:(layer+1)])
-                    if n.layer_line[real_layer]:
+                    if n.site_layer_line[self.site][real_layer]:
                         coord = (newx, newy, newx, newy - (real_layer-1)*self.diff_y)
-                        self.cvs.coords(n.layer_line[real_layer], *coord)
+                        self.cvs.coords(n.site_layer_line[self.site][real_layer], *coord)
     
         # update links coordinates
         for type_link in link_type:
@@ -397,7 +467,7 @@ class InSiteScenario(BaseScenario):
                     for edge in (obj.source, obj.destination):
                         # we check if there still are other links of the same
                         # type (i.e at the same layer) between the edge nodes
-                        if not set(self.ns.ntw.graph[edge.id][obj.type]) | set(self.site.ps['link']):
+                        if not set(self.ns.ntw.graph[edge.id][obj.type]) & set(self.site.ps['link']):
                             # if that's not the case, we delete the upper-layer
                             # projection of the edge nodes, and reset the 
                             # associated 'layer to projection id' dictionnary
@@ -429,12 +499,12 @@ class InSiteScenario(BaseScenario):
         self.id_fdtks.clear()
         
         for node in self.site.ps['node']:
-            for image in ('oval', 'image', 'layer_line'):
-                setattr(node, image, dict.fromkeys(range(1, self.nbl + 1), None))
+            node.site_oval[self.site] = dict.fromkeys(range(1, self.nbl + 1), None)
+            node.site_image[self.site] = dict.fromkeys(range(1, self.nbl + 1), None)
+            node.site_layer_line[self.site] = dict.fromkeys(range(1, self.nbl + 1), None)
             
-        for type in link_type:
-            for link in self.site.ps['link']:
-                link.site_line[self.site] = None
+        for link in self.site.ps['link']:
+            link.site_line[self.site] = None
                             
     ## Selection / Highlight
     
@@ -608,7 +678,7 @@ class InSiteScenario(BaseScenario):
         # whether we want to update the interface label, or the physical link label,
         # since they have the same name
         itf = type == 'Interface'
-        for obj in set(self.ntw.pn[obj_type].values()) | set(self.site.ps['link']):
+        for obj in set(self.ntw.pn[obj_type].values()) & set(self.site.ps['link']):
             self.refresh_label(obj, self.current_label[type], itf)
             
     def refresh_all_labels(self):
@@ -617,7 +687,7 @@ class InSiteScenario(BaseScenario):
                         
     def _create_link_label(self, link):
         coeff = self.compute_coeff(link)
-        link.site_lid[self.site] = self.cvs.create_text(*self.offcenter(coeff, *link.lpos), 
+        link.site_lid[self.site] = self.cvs.create_text(*self.offcenter(coeff, *link.site_lpos[self.site]), 
                             anchor='nw', fill='red', tags='label', font='bold')
         # we also create the interface labels, which position is at 1/4
         # of the line between the end point and the middle point
@@ -651,7 +721,7 @@ class InSiteScenario(BaseScenario):
         # interface label in the middle of the line between the middle point lpos
         # and the end of the link, we set it at 1/4 (middle of the middle) so 
         # that its placed closer to the link's end.
-        mx, my = link.lpos
+        mx, my = link.site_lpos[self.site]
         if end == 's':
             if_label_x = (mx + link.source.site_coords[self.site][0]) / 4 + link.source.site_coords[self.site][0] / 2
             if_label_y = (my + link.source.site_coords[self.site][1]) / 4 + link.source.site_coords[self.site][1] / 2
@@ -662,7 +732,7 @@ class InSiteScenario(BaseScenario):
                     
     def update_link_label_coordinates(self, link):
         coeff = self.compute_coeff(link)
-        self.cvs.coords(link.site_lid[self.site], *self.offcenter(coeff, *link.lpos))
+        self.cvs.coords(link.site_lid[self.site], *self.offcenter(coeff, *link.site_lpos[self.site]))
         self.cvs.coords(link.ilid[0], *self.offcenter(coeff, *self.if_label(link)))
         self.cvs.coords(link.ilid[1], *self.offcenter(coeff, *self.if_label(link, 'd')))
         
@@ -673,32 +743,34 @@ class InSiteScenario(BaseScenario):
             self._job = None
 
     def link_coordinates(self, source, destination, layer='all'):
-        xA, yA, xB, yB = source.site_coords[self.site][0], source.site_coords[self.site][1], destination.site_coords[self.site][0], destination.site_coords[self.site][1]
+        xA = source.site_coords[self.site][0]
+        yA = source.site_coords[self.site][1]
+        xB = destination.site_coords[self.site][0]
+        yB = destination.site_coords[self.site][1]
         angle = atan2(yB - yA, xB - xA)
         dict_link_to_coords = {}
         type = layer if layer == 'all' else self.layers[1][layer]
         real_layer = 1 if layer == 'all' else sum(self.display_layer[:(layer+1)])
-        for id, link in enumerate(set(self.ns.ntw.links_between(source, destination, type)) | set(self.site.ps['link'])):
+        for id, link in enumerate(set(self.ns.ntw.links_between(source, destination, type)) & set(self.site.ps['link'])):
             d = ((id + 1) // 2) * 30 * (-1)**id
             xC = (xA + xB) / 2 + d * sin(angle)
             yC = (yA + yB) / 2 - d * cos(angle)
             offset = 0 if layer == 'all' else (real_layer - 1) * self.diff_y
             coord = (xA, yA - offset, xC, yC - offset, xB, yB - offset)
             dict_link_to_coords[link] = coord
-            link.lpos = (xC, yC - offset)
+            link.site_lpos[self.site] = (xC, yC - offset)
         return dict_link_to_coords
                 
     ## Drawing
     
     # 1) Regular drawing
-    def draw_objects(self, objects, random_drawing=True, draw_site=False):
+    def draw_objects(self, objects, random_drawing=True):
         self._cancel()
         for obj in objects:
             if obj.class_type == 'node':
-                if obj.subtype == 'site' and not draw_site:
-                    continue
                 if random_drawing:
-                    obj.x, obj.y = randint(100,700), randint(100,700)
+                    obj.site_coords[self.site][0] = randint(100,700)
+                    obj.site_coords[self.site][0] = randint(100,700)
                 if not obj.site_image[self.site][1]:
                     self.create_node(obj)
             else:
@@ -709,12 +781,8 @@ class InSiteScenario(BaseScenario):
     def draw_all(self, random=True, draw_site=False):
         self.erase_all()
         # we draw everything except interface
-        for type in set(self.ntw.pn) - {'interface'}:
-            self.draw_objects(self.ntw.pn[type].values(), random, draw_site)
-            
-    def draw_site(self, site):
-        self.erase_all()
-        self.draw_objects(*site.nodes, random_drawing=False)
+        for type in ('node', 'link'):
+            self.draw_objects(self.site.ps[type], random)
             
     # 2) Force-based drawing
     
@@ -739,7 +807,7 @@ class InSiteScenario(BaseScenario):
             self._cancel()
         self.drawing_iteration += 1
         params = self.retrieve_parameters('Spring-based layout')
-        self.ntw.spring_layout(nodes, *params)
+        self.ns.ntw.spring_layout(nodes, *params)
         if not self.drawing_iteration % 5:   
             for node in nodes:
                 self.move_node(node)
@@ -804,8 +872,8 @@ class InSiteScenario(BaseScenario):
         
         if self.layered_display:
             self.planal_move(50)
-            min_y = min(node.site_coords[self.site][1] for node in self.ntw.nodes.values())
-            max_y = max(node.site_coords[self.site][1] for node in self.ntw.nodes.values())
+            min_y = min(node.site_coords[self.site][1] for node in self.site.ps['node'])
+            max_y = max(node.site_coords[self.site][1] for node in self.site.ps['node'])
             self.diff_y = (max_y - min_y) // 2 + 200
             
         self.unhighlight_all()
@@ -814,10 +882,10 @@ class InSiteScenario(BaseScenario):
         return self.layered_display
             
     def planal_move(self, angle=45):
-        min_y = min(node.site_coords[self.site][1] for node in self.ntw.nodes.values())
-        max_y = max(node.site_coords[self.site][1] for node in self.ntw.nodes.values())
+        min_y = min(node.site_coords[self.site][1] for node in self.site.ps['node'])
+        max_y = max(node.site_coords[self.site][1] for node in self.site.ps['node'])
         
-        for node in self.ntw.nodes.values():
+        for node in self.site.ps['node']:
             diff_y = abs(node.site_coords[self.site][1] - min_y)
             new_y = min_y + diff_y * cos(radians(angle))
             node.site_coords[self.site][1] = new_y
@@ -859,22 +927,6 @@ class InSiteScenario(BaseScenario):
                     self.simulate_failure(plink)
             self.id_fdtks[obj] = id_failure
             
-    ## Display filtering
-    
-    def display_filter(self, filter):
-        filter_sites = set(re.sub(r'\s+', '', filter).split(','))
-        for node in self.ntw.nodes.values():
-            state = 'normal' if node.sites & filter_sites else 'hidden'
-            self.cvs.itemconfig(node.site_lid[self.site], state=state)
-            for layer in range(1, self.nbl + 1):
-                if node.site_image[self.site][layer]:
-                    self.cvs.itemconfig(node.site_image[self.site][layer], state=state)
-        for link_type in link_type:
-            for link in self.ntw.pn[link_type].values():
-                state = 'normal' if link.sites & filter_sites else 'hidden'
-                self.cvs.itemconfig(link.site_line[self.site], state=state)
-                self.cvs.itemconfig(link.site_lid[self.site], state=state)
-            
     ## Refresh display
     
     def refresh_display(self):
@@ -882,9 +934,6 @@ class InSiteScenario(BaseScenario):
         self.so.clear()
         self.refresh_all_labels()     
         # self.refresh_failures() 
-        # filter = self.ms.display_menu.filter_entry.text
-        # if filter:
-        #     self.display_filter(filter)   
         for AS in self.ntw.pnAS.values():
             AS.management.refresh_display()
             

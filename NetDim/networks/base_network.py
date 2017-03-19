@@ -94,6 +94,7 @@ class BaseNetwork(object):
         'role': str,
         'priority': int,
         'router_id': str,
+        'site_type': str,
         'base_macaddress': str,
         'LB_paths': int,
         'role': str,

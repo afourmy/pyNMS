@@ -140,6 +140,6 @@ class DisplayMenu(ScrolledFrame):
         
     def invert_display(self, obj_type):
         value = self.ms.cs.show_hide(obj_type)
-        relief = tk.SUNKEN if value else tk.RAISED
+        relief = 'sunken' if value else 'raised'
         self.type_to_button[obj_type].config(relief=relief)
          

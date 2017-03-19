@@ -48,6 +48,7 @@ class ViewMenu(ScrolledFrame):
         
         self.type_to_button = {}
         font = ('Helvetica', 8, 'bold')
+        self.current_view = 'network'
                 
         # site view
         self.network_view_button = TKButton(self.infr)
@@ -95,7 +96,7 @@ class ViewMenu(ScrolledFrame):
         self.geo_coord_button.grid(0, 2, 2, 2, padx=20, in_=lf_coordinates)
         
     def switch_view(self, view):
-        self.ms.cs.current_view = view        
+        self.current_view = view        
         if view == 'site':
             self.site_view_button.config(relief='sunken')
             self.network_view_button.config(relief='raised')
@@ -116,5 +117,5 @@ class ViewMenu(ScrolledFrame):
         self.ms.cs.pack_forget()
         site.scenario.pack()
         self.ms.cs = site.scenario
-        self.ms.cs.current_view = site
+        self.current_view = site
                     

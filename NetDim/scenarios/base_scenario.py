@@ -9,7 +9,6 @@ from os.path import join
 from pythonic_tkinter.preconfigured_widgets import *
 from objects.objects import *
 from .shape_drawing import *
-from menus.general_rightclick_menu import GeneralRightClickMenu
 from random import randint
 from math import cos, sin, atan2, sqrt, radians
 
@@ -83,9 +82,6 @@ class BaseScenario(CustomFrame):
         self.display_layer = [0] + [True] * self.nbl
         # difference between each layer in pixel
         self.diff_y = 0
-        
-        # site view
-        self.current_view = 'network'
         
         # display state per type of objects
         self.display_per_type = dict.fromkeys(all_subtypes, True)
@@ -439,16 +435,6 @@ class BaseScenario(CustomFrame):
                         self.co = None
                         if self.pwindow:
                             self.pwindow.destroy()
-                
-    ## Menus
-        
-    def general_menu(self, event):
-        x, y = self._start_pos_main_node
-        # if the right-click button was pressed, but the position of the 
-        # canvas when the button is released hasn't changed, we create
-        # the general right-click menu
-        if (x, y) == (event.x, event.y):
-            GeneralRightClickMenu(event, self)
             
     ## Right-click scroll
     
@@ -1057,8 +1043,6 @@ class BaseScenario(CustomFrame):
         self._cancel()
         for obj in objects:
             if obj.class_type == 'node':
-                if obj.subtype == 'site' and not draw_site:
-                    continue
                 if random_drawing:
                     obj.x, obj.y = randint(100,700), randint(100,700)
                 if not obj.image[1]:
@@ -1073,10 +1057,6 @@ class BaseScenario(CustomFrame):
         # we draw everything except interface
         for type in set(self.ntw.pn) - {'interface'}:
             self.draw_objects(self.ntw.pn[type].values(), random, draw_site)
-            
-    def draw_site(self, site):
-        self.erase_all()
-        self.draw_objects(*site.nodes, random_drawing=False)
             
     # 2) Force-based drawing
     

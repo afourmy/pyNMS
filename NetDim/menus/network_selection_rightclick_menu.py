@@ -215,9 +215,9 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
     @empty_selection_and_destroy_menu
     def show_object_properties(self):
         so ,= self.all_so
-        self.cs.master.dict_obj_mgmt_window[so.subtype].current_obj = so
-        self.cs.master.dict_obj_mgmt_window[so.subtype].update()
-        self.cs.master.dict_obj_mgmt_window[so.subtype].deiconify()
+        self.cs.ms.dict_obj_mgmt_window[so.subtype].current_obj = so
+        self.cs.ms.dict_obj_mgmt_window[so.subtype].update()
+        self.cs.ms.dict_obj_mgmt_window[so.subtype].deiconify()
         
     @empty_selection_and_destroy_menu
     def change_property(self, objects, subtype):

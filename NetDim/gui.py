@@ -4,6 +4,7 @@
 
 import tkinter as tk
 import warnings
+import os
 from scenarios import network_scenario, site_scenario
 from collections import defaultdict
 from os.path import abspath, pardir, join
@@ -107,6 +108,10 @@ class NetDim(MainWindow):
         import_graph = MenuEntry(general_menu)
         import_graph.text = 'Import graph'
         import_graph.command = self.import_graph
+        
+        site_import = MenuEntry(general_menu)
+        site_import.text = 'Site import'
+        site_import.command = self.site_import
         
         export_graph = MenuEntry(general_menu)
         export_graph.text = 'Export graph'
@@ -341,6 +346,7 @@ class NetDim(MainWindow):
                                     'regenerator',
                                     'splitter',
                                     'cloud',
+                                    'site',
                                     'ethernet',
                                     'ethernet interface',
                                     'wdm', 
@@ -354,7 +360,8 @@ class NetDim(MainWindow):
                                     'AS',
                                     'area',
                                     'per-AS node properties',
-                                    'per-AS interface properties'
+                                    'per-AS interface properties',
+                                    'sites'
                                     )
                                         
         for name in sheet_names_import_order:
@@ -363,15 +370,18 @@ class NetDim(MainWindow):
             # if the sheet cannot be found, there's nothing to import
             except xlrd.biffh.XLRDError:
                 continue
-            
+                
             # nodes and links import
             if name in all_subtypes:
                 properties = sheet.row_values(0)
                 for row in range(1, sheet.nrows):
                     values = sheet.row_values(row)
                     kwargs = self.mass_objectizer(properties, values)
-                    if name in node_subtype: 
-                        self.cs.ntw.nf(node_type=name, **kwargs)
+                    if name in node_subtype:
+                        if name == 'site':
+                            self.ss.ntw.nf(node_type=name, **kwargs)
+                        else:
+                            self.cs.ntw.nf(node_type=name, **kwargs)
                     if name in link_subtype: 
                         self.cs.ntw.lf(subtype=name, **kwargs)
                 
@@ -417,7 +427,17 @@ class NetDim(MainWindow):
                     for idx, property in enumerate(perAS_properties[node.subtype]):
                         value = self.objectizer(property, args[idx])
                         node(AS, property, value)
-                    
+                 
+            # import of site objects
+            elif name == 'sites':
+                for row_index in range(sheet.nrows):
+                    name, nodes, links = sheet.row_values(row_index)
+                    site = self.ss.ntw.convert_node(name)
+                    links = set(self.cs.ntw.convert_link_list(links))
+                    nodes = set(self.cs.ntw.convert_node_list(nodes))
+                    site.add_to_site(*nodes)
+                    site.add_to_site(*links)
+                        
             # per-AS interface properties import
             else:
                 for row_index in range(1, sheet.nrows):
@@ -428,9 +448,41 @@ class NetDim(MainWindow):
                     interface = link('interface', node)
                     for idx, property in enumerate(ethernet_interface_perAS_properties):
                         value = self.objectizer(property, args[idx])
-                        interface(AS.name, property, value)      
+                        interface(AS.name, property, value)   
+                        
+        self.cs.draw_all(False)
+        self.ss.draw_all(False)
         
-        self.cs.draw_all(False)        
+    def site_import(self):
+    
+        # filepath is set for unittest
+        filepath = filedialog.askopenfilenames(
+                        initialdir = self.path_workspace, 
+                        title = 'Import graph', 
+                        filetypes = (
+                        ('all files','*.*'),
+                        ('xls files','*.xls'),
+                        ))
+        
+        # no error when closing the window
+        if not filepath: 
+            return
+        else: 
+            filepath ,= filepath
+                  
+        book = xlrd.open_workbook(filepath)
+        
+        try:
+            sheet = book.sheet_by_name('site')
+        # if the sheet cannot be found, there's nothing to import
+        except xlrd.biffh.XLRDError:
+            print('the excel sheet must be called site')
+            
+        for row_index in range(sheet.nrows):
+            site_name, node = sheet.row_values(row_index)
+            site = self.ss.ntw.convert_node(site_name)
+            node = self.cs.ntw.convert_node(node)
+            site.add_to_site(node)
         
     def export_graph(self, filepath=None):
         
@@ -465,7 +517,10 @@ class NetDim(MainWindow):
             # depending on the subtype, and we want to avoid using 
             # hasattr() all the time to check if a property exists.
             obj_type = subtype_to_type[obj_subtype]
-            pool_obj = list(self.cs.ntw.ftr(obj_type, obj_subtype))
+            if obj_subtype == 'site':
+                pool_obj = list(self.ss.ntw.nodes.values())
+            else:
+                pool_obj = list(self.cs.ntw.ftr(obj_type, obj_subtype))
             # we create an excel sheet only if there's at least one object
             # of a given subtype
             if pool_obj:
@@ -526,6 +581,12 @@ class NetDim(MainWindow):
                     area_sheet.write(cpt, 3, to_string(area.pa['node']))
                     area_sheet.write(cpt, 4, to_string(area.pa['link']))
                     cpt += 1
+             
+        site_sheet = excel_workbook.add_sheet('sites')
+        for cpt, site in enumerate(self.ss.ntw.nodes.values()):
+            site_sheet.write(cpt, 0, str(site.name))
+            site_sheet.write(cpt, 1, to_string(site.ps['node']))
+            site_sheet.write(cpt, 2, to_string(site.ps['link']))
                 
         excel_workbook.save(selected_file.name)
         selected_file.close()

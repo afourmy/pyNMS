@@ -122,6 +122,7 @@ class MainNetwork(BaseNetwork):
         'path': self.convert_link_list, 
         'subnets': str, 
         'sites': str,
+        'site_type': str,
         'role': str,
         'priority': int,
         'router_id': str,

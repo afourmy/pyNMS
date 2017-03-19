@@ -187,7 +187,7 @@ traffic_common_properties = (
 # import/export the AS of a node, because when the AS itself is imported, 
 # we rebuild #its logical topology, and that includes 
 # rebuilding the nodes AS dict
-node_common_ie_properties = node_common_properties[:-1]
+node_common_ie_properties = node_common_properties[:-2]
 
 # 2) import / export properties for physical links
 
@@ -279,7 +279,7 @@ object_properties = OrderedDict([
 ## Common Import / Export properties per subtype
 
 object_ie = OrderedDict([
-('site', node_common_ie_properties + ('site_type',)),
+('site', node_common_ie_properties),
 ('router', node_common_ie_properties + ('default_route',)),
 ('switch', node_common_ie_properties + ('base_macaddress',)),
 ('oxc', node_common_ie_properties),
@@ -673,7 +673,16 @@ class Site(Node):
     imagex, imagey = 50, 50
     layer = 1
         
-    ie_properties = {}
+    ie_properties = {
+                    'x' : 600, 
+                    'y' : 300, 
+                    'longitude' : 0, 
+                    'latitude' : 0, 
+                    'logical_x': 0,
+                    'logical_y': 0,
+                    'ipaddress' : None,
+                    'subnetmask' : None
+                    }
                     
     @initializer(ie_properties)
     def __init__(self, **kwargs):
@@ -710,6 +719,7 @@ class Site(Node):
                 obj.site_line[self] = None
                 obj.site_lid[self] = None
                 obj.site_ilid[self] = [None]*2
+                obj.site_lpos[self] = [None]*2
                 # draw the object in the insite view
                 self.scenario.create_link(obj)
 
@@ -897,10 +907,12 @@ class Link(NDobject):
         # interfaces specific properties (ip addresses, names, etc) as well
         # as physical link asymmetric (directional) properties (capacity, flow, etc)
         self.ilid = [None]*2
+        self.lpos = [None]*2
         # site properties for site canvas
         self.site_line = {}
         self.site_lid = {}
         self.site_ilid = {}
+        self.site_lpos = {}
         super().__init__()
         
     def __repr__(self):
