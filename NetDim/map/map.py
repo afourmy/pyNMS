@@ -48,22 +48,6 @@ class Map():
         self.mode = 'linear'
         self.change_projection(self.mode)
 
-    def __createMenu(self, dynmenu=()):
-        """Create right-click menu.
-        DYNMENU (opt.) list with dyn elements
-           (`func for command`, `label`, `func arg1`, ...)."""
-        self.menu = {}
-        self.menu['menu'] = Menu(self.parent, tearoff=0)
-        self.menu['menu.project'] = Menu(self.menu['menu'], tearoff=0)
-        self.menu['menu.project'].add_radiobutton(label='Mercator', command=lambda: self.change_projection('mercator'))
-        self.menu['menu.project'].add_radiobutton(label='Linear', command=lambda: self.change_projection(0))
-        self.menu['menu.project'].add_radiobutton(label='Globe/Sphere', command=lambda: self.change_projection('globe'))
-        self.menu['menu'].add_cascade(label='Projection', menu=self.menu['menu.project'])
-        self.menu['menu'].add_separator()
-        self.menu['menu.clrmenu'] = Menu(self.menu['menu'], tearoff=0)
-        self.menu['menu.clrmenu'].add_command(label='All', command=lambda: self.clearLayers(*self.mopt.keys()))
-        self.menu['menu'].add_cascade(label='Clear', menu=self.menu['menu.clrmenu'])
-
     def scale_map(self, ratio=1, docenter=1):
         """Change scale according previous value. Also Slider callback.
         DOCENTER (opt.) center when scaling {1 (default)|0}."""
@@ -365,7 +349,6 @@ class Map():
                 continue
             obj_coords = self.from_WKT(_row[1])
             if not obj_coords:
-                print('import error')
                 continue
             for i1, wl in enumerate(obj_coords):
                 tp, coords1 = wl
@@ -404,24 +387,6 @@ class Map():
             return [[tp, [e]]]
         if (tp in ('MULTIPOLYGON')):
             return [[tp, e]]
-
-    def clearLayers(self, *ftypes):
-        """Delete all objects by layer.
-        *FTYPES layers from mopt."""
-        ftags = list(ftypes)
-        for ftag, value in self.mflood.items():
-            if value['ftype'] in ftypes:
-                ftags.append(ftag)
-        self.clearCarta(*ftags)
-
-    def clearCarta(self, *ftags):
-        """Delete objects, labels, icons from canvas and mflood.
-        *FTAGS tags of objects."""
-        for ftag in ftags:
-            self.dw.delete(ftag)
-            self.dw.delete('.' + ftag)
-            self.dw.delete('..' + ftag)
-            self.mflood.pop(ftag, '')
 
     def is_spherical(self):
         return self.mode == 'globe'

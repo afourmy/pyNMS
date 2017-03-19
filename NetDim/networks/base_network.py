@@ -119,7 +119,7 @@ class BaseNetwork(object):
         return filter(keep, self.graph[src.id][type])
           
     # 'lf' is the link factory. Creates or retrieves any type of link
-    def lf(self, subtype='ethernet', id=None, name=None, **kwargs):
+    def lf(self, subtype='ethernet link', id=None, name=None, **kwargs):
         link_type = subtype_to_type[subtype]
         # creation link in the s-d direction if no link at all yet
         if not id:

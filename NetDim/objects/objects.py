@@ -36,8 +36,8 @@ nd_obj = {
 'splitter': 'node',
 'cloud': 'node',
 'switch': 'node',
-'ethernet': 'plink',
-'wdm': 'plink',
+'ethernet link': 'plink',
+'optical link': 'plink',
 'route': 'route',
 'traffic': 'traffic'
 }
@@ -58,18 +58,18 @@ subtype_to_type = {
 'firewall': 'node',
 'load_balancer': 'node',
 'server': 'node',
-'ethernet': 'plink',
-'wdm': 'plink',
+'ethernet link': 'plink',
+'optical link': 'plink',
 'l2vc': 'l2link',
 'l3vc': 'l3link',
-'static route': 'l3link',
+'optical channel': 'l2link',
+'etherchannel': 'l2link',
+'pseudowire': 'l3link',
 'BGP peering': 'l3link',
-'OSPF virtual link': 'l3link',
-'Label Switched Path': 'l3link',
 'routed traffic': 'traffic',
 'static traffic': 'traffic',
 'ethernet interface': 'interface',
-'wdm interface': 'interface'
+'optical interface': 'interface'
 }
     
 ## OBJECT PROPERTIES
@@ -240,17 +240,16 @@ object_properties = OrderedDict([
 ('load_balancer', node_common_properties),
 ('server', node_common_properties),
 
-('ethernet', plink_common_properties),
-('wdm', plink_common_properties + ('lambda_capacity',)),
+('ethernet link', plink_common_properties),
+('optical link', plink_common_properties + ('lambda_capacity',)),
 
 ('l2vc', vc_common_properties),
 ('l3vc', vc_common_properties),
 
-('static route', route_common_properties + (
-'nh_ip',
-'dst_sntw',
-'ad'
-)),
+('optical channel', route_common_properties),
+('etherchannel', route_common_properties),
+
+('pseudowire', route_common_properties),
 
 ('BGP peering', route_common_properties + (
 'bgp_type',
@@ -259,16 +258,6 @@ object_properties = OrderedDict([
 'weightS',
 'weightD',
 'AS'
-)),
-
-('OSPF virtual link', route_common_properties + (
-'nh_tk',
-'dst_sntw'
-)),
-
-('Label Switched Path', route_common_properties + (
-'lsp_type',
-'path'
 )),
 
 ('routed traffic', traffic_common_properties + ('ipS', 'ipD')),
@@ -292,14 +281,13 @@ object_ie = OrderedDict([
 ('load_balancer', node_common_ie_properties),
 ('server', node_common_ie_properties),
 
-('ethernet', plink_common_ie_properties),
-('wdm', plink_common_ie_properties + ('lambda_capacity',)),
+('ethernet link', plink_common_ie_properties),
+('optical link', plink_common_ie_properties + ('lambda_capacity',)),
 
-('static route', route_common_ie_properties + (
-'nh_ip',
-'dst_sntw',
-'ad'
-)),
+('optical channel', route_common_ie_properties),
+('etherchannel', route_common_ie_properties),
+
+('pseudowire', route_common_ie_properties),
 
 ('BGP peering', route_common_ie_properties + (
 'bgp_type',
@@ -309,16 +297,6 @@ object_ie = OrderedDict([
 'weightD'
 )),
 
-('OSPF virtual link', route_common_ie_properties + (
-'nh_tk',
-'dst_ip'
-)),
-
-('Label Switched Path', route_common_ie_properties + (
-'lsp_type',
-'path'
-)),
-
 ('routed traffic', traffic_common_ie_properties + (
 'ipS',
 'ipD'
@@ -326,7 +304,7 @@ object_ie = OrderedDict([
 ('static traffic', traffic_common_ie_properties),
 
 ('ethernet interface', ethernet_interface_properties),
-('wdm interface', interface_common_properties)
+('optical interface', interface_common_properties)
 ])
 
 ## Interface basic and per-AS public properties
@@ -463,17 +441,16 @@ box_properties = OrderedDict([
 ('load_balancer', node_box_properties),
 ('server', node_box_properties),
 
-('ethernet', plink_box_properties),
-('wdm', plink_box_properties + ('lambda_capacity',)),
+('ethernet link', plink_box_properties),
+('optical link', plink_box_properties + ('lambda_capacity',)),
 
 ('l2vc', vc_box_properties),
 ('l3vc', vc_box_properties),
 
-('static route', route_common_properties + (
-'nh_ip',
-'dst_sntw',
-'ad'
-)),
+('optical channel', route_common_properties),
+('etherchannel', route_common_properties),
+
+('pseudowire', route_common_properties),
 
 ('BGP peering', route_common_properties + (
 'bgp_type',
@@ -482,15 +459,6 @@ box_properties = OrderedDict([
 'weightS',
 'weightD'
 )),
-
-('OSPF virtual link', route_common_properties + (
-'nh_tk',
-'dst_sntw'
-)),
-
-('Label Switched Path', route_common_properties + (
-'lsp_type',
-)),                
 
 ('routed traffic', traffic_common_properties),
 ('static traffic', traffic_common_properties)
@@ -555,7 +523,6 @@ prop_to_nice_name = {
 'router_id': 'Router ID',
 'subtype': 'Type',
 'bgp_type': 'BGP Type',
-'lsp_type': 'LSP Type',
 'path_constraints': 'Path constraints',
 'excluded_nodes': 'Excluded nodes',
 'excluded_plinks': 'Excluded physical links',
@@ -598,8 +565,8 @@ class Node(NDobject):
     
     class_type = type = 'node'
     ie_properties = {
-                    'x' : 45000, 
-                    'y' : 10000, 
+                    'x' : 0, 
+                    'y' : 0, 
                     'longitude' : 48.856638, 
                     'latitude' : 2.352241, 
                     'logical_x': 0,
@@ -701,6 +668,8 @@ class Site(Node):
         
     def add_to_site(self, *objects):
         for obj in objects:
+            if obj in self.ps[obj.class_type]:
+                continue
             self.ps[obj.class_type].add(obj)
             obj.site_id[self] = None
             if obj.class_type == 'node':
@@ -1006,10 +975,10 @@ class PhysicalLink(Link):
                 else:
                     interface(AS, property, value)
 
-class Ethernet(PhysicalLink):
+class EthernetLink(PhysicalLink):
     
     color = 'blue'
-    protocol = subtype = 'ethernet'
+    subtype = 'ethernet link'
     
     ie_properties = {}
     
@@ -1019,10 +988,10 @@ class Ethernet(PhysicalLink):
         self.interfaceS = EthernetInterface(self.source, self)
         self.interfaceD = EthernetInterface(self.destination, self)
         
-class WDMFiber(PhysicalLink):
+class OpticalLink(PhysicalLink):
     
     color = 'orange'
-    protocol = subtype = 'wdm'
+    subtype = 'optical link'
     
     ie_properties = {
                     'lambda_capacity' : 88
@@ -1031,8 +1000,8 @@ class WDMFiber(PhysicalLink):
     @initializer(ie_properties)
     def __init__(self, **kwargs):
         super().__init__()
-        self.interfaceS = WDMInterface(self.source, self)
-        self.interfaceD = WDMInterface(self.destination, self)
+        self.interfaceS = OpticalInterface(self.source, self)
+        self.interfaceD = OpticalInterface(self.destination, self)
             
 class Interface(NDobject):
     
@@ -1089,9 +1058,9 @@ class EthernetInterface(Interface):
     def __init__(self, node, link, **kwargs):
         super().__init__(node, link)
         
-class WDMInterface(Interface):
+class OpticalInterface(Interface):
     
-    subtype = 'wdm interface'
+    subtype = 'optical interface'
     
     ie_properties = {}
     
@@ -1160,7 +1129,6 @@ class Route(Link):
     
     type = 'l3link'
     dash = (3,5)
-    layer = 3
     
     ie_properties = {
                     'path' : 'list()'
@@ -1182,25 +1150,59 @@ class Route(Link):
     def __lt__(self, other):
         return hash(self.name)
         
-class StaticRoute(Route):
+class OpticalChannel(Route):
 
     color = 'violet'
-    subtype = 'static route'
+    subtype = 'optical channel'
+    layer = 2
     
-    ie_properties = {
-                    'nh_ip' : None,
-                    'dst_sntw' : None, 
-                    'ad' : 1, 
-                    }
+    ie_properties = {}
     
     @initializer(ie_properties)
     def __init__(self, **kwargs):
+        # list of AS to which the physical links belongs. AS is actually 
+        # a dictionnary associating an AS to a set of area the physical links 
+        # belongs to
+        self.AS = defaultdict(set)
+        super().__init__()
+        
+class EtherChannel(Route):
+
+    color = 'violet'
+    subtype = 'etherchannel'
+    layer = 2
+    
+    ie_properties = {}
+    
+    @initializer(ie_properties)
+    def __init__(self, **kwargs):
+        # list of AS to which the physical links belongs. AS is actually 
+        # a dictionnary associating an AS to a set of area the physical links 
+        # belongs to
+        self.AS = defaultdict(set)
+        super().__init__()
+        
+class PseudoWire(Route):
+
+    color = 'violet'
+    subtype = 'pseudowire'
+    layer = 3
+    
+    ie_properties = {}
+    
+    @initializer(ie_properties)
+    def __init__(self, **kwargs):
+        # list of AS to which the physical links belongs. AS is actually 
+        # a dictionnary associating an AS to a set of area the physical links 
+        # belongs to
+        self.AS = defaultdict(set)
         super().__init__()
         
 class BGPPeering(Route):
 
     color = 'violet'
     subtype = 'BGP peering'
+    layer = 3
     
     ie_properties = {
                     'weightD' : 0,
@@ -1217,33 +1219,6 @@ class BGPPeering(Route):
         # belongs to
         self.AS = defaultdict(set)
         super().__init__()
-        
-class VirtualLink(Route):
-
-    color = 'violet'
-    subtype = 'OSPF virtual link'
-    
-    ie_properties = {}
-    
-    @initializer(ie_properties)
-    def __init__(self, **kwargs):
-        super().__init__()
-        
-class LSP(Route):
-
-    color = 'violet'
-    subtype = 'Label Switched Path'
-    
-    ie_properties = {
-                    'lsp_type': None, 
-                    'cost' : 1,
-                    'traffic' : 0
-                    }
-    
-    @initializer(ie_properties)
-    def __init__(self, **kwargs):
-        super().__init__()
-
         
 class Traffic(Link):
     type = 'traffic'
@@ -1309,22 +1284,22 @@ node_class = OrderedDict([
 
 # layer 1 (physical links)
 plink_class = OrderedDict([
-('ethernet', Ethernet),
-('wdm', WDMFiber)
+('ethernet link', EthernetLink),
+('optical link', OpticalLink)
 ])
 
 # layer 2 (optical and ethernet)
 l2link_class = OrderedDict([
-('l2vc', L2VC)
+('l2vc', L2VC),
+('optical channel', OpticalChannel),
+('etherchannel', EtherChannel)
 ])
 
 # layer 3 (IP and above)
 l3link_class = OrderedDict([
 ('l3vc', L3VC),
-('static route', StaticRoute),
+('pseudowire', PseudoWire),
 ('BGP peering', BGPPeering),
-('OSPF virtual link', VirtualLink),
-('Label Switched Path', LSP)
 ])
 
 # layer 4 (traffic flows)

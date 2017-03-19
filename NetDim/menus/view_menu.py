@@ -118,4 +118,6 @@ class ViewMenu(ScrolledFrame):
         site.scenario.pack()
         self.ms.cs = site.scenario
         self.current_view = site
+        # destroy the pwindow of the site scenario
+        self.ms.ss.pwindow.destroy()
                     

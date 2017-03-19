@@ -39,12 +39,12 @@ class CreationMenu(ScrolledFrame):
         'netdim': (125, 125), 
         'motion': (100, 100), 
         'multi-layer': (75, 75),
-        'ethernet': (85, 15),
-        'wdm': (85, 15),
-        'static route': (85, 15),
+        'ethernet link': (85, 15),
+        'optical link': (85, 15),
+        'optical channel': (85, 15),
+        'etherchannel': (85, 15),
+        'pseudowire': (85, 15),
         'BGP peering': (85, 15),
-        'OSPF virtual link': (85, 15),
-        'Label Switched Path': (85, 15),
         'routed traffic': (85, 15),
         'static traffic': (85, 15),
         'ring': (50, 40), 
@@ -81,12 +81,12 @@ class CreationMenu(ScrolledFrame):
             button = TKButton(self.infr, relief=tk.FLAT, command=cmd)                
             if button_type in link_class:
                 button.configure(text={
-                                       'ethernet': 'Ethernet link',
-                                       'wdm': 'WDM link',
-                                       'static route': 'Static route',
+                                       'ethernet link': 'Ethernet link',
+                                       'optical link': 'Optical link',
+                                       'optical channel': 'Optical channel',
+                                       'etherchannel': 'Etherchannel',
+                                       'pseudowire': 'Pseudowire',
                                        'BGP peering': 'BGP peering',
-                                       'OSPF virtual link': 'OSPF virtual link',
-                                       'Label Switched Path': 'MPLS LSP',
                                        'routed traffic': 'Routed traffic',
                                        'static traffic': 'Static traffic' 
                             }[button_type], compound='top', font=font)
@@ -134,13 +134,12 @@ class CreationMenu(ScrolledFrame):
         sep = Separator(self.infr)
         sep.grid(3, 0, 1, 4, in_=lf_creation)
         
-        self.type_to_button['ethernet'].grid(4, 0, 1, 2, in_=lf_creation)
-        self.type_to_button['wdm'].grid(4, 2, 1, 2, in_=lf_creation)
-                                                
-        self.type_to_button['static route'].grid(5, 0, 1, 2, in_=lf_creation)
-        self.type_to_button['BGP peering'].grid(5, 2, 1, 2, in_=lf_creation)
-        self.type_to_button['OSPF virtual link'].grid(5, 0, 1, 2, in_=lf_creation)
-        self.type_to_button['Label Switched Path'].grid(5, 2, 1, 2, in_=lf_creation)
+        self.type_to_button['ethernet link'].grid(4, 0, 1, 2, in_=lf_creation)
+        self.type_to_button['optical link'].grid(4, 2, 1, 2, in_=lf_creation)
+        self.type_to_button['optical channel'].grid(5, 0, 1, 2, in_=lf_creation)
+        self.type_to_button['etherchannel'].grid(5, 2, 1, 2, in_=lf_creation)                             
+        self.type_to_button['pseudowire'].grid(6, 0, 1, 2, in_=lf_creation)
+        self.type_to_button['BGP peering'].grid(6, 2, 1, 2, in_=lf_creation)
         
         self.type_to_button['routed traffic'].grid(7, 0, 1, 2, in_=lf_creation)
         self.type_to_button['static traffic'].grid(7, 2, 1, 2, in_=lf_creation)

@@ -6,11 +6,11 @@ import re
 from objects.objects import *
 from pythonic_tkinter.preconfigured_widgets import *
 
-class SearchObject(CustomTopLevel):
+class SearchWindow(CustomTopLevel):
     
-    def __init__(self, master):
+    def __init__(self, scenario):
         super().__init__()
-        self.ms = master
+        self.cs = scenario
         
         # label frame for area properties
         lf_search = Labelframe(self)
@@ -45,6 +45,10 @@ class SearchObject(CustomTopLevel):
         
         # update property with first value of the list
         self.update_properties()
+
+        # hide the window when closed
+        self.protocol('WM_DELETE_WINDOW', self.withdraw)
+        self.withdraw()
         
     def update_properties(self, *_):
         subtype = self.subtypes_list.text
@@ -54,19 +58,19 @@ class SearchObject(CustomTopLevel):
         self.property_list.current(0)
         
     def search(self):
-        self.ms.cs.unhighlight_all()
+        self.cs.unhighlight_all()
         subtype, property = self.subtypes_list.text, self.property_list.text
         property = name_to_prop[property]
         type = subtype_to_type[subtype]
         input = self.entry_search.text
-        for obj in self.ms.cs.ntw.ftr(type, subtype):
+        for obj in self.cs.ntw.ftr(type, subtype):
             value = getattr(obj, property)
             if not self.is_regex.get():
-                converted_input = self.ms.objectizer(property, input)
+                converted_input = self.cs.ms.objectizer(property, input)
                 if value == converted_input:
-                    self.ms.cs.highlight_objects(obj)
+                    self.cs.highlight_objects(obj)
             else:
                 if re.search(str(input), str(value)):
-                    self.ms.cs.highlight_objects(obj)
+                    self.cs.highlight_objects(obj)
                 
         

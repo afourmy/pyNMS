@@ -3,7 +3,6 @@
 # Released under the GNU General Public License GPLv3
 
 import tkinter as tk
-import miscellaneous.search as search
 import re
 from os.path import join
 from pythonic_tkinter.preconfigured_widgets import *
@@ -11,6 +10,7 @@ from objects.objects import *
 from .shape_drawing import *
 from random import randint, choice
 from math import cos, sin, atan2, sqrt, radians
+from miscellaneous import search
 
 class BaseScenario(CustomFrame):
     
@@ -116,8 +116,11 @@ class BaseScenario(CustomFrame):
         self.cvs.bind('<B3-Motion>', self.scroll_move)
         self.cvs.bind('<ButtonRelease-3>', self.general_menu)
         
+        # search window
+        self.search_window = search.SearchWindow(self)
+        
         # use Ctrl+F to look for an object
-        self.cvs.bind('<Control-Key-f>', lambda e: search.SearchObject(master))
+        self.cvs.bind('<Control-Key-f>', lambda e: self.search_window.deiconify())
         
         # initialize other bindings depending on the mode
         self.switch_binding()
@@ -128,9 +131,6 @@ class BaseScenario(CustomFrame):
         
         # we also keep track of the closest object for the motion function
         self.co = None
-        
-        # switch the object rectangle selection by pressing space
-        self.cvs.bind('<space>', lambda: _)
         
         # add nodes to a current selection by pressing control
         self.ctrl = False
@@ -213,11 +213,11 @@ class BaseScenario(CustomFrame):
                 
             else:
                 # add bindings to create a link between two nodes
-                self.cvs.tag_bind('node', '<Button-1>', self.start_link)
-                self.cvs.tag_bind('node', '<B1-Motion>', self.line_creation)
+                self.cvs.tag_bind('node', '<Button-1>', self.start_link, add='+')
+                self.cvs.tag_bind('node', '<B1-Motion>', self.line_creation, add='+')
                 release = lambda event, type=type: self.link_creation(
                                                     event, self._creation_mode)
-                self.cvs.tag_bind('node', '<ButtonRelease-1>', release)
+                self.cvs.tag_bind('node', '<ButtonRelease-1>', release, add='+')
                 
     def adapt_coordinates(function):
         def wrapper(self, event, *others):
@@ -545,6 +545,7 @@ class BaseScenario(CustomFrame):
     def start_link(self, event):
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
         start_node = self.object_id_to_object[self.drag_item]
+        print(start_node, self.drag_item)
         self.temp_line = self.cvs.create_line(start_node.x, start_node.y, 
                         event.x, event.y, arrow=tk.LAST, arrowshape=(6,8,3))
         
@@ -1044,7 +1045,8 @@ class BaseScenario(CustomFrame):
         for obj in objects:
             if obj.class_type == 'node':
                 if random:
-                    obj.x, obj.y = randint(100,700), randint(100,700)
+                    obj.x = randint(int(obj.x) - 500, int(obj.x) + 500)
+                    obj.y = randint(int(obj.y) - 500, int(obj.y) + 500)
                 if not obj.image[1]:
                     self.create_node(obj)
             else:

@@ -8,7 +8,6 @@ from menus.insite_general_rightclick_menu import InSiteGeneralRightClickMenu
 from math import cos, sin, atan2, sqrt, radians
 from random import randint
 
-
 def overrider(interface_class):
     def overrider(method):
         assert(method.__name__ in dir(interface_class))
@@ -22,6 +21,13 @@ class InSiteScenario(BaseScenario):
         self.site = site
         self.ns = self.ms.ns
         self.ntw = self.ns.ntw
+        
+        # add binding to enter a site 
+        self.cvs.bind('<space>', self.back_to_site_view)
+        
+    # upon pressing space, back to the site scenario
+    def back_to_site_view(self, _):
+        self.ms.view_menu.switch_view('site')
         
     def adapt_coordinates(function):
         def wrapper(self, event, *others):
@@ -98,53 +104,12 @@ class InSiteScenario(BaseScenario):
             if hasattr(main_link_selected, 'path'):
                 self.highlight_objects(*main_link_selected.path)
                           
-    ## Right-click scroll
-    
-    def scroll_start(self, event):
-        # we record the position of the mouse when right-click is pressed
-        # to check, when it is released, if the intent was to drag the canvas
-        # or to have access to the right-click menu
-        self._start_pos_main_node = event.x, event.y
-        self.cvs.scan_mark(event.x, event.y)
-
-    def scroll_move(self, event):
-        self.cvs.scan_dragto(event.x, event.y, gain=1)
-
-    ## Zoom / unzoom on the canvas
-    
-    @adapt_coordinates
-    def zoomer(self, event):
-        ''' Zoom for window '''
-        self._cancel()
-        factor = 1.1 if event.delta > 0 else 0.9
-        self.diff_y *= factor
-        self.node_size *= factor
-        self.cvs.scale('all', event.x, event.y, factor, factor)
-        self.cvs.configure(scrollregion=self.cvs.bbox('all'))
-        self.update_nodes_coordinates(factor)
-        
-    @adapt_coordinates
-    def zoomerP(self, event):
-        ''' Zoom for Linux '''
-        self._cancel()
-        self.cvs.scale('all', event.x, event.y, 1.1, 1.1)
-        self.cvs.configure(scrollregion=self.cvs.bbox('all'))
-        self.update_nodes_coordinates(factor)
-        
-    @adapt_coordinates
-    def zoomerM(self, event):
-        ''' Zoom for Linux '''
-        self._cancel()
-        self.cvs.scale('all', event.x, event.y, 0.9, 0.9)
-        self.cvs.configure(scrollregion=self.cvs.bbox('all'))
-        self.update_nodes_coordinates(factor)
-    
+    @overrider(BaseScenario)
     def update_nodes_coordinates(self, factor):
         # scaling changes the coordinates of the oval, and we update 
         # the corresponding node's coordinates accordingly
         for node in self.site.ps['node']:
             new_coords = self.cvs.coords(node.site_oval[self.site][1])
-            print(new_coords, node)
             node.site_coords[self.site][0] = (new_coords[0] + new_coords[2]) / 2
             node.site_coords[self.site][1] = (new_coords[3] + new_coords[1]) / 2
             self.cvs.coords(node.site_lid[self.site], node.site_coords[self.site][0] - 15, node.site_coords[self.site][1] + 10)
@@ -182,6 +147,7 @@ class InSiteScenario(BaseScenario):
     ## Object creation
     
     @adapt_coordinates
+    @overrider(BaseScenario)
     def create_node_on_binding(self, event):
         # we create the node in both the insite scenario and the network scenario
         # the node will be at its geographical coordinates in the network scenario,
@@ -200,6 +166,7 @@ class InSiteScenario(BaseScenario):
         self.ns.create_node(node)
         self.ns.move_to_geographical_coordinates(node)
     
+    @overrider(BaseScenario)
     def create_node(self, node, layer=1):
         s = self.node_size
         curr_image = self.ms.dict_image['default'][node.subtype]
@@ -228,6 +195,7 @@ class InSiteScenario(BaseScenario):
             self.create_node_label(node)
             
     @adapt_coordinates
+    @overrider(BaseScenario)
     def start_link(self, event):
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
         start_node = self.object_id_to_object[self.drag_item]
@@ -241,6 +209,7 @@ class InSiteScenario(BaseScenario):
                                         )
         
     @adapt_coordinates
+    @overrider(BaseScenario)
     def line_creation(self, event):
         # remove the purple highlight of the closest object when creating 
         # a link: the normal system doesn't work because we are in 'B1-Motion'
@@ -259,6 +228,7 @@ class InSiteScenario(BaseScenario):
                         )
         
     @adapt_coordinates
+    @overrider(BaseScenario)
     def link_creation(self, event, subtype):
         # delete the temporary line
         self.cvs.delete(self.temp_line)
@@ -280,7 +250,7 @@ class InSiteScenario(BaseScenario):
                     # add in the network scenario as well
                     self.ns.create_link(new_link)
                     
-    
+    @overrider(BaseScenario)
     def create_link(self, new_link):
         edges = (new_link.source, new_link.destination)
         real_layer = sum(self.display_layer[:(new_link.layer+1)])
@@ -336,6 +306,7 @@ class InSiteScenario(BaseScenario):
         self._create_link_label(new_link)
         self.refresh_label(new_link)
     
+    @overrider(BaseScenario)
     def multiple_nodes(self, n, subtype, x, y):
         for node in self.ns.ntw.multiple_nodes(n, subtype):
             node.site_coords[self.site][0] = x
@@ -344,6 +315,7 @@ class InSiteScenario(BaseScenario):
     ## Motion
     
     @adapt_coordinates
+    @overrider(BaseScenario)
     def node_motion(self, event):
         # destroy the tip window when moving a node
         self.pwindow.destroy()
@@ -362,33 +334,8 @@ class InSiteScenario(BaseScenario):
             selected_node.site_coords[self.site][0] = x1 + (event.x - x0)
             selected_node.site_coords[self.site][1] = y1 + (event.y + diff - y0)
             self.move_node(selected_node)
-        
-    @adapt_coordinates
-    def shape_motion(self, event):
-        shape = self.object_id_to_object[self.drag_item]
-        for ss in self.so['shape']:
-            self.move_shape(ss, event)
-        
-    def move_shape(self, shape, event):
-        x0, y0 = self._start_pos_main_node
-        x1, y1 = self._dict_start_position[shape]
-        dx, dy = x1 - x0, y1 - y0
-        if shape.subtype == 'label':
-            self.cvs.coords(shape.id, dx + event.x, dy + event.y)
-            shape.x, shape.y = dx + event.x, dy + event.y
-        else:
-            coords = self.cvs.coords(shape.id)
-            initial = coords[2:]
-            shape.x, shape.y = initial
-            self.cvs.coords(
-                            shape.id, 
-                            coords[0] + dx + event.x - initial[0], 
-                            coords[1] + dy + event.y - initial[1],
-                            dx + event.x,
-                            dy + event.y
-                            )
-            
-                
+          
+    @overrider(BaseScenario)
     def move_node(self, n):
         newx, newy = float(n.site_coords[self.site][0]), float(n.site_coords[self.site][1])
         s = self.node_size
@@ -428,13 +375,10 @@ class InSiteScenario(BaseScenario):
                     if link in self.ns.ntw.failed_obj:
                         mid_x, mid_y = link_to_coords[link][2:4]
                         self.cvs.coords(self.id_fdtks[link], mid_x, mid_y)
-                        
-    def move_nodes(self, nodes):
-        for node in nodes:
-            self.move_node(node)
             
     ## Object deletion
-                    
+                  
+    @overrider(BaseScenario)
     def remove_objects(self, *objects):
         for obj in objects:
             if hasattr(obj, 'AS'):
@@ -494,7 +438,8 @@ class InSiteScenario(BaseScenario):
         self.so.clear()
         self.temp_line = None
         self.drag_item = None
-                            
+              
+    @overrider(BaseScenario)
     def erase_all(self):
         self.cvs.delete('node', 'link', 'line')
         self.id_fdtks.clear()

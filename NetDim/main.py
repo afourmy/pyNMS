@@ -14,8 +14,8 @@ path_app = dirname(abspath(stack()[0][1]))
 if path_app not in sys.path:
     sys.path.append(path_app)
 
-import gui
+import controller
 
 if str.__eq__(__name__, '__main__'):
-    netdim = gui.NetDim(path_app)
+    netdim = controller.Controller(path_app)
     netdim.mainloop()

@@ -37,7 +37,7 @@ try:
 except ImportError:
     warnings.warn('SHP librairies missing: map import disabled')
 
-class NetDim(MainWindow):
+class Controller(MainWindow):
     
     def __init__(self, path_app):
         super().__init__()

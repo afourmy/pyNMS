@@ -142,7 +142,6 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
             # multiple links creation menu
             self.add_command(label='Create multiple links', 
                                 command=lambda: self.multiple_links(self.cs))
-            self.add_separator()
             
         # make the menu appear    
         self.tk_popup(event.x_root, event.y_root)

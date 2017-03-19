@@ -42,11 +42,20 @@ class GeoScenario(BaseScenario):
     @overrider(BaseScenario)
     def create_node_on_binding(self, event):
         node = self.ntw.nf(node_type=self._creation_mode, x=event.x, y=event.y)
-        self.create_node(node)
         # update logical and geographical coordinates
         lon, lat = self.world_map.get_geographical_coordinates(node.x, node.y)
         node.longitude, node.latitude = lon, lat
         node.logical_x, node.logical_y = node.x, node.y
+        self.create_node(node)
+      
+    @overrider(BaseScenario)
+    def create_node(self, node, layer=1):
+        super(GeoScenario, self).create_node(node, layer)
+        # if the node wasn't created from the binding (e.g import or graph
+        # generation), its canvas coordinates are initialized at (0, 0). 
+        # we update them based on their geographical coordinates
+        node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
+
         
     @overrider(BaseScenario)
     def create_link(self, new_link):
@@ -59,6 +68,8 @@ class GeoScenario(BaseScenario):
             self.cvs.tag_lower(map_obj)
         if self.world_map.is_spherical():
             self.cvs.tag_lower(self.world_map.oval_id)
+            
+    
             
     ## Map Menu
     
