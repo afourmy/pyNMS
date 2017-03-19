@@ -27,9 +27,9 @@ class GeoScenario(BaseScenario):
     def switch_binding(self): 
         super(GeoScenario, self).switch_binding()
         
-        if self._mode == 'motion':
-            self.cvs.tag_bind('water', '<ButtonPress-1>', self.move_sphere, add='+')
-            self.cvs.tag_bind('Area', '<ButtonPress-1>', self.move_sphere, add='+')
+        # if self._mode == 'motion':
+            # self.cvs.tag_bind('water', '<ButtonPress-1>', self.move_sphere, add='+')
+            # self.cvs.tag_bind('Area', '<ButtonPress-1>', self.move_sphere, add='+')
         
     @adapt_coordinates
     def move_sphere(self, event):
