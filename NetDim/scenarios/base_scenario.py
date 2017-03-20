@@ -545,7 +545,6 @@ class BaseScenario(CustomFrame):
     def start_link(self, event):
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
         start_node = self.object_id_to_object[self.drag_item]
-        print(start_node, self.drag_item)
         self.temp_line = self.cvs.create_line(start_node.x, start_node.y, 
                         event.x, event.y, arrow=tk.LAST, arrowshape=(6,8,3))
         
@@ -716,9 +715,16 @@ class BaseScenario(CustomFrame):
                     
     def remove_objects(self, *objects):
         for obj in objects:
+
+            # FIRST, remove the object from all sites it belongs to 
+            for site in set(obj.sites):
+                site.scenario.remove_object_from_insite_view(obj)
+                site.remove_from_site(obj)
+                
             if hasattr(obj, 'AS'):
                 for AS in list(obj.AS):
                     AS.management.remove_from_AS(obj)
+                    
             if obj.class_type == 'node':
                 del self.object_id_to_object[obj.oval[1]]
                 del self.object_id_to_object[obj.image[1]]
@@ -733,6 +739,11 @@ class BaseScenario(CustomFrame):
                                     )
                                     
             elif obj.class_type == 'link':
+                # in case both nodes and links are selected, a link may have 
+                # been deleted from a node deletion: we check it hasn't been
+                # deleted yet
+                if obj.line not in self.object_id_to_object: #and obj.name not in self.ntw.name_to_id:
+                    continue
                 # we remove the label of the attached interfaces
                 self.cvs.delete(obj.ilid[0], obj.ilid[1])
                 # we remove the line as well as the label on the canvas
@@ -757,13 +768,12 @@ class BaseScenario(CustomFrame):
                             # associated 'layer to layer line id' dictionnary
                             self.cvs.delete(edge.layer_line[obj.layer])
                             edge.layer_line[obj.layer] = None
-                            
             else:
                 # object is a shape
                 # we remove it from the model and erase it from the canvas
                 self.cvs.delete(obj.id)
                 del self.object_id_to_object[obj.id]
-                            
+                
             if obj in self.ntw.failed_obj:
                 self.remove_failure(obj)
                             

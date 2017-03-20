@@ -128,14 +128,14 @@ class BaseNetwork(object):
             s, d = kwargs['source'], kwargs['destination']
             id = self.cpt_link
             if not name:
-                name = subtype + str(len(list(self.ftr(link_type, subtype))))
+                name = subtype + str(self.cpt_link)
             kwargs.update({'id': id, 'name': name})
             new_link = link_class[subtype](**kwargs)
             self.name_to_id[name] = id
             self.pn[link_type][id] = new_link
             self.graph[s.id][link_type].add((d, new_link))
             self.graph[d.id][link_type].add((s, new_link))
-            if subtype in ('ethernet', 'wdm'):
+            if subtype in ('ethernet link', 'optical link'):
                 self.interfaces |= {new_link.interfaceS, new_link.interfaceD}
             self.cpt_link += 1
         return self.pn[link_type][id]
@@ -144,7 +144,7 @@ class BaseNetwork(object):
     def nf(self, node_type='router', id=None, **kwargs):
         if not id:
             if 'name' not in kwargs:
-                name = node_type + str(len(list(self.ftr('node', node_type))))
+                name = node_type + str(self.cpt_node)
                 kwargs['name'] = name
             else:
                 if kwargs['name'] in self.name_to_id:
@@ -204,6 +204,7 @@ class BaseNetwork(object):
         dict_of_adj_links = self.graph.pop(node.id, {})
         for type_link, adj_obj in dict_of_adj_links.items():
             for neighbor, adj_link in adj_obj:
+                print('base network', adj_link)
                 yield adj_link
 
     def remove_link(self, link):

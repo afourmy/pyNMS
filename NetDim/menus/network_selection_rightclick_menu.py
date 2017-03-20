@@ -136,13 +136,6 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
                 command=lambda: InterfaceWindow(self.cs.master, destination_if))
                 self.add_cascade(label='Interface menu', menu=menu_interfaces)
             
-        # only nodes: 
-        if self.no_shape and self.no_link:
-            
-            # multiple links creation menu
-            self.add_command(label='Create multiple links', 
-                                command=lambda: self.multiple_links(self.cs))
-            
         # make the menu appear    
         self.tk_popup(event.x_root, event.y_root)
     
@@ -222,10 +215,6 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
     def change_property(self, objects, subtype):
         objects = set(objects)
         PropertyChanger(self.cs.ms, objects, subtype)
-        
-    @empty_selection_and_destroy_menu
-    def multiple_links(self, scenario):
-        mobj.MultipleLinks(scenario, set(self.cs.so['node']))
         
     @empty_selection_and_destroy_menu
     def enter_site(self, site):

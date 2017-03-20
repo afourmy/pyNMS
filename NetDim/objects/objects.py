@@ -559,6 +559,8 @@ class NDobject(object):
     def __init__(self):
         # per-site id
         self.site_id = {}
+        # sites is the set of sites the object belongs to
+        self.sites = set()
 
 ## Nodes
 class Node(NDobject):
@@ -607,8 +609,6 @@ class Node(NDobject):
         # than AS itself: if we have the AS, AS.name is the name, while if we 
         # have the name, it is more verbose to retrieve the AS itself)
         self.AS_properties = defaultdict(dict)
-        # sites is the set of sites the node belongs to
-        self.sites = set()
         super().__init__()
         
     def __repr__(self):
@@ -671,6 +671,7 @@ class Site(Node):
             if obj in self.ps[obj.class_type]:
                 continue
             self.ps[obj.class_type].add(obj)
+            obj.sites.add(self)
             obj.site_id[self] = None
             if obj.class_type == 'node':
                 # initialize all site properties
@@ -685,6 +686,9 @@ class Site(Node):
                 self.scenario.create_node(obj)
             else:
                 # it is a link
+                # add the edges first:
+                for edge in (obj.source, obj.destination):
+                    self.add_to_site(edge)
                 obj.site_line[self] = None
                 obj.site_lid[self] = None
                 obj.site_ilid[self] = [None]*2
@@ -692,11 +696,21 @@ class Site(Node):
                 # draw the object in the insite view
                 self.scenario.create_link(obj)
 
-            
     def remove_from_site(self, *objects):
         for obj in objects:
             self.ps[obj.class_type].remove(obj)
-            #TODO pop all site properties
+            obj.sites.remove(self)
+            if obj.class_type == 'node':
+                obj.site_oval.pop(self)
+                obj.site_image.pop(self)
+                obj.site_layer_line.pop(self)
+                obj.site_lid.pop(self)
+                obj.site_size.pop(self)
+            else:
+                obj.site_line.pop(self)
+                obj.site_lid.pop(self)
+                obj.site_ilid.pop(self)
+                obj.site_lpos.pop(self)
         
 class Router(Node):
     

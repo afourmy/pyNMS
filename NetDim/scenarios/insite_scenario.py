@@ -5,6 +5,7 @@
 from .base_scenario import BaseScenario
 from objects.objects import *
 from menus.insite_general_rightclick_menu import InSiteGeneralRightClickMenu
+from menus.network_selection_rightclick_menu import NetworkSelectionRightClickMenu
 from math import cos, sin, atan2, sqrt, radians
 from random import randint
 
@@ -22,7 +23,11 @@ class InSiteScenario(BaseScenario):
         self.ns = self.ms.ns
         self.ntw = self.ns.ntw
         
-        # add binding to enter a site 
+        # add binding for right-click menu 
+        self.cvs.tag_bind('object', '<ButtonPress-3>',
+                                lambda e: NetworkSelectionRightClickMenu(e, self))
+        
+        # add binding to exit the insite view, back to the site view
         self.cvs.bind('<space>', self.back_to_site_view)
         
     # upon pressing space, back to the site scenario
@@ -377,60 +382,69 @@ class InSiteScenario(BaseScenario):
                         self.cvs.coords(self.id_fdtks[link], mid_x, mid_y)
             
     ## Object deletion
-                  
+    
     @overrider(BaseScenario)
     def remove_objects(self, *objects):
-        for obj in objects:
-            if hasattr(obj, 'AS'):
-                for AS in list(obj.AS):
-                    AS.management.remove_from_AS(obj)
-            if obj.class_type == 'node':
-                del self.object_id_to_object[obj.site_oval[self.site][1]]
-                del self.object_id_to_object[obj.site_image[self.site][1]]
-                self.cvs.delete(obj.site_oval[self.site][1], obj.site_image[self.site][1], obj.site_lid[self.site])
-                self.remove_objects(*self.ns.ntw.remove_node(obj))
-                if self.layered_display:
-                    for layer in range(2, self.nbl + 1):
-                        self.cvs.delete(
+        self.ns.remove_objects(*objects)
+                  
+    def remove_object_from_insite_view(self, obj):
+        if obj.class_type == 'node':
+            del self.object_id_to_object[obj.site_oval[self.site][1]]
+            del self.object_id_to_object[obj.site_image[self.site][1]]
+            self.cvs.delete(
+                            obj.site_oval[self.site][1], 
+                            obj.site_image[self.site][1], 
+                            obj.site_lid[self.site]
+                            )
+            if self.layered_display:
+                for layer in range(2, self.nbl + 1):
+                    self.cvs.delete(
                                     obj.site_oval[self.site][layer], 
                                     obj.site_image[self.site][layer], 
                                     obj.site_layer_line[self.site][layer]
                                     )
-                                    
-            elif obj.class_type == 'link':
-                # we remove the label of the attached interfaces
-                self.cvs.delete(obj.site_ilid[self.site][0], obj.site_ilid[self.site][1])
-                # we remove the line as well as the label on the canvas
-                self.cvs.delete(obj.site_line[self.site], obj.site_lid[self.site])
-                # we remove the id in the 'id to object' dictionnary
-                del self.object_id_to_object[obj.site_line[self.site]]
-                # we remove the associated link in the network model
-                self.ns.ntw.remove_link(obj)
-                # if the layered display is activate and the link 
-                # to delete is not a physical link
-                if self.layered_display and obj.layer:
-                    for edge in (obj.source, obj.destination):
-                        # we check if there still are other links of the same
-                        # type (i.e at the same layer) between the edge nodes
-                        if not set(self.ns.ntw.graph[edge.id][obj.type]) & set(self.site.ps['link']):
-                            # if that's not the case, we delete the upper-layer
-                            # projection of the edge nodes, and reset the 
-                            # associated 'layer to projection id' dictionnary
-                            self.cvs.delete(edge.site_oval[self.site][obj.layer], edge.site_image[self.site][obj.layer])
-                            # edge.site_image[self.site][obj.layer] = edge.site_oval[self.site][obj.layer] = None
-                            # we delete the dashed 'layer line' and reset the
-                            # associated 'layer to layer line id' dictionnary
-                            self.cvs.delete(edge.site_layer_line[self.site][obj.layer])
-                            edge.site_layer_line[self.site][obj.layer] = None
-                            
-            else:
-                # object is a shape
-                # we remove it from the model and erase it from the canvas
-                self.cvs.delete(obj.site_id[self.site])
-                del self.object_id_to_object[obj.site_id[self.site]]
-                            
-            if obj in self.ns.ntw.failed_obj:
-                self.remove_failure(obj)
+                                
+        elif obj.class_type == 'link':
+            # we remove the label of the attached interfaces
+            self.cvs.delete(
+                            obj.site_ilid[self.site][0], 
+                            obj.site_ilid[self.site][1]
+                            )
+            # we remove the line as well as the label on the canvas
+            self.cvs.delete(
+                            obj.site_line[self.site], 
+                            obj.site_lid[self.site]
+                            )
+            # we remove the id in the 'id to object' dictionnary
+            del self.object_id_to_object[obj.site_line[self.site]]
+            # if the layered display is activate and the link 
+            # to delete is not a physical link
+            if self.layered_display and obj.layer:
+                for edge in (obj.source, obj.destination):
+                    # we check if there still are other links of the same
+                    # type (i.e at the same layer) between the edge nodes
+                    if not set(self.ns.ntw.graph[edge.id][obj.type]) & set(self.site.ps['link']):
+                        # if that's not the case, we delete the upper-layer
+                        # projection of the edge nodes, and reset the 
+                        # associated 'layer to projection id' dictionnary
+                        self.cvs.delete(
+                                        edge.site_oval[self.site][obj.layer], 
+                                        edge.site_image[self.site][obj.layer]
+                                        )
+                        # edge.site_image[self.site][obj.layer] = edge.site_oval[self.site][obj.layer] = None
+                        # we delete the dashed 'layer line' and reset the
+                        # associated 'layer to layer line id' dictionnary
+                        self.cvs.delete(edge.site_layer_line[self.site][obj.layer])
+                        edge.site_layer_line[self.site][obj.layer] = None
+                        
+        else:
+            # object is a shape
+            # we remove it from the model and erase it from the canvas
+            self.cvs.delete(obj.site_id[self.site])
+            del self.object_id_to_object[obj.site_id[self.site]]
+                        
+        if obj in self.ns.ntw.failed_obj:
+            self.remove_failure(obj)
                             
     def erase_graph(self):
         self.object_id_to_object.clear()
