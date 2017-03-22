@@ -442,6 +442,9 @@ class InSiteScenario(BaseScenario):
             # we remove it from the model and erase it from the canvas
             self.cvs.delete(obj.site_id[self.site])
             del self.object_id_to_object[obj.site_id[self.site]]
+            
+        # remove the object from selected objects if it was selected
+        self.so[obj.class_type].discard(obj)
                         
         if obj in self.ns.ntw.failed_obj:
             self.remove_failure(obj)
@@ -653,11 +656,11 @@ class InSiteScenario(BaseScenario):
         # of the line between the end point and the middle point
         # source interface label coordinates:
         s = self.offcenter(coeff, *self.if_label(link))
-        link.ilid[0] = self.cvs.create_text(*s, anchor='nw', fill='red',
+        link.site_ilid[self.site][0] = self.cvs.create_text(*s, anchor='nw', fill='red',
                                                     tags='label', font='bold')
         # destination interface label coordinates:                                                        
         d = self.offcenter(coeff, *self.if_label(link, 'd'))
-        link.ilid[1] = self.cvs.create_text(*d, anchor='nw', fill='red', 
+        link.site_ilid[self.site][1] = self.cvs.create_text(*d, anchor='nw', fill='red', 
                                                     tags='label', font='bold')
         self.refresh_label(link)
                         
@@ -693,8 +696,8 @@ class InSiteScenario(BaseScenario):
     def update_link_label_coordinates(self, link):
         coeff = self.compute_coeff(link)
         self.cvs.coords(link.site_lid[self.site], *self.offcenter(coeff, *link.site_lpos[self.site]))
-        self.cvs.coords(link.ilid[0], *self.offcenter(coeff, *self.if_label(link)))
-        self.cvs.coords(link.ilid[1], *self.offcenter(coeff, *self.if_label(link, 'd')))
+        self.cvs.coords(link.site_ilid[self.site][0], *self.offcenter(coeff, *self.if_label(link)))
+        self.cvs.coords(link.site_ilid[self.site][1], *self.offcenter(coeff, *self.if_label(link, 'd')))
         
     # cancel the graph drawing job
     def _cancel(self):

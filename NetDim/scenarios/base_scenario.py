@@ -742,7 +742,7 @@ class BaseScenario(CustomFrame):
                 # in case both nodes and links are selected, a link may have 
                 # been deleted from a node deletion: we check it hasn't been
                 # deleted yet
-                if obj.line not in self.object_id_to_object: #and obj.name not in self.ntw.name_to_id:
+                if obj.line not in self.object_id_to_object:
                     continue
                 # we remove the label of the attached interfaces
                 self.cvs.delete(obj.ilid[0], obj.ilid[1])
