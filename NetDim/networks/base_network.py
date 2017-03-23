@@ -172,7 +172,7 @@ class BaseNetwork(object):
         return self.nf(name=node_name)
     
     # convert a link name to a node
-    def convert_link(self, link_name, subtype='ethernet'):
+    def convert_link(self, link_name, subtype='ethernet link'):
         return self.lf(name=link_name, subtype=subtype)
     
     # convert a string representing a set of nodes, to an actual set of nodes
@@ -184,12 +184,12 @@ class BaseNetwork(object):
         return list(map(self.convert_node, eval(node_list)))
     
     # convert a string representing a set of links, to an actual set of links
-    def convert_link_set(self, link_set, subtype='ethernet'):
+    def convert_link_set(self, link_set, subtype='ethernet link'):
         convert = lambda link: self.convert_link(link, subtype)
         return set(map(convert, eval(link_set)))
     
     # convert a string representing a list of links, to an actual list of links
-    def convert_link_list(self, link_list, subtype='ethernet'):
+    def convert_link_list(self, link_list, subtype='ethernet link'):
         convert = lambda link: self.convert_link(link, subtype)
         return list(map(convert, eval(link_list)))
             

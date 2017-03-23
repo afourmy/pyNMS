@@ -17,12 +17,12 @@ if path_app not in sys.path:
     
 path_parent = abspath(join(path_app, pardir))
 
-import gui
+import controller
 
 def start_and_import(filename):
     def inner_decorator(function):
         def wrapper(self):
-            self.netdim = gui.NetDim(path_app)
+            self.netdim = controller.Controller(path_app)
             self.ntw = self.netdim.cs.ntw
             path_test = path_parent + '\\Tests\\'
             self.netdim.import_graph(path_test + filename)
@@ -35,32 +35,31 @@ class TestExportImport(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super(TestExportImport, cls).setUpClass()
-        cls.netdim = gui.NetDim(path_app)
+        cls.netdim = controller.Controller(path_app)
         src = cls.netdim.cs.ntw.nf(name='s')
         dest = cls.netdim.cs.ntw.nf(name='d')
         dest.x, src.x = 42, 24
         plink = cls.netdim.cs.ntw.lf(
-                                     name='t', 
-                                     source=src, 
-                                     destination=dest
+                                     name = 't', 
+                                     source = src, 
+                                     destination = dest
                                      )
         plink.distance = 666
         route = cls.netdim.cs.ntw.lf(
-                                     subtype='static route',
-                                     source=src, 
-                                     destination=dest
+                                     subtype = 'routed traffic',
+                                     source = src, 
+                                     destination = dest
                                      )
         # export in excel and csv
         path = '\\Tests\\test_export.'
-        for extension in ('xls', 'csv'):
-            cls.netdim.export_graph(''.join((path_parent, path, extension)))
+        cls.netdim.export_graph(''.join((path_parent, path, 'xls')))
         cls.netdim.destroy()
         
     def tearDown(self):
         self.netdim.destroy()
         
     def object_import(self, ext):
-        self.netdim = gui.NetDim(path_app)
+        self.netdim = controller.Controller(path_app)
         self.netdim.import_graph(path_parent + '\\Tests\\test_export.' + ext)
         x_coord = set(map(lambda n: n.x, self.netdim.cs.ntw.pn['node'].values()))
         self.assertEqual(x_coord, {42, 24})

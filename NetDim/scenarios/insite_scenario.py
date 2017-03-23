@@ -445,6 +445,7 @@ class InSiteScenario(BaseScenario):
             
         # remove the object from selected objects if it was selected
         self.so[obj.class_type].discard(obj)
+        self.co = None
                         
         if obj in self.ns.ntw.failed_obj:
             self.remove_failure(obj)
