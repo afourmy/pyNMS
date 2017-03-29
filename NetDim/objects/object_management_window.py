@@ -177,6 +177,7 @@ class ObjectManagementWindow(FocusTopLevel):
                 setattr(self.current_obj, property, self.current_path)
             if property == 'sites':
                 value = set(re.sub(r'\s+', '', value).split(','))
+                value = set(map(self.ms.ss.ntw.convert_node, value))
                 setattr(self.current_obj, property, value)
             elif property in self.property_list:
                 if property in ('ipS', 'ipD', 'default_route'):
