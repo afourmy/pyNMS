@@ -14,6 +14,7 @@ import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
 import ip_networks.bgp_table as ip_bgpt
 import graph_generation.multiple_objects as mobj
+from automation.send_script import SendScript
 from miscellaneous import site_operations
 from .alignment_menu import AlignmentMenu
 from .map_menu import MapMenu
@@ -70,6 +71,13 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
                             command=lambda: self.switching_table(node))
                 self.add_cascade(label='Tables', menu=menu_tables)
 
+            self.add_separator()
+            
+        # only nodes: procedure to send a script to all selected devices
+        if self.no_shape and self.no_link:
+            self.add_command(label='Send a script', 
+                        command=lambda: self.send_script(self.all_so))
+                        
             self.add_separator()
         
         if self.no_shape:
@@ -192,6 +200,10 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
     @empty_selection_and_destroy_menu
     def troubleshoot(self, node):
         ip_ts.Troubleshooting(node, self.cs)
+        
+    @empty_selection_and_destroy_menu
+    def send_script(self, nodes):
+        SendScript(self.cs, nodes)
         
     @empty_selection_and_destroy_menu
     def connection(self, node):

@@ -18,6 +18,7 @@ from miscellaneous import debug
 from ip_networks import ssh_management
 from graph_generation import advanced_graph as adv_gr
 from optical_networks import rwa_window as rwaw
+from automation import script_creation
 from menus import (
                    creation_menu, 
                    routing_menu,
@@ -53,6 +54,9 @@ class Controller(MainWindow):
         
         colors = ['default', 'red', 'purple']
         
+        # dict of script (script name -> Script object)
+        self.scripts = {}
+        
         # scenario notebook
         self.scenario_notebook = Notebook(self)
         self.scenario_notebook.bind('<ButtonRelease-1>', self.change_cs)
@@ -87,6 +91,9 @@ class Controller(MainWindow):
         
         # SSH management window
         self.ssh_management_window = ssh_management.SSHWindow(self)
+        
+        # Script creation window
+        self.script_creation_window = script_creation.ScriptCreation(self)
         
         ## ----- Menus : -----
         netdim_menu = Menu(self)
@@ -163,6 +170,10 @@ class Controller(MainWindow):
         ssh_management_entry = MenuEntry(advanced_menu)
         ssh_management_entry.text = 'SSH connection management'
         ssh_management_entry.command = self.ssh_management_window.deiconify
+        
+        script_creation_entry = MenuEntry(advanced_menu)
+        script_creation_entry.text = 'Script creation'
+        script_creation_entry.command = self.script_creation_window.deiconify
         
         advanced_menu.create_menu()
         netdim_menu.add_cascade(label='Network routing',menu=advanced_menu)

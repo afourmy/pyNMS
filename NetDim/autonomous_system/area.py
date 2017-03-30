@@ -44,20 +44,24 @@ class CreateArea(CustomTopLevel):
         super().__init__()      
         self.title('Create area')   
         
-        self.label_name = ttk.Label(self, text='Area name')
-        self.label_id = ttk.Label(self, text='Area id')
-        self.entry_name = ttk.Entry(self, width=9)
-        self.entry_id = ttk.Entry(self, width=9)
+        label_name = Label(self)
+        label_name.text = 'Area name'
         
-        self.label_name.grid(row=0, column=0, pady=5, padx=5)
-        self.label_id.grid(row=1, column=0, pady=5, padx=5)
-        self.entry_name.grid(row=0, column=1, pady=5, padx=5)
-        self.entry_id.grid(row=1, column=1, pady=5, padx=5)
+        label_id = Label(self)
+        label_id.text = 'Area id'
         
-        self.button_OK = ttk.Button(self, text='OK', 
-                                        command=lambda: self.create_area(asm))
-        self.button_OK.grid(row=2, column=0, columnspan=2, 
-                                        pady=5, padx=5, sticky='nsew')
+        self.entry_name = Entry(self, width=9)
+        self.entry_id = Entry(self, width=9)
+        
+        button_OK = Button(self)
+        button_OK.text = 'OK'
+        button_OK.command = lambda: self.create_area(asm)
+        
+        label_name.grid(0, 0)
+        label_id.grid(1, 0)
+        self.entry_name.grid(0, 1)
+        self.entry_id.grid(1, 1)
+        button_OK.grid(2, 0, 1, 2)
         
     def create_area(self, asm):
         asm.create_area(self.entry_name.get(), self.entry_id.get())
