@@ -31,18 +31,20 @@ class ObjectManagementWindow(FocusTopLevel):
     'dst_sntw': (None,)
     }
                 
-    def __init__(self, master, type):
+    def __init__(self, master, obj):
         super().__init__()
         self.ms = master
         self.ntw = self.ms.cs.ntw
-        self.title('Manage {} properties'.format(type))
-
+        self.title('Manage {} properties'.format(obj.name))
         # current node which properties are displayed
-        self.current_obj = None
+        self.current_obj = obj
+        
         # current path of the object: computing a path is not saving it
         self.current_path = None
+        
         # dictionnary containing all global properties entries / combobox
         self.dict_global_properties = {}
+        
         # dictionnary containing all per-AS properties
         self.dict_perAS_properties = {}
 
@@ -53,7 +55,7 @@ class ObjectManagementWindow(FocusTopLevel):
         lf_global.text = 'Global properties'
         lf_global.grid(1, 0, 1, 2)
         
-        for index, property in enumerate(object_properties[type]):
+        for index, property in enumerate(object_properties[obj.subtype]):
             
             # too much trouble handling interfaces here
             if property in ('interfaceS', 'interfaceD'):
@@ -77,7 +79,7 @@ class ObjectManagementWindow(FocusTopLevel):
             label.grid(index+1, 0, pady=1, in_=lf_global)
             pvalue.grid(index+1, 1, pady=1, in_=lf_global)
             
-        if type in perAS_properties:
+        if obj.subtype in perAS_properties:
             # labelframe for per-AS interface properties
             lf_perAS = Labelframe(self)
             lf_perAS.text = 'Per-AS properties'
@@ -89,7 +91,7 @@ class ObjectManagementWindow(FocusTopLevel):
             self.AS_combobox.bind('<<ComboboxSelected>>', self.update_AS_properties)
             self.AS_combobox.grid(0, 0, in_=lf_perAS)
         
-            for index, property in enumerate(perAS_properties[type]):
+            for index, property in enumerate(perAS_properties[obj.subtype]):
                 
                 # creation of the label associated to the property
                 text = prop_to_nice_name[property]
@@ -117,10 +119,12 @@ class ObjectManagementWindow(FocusTopLevel):
         button_save_obj.command = lambda: self.save_obj()
         button_save_obj.grid(0, 1)
         
+        # update all properties with the selected object properties
+        self.update()
+        
         # when the window is closed, save all parameters (in case the user
         # made a change), then withdraw the window.
-        self.protocol('WM_DELETE_WINDOW', lambda: self.save_and_withdraw())
-        self.withdraw()
+        self.protocol('WM_DELETE_WINDOW', lambda: self.save_and_destroy())
         
     def update_AS_properties(self, _):
         AS = self.AS_combobox.text
@@ -210,9 +214,9 @@ class ObjectManagementWindow(FocusTopLevel):
                     value = self.ntw.prop_to_type[property](entry.text)
                     self.current_obj(AS, property, value)
                 
-    def save_and_withdraw(self):
+    def save_and_destroy(self):
         self.save_obj()
-        self.withdraw()
+        self.destroy()
             
     def update(self):
         for property, property_widget in self.dict_global_properties.items():

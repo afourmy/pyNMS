@@ -17,7 +17,7 @@ import graph_generation.multiple_objects as mobj
 from miscellaneous import site_operations
 from .alignment_menu import AlignmentMenu
 from .map_menu import MapMenu
-from objects.object_management_window import PropertyChanger
+from objects.object_management_window import ObjectManagementWindow, PropertyChanger
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
                                 
@@ -138,9 +138,7 @@ class BaseSelectionRightClickMenu(tk.Menu):
     @empty_selection_and_destroy_menu
     def show_object_properties(self):
         so ,= self.all_so
-        self.cs.master.dict_obj_mgmt_window[so.subtype].current_obj = so
-        self.cs.master.dict_obj_mgmt_window[so.subtype].update()
-        self.cs.master.dict_obj_mgmt_window[so.subtype].deiconify()
+        ObjectManagementWindow(self.cs.ms, so)
         
     @empty_selection_and_destroy_menu
     def change_property(self, objects, subtype):

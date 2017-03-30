@@ -9,7 +9,6 @@ from scenarios import network_scenario, site_scenario
 from collections import defaultdict
 from os.path import abspath, pardir, join
 from tkinter import ttk, filedialog
-from objects import object_management_window as omw
 from objects.objects import *
 from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous import graph_algorithms as galg
@@ -231,9 +230,9 @@ class Controller(MainWindow):
         self.img_failure = ImageTk.PhotoImage(img_pil)
         
         # object management windows
-        self.dict_obj_mgmt_window = {}
-        for obj in object_properties:
-            self.dict_obj_mgmt_window[obj] = omw.ObjectManagementWindow(self, obj)
+        # self.dict_obj_mgmt_window = {}
+        # for obj in object_properties:
+        #     self.dict_obj_mgmt_window[obj] = omw.ObjectManagementWindow(self, obj)
                 
         self.menu_notebook = Notebook(self)
         
@@ -308,8 +307,12 @@ class Controller(MainWindow):
     def objectizer(self, property, value):
         if value == 'None': 
             return None
-        else:
+        elif property in self.cs.ntw.prop_to_type:
             return self.cs.ntw.prop_to_type[property](value)
+        # if the property doesn't exist, we consider it is a string
+        else:
+            self.cs.ntw.prop_to_type[property] = str
+            return value
                         
     def mass_objectizer(self, properties, values):
         kwargs = {}

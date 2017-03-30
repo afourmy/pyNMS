@@ -11,6 +11,25 @@ def initializer(default_properties):
         def wrapper(self, *a, **kw):
             for k in kw:
                 setattr(self, k, kw[k])
+                # if the imported property is not an existing NetDim property,
+                # we make sure to add it everywhere it is needed, so that it's
+                # properly added to the model and displayed
+                # it is also automatically made exportable
+                if (k not in object_properties[self.__class__.subtype]
+                        and k is not 'id'):
+                    for property_manager in (
+                                             object_properties,
+                                             object_ie,
+                                             box_properties,
+                                             ):
+                        property_manager[self.__class__.subtype] += (k,)
+                    prop_to_nice_name[k] = k
+                    # 
+                    # [self.__class__.subtype] += (k,)
+                    # [self.__class__.subtype] += (k,)
+                    # [self.__class__.subtype] += (k,)
+                    # prop_
+                    
             for property in default_properties:
                 value = default_properties[property]
                 if not hasattr(self, property):
@@ -82,11 +101,6 @@ subtype_to_type = {
 # 0) properties common to all objects
 
 obj_common_properties = (
-'property_1',
-'property_2',
-'property_3',
-'property_4',
-'property_5'
 )
 
 # 1) properties common to all nodes
@@ -501,11 +515,6 @@ prop_to_nice_name = {
 'cost': 'Cost',
 'capacitySD': 'Capacity S -> D', 
 'capacityDS': 'Capacity D -> S',
-'property_1': 'Property 1',
-'property_2': 'Property 2',
-'property_3': 'Property 3',
-'property_4': 'Property 4',
-'property_5': 'Property 5',
 'traffic': 'Traffic',
 'trafficSD': 'Traffic S -> D', 
 'trafficDS': 'Traffic D -> S', 
@@ -568,11 +577,6 @@ class NDobject(object):
                     'id': None,
                     'sites': set(),
                     'name': None,
-                    'property_1': '',
-                    'property_2': '',
-                    'property_3': '',
-                    'property_4': '',
-                    'property_5': '',
                     }
                     
     @initializer(ie_properties)

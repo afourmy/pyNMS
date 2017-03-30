@@ -1,4 +1,8 @@
 from pythonic_tkinter.preconfigured_widgets import *
+from Exscript import Host, Account
+from Exscript.protocols import SSH2
+from Exscript.util.start import start
+from Exscript.util.match import first_match, any_match
 
 class SendScript(CustomTopLevel):
     
@@ -9,7 +13,7 @@ class SendScript(CustomTopLevel):
         
         # main label frame
         lf_send_script = Labelframe(self)
-        lf_send_script.text = 'Create AS'
+        lf_send_script.text = 'Send  a script'
         lf_send_script.grid(0, 0)
         
         # List of AS type
@@ -41,7 +45,22 @@ class SendScript(CustomTopLevel):
         self.entry_username.grid(1, 1, in_=lf_send_script)
         self.entry_password.grid(2, 1, in_=lf_send_script)
         button_send.grid(3, 0, 1, 2, in_=lf_send_script)
+        
+    def execute_script(self, job, host, conn):
+        conn.execute('terminal length 0')
+        conn.send("enable\r")
+        conn.app_authorize(self.account)
+        for command in self.script.instructions:
+            conn.execute(command)
 
     def send_script(self, nodes):
+        self.script = self.cs.ms.scripts[self.script_list.text]
+        self.account = Account(self.entry_username.text, self.entry_password.text)
+        hosts = []
         for node in nodes:
-            print(node)
+            host = Host('ssh://{}'.format(node.ipaddress))
+            host.set_account(self.account)
+            hosts.append(host)
+
+        conn = SSH2()
+        start([self.account], hosts, self.execute_script, max_threads=2)

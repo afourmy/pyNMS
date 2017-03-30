@@ -215,18 +215,6 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
     @empty_selection_and_destroy_menu
     def ping(self, node):
         ip_ping.Ping(node, self.cs)
-    
-    @empty_selection_and_destroy_menu
-    def show_object_properties(self):
-        so ,= self.all_so
-        self.cs.ms.dict_obj_mgmt_window[so.subtype].current_obj = so
-        self.cs.ms.dict_obj_mgmt_window[so.subtype].update()
-        self.cs.ms.dict_obj_mgmt_window[so.subtype].deiconify()
-        
-    @empty_selection_and_destroy_menu
-    def change_property(self, objects, subtype):
-        objects = set(objects)
-        PropertyChanger(self.cs.ms, objects, subtype)
         
     @empty_selection_and_destroy_menu
     def enter_site(self, site):
