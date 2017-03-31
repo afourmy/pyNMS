@@ -32,7 +32,7 @@ try:
 except ImportError:
     warnings.warn('Excel libraries missing: excel import/export disabled')
 try:
-    import map.shapefile as shp
+    import shapefile as shp
     import shapely.geometry as sgeo
 except ImportError:
     warnings.warn('SHP librairies missing: map import disabled')
