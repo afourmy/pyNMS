@@ -229,11 +229,6 @@ class Controller(MainWindow):
                                                                 .resize((20, 20))
         self.img_failure = ImageTk.PhotoImage(img_pil)
         
-        # object management windows
-        # self.dict_obj_mgmt_window = {}
-        # for obj in object_properties:
-        #     self.dict_obj_mgmt_window[obj] = omw.ObjectManagementWindow(self, obj)
-                
         self.menu_notebook = Notebook(self)
         
         # main menu for creation and selection of objects
@@ -444,7 +439,7 @@ class Controller(MainWindow):
                  
             # import of site objects
             elif name == 'sites':
-                for row_index in range(sheet.nrows):
+                for row_index in range(1, sheet.nrows):
                     name, nodes, links = sheet.row_values(row_index)
                     site = self.ss.ntw.convert_node(name)
                     links = set(self.cs.ntw.convert_link_list(links))
@@ -596,11 +591,12 @@ class Controller(MainWindow):
                     area_sheet.write(cpt, 4, to_string(area.pa['link']))
                     cpt += 1
              
-        site_sheet = excel_workbook.add_sheet('sites')
-        for cpt, site in enumerate(self.ss.ntw.nodes.values()):
-            site_sheet.write(cpt, 0, str(site.name))
-            site_sheet.write(cpt, 1, to_string(site.ps['node']))
-            site_sheet.write(cpt, 2, to_string(site.ps['link']))
+        if self.ss.ntw.nodes:
+            site_sheet = excel_workbook.add_sheet('sites')
+            for cpt, site in enumerate(self.ss.ntw.nodes.values()):
+                site_sheet.write(cpt, 0, str(site.name))
+                site_sheet.write(cpt, 1, to_string(site.ps['node']))
+                site_sheet.write(cpt, 2, to_string(site.ps['link']))
                 
         excel_workbook.save(selected_file.name)
         selected_file.close()

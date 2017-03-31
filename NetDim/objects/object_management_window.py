@@ -1,7 +1,6 @@
 # NetDim
 # Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
 # Released under the GNU General Public License GPLv3
-
 import re
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -35,7 +34,7 @@ class ObjectManagementWindow(FocusTopLevel):
         super().__init__()
         self.ms = master
         self.ntw = self.ms.cs.ntw
-        self.title('Manage {} properties'.format(obj.name))
+        self.title('Properties')
         # current node which properties are displayed
         self.current_obj = obj
         
@@ -116,7 +115,7 @@ class ObjectManagementWindow(FocusTopLevel):
                                                                 
         button_save_obj = Button(self) 
         button_save_obj.text = 'Save'
-        button_save_obj.command = lambda: self.save_obj()
+        button_save_obj.command = self.save_obj
         button_save_obj.grid(0, 1)
         
         # update all properties with the selected object properties
@@ -191,10 +190,13 @@ class ObjectManagementWindow(FocusTopLevel):
                 setattr(self.current_obj, property, value)
             else:
                 if property not in self.read_only and 'interface' not in property:
-                    if property in ('path_constraints', 'excluded_nodes', 'excluded_plinks'): 
+                    if property in (
+                                    'path_constraints', 
+                                    'excluded_nodes', 
+                                    'excluded_plinks'
+                                    ): 
                         value = self.conv(property)
                     else:
-                        print(property, value)
                         value = self.ntw.prop_to_type[property](value)
                         if property == 'name':
                             name = getattr(self.current_obj, property)
@@ -216,7 +218,8 @@ class ObjectManagementWindow(FocusTopLevel):
                 
     def save_and_destroy(self):
         self.save_obj()
-        self.destroy()
+        #TODO send script no longer works when this window is simply destroyed...
+        self.withdraw()
             
     def update(self):
         for property, property_widget in self.dict_global_properties.items():

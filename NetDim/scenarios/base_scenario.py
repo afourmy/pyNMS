@@ -172,8 +172,6 @@ class BaseScenario(CustomFrame):
             self.cvs.tag_bind('node', '<Button-1>', self.find_closest_node, add='+')
             self.cvs.tag_bind('shape', '<Button-1>', self.find_closest_shape, add='+')
             
-            for tag in ('node', 'link'):
-                self.cvs.tag_bind(tag, '<Button-1>', self.update_mgmt_window, add='+')
             self.cvs.tag_bind('node', '<B1-Motion>', self.node_motion)
             self.cvs.tag_bind('shape', '<B1-Motion>', self.shape_motion)
             
@@ -361,12 +359,6 @@ class BaseScenario(CustomFrame):
             x, y = main_shape_selected.x, main_shape_selected.y
             self._dict_start_position[main_shape_selected] = [x, y]
         self.highlight_objects(main_shape_selected)
-
-    def update_mgmt_window(self, event):
-        if self.co:
-            # update the object management window with the closest object
-            self.ms.dict_obj_mgmt_window[self.co.subtype].current_obj = self.co
-            self.ms.dict_obj_mgmt_window[self.co.subtype].update()
     
     @adapt_coordinates
     def motion(self, event):

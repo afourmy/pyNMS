@@ -1,4 +1,7 @@
 from pythonic_tkinter.preconfigured_widgets import *
+from tkinter import ttk
+import tkinter as tk
+import re
 from Exscript import Host, Account
 from Exscript.protocols import SSH2
 from Exscript.util.start import start
@@ -50,17 +53,34 @@ class SendScript(CustomTopLevel):
         conn.execute('terminal length 0')
         conn.send("enable\r")
         conn.app_authorize(self.account)
-        for command in self.script.instructions:
+        for command in self.ip_to_instructions[host.address]:
             conn.execute(command)
 
     def send_script(self, nodes):
-        self.script = self.cs.ms.scripts[self.script_list.text]
-        self.account = Account(self.entry_username.text, self.entry_password.text)
+        script = self.cs.ms.scripts[self.script_list.text]
+        # self.account = Account(self.entry_username.text, self.entry_password.text)
+        self.account = Account('antoine', 'cisco')
         hosts = []
+        
         for node in nodes:
             host = Host('ssh://{}'.format(node.ipaddress))
             host.set_account(self.account)
             hosts.append(host)
-
+            
+            # adapt the script by replacing all '$(property' with 
+            # the node's property
+            self.ip_to_instructions = {}
+            
+            def get_property(match):
+                return str(getattr(node, match.group(0)[1:]))
+            
+            replace = lambda ins: re.sub(r'@\w+', get_property, ins)
+            new_instructions = map(replace, script.instructions)
+            self.ip_to_instructions[node.ipaddress] = new_instructions
+    
+        self.destroy()
+        
+        # send the script
         conn = SSH2()
-        start([self.account], hosts, self.execute_script, max_threads=2)
+        start([self.account], hosts, self.execute_script)#, max_threads=2)
+        

@@ -24,11 +24,6 @@ def initializer(default_properties):
                                              ):
                         property_manager[self.__class__.subtype] += (k,)
                     prop_to_nice_name[k] = k
-                    # 
-                    # [self.__class__.subtype] += (k,)
-                    # [self.__class__.subtype] += (k,)
-                    # [self.__class__.subtype] += (k,)
-                    # prop_
                     
             for property in default_properties:
                 value = default_properties[property]
