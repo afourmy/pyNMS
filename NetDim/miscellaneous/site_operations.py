@@ -1,3 +1,6 @@
+# NetDim
+# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+
 from pythonic_tkinter.preconfigured_widgets import *
 
 class SiteOperations(CustomTopLevel):

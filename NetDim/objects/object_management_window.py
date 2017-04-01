@@ -1,6 +1,6 @@
 # NetDim
 # Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
-# Released under the GNU General Public License GPLv3
+
 import re
 import tkinter as tk
 from tkinter import ttk, messagebox

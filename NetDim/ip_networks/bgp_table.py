@@ -1,6 +1,5 @@
 # NetDim
 # Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
-# Released under the GNU General Public License GPLv3
 
 from miscellaneous.network_functions import compute_network
 from pythonic_tkinter.preconfigured_widgets import *

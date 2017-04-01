@@ -1,3 +1,6 @@
+# NetDim
+# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+
 from .base_scenario import BaseScenario
 from map.map import Map
 

@@ -1,3 +1,6 @@
+# NetDim
+# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+
 from .geo_scenario import GeoScenario
 from .insite_scenario import InSiteScenario
 from networks import site_network

@@ -1,3 +1,6 @@
+# NetDim
+# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+
 import sys
 from inspect import stack
 from os.path import abspath, dirname

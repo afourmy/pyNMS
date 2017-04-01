@@ -1,3 +1,6 @@
+# NetDim
+# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+
 from pythonic_tkinter.preconfigured_widgets import *
 from tkinter import ttk
 import tkinter as tk

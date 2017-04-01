@@ -1,3 +1,6 @@
+# NetDim
+# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+
 from .geo_scenario import GeoScenario
 from networks import main_network
 from menus.network_selection_rightclick_menu import NetworkSelectionRightClickMenu

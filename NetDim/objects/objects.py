@@ -1,6 +1,5 @@
 # NetDim
 # Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
-# Released under the GNU General Public License GPLv3
 
 # ordered dicts are needed to have the same menu order 
 from collections import defaultdict, OrderedDict
