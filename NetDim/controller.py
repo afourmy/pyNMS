@@ -177,19 +177,46 @@ class Controller(MainWindow):
         advanced_menu.create_menu()
         netdim_menu.add_cascade(label='Network routing',menu=advanced_menu)
 
-        # choose which label to display per type of object
-        label_menu = Menu(netdim_menu)
-        for obj_type, label_type in object_labels.items():
+        # choose which label to display per type or subtype of object:
+        # - a first menu contains all types of objects, each type unfolding
+        # a sub-menu that contains all i/e properties common to a type
+        # - a second menu contains all types of objects, each type unfolding
+        # a sub-menu that contains all i/e properties common to a subtypes
+        
+        per_type_label_menu = Menu(netdim_menu)
+        for obj_type, labels in type_labels.items():
             menu_type = Menu(netdim_menu)
-            label_menu.add_cascade(label=obj_type + ' label', menu=menu_type)
-            for lbl in label_type:
-                cmd = lambda o=obj_type, l=lbl: self.cs.refresh_labels(o, l)
+            entry_name = '{type} label'.format(type=obj_type)
+            per_type_label_menu.add_cascade(label=entry_name, menu=menu_type)
+            for label in labels:
+                cmd = lambda o=obj_type, l=label: self.cs.refresh_labels(o, l)
                 type_entry = MenuEntry(menu_type)
-                type_entry.text = lbl
+                type_entry.text = prop_to_nice_name[label]
                 type_entry.command = cmd
             menu_type.create_menu()
                     
-        netdim_menu.add_cascade(label='Options', menu=label_menu)
+        netdim_menu.add_cascade(
+                                label = 'Per-type labels', 
+                                menu = per_type_label_menu
+                                )
+        
+        per_subtype_label_menu = Menu(netdim_menu)
+        for obj_type, labels in object_ie.items():
+            menu_type = Menu(netdim_menu)
+            entry_name = '{subtype} label'.format(subtype=obj_type)
+            per_subtype_label_menu.add_cascade(label=entry_name, menu=menu_type)
+            for label in ('None',) + labels:
+                cmd = lambda o=obj_type, l=label: self.cs.refresh_subtype_labels(o, l)
+                type_entry = MenuEntry(menu_type)
+                text = 'None' if label == 'None' else prop_to_nice_name[label]
+                type_entry.text =  text
+                type_entry.command = cmd
+            menu_type.create_menu()
+                    
+        netdim_menu.add_cascade(
+                                label = 'Per-subtype labels', 
+                                menu = per_subtype_label_menu
+                                )
         
         self.config(menu=netdim_menu)
         

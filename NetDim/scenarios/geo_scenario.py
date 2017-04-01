@@ -18,10 +18,6 @@ class GeoScenario(BaseScenario):
         self.world_map.load_map(self.world_map.create_meridians())
         self.world_map.centerCarta([[7, 49]])
         
-        # for the shapefile not to be automatically reloaded when NetDim 
-        # is closed and reopened
-        self.ms.update()
-        
     def adapt_coordinates(function):
         def wrapper(self, event, *others):
             event.x, event.y = self.cvs.canvasx(event.x), self.cvs.canvasy(event.y)
@@ -64,10 +60,11 @@ class GeoScenario(BaseScenario):
         super(GeoScenario, self).create_node(node, layer)
         # if the node wasn't created from the binding (e.g import or graph
         # generation), its canvas coordinates are initialized at (0, 0). 
-        # we update them based on their geographical coordinates
+        # we draw the node in the middle of the canvas for the user to see them
         if not node.x and not node.y:
-            node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
-        
+            # node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
+            node.x, node.y = self.world_map.view_center()
+
     @overrider(BaseScenario)
     def create_link(self, new_link):
         # create the link

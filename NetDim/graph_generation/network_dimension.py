@@ -85,6 +85,5 @@ class NetworkDimension(CustomTopLevel):
 
         objects = set(self.dict_type_to_function[self.type](*params))
         self.cs.draw_objects(objects, random=False)
-        for node in filter(lambda o: o.class_type == 'node', objects):
-            self.cs.move_to_geographical_coordinates(node)
+        self.cs.move_nodes(filter(lambda o: o.class_type == 'node', objects))
         self.destroy()

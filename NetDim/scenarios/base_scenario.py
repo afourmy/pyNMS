@@ -51,7 +51,8 @@ class BaseScenario(CustomFrame):
         self.node_size = 8
         
         # default label display
-        self.current_label = dict.fromkeys(object_labels, 'none')
+        # None means that no label is displayed: it is the default setting
+        self.current_label = dict.fromkeys(object_ie, 'None')
         
         # creation mode, object type, and associated bindings
         self._start_position = [None]*2
@@ -916,22 +917,18 @@ class BaseScenario(CustomFrame):
         # set the text of the label with refresh label
         self.refresh_label(node)
         
-    # refresh the label for one object with the current object label
     def refresh_label(self, obj, label_type=None, itf=False):
         # label_type is None if we simply want to update the label value
         # but not change the type of label displayed.
         if not label_type:
-            label_type = self.current_label[obj.type.capitalize()].lower()
-        else:
-            label_type = label_type.lower()
+            label_type = self.current_label[obj.subtype]
         # we retrieve the id of the normal label in general, but the interface
         # labels id (two labels) if we update the interfaces labels. 
         label_id = obj.lid if not itf else obj.ilid
-        
         # if it is not, it means there is no label to display. 
         # we have one or two labels to reset to an empty string depending 
         # on whether it is the interface labels or another one.
-        if label_type == 'none':
+        if label_type == 'None':
             if itf:
                 self.cvs.itemconfig(label_id[0], text='')
                 self.cvs.itemconfig(label_id[1], text='')
@@ -973,10 +970,16 @@ class BaseScenario(CustomFrame):
         else:
             self.cvs.itemconfig(label_id, text=getattr(obj, label_type))
             
-    # change label and refresh it for all objects
-    def refresh_labels(self, type, label=None):
+    # two functions to refresh label: type and subtype
+    # refreshing a type means refreshing all subtypes of that type
+    # refresh the label for one object with the current object label
+    
+    def refresh_subtype_labels(self, subtype, label=False):
+        # by default, this function simply refreshes all labels:
+        # label defaults to False
         if label:
-            self.current_label[type] = label
+            self.current_label[subtype] = label
+        type = subtype_to_type[subtype]
         # if we change the interface label, it is actually the physical link we
         # need to retrieve, since that's where we store the interfaces values
         obj_type = 'plink' if type == 'Interface' else type.lower()
@@ -984,8 +987,12 @@ class BaseScenario(CustomFrame):
         # whether we want to update the interface label, or the physical link label,
         # since they have the same name
         itf = type == 'Interface'
-        for obj in self.ntw.pn[obj_type].values():
-            self.refresh_label(obj, self.current_label[type], itf)
+        for obj in self.ntw.ftr(type, subtype):
+            self.refresh_label(obj, self.current_label[subtype], itf)
+    
+    def refresh_type_labels(self, type, label=None):
+        for subtype in type_to_subtype[type]:
+            self.refresh_subtype_labels(subtype, label)
             
     def refresh_all_labels(self):
         for type in self.current_label:

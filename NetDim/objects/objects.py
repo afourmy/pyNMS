@@ -358,58 +358,14 @@ perAS_properties = OrderedDict([
 ## Label properties
 # properties used for the label menu
 
-object_labels = OrderedDict([
-('Node', 
-(
-'None', 
-'Name', 
-'Position', 
-'Coordinates', 
-'IPAddress',
-'Default_Route'
-)),
+# top-level menu: all types with types common properties
 
-('Plink', 
-(
-'None', 
-'Name', 
-'Type',
-'Distance', 
-'Traffic', 
-'WCTraffic',
-'Sntw'
-)),
-
-('Interface', 
-(
-'None', 
-'Name', 
-'Cost',
-'Capacity',
-'Flow',
-'IPaddress',
-'Traffic', 
-'WCTraffic',
-)),
-
-('L2link',
-(
-'None', 
-'Name', 
-)),
-
-('L3link',
-(
-'None', 
-'Name', 
-)),
-
-('Traffic', 
-(
-'None', 
-'Name', 
-'Throughput'
-))])
+type_labels = OrderedDict([
+('Node', node_common_ie_properties),
+('Physical link', plink_common_ie_properties),
+('Route', route_common_ie_properties),
+('Traffic', traffic_common_ie_properties)
+])
 
 ## Box properties
 # box properties defines which properties are to be displayed in the
@@ -1351,4 +1307,12 @@ link_type = ('plink', 'l2link', 'l3link', 'traffic')
 node_subtype = tuple(node_class.keys())
 link_subtype = tuple(link_class.keys())
 all_subtypes = node_subtype + link_subtype
+
+type_to_subtype = {
+'node': tuple(node_class.keys()),
+'plink': tuple(plink_class.keys()),
+'l2link': tuple(l2link_class.keys()),
+'l3link': tuple(l3link_class.keys()),
+'traffic': tuple(traffic_class.keys())
+}
 
