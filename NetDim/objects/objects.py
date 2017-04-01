@@ -1102,8 +1102,6 @@ class OpticalInterface(Interface):
         super().__init__(node, link)
         
 class VirtualConnection(Link):  
-
-    subtype = 'l2vc'
     
     ie_properties = {}
 
@@ -1160,7 +1158,6 @@ class L3VC(VirtualConnection):
         
 class Route(Link):
     
-    type = 'l3link'
     dash = (3,5)
     
     ie_properties = {
@@ -1185,8 +1182,9 @@ class Route(Link):
         
 class OpticalChannel(Route):
 
-    color = 'violet'
+    type = 'l2link'
     subtype = 'optical channel'
+    color = 'violet'
     layer = 2
     
     ie_properties = {}
@@ -1201,8 +1199,9 @@ class OpticalChannel(Route):
         
 class EtherChannel(Route):
 
-    color = 'violet'
+    type = 'l2link'
     subtype = 'etherchannel'
+    color = 'violet'
     layer = 2
     
     ie_properties = {}
@@ -1217,8 +1216,9 @@ class EtherChannel(Route):
         
 class PseudoWire(Route):
 
-    color = 'violet'
+    type = 'l3link'
     subtype = 'pseudowire'
+    color = 'violet'
     layer = 3
     
     ie_properties = {}
@@ -1233,8 +1233,9 @@ class PseudoWire(Route):
         
 class BGPPeering(Route):
 
-    color = 'violet'
+    type = 'l3link'
     subtype = 'BGP peering'
+    color = 'violet'
     layer = 3
     
     ie_properties = {
@@ -1254,6 +1255,7 @@ class BGPPeering(Route):
         super().__init__()
         
 class Traffic(Link):
+    
     type = 'traffic'
     subtype = type
     dash = (7,1,1,1)

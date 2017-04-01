@@ -204,7 +204,7 @@ class BaseNetwork(object):
         dict_of_adj_links = self.graph.pop(node.id, {})
         for type_link, adj_obj in dict_of_adj_links.items():
             for neighbor, adj_link in adj_obj:
-                print('base network', adj_link)
+                print('base network', node, adj_link)
                 yield adj_link
 
     def remove_link(self, link):
@@ -231,8 +231,8 @@ class BaseNetwork(object):
                 
     # given a node, retrieves all attached links    
     def attached_links(self, node):
-        for link_type in self.link_type:
-            for _, link in self.graph[node.id][link_type]:
+        for type in link_type:
+            for _, link in self.graph[node.id][type]:
                 yield link
         
     def number_of_links_between(self, nodeA, nodeB):

@@ -53,7 +53,9 @@ class InSiteScenario(BaseScenario):
     def find_closest_node(self, event):
         # record the item and its location
         self._dict_start_position.clear()
+        print(self.drag_item)
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
+        print(self.drag_item)
         # save the initial position to compute the delta for multiple nodes motion
         main_node_selected = self.object_id_to_object[self.drag_item]
         merged_dict = main_node_selected.site_image[self.site].items()
@@ -182,7 +184,8 @@ class InSiteScenario(BaseScenario):
                             y - (node.imagey)/2, 
                             image = curr_image, 
                             anchor = 'nw', 
-                            tags = tags)
+                            tags = tags
+                            )
         node.site_oval[self.site][layer] = self.cvs.create_oval(
                             node.site_coords[self.site][0] - s, 
                             y - s, 
@@ -419,11 +422,14 @@ class InSiteScenario(BaseScenario):
             del self.object_id_to_object[obj.site_line[self.site]]
             # if the layered display is activate and the link 
             # to delete is not a physical link
-            if self.layered_display and obj.layer:
+            if self.layered_display and obj.layer > 1:
                 for edge in (obj.source, obj.destination):
                     # we check if there still are other links of the same
                     # type (i.e at the same layer) between the edge nodes
-                    if not set(self.ns.ntw.graph[edge.id][obj.type]) & set(self.site.ps['link']):
+                    if ((not set(self.ns.ntw.graph[edge.id][obj.type]) 
+                                & set(self.site.ps['link']))
+                                and self.site in edge.site_image
+                                ):
                         # if that's not the case, we delete the upper-layer
                         # projection of the edge nodes, and reset the 
                         # associated 'layer to projection id' dictionnary
@@ -435,6 +441,9 @@ class InSiteScenario(BaseScenario):
                         # we delete the dashed 'layer line' and reset the
                         # associated 'layer to layer line id' dictionnary
                         self.cvs.delete(edge.site_layer_line[self.site][obj.layer])
+                        # we delete the edge id in object id to object
+                        # del self.object_id_to_object[edge.site_oval[obj.layer]]
+                        # del self.object_id_to_object[edge.site_image[obj.layer]]
                         edge.site_layer_line[self.site][obj.layer] = None
                         
         else:
@@ -459,7 +468,8 @@ class InSiteScenario(BaseScenario):
               
     @overrider(BaseScenario)
     def erase_all(self):
-        self.cvs.delete('node', 'link', 'line')
+        self.erase_graph()
+        self.cvs.delete('node', 'link', 'line', 'label')
         self.id_fdtks.clear()
         
         for node in self.site.ps['node']:
@@ -569,7 +579,11 @@ class InSiteScenario(BaseScenario):
     ## Object labelling
                 
     def create_node_label(self, node):
-        node.site_lid[self.site] = self.cvs.create_text(node.site_coords[self.site][0] - 15, node.site_coords[self.site][1] + 10, anchor='nw')
+        node.site_lid[self.site] = self.cvs.create_text(
+                                node.site_coords[self.site][0] - 15, 
+                                node.site_coords[self.site][1] + 10, 
+                                anchor = 'nw'
+                                )
         self.cvs.itemconfig(node.site_lid[self.site], fill='blue', tags='label')
         # set the text of the label with refresh label
         self.refresh_label(node)
@@ -642,7 +656,7 @@ class InSiteScenario(BaseScenario):
         # whether we want to update the interface label, or the physical link label,
         # since they have the same name
         itf = type == 'Interface'
-        for obj in set(self.ntw.pn[obj_type].values()) & set(self.site.ps['link']):
+        for obj in set(self.ntw.pn[obj_type].values()) & set(self.site.get_obj()):
             self.refresh_label(obj, self.current_label[type], itf)
             
     def refresh_all_labels(self):

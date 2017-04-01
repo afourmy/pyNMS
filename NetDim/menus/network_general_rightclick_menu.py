@@ -16,15 +16,15 @@ class NetworkGeneralRightClickMenu(tk.Menu):
 
         projection_menu.add_command(
                 label = 'Linear projection', 
-                command= lambda: self.cs.world_map.change_projection('linear')
+                command= lambda: self.cs.change_projection('linear')
                 )
         projection_menu.add_command(
                 label = 'Mercator projection', 
-                command= lambda: self.cs.world_map.change_projection('mercator')
+                command= lambda: self.cs.change_projection('mercator')
                 )
         projection_menu.add_command(
                 label = 'Spherical projection', 
-                command= lambda: self.cs.world_map.change_projection('globe')
+                command= lambda: self.cs.change_projection('globe')
                 )
 
         self.add_cascade(label='Geographical projection', menu=projection_menu)

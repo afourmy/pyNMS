@@ -422,11 +422,12 @@ class BaseScenario(CustomFrame):
                             self.pwindow.destroy()
             else:
                 if self.co:
+
                     if self.co not in self.so[self.co.class_type]:
                         self.unhighlight_objects(self.co)
-                        self.co = None
-                        if self.pwindow:
-                            self.pwindow.destroy()
+                    self.co = None
+                    if self.pwindow:
+                        self.pwindow.destroy()
             
     ## Right-click scroll
     
@@ -578,6 +579,7 @@ class BaseScenario(CustomFrame):
         for node in edges:
             # we always have to create the nodes at layer 0, no matter whether
             # the layered display option is activated or not.
+            #TODO we don't if layer 0 is deactivaited
             if self.display_layer[new_link.layer] and self.layered_display:
                 # we check whether the node image already exist or not, and 
                 # create it only if it doesn't.
@@ -587,20 +589,39 @@ class BaseScenario(CustomFrame):
                 # and the associated 'layer line' does not yet exist
                 # we create it
                 if real_layer > 1 and not node.layer_line[real_layer]:
-                    coords = (node.x, node.y, node.x, 
-                                    node.y - (real_layer - 1) * self.diff_y) 
+                    coords = (
+                              node.x, 
+                              node.y, 
+                              node.x, 
+                              node.y - (real_layer - 1)*self.diff_y
+                              ) 
                     node.layer_line[real_layer] = self.cvs.create_line(
-                                tags=('line',), *coords, fill='black', width=1, dash=(3,5))
+                                                    tags = ('line',), 
+                                                    *coords, 
+                                                    fill = 'black', 
+                                                    width = 1, 
+                                                    dash = (3,5)
+                                                    )
                     self.cvs.tag_lower(node.layer_line[real_layer])
         current_layer = 'all' if not self.layered_display else new_link.layer
         link_to_coords = self.link_coordinates(*edges, layer=current_layer)
         for link in link_to_coords:
             coords = link_to_coords[link]
             if not link.line:
-                link.line = self.cvs.create_line(*coords, tags=(link.subtype, 
-                        link.type, link.class_type, 'object'), fill=link.color, 
-                        width=self.LINK_WIDTH, dash=link.dash, smooth=True,
-                        state=tk.NORMAL if self.display_layer[link.layer] else tk.HIDDEN)
+                link.line = self.cvs.create_line(
+                        *coords, 
+                        tags = (
+                                link.subtype, 
+                                link.type, 
+                                link.class_type, 
+                                'object'
+                                ), 
+                        fill = link.color, 
+                        width = self.LINK_WIDTH, 
+                        dash = link.dash, 
+                        smooth = True,
+                        state = 'normal' if self.display_layer[link.layer] else 'hidden'
+                        )
             else:
                 self.cvs.coords(link.line, *coords)
         self.cvs.tag_lower(new_link.line)
@@ -725,10 +746,10 @@ class BaseScenario(CustomFrame):
                 if self.layered_display:
                     for layer in range(2, self.nbl + 1):
                         self.cvs.delete(
-                                    obj.oval[layer], 
-                                    obj.image[layer], 
-                                    obj.layer_line[layer]
-                                    )
+                                        obj.oval[layer], 
+                                        obj.image[layer], 
+                                        obj.layer_line[layer]
+                                        )
                                     
             elif obj.class_type == 'link':
                 # in case both nodes and links are selected, a link may have 
@@ -746,7 +767,7 @@ class BaseScenario(CustomFrame):
                 self.ntw.remove_link(obj)
                 # if the layered display is activate and the link 
                 # to delete is not a physical link
-                if self.layered_display and obj.layer:
+                if self.layered_display and obj.layer > 1:
                     for edge in (obj.source, obj.destination):
                         # we check if there still are other links of the same
                         # type (i.e at the same layer) between the edge nodes
@@ -759,6 +780,9 @@ class BaseScenario(CustomFrame):
                             # we delete the dashed 'layer line' and reset the
                             # associated 'layer to layer line id' dictionnary
                             self.cvs.delete(edge.layer_line[obj.layer])
+                            # we delete the edge id in object id to object
+                            del self.object_id_to_object[edge.oval[obj.layer]]
+                            del self.object_id_to_object[edge.image[obj.layer]]
                             edge.layer_line[obj.layer] = None
             else:
                 # object is a shape
@@ -777,7 +801,8 @@ class BaseScenario(CustomFrame):
         self.drag_item = None
                             
     def erase_all(self):
-        self.cvs.delete('node', 'link', 'line')
+        self.erase_graph()
+        self.cvs.delete('node', 'link', 'line', 'label')
         self.id_fdtks.clear()
         
         for node in self.ntw.nodes.values():

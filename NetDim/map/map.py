@@ -8,32 +8,18 @@ class Map():
     """Main class."""
     # Public
     mopt = {
-        '.Arctic':      {'cls': 'Polygon', 'fg': rgb(210,221,195), 'bg': rgb(210,221,195)},
         '.Mainland':    {'cls': 'Polygon', 'fg': rgb(135,159,103), 'bg': rgb(135,159,103)},
         '.Water':       {'cls': 'Polygon', 'fg': rgb(90,140,190), 'bg': rgb(90,140,190)},
-        '.WaterLine':   {'cls': 'Line', 'fg': rgb(186,196,205), 'smooth': 1},
         '.Latitude':    {'cls': 'Line', 'fg': rgb(164,164,164), 'anchor': 'sw'},
         '.Longtitude':  {'cls': 'Line', 'fg': rgb(164,164,164), 'anchor': 'nw'},
-        'DotPort':      {'cls': 'Dot', 'fg': rgb(240,220,0), 'labelcolor': rgb(255,155,128)},
         'Area':         {'cls': 'Polygon', 'fg': rgb(0,130,200), 'bg': ''},
-        'Line':         {'cls': 'Line', 'fg': rgb(0,130,200)},
-        'Figure':       {'cls': 'Line', 'fg': rgb(0,130,200), 'width': 2},
-        'CurrFigure':   {'cls': 'Line', 'fg': rgb(0,130,200), 'anchor': 'ne', 'width': 2},
-        'UserLine':     {'cls': 'Line', 'fg': rgb(0,0,0), 'anchor': 'nw'},
     }
+    
     delta = 3600.0
     halfX = 648000.0
     ylimit = 84
     mflood = {}
-    # Private
-    __wkt_mopt = {
-        'POINT': 'DotPort',
-        'MULTIPOINT': 'DotPort',
-        'LINESTRING': 'Line',
-        'MULTILINESTRING': 'Line',
-        'POLYGON': 'Area',
-        'MULTIPOLYGON': 'Area',
-    }
+
     map_temp = {}
     
     def __init__(self, parent, **kw):
@@ -72,6 +58,8 @@ class Map():
                 self.map_temp['Figure'][0] = self.distance(coords)
                 self.draw_map(coords, 'CurrFigure', 'CurrFigure.1')
                 self.draw_map([coords[1]], 'CurrFigure', '.CurrFigure.1', '%s\n%s km' % tuple(self.map_temp['Figure'][:2]))
+        else:
+            pass
         # calc and show coords under cursor
         coords = self.from_points((x, y), dosphere=1) or [(0, 0)]
         return coords[0][0], coords[0][1]
@@ -127,13 +115,13 @@ class Map():
     def change_projection(self, mode='linear', centerof=None):
         mcenterof = []
         if not self.mode == mode:
-            mcenterof = self.map_temp['centerof'] = (centerof or self.centerOf())
+            mcenterof = self.map_temp['centerof'] = (centerof or self.center_of())
         if mode == 'linear':   # linear
             self.scaleX = self.viewportx * self.delta
             self.scaleY = self.viewporty * self.delta
         elif 'mode' == 'mercator':    # mercator
             self.scaleX = self.viewportx * self.delta
-            self.scaleY = self.toMercator(90.0) * self.delta * self.viewporty/90.0
+            self.scaleY = self.to_mercator(90.0) * self.delta * self.viewporty/90.0
         else: # mode is globe
             self.scaleX = self.viewportx * self.delta
             self.scaleY = self.viewporty * self.delta
@@ -141,7 +129,7 @@ class Map():
         self.halfY = self.scaleY / 2.0
         self.mode = mode
         self.scale_map(docenter=0)
-        self.paintBound()
+        self.draw_boundaries()
         # redraw all in mflood by new projection
         mkeys = list(self.mflood.keys())
         mkeys.sort()
@@ -228,15 +216,13 @@ class Map():
         DOCENTER (opt.) center after display {1|0 (default)}."""
         for row in data:
             _row = dict([[i, x] for i, x in enumerate(row) if not x == None])
-            if not ( _row[2] and _row[0] in self.mopt and _row[1] ):
-                continue
             ftype, tag = _row[0], _row[1]
             ftag = '%04d_%s_%s' % (len(self.mflood), ftype, tag)
             coords, centerof = _row[2], _row.get(4)
             if type(coords) is str:
-                coords = self.toCoords(coords)
+                coords = self.to_coords(coords)
             if type(centerof) is str:
-                centerof = self.toCoords(centerof)
+                centerof = self.to_coords(centerof)
             # save in mflood label, coords..
             self.mflood[ftag] = {
                 'ftype': ftype,
@@ -249,17 +235,9 @@ class Map():
             # draw object
             self.draw_map(coords, ftype, ftag)
                 
-        if data:
-            if docenter and centerof:
-                # remember center for Globe projection
-                if self.is_spherical():
-                    self.map_temp['centerof'] = centerof
-                    self.change_projection(self.mode)
-                self.centerCarta(centerof)
-            else:
-                self.label_point()
+        self.label_point()
 
-    def paintBound(self):
+    def draw_boundaries(self):
         """Draw Sphere radii bounds."""
         self.dw.delete('sphereBounds')
         if self.is_spherical():
@@ -332,16 +310,7 @@ class Map():
         self.map_ids.add(obj_id)
                                 
     def load_shp_file(self, data=(), docenter=0):
-        """Display WKT-objects. Use loadCarta.
-        DATA (opt.) list of list as (
-            0 see loadCarta: data[1],
-            1 WKT-string "LINESTRING(0 0,1 1,..)",
-            2 see loadCarta: data[3],
-            3 see loadCarta: data[4],
-            4 see loadCarta: data[5],
-            5 see loadCarta: data[6],
-            6 see loadCarta: data[7] ).
-        DOCENTER see loadCarta: docenter."""
+        # display WKT-objects. Use loadCarta.
         _data = []
         for row in data:
             _row = dict([[i, x] for i, x in enumerate(row)])
@@ -355,43 +324,40 @@ class Map():
                 for i2, coords2 in enumerate(coords1):
                     for i, coords in enumerate(coords2):
                         # unique tag if not
-                        if not _row[0]: _row[0] = self.freeTag(self.__wkt_mopt[tp])
-                        _data += [(self.__wkt_mopt[tp], '%s_%s_%s_%s' % (_row[0], i1, i2, i), coords, _row.get(2), _row.get(3), _row.get(4), _row.get(5), _row.get(6))]
+                        if not _row[0]: _row[0] = self.freeTag('Area')
+                        _data += [(
+                                    'Area', 
+                                    '%s_%s_%s_%s' % (_row[0], i1, i2, i), 
+                                    coords, _row.get(2), 
+                                    _row.get(3), 
+                                    _row.get(4), 
+                                    _row.get(5), 
+                                    _row.get(6)
+                                    )]
         if _data:
             self.load_map(_data, docenter)
             
     def from_WKT(self, wkt):
-        """Return list of coords from wkt-string.
-        WKT string, e.g. 'MULTIPOINT((0 0),(20 30))'."""
+        # wkt-string -> list of coords
+
         r = '(-?\\d+\\.?\\d*)[ \t]+[ \t]*(-?\\d+\\.?\\d*)'
-        r1 = '((?:POINT|MULTIPOINT|LINESTRING|MULTILINESTRING|POLYGON|MULTIPOLYGON)[^a-zA-Z]+)'
-        # wkt-string -> type and coords
+        r1 = '((?:POLYGON|MULTIPOLYGON)[^a-zA-Z]+)'
+
         wkt = wkt.replace("(", "[").replace(")", "]")
         tp = wkt[:wkt.find(" ")]
-        # recurse call
-        if (tp in ('GEOMETRYCOLLECTION')):
-            m = re.findall(r1, wkt[:len(wkt)-1])
-            coords = []
-            for x in m:
-                coords += self.from_WKT(x.rstrip(","))
-            return coords
-        try:
-            e = eval(re.sub(r, '[\\1,\\2]', wkt[wkt.find("["):]))
-        except:
-            return
-        if (tp in ('MULTIPOINT')):
-            return [[tp, [[[x]] for x in e]]]
-        if (tp in ('POINT', 'LINESTRING')):
-            return [[tp, [[e]]]]
-        if (tp in ('MULTILINESTRING', 'POLYGON')):
+
+        e = eval(re.sub(r, '[\\1,\\2]', wkt[wkt.find("["):]))
+
+
+        if tp == 'POLYGON':
             return [[tp, [e]]]
-        if (tp in ('MULTIPOLYGON')):
+        if tp == 'MULTIPOLYGON':
             return [[tp, e]]
 
     def is_spherical(self):
         return self.mode == 'globe'
 
-    def centerOf(self):
+    def center_of(self):
         """Return centerof [[x,y]] (in degrees)."""
         if self.is_spherical():
             return self.map_temp.get('centerof', [[0,0]])
@@ -420,10 +386,11 @@ class Map():
         for x, y in coords:
             if self.mode in ('linear', 'mercator'):
                 x = float(x)
-                y = [self.toMercator(float(y)), float(y)][self.mode != 'mercator']
+                y = [self.to_mercator(float(y)), float(y)][self.mode != 'mercator']
                 x, y = self.rotate_z([x, y], centerof)
                 y = -y
-            elif self.mode == 'globe':
+            else:
+                # self.mode is 'globe':
                 tmp = self.to_sphere([x, y])
                 if not tmp:
                     continue
@@ -453,12 +420,12 @@ class Map():
                 else:
                     if dorotatez:
                         x, y = self.rotate_z([x, y], [[center_x, center_y]], reverse=1)
-                    y = [self.fromMercator(y), y][self.mode != 'mercator']
+                    y = [self.from_mercator(y), y][self.mode != 'mercator']
                     coords += [[x, y]]
             b = not b
         return coords
 
-    def toCoords(self, strcoords):
+    def to_coords(self, strcoords):
         """Return list of coords [[x,y],[x1,y1]...] from string (in degrees).
         STRCOORDS string of coords, e.g. '(x,y),(x1,y1),...'."""
         regstr = '(-?\d+\.?\d*)[ \t]*,[ \t]*(-?\d+\.?\d*)'
@@ -468,21 +435,19 @@ class Map():
         return coords
 
 
-    def toMercator(self, y, ylimit=None):
-        """Return latitude in Mercator project. Rev. to fromMercator.
-        Y latitude (in degrees).
-        YLIMIT (opt.) limit (default ylimit)."""
+    def to_mercator(self, y, ylimit=None):
+        # latitude in mercator projection
+
         if not ylimit:
             ylimit = self.ylimit
         if abs(y) > ylimit:
-            return self.toMercator([-1, 1][y > 0] * ylimit)
+            return self.to_mercator([-1, 1][y > 0] * ylimit)
         else:
             return degrees(log(tan(radians(y) / 2.0 + atan(1))))
 
-    def fromMercator(self, y):
-        """Return latitude from Mercator project. Rev. to toMercator.
-        Y latitude (in degrees)."""
-        return degrees(2.0 * (atan(e**(radians(y))) - atan(1)))
+    def from_mercator(self, y):
+        # latitude from mercator projection
+        return degrees(2*(atan(e**(radians(y))) - atan(1)))
 
     def to_sphere(self, coords):
         """Return list of two `points` for Spherical projection.
@@ -543,13 +508,11 @@ class Map():
                            center_y + r * sin(roll + a) ]
         return coords
 
-    #-----------------------------------------------------
-
     def distance(self, coords):
         """Return the length of the great circle between two points (in km).
         COORDS points list [[x,y],[x1,y1]] (in degrees)."""
         x, y, x1, y1 = [radians(x) for x in coords[0] + coords[1]]
-        return 6378.136 * acos(cos(y) * cos(y1) * cos(x - x1) + sin(y) * sin(y1))
+        return 6378.136 * acos(cos(y)*cos(y1)*cos(x - x1) + sin(y)*sin(y1))
 
     def interpolation(self, coords, scalestep=500):
         """Return list of coords as interpol. of two points [[x,y],[x1,y1]].

@@ -18,6 +18,10 @@ class GeoScenario(BaseScenario):
         self.world_map.load_map(self.world_map.create_meridians())
         self.world_map.centerCarta([[7, 49]])
         
+        # for the shapefile not to be automatically reloaded when NetDim 
+        # is closed and reopened
+        self.ms.update()
+        
     def adapt_coordinates(function):
         def wrapper(self, event, *others):
             event.x, event.y = self.cvs.canvasx(event.x), self.cvs.canvasy(event.y)
@@ -30,6 +34,13 @@ class GeoScenario(BaseScenario):
         # if self._mode == 'motion':
             # self.cvs.tag_bind('water', '<ButtonPress-1>', self.move_sphere, add='+')
             # self.cvs.tag_bind('Area', '<ButtonPress-1>', self.move_sphere, add='+')
+            
+    # set the map object at the bottom of the stack
+    def lower_map(self):
+        for map_obj in self.world_map.map_ids:
+            self.cvs.tag_lower(map_obj)
+        if self.world_map.is_spherical():
+            self.cvs.tag_lower(self.world_map.oval_id)
         
     @adapt_coordinates
     def move_sphere(self, event):
@@ -54,8 +65,8 @@ class GeoScenario(BaseScenario):
         # if the node wasn't created from the binding (e.g import or graph
         # generation), its canvas coordinates are initialized at (0, 0). 
         # we update them based on their geographical coordinates
-        node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
-
+        if not node.x and not node.y:
+            node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
         
     @overrider(BaseScenario)
     def create_link(self, new_link):
@@ -64,12 +75,7 @@ class GeoScenario(BaseScenario):
         # the link is now at the bottom of the stack after calling tag_lower
         # if the map is activated, we need to lower all map objects to be 
         # able to see the link
-        for map_obj in self.world_map.map_ids:
-            self.cvs.tag_lower(map_obj)
-        if self.world_map.is_spherical():
-            self.cvs.tag_lower(self.world_map.oval_id)
-            
-    
+        self.lower_map()
             
     ## Map Menu
     
@@ -90,6 +96,12 @@ class GeoScenario(BaseScenario):
         for node in nodes:
             node.x, node.y = node.logical_x, node.logical_y
         self.move_nodes(nodes)
+        
+    ## Geographical projection menu
+    
+    def change_projection(self, mode):
+        self.world_map.change_projection(mode)
+        self.lower_map()
     
     @adapt_coordinates
     @overrider(BaseScenario)
