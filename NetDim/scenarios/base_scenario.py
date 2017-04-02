@@ -51,7 +51,7 @@ class BaseScenario(CustomFrame):
         
         # default label display
         # None means that no label is displayed: it is the default setting
-        self.current_label = dict.fromkeys(object_ie, 'None')
+        self.current_label = dict.fromkeys(object_properties, 'None')
         
         # creation mode, object type, and associated bindings
         self._start_position = [None]*2
@@ -384,7 +384,7 @@ class BaseScenario(CustomFrame):
                         self.pwindow = tk.Toplevel(self)
                         self.pwindow.wm_overrideredirect(1)
                         text = '\n'.join(
-                                         prop_to_nice_name[property] 
+                                         prop_to_name[property] 
                                          + ' : ' + str(getattr(co, property)) 
                                          + ' ' for property in 
                                          box_properties[co.subtype]
@@ -994,8 +994,8 @@ class BaseScenario(CustomFrame):
             self.refresh_subtype_labels(subtype, label)
             
     def refresh_all_labels(self):
-        for type in self.current_label:
-            self.refresh_labels(type)
+        for subtype in object_properties:
+            self.refresh_subtype_labels(subtype)
                         
     def _create_link_label(self, link):
         coeff = self.compute_coeff(link)

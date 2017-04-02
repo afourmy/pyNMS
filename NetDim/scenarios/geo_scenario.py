@@ -30,9 +30,9 @@ class GeoScenario(BaseScenario):
     def switch_binding(self): 
         super(GeoScenario, self).switch_binding()
         
-        # if self._mode == 'motion':
-            # self.cvs.tag_bind('water', '<ButtonPress-1>', self.move_sphere, add='+')
-            # self.cvs.tag_bind('Area', '<ButtonPress-1>', self.move_sphere, add='+')
+        if self._mode == 'motion':
+            self.cvs.tag_bind('water', '<ButtonPress-1>', self.move_sphere, add='+')
+            self.cvs.tag_bind('Area', '<ButtonPress-1>', self.move_sphere, add='+')
             
     # set the map object at the bottom of the stack
     def lower_map(self):

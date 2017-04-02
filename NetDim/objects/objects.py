@@ -360,10 +360,11 @@ perAS_properties = OrderedDict([
 # top-level menu: all types with types common properties
 
 type_labels = OrderedDict([
-('Node', node_common_ie_properties),
-('Physical link', plink_common_ie_properties),
-('Route', route_common_ie_properties),
-('Traffic', traffic_common_ie_properties)
+('node', node_common_ie_properties),
+('plink', plink_common_ie_properties),
+('l2link', route_common_ie_properties),
+('l3link', route_common_ie_properties),
+('traffic', traffic_common_ie_properties)
 ])
 
 ## Box properties
@@ -440,7 +441,7 @@ box_properties = OrderedDict([
 
 # Properties <-> User-friendly names
 
-prop_to_nice_name = {
+prop_to_name = {
 'name': 'Name',
 'type': 'Type',
 'protocol': 'Protocol',
@@ -512,7 +513,17 @@ prop_to_nice_name = {
 'weightD': 'Destination weight'
 }
 
-name_to_prop = {v: k for k, v in prop_to_nice_name.items()}
+name_to_prop = {v: k for k, v in prop_to_name.items()}
+
+type_to_name = {
+'node': 'Node',
+'plink': 'Physical link',
+'l2link': 'Layer-2 link',
+'l3link': 'Layer-3 link',
+'traffic': 'Traffic link'
+}
+
+name_to_type = {v: k for k, v in type_to_name.items()}
 
 ## NetDim objects
 

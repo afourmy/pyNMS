@@ -185,12 +185,12 @@ class Controller(MainWindow):
         per_type_label_menu = Menu(netdim_menu)
         for obj_type, labels in type_labels.items():
             menu_type = Menu(netdim_menu)
-            entry_name = '{type} label'.format(type=obj_type)
+            entry_name = '{type} label'.format(type=type_to_name[obj_type])
             per_type_label_menu.add_cascade(label=entry_name, menu=menu_type)
             for label in labels:
-                cmd = lambda o=obj_type, l=label: self.cs.refresh_labels(o, l)
+                cmd = lambda o=obj_type, l=label: self.cs.refresh_type_labels(o, l)
                 type_entry = MenuEntry(menu_type)
-                type_entry.text = prop_to_nice_name[label]
+                type_entry.text = prop_to_name[label]
                 type_entry.command = cmd
             menu_type.create_menu()
                     
@@ -207,7 +207,7 @@ class Controller(MainWindow):
             for label in ('None',) + labels:
                 cmd = lambda o=obj_type, l=label: self.cs.refresh_subtype_labels(o, l)
                 type_entry = MenuEntry(menu_type)
-                text = 'None' if label == 'None' else prop_to_nice_name[label]
+                text = 'None' if label == 'None' else prop_to_name[label]
                 type_entry.text =  text
                 type_entry.command = cmd
             menu_type.create_menu()

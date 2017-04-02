@@ -52,9 +52,7 @@ class InSiteScenario(BaseScenario):
     def find_closest_node(self, event):
         # record the item and its location
         self._dict_start_position.clear()
-        print(self.drag_item)
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
-        print(self.drag_item)
         # save the initial position to compute the delta for multiple nodes motion
         main_node_selected = self.object_id_to_object[self.drag_item]
         merged_dict = main_node_selected.site_image[self.site].items()
@@ -457,14 +455,7 @@ class InSiteScenario(BaseScenario):
                         
         if obj in self.ns.ntw.failed_obj:
             self.remove_failure(obj)
-                            
-    def erase_graph(self):
-        self.object_id_to_object.clear()
-        self.unhighlight_all()
-        self.so.clear()
-        self.temp_line = None
-        self.drag_item = None
-              
+                                          
     @overrider(BaseScenario)
     def erase_all(self):
         self.erase_graph()
@@ -480,50 +471,7 @@ class InSiteScenario(BaseScenario):
             link.site_line[self.site] = None
                             
     ## Selection / Highlight
-    
-    # 1) Canvas selection process
-    
-    def start_point_select_objects(self, event):
-        x, y = self.cvs.canvasx(event.x), self.cvs.canvasy(event.y)
-        # create the temporary line, only if there is nothing below
-        # this is to avoid drawing a rectangle when moving a node
-        below = self.cvs.find_overlapping(x-1, y-1, x+1, y+1)
-        tags_below = ''.join(''.join(self.cvs.itemcget(id, 'tags')) for id in below)
-        # if no object is below the selection process can start
-        if 'object' not in tags_below:
-            if not self.ctrl:
-                self.unhighlight_all()
-                self.so.clear()
-            self._start_position = x, y
-            # create the temporary line
-            x, y = self._start_position
-            self.temp_rectangle = self.cvs.create_rectangle(x, y, x, y)
-            self.cvs.tag_raise(self.temp_rectangle)
-
-    @adapt_coordinates
-    def rectangle_drawing(self, event):
-        # draw the line only if they were created in the first place
-        if self._start_position != [None]*2:
-            # update the position of the temporary lines
-            x0, y0 = self._start_position
-            self.cvs.coords(self.temp_rectangle, x0, y0, event.x, event.y)
-    
-    @adapt_coordinates
-    def end_point_select_nodes(self, event):
-        selection_mode = self.ms.creation_menu.selection_mode
-        allowed = tuple(mode for mode, v in selection_mode.items() if v.get())
-        if self._start_position != [None]*2:
-            # delete the temporary lines
-            self.cvs.delete(self.temp_rectangle)
-            # select all nodes enclosed in the rectangle
-            start_x, start_y = self._start_position
-            for obj in self.cvs.find_enclosed(start_x, start_y, event.x, event.y):
-                if obj in self.object_id_to_object:
-                    enclosed_obj = self.object_id_to_object[obj]
-                    if enclosed_obj.class_type in allowed:
-                        self.highlight_objects(enclosed_obj)
-            self._start_position = [None]*2
-        
+                
     # 2) Update selected objects and highlight
     @overrider(BaseScenario)
     def highlight_objects(self, *objects, color='red', dash=False):
@@ -548,6 +496,7 @@ class InSiteScenario(BaseScenario):
                 else:
                     self.cvs.itemconfig(obj.id, outline=color)
                 
+    @overrider(BaseScenario)
     def unhighlight_objects(self, *objects):
         for obj in objects:
             self.so[obj.class_type].discard(obj)
@@ -566,17 +515,10 @@ class InSiteScenario(BaseScenario):
                     self.cvs.itemconfig(obj.id, fill=obj.color)
                 else:
                     self.cvs.itemconfig(obj.id, outline=obj.color)
-                
-    def unhighlight_all(self):
-        self.cvs.delete(self.src_label)
-        self.cvs.delete(self.dest_label)
-        self.src_label = None
-        self.dest_label = None
-        for object_type in self.so:
-            self.unhighlight_objects(*self.so[object_type])
-            
+                            
     ## Object labelling
                 
+    @overrider(BaseScenario)
     def create_node_label(self, node):
         node.site_lid[self.site] = self.cvs.create_text(
                                 node.site_coords[self.site][0] - 15, 
@@ -588,11 +530,12 @@ class InSiteScenario(BaseScenario):
         self.refresh_label(node)
         
     # refresh the label for one object with the current object label
+    @overrider(BaseScenario)
     def refresh_label(self, obj, label_type=None, itf=False):
         # label_type is None if we simply want to update the label value
         # but not change the type of label displayed.
         if not label_type:
-            label_type = self.current_label[obj.type.capitalize()].lower()
+            label_type = self.current_label[obj.subtype]
         else:
             label_type = label_type.lower()
         # we retrieve the id of the normal label in general, but the interface
@@ -602,7 +545,7 @@ class InSiteScenario(BaseScenario):
         # if it is not, it means there is no label to display. 
         # we have one or two labels to reset to an empty string depending 
         # on whether it is the interface labels or another one.
-        if label_type == 'none':
+        if label_type == 'None':
             if itf:
                 self.cvs.itemconfig(label_id[0], text='')
                 self.cvs.itemconfig(label_id[1], text='')
@@ -645,9 +588,13 @@ class InSiteScenario(BaseScenario):
             self.cvs.itemconfig(label_id, text=getattr(obj, label_type))
             
     # change label and refresh it for all objects
-    def refresh_labels(self, type, label=None):
+    @overrider(BaseScenario)
+    def refresh_subtype_labels(self, subtype, label=False):
+        # by default, this function simply refreshes all labels:
+        # label defaults to False
         if label:
-            self.current_label[type] = label
+            self.current_label[subtype] = label
+        type = subtype_to_type[subtype]
         # if we change the interface label, it is actually the physical link we
         # need to retrieve, since that's where we store the interfaces values
         obj_type = 'plink' if type == 'Interface' else type.lower()
@@ -655,44 +602,58 @@ class InSiteScenario(BaseScenario):
         # whether we want to update the interface label, or the physical link label,
         # since they have the same name
         itf = type == 'Interface'
-        for obj in set(self.ntw.pn[obj_type].values()) & set(self.site.get_obj()):
-            self.refresh_label(obj, self.current_label[type], itf)
-            
-    def refresh_all_labels(self):
-        for type in self.current_label:
-            self.refresh_labels(type)
-                        
+        for obj in set(self.ntw.ftr(type, subtype)) & set(self.site.get_obj()):
+            self.refresh_label(obj, self.current_label[subtype], itf)
+           
+    @overrider(BaseScenario)
     def _create_link_label(self, link):
         coeff = self.compute_coeff(link)
-        link.site_lid[self.site] = self.cvs.create_text(*self.offcenter(coeff, *link.site_lpos[self.site]), 
-                            anchor='nw', fill='red', tags='label', font='bold')
+        link.site_lid[self.site] = self.cvs.create_text(
+                            *self.offcenter(
+                                            coeff, 
+                                            *link.site_lpos[self.site]
+                                            ), 
+                            anchor = 'nw', 
+                            fill = 'red', 
+                            tags = 'label', 
+                            font = 'bold'
+                            )
         # we also create the interface labels, which position is at 1/4
         # of the line between the end point and the middle point
         # source interface label coordinates:
         s = self.offcenter(coeff, *self.if_label(link))
-        link.site_ilid[self.site][0] = self.cvs.create_text(*s, anchor='nw', fill='red',
-                                                    tags='label', font='bold')
+        link.site_ilid[self.site][0] = self.cvs.create_text(
+                            *s, 
+                            anchor = 'nw', 
+                            fill = 'red',
+                            tags = 'label', 
+                            font = 'bold'
+                            )
         # destination interface label coordinates:                                                        
         d = self.offcenter(coeff, *self.if_label(link, 'd'))
-        link.site_ilid[self.site][1] = self.cvs.create_text(*d, anchor='nw', fill='red', 
-                                                    tags='label', font='bold')
+        link.site_ilid[self.site][1] = self.cvs.create_text(
+                            *d, 
+                            anchor = 'nw', 
+                            fill = 'red', 
+                            tags = 'label', 
+                            font = 'bold'
+                            )
         self.refresh_label(link)
                         
-    def offcenter(self, coeff, x, y):
-        # move the label off-center, so that its position depends on the 
-        # slope of the link, and it can be read easily
-        return x, y - 30 * (coeff > 0)
-        
+    @overrider(BaseScenario)
     def compute_coeff(self, link):
         # compute the slope of the link's line
         try:
-            dy = link.destination.site_coords[self.site][1] - link.source.site_coords[self.site][1]
-            dx = link.destination.site_coords[self.site][0] - link.source.site_coords[self.site][0]
+            dy = (link.destination.site_coords[self.site][1] 
+                            - link.source.site_coords[self.site][1])
+            dx = (link.destination.site_coords[self.site][0] 
+                            - link.source.site_coords[self.site][0])
             coeff = dy / dx
         except ZeroDivisionError:
             coeff = 0
         return coeff
         
+    @overrider(BaseScenario)
     def if_label(self, link, end='s'):
         # compute the position of the interface label. Instead of placing the 
         # interface label in the middle of the line between the middle point lpos
@@ -700,25 +661,34 @@ class InSiteScenario(BaseScenario):
         # that its placed closer to the link's end.
         mx, my = link.site_lpos[self.site]
         if end == 's':
-            if_label_x = (mx + link.source.site_coords[self.site][0]) / 4 + link.source.site_coords[self.site][0] / 2
-            if_label_y = (my + link.source.site_coords[self.site][1]) / 4 + link.source.site_coords[self.site][1] / 2
+            if_label_x = ((mx + link.source.site_coords[self.site][0])/4 
+                            + link.source.site_coords[self.site][0]/2)
+            if_label_y = ((my + link.source.site_coords[self.site][1])/4 
+                            + link.source.site_coords[self.site][1]/2)
         else:
-            if_label_x = (mx + link.destination.site_coords[self.site][0]) / 4 + link.destination.site_coords[self.site][0] / 2
-            if_label_y = (my + link.destination.site_coords[self.site][1]) / 4 + link.destination.site_coords[self.site][1] / 2
+            if_label_x = ((mx + link.destination.site_coords[self.site][0])/4 
+                            + link.destination.site_coords[self.site][0]/2)
+            if_label_y = ((my + link.destination.site_coords[self.site][1])/4 
+                            + link.destination.site_coords[self.site][1]/2)
         return if_label_x, if_label_y
-                    
+             
+    @overrider(BaseScenario)
     def update_link_label_coordinates(self, link):
         coeff = self.compute_coeff(link)
-        self.cvs.coords(link.site_lid[self.site], *self.offcenter(coeff, *link.site_lpos[self.site]))
-        self.cvs.coords(link.site_ilid[self.site][0], *self.offcenter(coeff, *self.if_label(link)))
-        self.cvs.coords(link.site_ilid[self.site][1], *self.offcenter(coeff, *self.if_label(link, 'd')))
-        
-    # cancel the graph drawing job
-    def _cancel(self):
-        if self._job is not None:
-            self.cvs.after_cancel(self._job)
-            self._job = None
+        self.cvs.coords(
+                        link.site_lid[self.site], 
+                        *self.offcenter(coeff, *link.site_lpos[self.site])
+                        )
+        self.cvs.coords(
+                        link.site_ilid[self.site][0], 
+                        *self.offcenter(coeff, *self.if_label(link))
+                        )
+        self.cvs.coords(
+                        link.site_ilid[self.site][1], 
+                        *self.offcenter(coeff, *self.if_label(link, 'd'))
+                        )
 
+    @overrider(BaseScenario)
     def link_coordinates(self, source, destination, layer='all'):
         xA = source.site_coords[self.site][0]
         yA = source.site_coords[self.site][1]
@@ -728,7 +698,10 @@ class InSiteScenario(BaseScenario):
         dict_link_to_coords = {}
         type = layer if layer == 'all' else self.layers[1][layer]
         real_layer = 1 if layer == 'all' else sum(self.display_layer[:(layer+1)])
-        for id, link in enumerate(set(self.ns.ntw.links_between(source, destination, type)) & set(self.site.ps['link'])):
+        for id, link in enumerate(
+                    set(self.ns.ntw.links_between(source, destination, type)) 
+                    & set(self.site.ps['link'])
+                    ):
             d = ((id + 1) // 2) * 30 * (-1)**id
             xC = (xA + xB) / 2 + d * sin(angle)
             yC = (yA + yB) / 2 - d * cos(angle)
@@ -741,6 +714,8 @@ class InSiteScenario(BaseScenario):
     ## Drawing
     
     # 1) Regular drawing
+
+    @overrider(BaseScenario)
     def draw_objects(self, objects, random_drawing=True):
         self._cancel()
         for obj in objects:
@@ -755,86 +730,38 @@ class InSiteScenario(BaseScenario):
             if obj in self.ns.ntw.failed_obj:
                 self.simulate_failure(obj)
              
+    @overrider(BaseScenario)
     def draw_all(self, random=True, draw_site=False):
         self.erase_all()
         # we draw everything except interface
         for type in ('node', 'link'):
             self.draw_objects(self.site.ps[type], random)
             
-    # 2) Force-based drawing
-    
-    def retrieve_parameters(self, algorithm):
-        entry_value = lambda entry: float(entry.text)
-        parameters = []
-        if algorithm in ('Spring-based layout', 'BFS-clusterization layout'):
-            parameters += list(map(entry_value, self.ms.drawing_menu.entries))
-        if algorithm == 'Fructhermann-Reingold layout':
-            bound_limit = self.ms.drawing_menu.stay_withing_screen_bounds.get()
-            parameters.append(bound_limit)
-        if algorithm == 'BFS-clusterization layout':
-            vlinks = self.ms.drawing_menu.virtual_links.get()
-            parameters.append(vlinks)
-        return parameters
-
-    def spring_based_drawing(self, nodes):
-        if not self._job:
-            # reset the number of iterations
-            self.drawing_iteration = 0
-        else:
-            self._cancel()
-        self.drawing_iteration += 1
-        params = self.retrieve_parameters('Spring-based layout')
-        self.ns.ntw.spring_layout(nodes, *params)
-        if not self.drawing_iteration % 5:   
-            for node in nodes:
-                self.move_node(node)
-        self._job = self.cvs.after(1, lambda: self.spring_based_drawing(nodes))
-        
-    def FR_drawing(self, nodes):
-        if not self._job:
-            # update the optimal pairwise distance
-            self.ms.opd = sqrt(500*500/len(self.ntw.nodes))
-            # reset the number of iterations
-            self.drawing_iteration = 0
-        else:
-            self._cancel()
-        self.drawing_iteration += 1
-        # retrieve the optimal pairwise distance and the screen limit boolean
-        params = self.retrieve_parameters('Fructhermann-Reingold layout')
-        self.ntw.fruchterman_reingold_layout(nodes, *params)
-        if not self.drawing_iteration % 5:   
-            for node in nodes:
-                self.move_node(node)
-        self._job = self.cvs.after(1, lambda: self.FR_drawing(nodes))
-        
-    def bfs_cluster_drawing(self, nodes):
-        if not self._job:
-            # update the optimal pairwise distance
-            self.ms.opd = sqrt(500*500/len(self.ntw.nodes))
-            # reset the number of iterations
-            self.drawing_iteration = 0
-        else:
-            self._cancel()
-        params = self.retrieve_parameters('BFS-clusterization layout')
-        self.ntw.bfs_spring(nodes, *params)
-        for node in nodes:
-            self.move_node(node)
-        self._job = self.cvs.after(1, lambda: self.bfs_cluster_drawing(nodes))
-    
     # 3) Alignment / distribution
     
+    @overrider(BaseScenario)
     def align(self, nodes, horizontal=True):
         # alignment can be either horizontal (horizontal = True) or vertical
-        minimum = min(node.site_coords[self.site][1] if horizontal else node.site_coords[self.site][0] for node in nodes)
+        minimum = min(
+                      node.site_coords[self.site][1] if horizontal 
+                      else node.site_coords[self.site][0] for node in nodes
+                      )
         for node in nodes:
             setattr(node, 'y'*horizontal or 'x', minimum)
         self.move_nodes(nodes)
         
+    @overrider(BaseScenario)
     def distribute(self, nodes, horizontal=True):
         # uniformly distribute the nodes between the minimum and
         # the maximum lontitude/latitude of the selection
-        minimum = min(node.site_coords[self.site][0] if horizontal else node.site_coords[self.site][1] for node in nodes)
-        maximum = max(node.site_coords[self.site][0] if horizontal else node.site_coords[self.site][1] for node in nodes)
+        minimum = min(
+                      node.site_coords[self.site][0] if horizontal 
+                      else node.site_coords[self.site][1] for node in nodes
+                      )
+        maximum = max(
+                      node.site_coords[self.site][0] if horizontal 
+                      else node.site_coords[self.site][1] for node in nodes
+                      )
         # we'll use a sorted list to keep the same order after distribution
         nodes = sorted(nodes, key=lambda n: getattr(n, 'x'*horizontal or 'y'))
         offset = (maximum - minimum)/(len(nodes) - 1)
@@ -844,6 +771,7 @@ class InSiteScenario(BaseScenario):
                 
     ## Multi-layer display
                 
+    @overrider(BaseScenario)
     def switch_display_mode(self):
         self.layered_display = not self.layered_display
         
@@ -858,6 +786,7 @@ class InSiteScenario(BaseScenario):
         
         return self.layered_display
             
+    @overrider(BaseScenario)
     def planal_move(self, angle=45):
         min_y = min(node.site_coords[self.site][1] for node in self.site.ps['node'])
         max_y = max(node.site_coords[self.site][1] for node in self.site.ps['node'])
@@ -869,18 +798,7 @@ class InSiteScenario(BaseScenario):
             
     ## Failure simulation
     
-    def remove_failure(self, *objects):
-        for obj in objects:
-            self.ns.ntw.failed_obj.remove(obj)
-            icon_id = self.id_fdtks.pop(obj)
-            self.cvs.delete(icon_id)
-    
-    def remove_failures(self):
-        self.ns.ntw.failed_obj.clear()
-        for idx in self.id_fdtks.values():
-            self.cvs.delete(idx)
-        self.id_fdtks.clear()
-    
+    @overrider(BaseScenario)
     def simulate_failure(self, *objects):
         for obj in objects:
             if obj in self.id_fdtks:
@@ -888,7 +806,10 @@ class InSiteScenario(BaseScenario):
             self.ns.ntw.failed_obj.add(obj)
             if obj.class_type == 'link':
                 source, destination = obj.source, obj.destination
-                xA, yA, xB, yB = source.site_coords[self.site][0], source.site_coords[self.site][1], destination.site_coords[self.site][0], destination.site_coords[self.site][1]
+                xA = source.site_coords[self.site][0]
+                yA = source.site_coords[self.site][1]
+                xB = destination.site_coords[self.site][0]
+                yB = destination.site_coords[self.site][1]
                 id_failure = self.cvs.create_image(
                                                 (xA+xB)/2, 
                                                 (yA+yB)/2, 
@@ -903,26 +824,11 @@ class InSiteScenario(BaseScenario):
                 for _, plink in self.ntw.graph[obj.site_id[self.site]]['plink']:
                     self.simulate_failure(plink)
             self.id_fdtks[obj] = id_failure
-            
-    ## Refresh display
-    
-    def refresh_display(self):
-        # remove selections as the red highlight will go away anyway
-        self.so.clear()
-        self.refresh_all_labels()     
-        # self.refresh_failures() 
-        for AS in self.ntw.pnAS.values():
-            AS.management.refresh_display()
-            
+                        
     ## Other
-    
-    def add_to_edges(self, AS, *nodes):
-        for node in nodes:
-            if node not in AS.edges:
-                AS.edges.add(node)
-                AS.management.listbox_edges.insert('end', obj)
                 
     # show/hide display per type of objects
+    @overrider(BaseScenario)
     def show_hide(self, subtype):
         self.display_per_type[subtype] = not self.display_per_type[subtype]
         new_state = 'normal' if self.display_per_type[subtype] else 'hidden'

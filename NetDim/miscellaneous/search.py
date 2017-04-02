@@ -52,7 +52,7 @@ class SearchWindow(CustomTopLevel):
     def update_properties(self, *_):
         subtype = self.subtypes_list.text
         properties = object_properties[subtype]
-        properties = tuple(prop_to_nice_name[p] for p in properties)
+        properties = tuple(prop_to_name[p] for p in properties)
         self.property_list['values'] = properties
         self.property_list.current(0)
         

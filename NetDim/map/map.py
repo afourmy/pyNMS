@@ -18,7 +18,7 @@ class Map():
     delta = 3600.0
     halfX = 648000.0
     ylimit = 84
-    mflood = {}
+    mflood = []
 
     map_temp = {}
     
@@ -47,57 +47,55 @@ class Map():
         self.dw.scale('all', 0, 0, ratio, ratio)
         if docenter:
             self.center_point()
-            self.label_point()
         
     def get_geographical_coordinates(self, x, y):
         # move figure part
-        if 'Figure' in self.map_temp:
-            coords = self.from_points([x, y], dosphere=1)
-            if coords:
-                coords = self.map_temp['Figure'][2] + coords
-                self.map_temp['Figure'][0] = self.distance(coords)
-                self.draw_map(coords, 'CurrFigure', 'CurrFigure.1')
-                self.draw_map([coords[1]], 'CurrFigure', '.CurrFigure.1', '%s\n%s km' % tuple(self.map_temp['Figure'][:2]))
-        else:
-            pass
+        coords = self.from_points([x, y], dosphere=1)
+        if coords and hasattr(self, 'coords'):
+            coords = self.coords[2] + coords
+            self.coords[0] = self.distance(coords)
+            self.draw_map(coords, 'CurrFigure')
+            self.draw_map([coords[1]], 'CurrFigure')
         # calc and show coords under cursor
         coords = self.from_points((x, y), dosphere=1) or [(0, 0)]
         return coords[0][0], coords[0][1]
-
-    #-------------------------------------
 
     def create_meridians(self):
         """Return meridians coords."""
         lonlat = []
         # X
         x = -180
-        while x <= 180:
+        for x in range(-180, 181, 30):
             lon = []
-            y = -90
-            while y <= 90:
+            for y in range(-90, 91, 30):
                 lon += [[x, y]]
-                y += 30
-            lonlat += [('.Longtitude', str([x, y]), str(lon), str(x), str(lon[0]))]
-            x += 30
-        # Y
-        y = -90
-        while y <= 90:
+            lonlat += [('.Longtitude', list(lon))]
+        for y in range(-90, 91, 30):
             centerof = [-180, y]
             lat = [centerof]
-            x = -180
-            while x < 180:
-                x += 30
+            for x in range(-180, 181, 30):
                 lat += [[x, y]]
-                lonlat += [('.Latitude', str([x, y]), str(lat), str(y), str(centerof))]
+                lonlat += [('.Latitude', list(lat))]
                 label = centerof = None
                 lat.pop(0)
-            y += 30
         return lonlat
+        
+    def load_map(self, data=(), docenter=0):
+        """Display objects. Use draw_map.
+        DATA (opt.) list of list as (
+            0 layer name from mopt,
+            1 tag of object (unique within layer),
+            2 string of coords as "((x1,y1),...,(xn,yn))"  (in degrees)"""
+        for idx, row in enumerate(data):
+            _row = dict([[i, x] for i, x in enumerate(row) if not x == None])
+            ftype = _row[0]
+            coords = _row[1]
+            # save in mflood label, coords..
+            self.mflood.append((coords, ftype))
+            # draw object
+            self.draw_map(coords, ftype)
 
     def center_point(self, x=None, y=None):
-        """Center map by point.
-        X (opt.) `points` by horizontal.
-        Y (opt.) `points` by vertical."""
         # current view
         scrollX = self.dw.xview()
         scrollY = self.dw.yview()
@@ -130,69 +128,14 @@ class Map():
         self.mode = mode
         self.scale_map(docenter=0)
         self.draw_boundaries()
-        # redraw all in mflood by new projection
-        mkeys = list(self.mflood.keys())
-        mkeys.sort()
-        for ftag in mkeys:
-            value = self.mflood[ftag]
-            self.draw_map(value['coords'], value['ftype'], ftag)
+        for id in self.map_ids:
+            self.dw.delete(id)
+
+        for coords, ftype in self.mflood:
+            self.draw_map(coords, ftype)
+            
         if mcenterof:
             self.centerCarta(mcenterof)
-
-    def freeTag(self, ftype, i=1):
-        """Return label with increment index.
-        FTYPE layer's name from mopt.
-        I (opt.) init index value (1 default)."""
-        ftag = str(len(self.dw.find_withtag(ftype)) + i)
-        if self.dw.find_withtag('%s_%s' % (ftype, ftag)):
-            return self.freeTag(ftype, i + 1)
-        return ftag
-
-    def label_point(self):
-        """Draw labels of objects in visible area. Also mouse ButtonRelease callback."""
-        rect = self.from_points(self.viewsizeOf(), 0)
-        left, top, right, bottom = rect[0] + rect[1]
-        mleft = [left, -180][left < -180]
-        mtop = [top, [90, self.ylimit][self.mode == 'mercator']][top > 90]
-        # clear all labels and draw again in visible area
-        for ftag, value in self.mflood.items():
-            ftype  = value['ftype']
-            _ftag = '.' + ftag             # tag of label
-            __ftag = '.' + _ftag           # tag of icon
-            centerof = value.get('centerof')
-            if self.mopt[ftype]['cls'] == 'Dot':
-                centerof = value['coords']
-            label = value.get('label')
-            icon = value.get('icon')
-            if (not centerof or not label):
-                continue
-            center_x, center_y = centerof[0]
-            # limit merc
-            if self.mode == 'mercator':
-                if abs(center_y) > self.ylimit:
-                    center_y = self.ylimit * [-1, 1][center_y > 0]
-            self.dw.delete(_ftag)
-            self.dw.delete(__ftag)
-            if ftype in ('.Longtitude'):
-                if self.is_spherical():
-                    if -180 < center_x <= 180:
-                        self.draw_map([[center_x, 0]], ftype, _ftag, ftext=label)
-                elif left <= center_x <= right:
-                    self.draw_map([[center_x, mtop]], ftype, _ftag, ftext=label)
-            elif ftype in ('.Latitude'):
-                if self.is_spherical():
-                    self.draw_map([[0, center_y]], ftype, _ftag, ftext=label)
-                elif bottom <= center_y <= top:
-                    # limit merc
-                    if self.mode == 'mercator':
-                        label = str(int(center_y))
-                    self.draw_map([[mleft, center_y]], ftype, _ftag, ftext=label)
-            else:
-                if (left <= center_x <= right and bottom <= center_y <= top) or self.is_spherical():
-                    _d = self.slider['from'] / self.scale ; d = 3 * _d # shift label (3 degrees)
-                    if icon:  # icon & text
-                        self.draw_map([[center_x + d, center_y]], ftype, __ftag, fimage=icon) ; d = icon.width() * _d
-                    self.draw_map([[center_x + d, center_y]], ftype, _ftag, ftext=label)
 
     def centerCarta(self, centerof=[[0,0]]):
         """Center map by point.
@@ -200,42 +143,6 @@ class Map():
         pts = self.to_points(centerof, doscale=1)
         if pts:
             self.center_point(*pts)
-            self.label_point()
-
-    def load_map(self, data=(), docenter=0):
-        """Display objects. Use draw_map.
-        DATA (opt.) list of list as (
-            0 layer name from mopt,
-            1 tag of object (unique within layer),
-            2 string of coords as "((x1,y1),...,(xn,yn))"  (in degrees),
-            3 (opt.) label,
-            4 (opt.) center for label as {'' (no label)|"(x,y)"},
-            5 (opt.) icon (GIF),
-            6 (opt.) fgcolor,
-            7 (opt.) bgcolor).
-        DOCENTER (opt.) center after display {1|0 (default)}."""
-        for row in data:
-            _row = dict([[i, x] for i, x in enumerate(row) if not x == None])
-            ftype, tag = _row[0], _row[1]
-            ftag = '%04d_%s_%s' % (len(self.mflood), ftype, tag)
-            coords, centerof = _row[2], _row.get(4)
-            if type(coords) is str:
-                coords = self.to_coords(coords)
-            if type(centerof) is str:
-                centerof = self.to_coords(centerof)
-            # save in mflood label, coords..
-            self.mflood[ftag] = {
-                'ftype': ftype,
-                'coords': coords,
-                'label': _row.get(3),
-                'centerof': centerof,
-                'icon': _row.get(5),
-                'fg': _row.get(6, self.mopt[ftype]['fg']),
-                'bg': _row.get(7, self.mopt[ftype].get('bg', ''))}
-            # draw object
-            self.draw_map(coords, ftype, ftag)
-                
-        self.label_point()
 
     def draw_boundaries(self):
         """Draw Sphere radii bounds."""
@@ -253,14 +160,7 @@ class Map():
                                 tags=('water', 'sphereBounds')
                                 )
 
-    def draw_map(self, coords, ftype, ftag, ftext='', fimage=None, addcoords=0):
-        """Draw object, label, icon.
-        COORDS list of coords [[x,y],[x1,y1]...] (in degrees).
-        FTYPE layer name from mopt.
-        FTAG uniq. tag.
-        FTEXT (opt.) label.
-        FIMAGE (opt.) icon (GIF).
-        ADDCOORDS (opt.) create or continue outline {1|0 (default)}."""
+    def draw_map(self, coords, ftype):
         # interpolate coords for Globe projection
         _coords = []
         if self.is_spherical():
@@ -270,43 +170,21 @@ class Map():
             _coords = coords
 
         points = self.to_points(_coords, doscale=1)
-        if not addcoords:
-            self.dw.delete(ftag)
+        
         if not points:
             return
 
-        # colors of layer or self
-        fg = self.mopt[ftype]['fg']
-        bg = self.mopt[ftype].get('bg', '')
-        mflood = self.mflood.get(ftag, 0)
-        if mflood:
-            fg = mflood.get('fg', fg)
-            bg = mflood.get('bg', bg)
-        # create/add points
-        if addcoords:
-            self.dw.coords(ftag, tuple(self.dw.coords(ftag) + points))
-            self.mflood[ftag]['coords'] += coords
-        elif ftext:
-            obj_id = self.dw.create_text(points, anchor=self.mopt[ftype].get('anchor', 'w'), text=ftext, fill=self.mopt[ftype].get('labelcolor', 'black'), tags=(ftag, ftype))
-        elif fimage:
-            obj_id = self.dw.create_image(points, anchor=self.mopt[ftype].get('anchor', 'w'), image=fimage, tags=(ftag, ftype))
-        elif self.mopt[ftype]['cls'] in ('Line'):
+        if self.mopt[ftype]['cls'] in ('Line'):
             if len(points) < 4:
                 points = points * 2
-            obj_id = self.dw.create_line(points, fill=fg, 
+            obj_id = self.dw.create_line(points, fill='black', 
                                 dash=self.mopt[ftype].get('dash'), smooth=self.mopt[ftype].get('smooth'), 
-                                width=self.mopt[ftype].get('width', 1), tags=(ftag, ftype))
-        elif self.mopt[ftype]['cls'] in ('Polygon'):
+                                width=self.mopt[ftype].get('width', 1), tags=(ftype,))
+        else: 
+            # polygon
             if len(points) < 4:
                 points = points * 2
-            obj_id = self.dw.create_polygon(points, fill=bg, outline=fg, tags=(ftag, ftype))
-        elif self.mopt[ftype]['cls'] in ('Dot'):
-            if len(points) < 4:
-                points = points * 2
-            size = self.mopt[ftype].get('size', 0)
-            obj_id = self.dw.create_oval(points[0] - size/2.0, points[1] - size/2.0,
-                                points[0] + size/2.0, points[1] + size/2.0,
-                                width=self.mopt[ftype].get('width', 1), fill=bg, outline=fg, tags=(ftag, ftype))
+            obj_id = self.dw.create_polygon(points, fill='green', outline='black', tags=(ftype,))
         self.map_ids.add(obj_id)
                                 
     def load_shp_file(self, data=(), docenter=0):
@@ -314,26 +192,13 @@ class Map():
         _data = []
         for row in data:
             _row = dict([[i, x] for i, x in enumerate(row)])
-            if not _row.get(1):
-                continue
-            obj_coords = self.from_WKT(_row[1])
-            if not obj_coords:
-                continue
-            for i1, wl in enumerate(obj_coords):
-                tp, coords1 = wl
-                for i2, coords2 in enumerate(coords1):
-                    for i, coords in enumerate(coords2):
-                        # unique tag if not
-                        if not _row[0]: _row[0] = self.freeTag('Area')
-                        _data += [(
-                                    'Area', 
-                                    '%s_%s_%s_%s' % (_row[0], i1, i2, i), 
-                                    coords, _row.get(2), 
-                                    _row.get(3), 
-                                    _row.get(4), 
-                                    _row.get(5), 
-                                    _row.get(6)
-                                    )]
+            try:
+                tp, e = self.from_WKT(_row[1])
+            except: 
+                return
+            for i2, coords2 in enumerate(e):
+                for i, coords in enumerate(coords2):
+                    _data += [('Area', coords)]
         if _data:
             self.load_map(_data, docenter)
             
@@ -346,13 +211,16 @@ class Map():
         wkt = wkt.replace("(", "[").replace(")", "]")
         tp = wkt[:wkt.find(" ")]
 
-        e = eval(re.sub(r, '[\\1,\\2]', wkt[wkt.find("["):]))
+        try:
+            e = eval(re.sub(r, '[\\1,\\2]', wkt[wkt.find("["):]))
+        except: 
+            return
 
 
         if tp == 'POLYGON':
-            return [[tp, [e]]]
+            return tp, [e]
         if tp == 'MULTIPOLYGON':
-            return [[tp, e]]
+            return tp, e
 
     def is_spherical(self):
         return self.mode == 'globe'
@@ -424,16 +292,6 @@ class Map():
                     coords += [[x, y]]
             b = not b
         return coords
-
-    def to_coords(self, strcoords):
-        """Return list of coords [[x,y],[x1,y1]...] from string (in degrees).
-        STRCOORDS string of coords, e.g. '(x,y),(x1,y1),...'."""
-        regstr = '(-?\d+\.?\d*)[ \t]*,[ \t]*(-?\d+\.?\d*)'
-        coords = []
-        if strcoords:
-            coords = [[float(x), float(y)] for x, y in re.findall(regstr, strcoords)]
-        return coords
-
 
     def to_mercator(self, y, ylimit=None):
         # latitude in mercator projection
