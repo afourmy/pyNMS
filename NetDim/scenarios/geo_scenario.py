@@ -19,7 +19,7 @@ class GeoScenario(BaseScenario):
         self.world_map = Map(self, viewportx=500, viewporty=250)
         self.world_map.change_projection('mercator')
         self.world_map.load_map(self.world_map.create_meridians())
-        self.world_map.centerCarta([[7, 49]])
+        self.world_map.center_map([[7, 49]])
         
     def adapt_coordinates(function):
         def wrapper(self, event, *others):

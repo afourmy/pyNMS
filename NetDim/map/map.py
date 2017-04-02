@@ -1,20 +1,8 @@
 import re
 from math import *    
 
-# Tk color by RGB
-rgb = lambda r, g, b: '#%02x%02x%02x' % (r, g, b)
-
 class Map():
-    """Main class."""
-    # Public
-    mopt = {
-        '.Mainland':    {'cls': 'Polygon', 'fg': rgb(135,159,103), 'bg': rgb(135,159,103)},
-        '.Water':       {'cls': 'Polygon', 'fg': rgb(90,140,190), 'bg': rgb(90,140,190)},
-        '.Latitude':    {'cls': 'Line', 'fg': rgb(164,164,164), 'anchor': 'sw'},
-        '.Longtitude':  {'cls': 'Line', 'fg': rgb(164,164,164), 'anchor': 'nw'},
-        'Area':         {'cls': 'Polygon', 'fg': rgb(0,130,200), 'bg': ''},
-    }
-    
+
     delta = 3600.0
     halfX = 648000.0
     ylimit = 84
@@ -61,7 +49,6 @@ class Map():
         return coords[0][0], coords[0][1]
 
     def create_meridians(self):
-        """Return meridians coords."""
         lonlat = []
         # X
         x = -180
@@ -69,7 +56,7 @@ class Map():
             lon = []
             for y in range(-90, 91, 30):
                 lon += [[x, y]]
-            lonlat += [('.Longtitude', list(lon))]
+            lonlat += [('.Longitude', list(lon))]
         for y in range(-90, 91, 30):
             centerof = [-180, y]
             lat = [centerof]
@@ -81,19 +68,9 @@ class Map():
         return lonlat
         
     def load_map(self, data=(), docenter=0):
-        """Display objects. Use draw_map.
-        DATA (opt.) list of list as (
-            0 layer name from mopt,
-            1 tag of object (unique within layer),
-            2 string of coords as "((x1,y1),...,(xn,yn))"  (in degrees)"""
-        for idx, row in enumerate(data):
-            _row = dict([[i, x] for i, x in enumerate(row) if not x == None])
-            ftype = _row[0]
-            coords = _row[1]
-            # save in mflood label, coords..
-            self.mflood.append((coords, ftype))
-            # draw object
-            self.draw_map(coords, ftype)
+        for row in data:
+            self.mflood.append(row)
+            self.draw_map(*row)
 
     def center_point(self, x=None, y=None):
         # current view
@@ -131,15 +108,15 @@ class Map():
         for id in self.map_ids:
             self.dw.delete(id)
 
-        for coords, ftype in self.mflood:
-            self.draw_map(coords, ftype)
+        for ftype, coords in self.mflood:
+            self.draw_map(ftype, coords)
             
         if mcenterof:
-            self.centerCarta(mcenterof)
+            self.center_map(mcenterof)
+        else:
+            print('test')
 
-    def centerCarta(self, centerof=[[0,0]]):
-        """Center map by point.
-        CENTEROF list of point coords [[x,y]] (in degrees)."""
+    def center_map(self, centerof=[[0,0]]):
         pts = self.to_points(centerof, doscale=1)
         if pts:
             self.center_point(*pts)
@@ -155,12 +132,12 @@ class Map():
                                 vy/2.0 - radii, 
                                 vx/2.0 + radii, 
                                 vy/2.0 + radii,
-                                outline=self.mopt['.Latitude']['fg'], 
-                                fill=self.mopt['.Water']['bg'], 
+                                outline='black', 
+                                fill='#40A4DF', 
                                 tags=('water', 'sphereBounds')
                                 )
 
-    def draw_map(self, coords, ftype):
+    def draw_map(self, ftype, coords):
         # interpolate coords for Globe projection
         _coords = []
         if self.is_spherical():
@@ -172,14 +149,13 @@ class Map():
         points = self.to_points(_coords, doscale=1)
         
         if not points:
+            print('test')
             return
 
-        if self.mopt[ftype]['cls'] in ('Line'):
+        if ftype in ('.Longitude', '.Latitude'):
             if len(points) < 4:
                 points = points * 2
-            obj_id = self.dw.create_line(points, fill='black', 
-                                dash=self.mopt[ftype].get('dash'), smooth=self.mopt[ftype].get('smooth'), 
-                                width=self.mopt[ftype].get('width', 1), tags=(ftype,))
+            obj_id = self.dw.create_line(points, fill='black', tags=(ftype,))
         else: 
             # polygon
             if len(points) < 4:
@@ -211,11 +187,7 @@ class Map():
         wkt = wkt.replace("(", "[").replace(")", "]")
         tp = wkt[:wkt.find(" ")]
 
-        try:
-            e = eval(re.sub(r, '[\\1,\\2]', wkt[wkt.find("["):]))
-        except: 
-            return
-
+        e = eval(re.sub(r, '[\\1,\\2]', wkt[wkt.find("["):]))
 
         if tp == 'POLYGON':
             return tp, [e]
@@ -331,22 +303,20 @@ class Map():
             return []
         sin_p14 = sin(center_y)
         cos_p14 = cos(center_y)
-        z = asinz( rh / 1 )
-        sinz = sin( z )
-        cosz = cos( z )
+        z = asinz(rh/1)
         lon = center_x
-        if ( abs(rh) <= EPSLN ):
+        if abs(rh) <= EPSLN :
             lat = center_y
-        lat = asinz( cosz * sin_p14 + (y * sinz * cos_p14) / rh )
-        con = abs(center_y) - pi / 2.0
-        if ( abs(con) <= EPSLN ):
-            if ( center_y >= EPSLN ):
-                lon = adjust_lon( center_x + atan2(x, y) )
+        lat = asinz(cos(z)*sin_p14 + (y*sin(z)*cos_p14)/rh)
+        con = abs(center_y) - pi/2
+        if abs(con) <= EPSLN:
+            if center_y >= EPSLN:
+                lon = adjust_lon(center_x + atan2(x, y))
             else:
-                lon = adjust_lon( center_x - atan2(-x, y) )
-        con = cosz - sin_p14 * sin(lat)
-        if ((abs(con) >= EPSLN) or (abs(x) >= EPSLN)):
-            lon = adjust_lon(center_x + atan2((x * sinz * cos_p14), (con * rh)));
+                lon = adjust_lon(center_x - atan2(-x, y))
+        con = cos(z) - sin_p14*sin(lat)
+        if abs(con) >= EPSLN or abs(x) >= EPSLN:
+            lon = adjust_lon(center_x + atan2((x*sin(z)*cos_p14), (con*rh)));
         x = degrees(lon)
         y = degrees(lat)
         return [x, y]
