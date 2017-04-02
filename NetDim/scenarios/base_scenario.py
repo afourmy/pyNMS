@@ -447,7 +447,7 @@ class BaseScenario(CustomFrame):
     def zoomer(self, event):
         ''' Zoom for window '''
         self._cancel()
-        factor = 1.1 if event.delta > 0 else 0.9
+        factor = 1.2 if event.delta > 0 else 0.8
         self.diff_y *= factor
         self.node_size *= factor
         self.cvs.scale('all', event.x, event.y, factor, factor)

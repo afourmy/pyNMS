@@ -16,9 +16,9 @@ class GeoScenario(BaseScenario):
         super().__init__(*args, **kwargs)
         
         # map 
-        self.world_map = Map(self, viewportx=500, viewporty=250)
+        self.world_map = Map(self)
         self.world_map.change_projection('mercator')
-        self.world_map.load_map(self.world_map.create_meridians())
+        self.world_map.create_meridians()
         self.world_map.center_map([[7, 49]])
         
     def adapt_coordinates(function):
@@ -108,7 +108,7 @@ class GeoScenario(BaseScenario):
     def zoomer(self, event):
         ''' Zoom for window '''
         self._cancel()
-        factor = 1.1 if event.delta > 0 else 0.9
+        factor = 1.2 if event.delta > 0 else 0.8
         self.diff_y *= factor
         self.node_size *= factor
         self.world_map.scale_map(ratio=factor)

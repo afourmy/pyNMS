@@ -650,8 +650,15 @@ class Controller(MainWindow):
         
         for shape in shapes:
             shape = sgeo.shape(shape)
-            wkt_shape = [('.Mainland', str(shape), 'D',  None, None, None, 'green')]
-            self.cs.world_map.load_shp_file(wkt_shape)
+
+            if shape.geom_type == 'MultiPolygon':
+                for polygon in shape:
+                    self.cs.world_map.load_shp_file(str(polygon))
+            else:
+                self.cs.world_map.load_shp_file(str(shape))
+            
+
+            # self.cs.world_map.load_shp_file(str(shape))
             
         for idx in self.cs.world_map.map_ids:
             self.cs.cvs.tag_lower(idx)

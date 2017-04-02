@@ -10,15 +10,14 @@ class Map():
 
     map_temp = {}
     
-    def __init__(self, parent, **kw):
-        # set of all map ids
+    def __init__(self, scenario, viewx=500, viewy=250):
+        self.viewx, self.viewy = viewx, viewy
+        # scenario canvas
+        self.cvs = scenario.cvs
+        # self.map_obj
+        # set of all canvas ids
         self.map_ids = set()
         self.scale = 0.05
-        self.parent = parent
-        self.dw = self.parent.cvs
-        self.bg = kw.get('bg')
-        self.viewportx = kw.get('viewportx', 360+180)
-        self.viewporty = kw.get('viewporty', 180+90)
         self.mode = 'linear'
         self.change_projection(self.mode)
 
@@ -26,13 +25,13 @@ class Map():
         """Change scale according previous value. Also Slider callback.
         DOCENTER (opt.) center when scaling {1 (default)|0}."""
         # remember visible center for center_point
-        self.map_temp['center_x'] = (self.dw.xview()[0] + self.dw.xview()[1]) / 2.0
-        self.map_temp['center_y'] = (self.dw.yview()[0] + self.dw.yview()[1]) / 2.0
+        self.map_temp['center_x'] = (self.cvs.xview()[0] + self.cvs.xview()[1]) / 2.0
+        self.map_temp['center_y'] = (self.cvs.yview()[0] + self.cvs.yview()[1]) / 2.0
         # calc ratio of current and previous scale
         self.scale *= float(ratio)
         # scale and center with ratio, show labels by new scale
-        self.dw['scrollregion'] = (0, 0, self.scaleX * self.scale, self.scaleY * self.scale)
-        self.dw.scale('all', 0, 0, ratio, ratio)
+        self.cvs['scrollregion'] = (0, 0, self.scale_x * self.scale, self.scale_y * self.scale)
+        self.cvs.scale('all', 0, 0, ratio, ratio)
         if docenter:
             self.center_point()
         
@@ -50,7 +49,6 @@ class Map():
 
     def create_meridians(self):
         lonlat = []
-        # X
         x = -180
         for x in range(-180, 181, 30):
             lon = []
@@ -65,7 +63,16 @@ class Map():
                 lonlat += [('.Latitude', list(lat))]
                 label = centerof = None
                 lat.pop(0)
-        return lonlat
+                
+        for coords in lonlat:
+            coords = self.convert_coords(coords[1])
+        # if ftype in ('.Longitude', '.Latitude'):
+            if not coords:
+                return
+            if len(coords) < 4:
+                coords = coords * 2
+            obj_id = self.cvs.create_line(coords, fill='black', tags=('meridians',))
+        # return lonlat
         
     def load_map(self, data=(), docenter=0):
         for row in data:
@@ -74,70 +81,70 @@ class Map():
 
     def center_point(self, x=None, y=None):
         # current view
-        scrollX = self.dw.xview()
-        scrollY = self.dw.yview()
+        scrollX = self.cvs.xview()
+        scrollY = self.cvs.yview()
         if x and y:
             # center by point
-            moveX = x/(self.scaleX*self.scale) - (scrollX[1] - scrollX[0])/2.0
-            moveY = y/(self.scaleY*self.scale) - (scrollY[1] - scrollY[0])/2.0
+            moveX = x/(self.scale_x*self.scale) - (scrollX[1] - scrollX[0])/2.0
+            moveY = y/(self.scale_y*self.scale) - (scrollY[1] - scrollY[0])/2.0
         else:
             # visible center
             moveX = self.map_temp['center_x'] - (scrollX[1] - scrollX[0]) / 2.0
             moveY = self.map_temp['center_y'] - (scrollY[1] - scrollY[0]) / 2.0
-        self.dw.xview('moveto', moveX)
-        self.dw.yview('moveto', moveY)
+        self.cvs.xview('moveto', moveX)
+        self.cvs.yview('moveto', moveY)
 
     def change_projection(self, mode='linear', centerof=None):
         mcenterof = []
         if not self.mode == mode:
             mcenterof = self.map_temp['centerof'] = (centerof or self.center_of())
-        if mode == 'linear':   # linear
-            self.scaleX = self.viewportx * self.delta
-            self.scaleY = self.viewporty * self.delta
-        elif 'mode' == 'mercator':    # mercator
-            self.scaleX = self.viewportx * self.delta
-            self.scaleY = self.to_mercator(90.0) * self.delta * self.viewporty/90.0
-        else: # mode is globe
-            self.scaleX = self.viewportx * self.delta
-            self.scaleY = self.viewporty * self.delta
-        self.halfX = self.scaleX / 2.0
-        self.halfY = self.scaleY / 2.0
+        if mode == 'linear':
+            self.scale_x = self.viewx*self.delta
+            self.scale_y = self.viewy*self.delta
+        elif 'mode' == 'mercator':
+            self.scale_x = self.viewx*self.delta
+            self.scale_y = self.to_mercator(90.0)*self.delta*self.viewy/90
+        else: # mode is spheric
+            self.scale_x = self.viewx*self.delta
+            self.scale_y = self.viewy*self.delta
+        self.halfX = self.scale_x/2
+        self.halfY = self.scale_y/2
         self.mode = mode
         self.scale_map(docenter=0)
-        self.draw_boundaries()
+        self.draw_sphere()
         for id in self.map_ids:
-            self.dw.delete(id)
+            self.cvs.delete(id)
 
         for ftype, coords in self.mflood:
             self.draw_map(ftype, coords)
             
+        self.cvs.delete('meridians')
+        self.create_meridians()
+            
         if mcenterof:
             self.center_map(mcenterof)
-        else:
-            print('test')
 
     def center_map(self, centerof=[[0,0]]):
         pts = self.to_points(centerof, doscale=1)
         if pts:
             self.center_point(*pts)
 
-    def draw_boundaries(self):
-        """Draw Sphere radii bounds."""
-        self.dw.delete('sphereBounds')
+    def draw_sphere(self):
+        self.cvs.delete('water')
         if self.is_spherical():
-            radii = 180 / pi * self.delta * self.scale
-            vx, vy = self.scaleX * self.scale, self.scaleY * self.scale
-            self.oval_id = self.dw.create_oval(
-                                vx/2.0 - radii, 
-                                vy/2.0 - radii, 
-                                vx/2.0 + radii, 
-                                vy/2.0 + radii,
-                                outline='black', 
-                                fill='#40A4DF', 
-                                tags=('water', 'sphereBounds')
-                                )
+            R = 180/pi*self.delta*self.scale
+            vx, vy = self.scale_x*self.scale, self.scale_y*self.scale
+            self.oval_id = self.cvs.create_oval(
+                                                vx/2 - R, 
+                                                vy/2 - R, 
+                                                vx/2 + R, 
+                                                vy/2 + R,
+                                                outline = 'black', 
+                                                fill = '#40A4DF', 
+                                                tags = ('water')
+                                                )
 
-    def draw_map(self, ftype, coords):
+    def convert_coords(self, coords):
         # interpolate coords for Globe projection
         _coords = []
         if self.is_spherical():
@@ -146,53 +153,35 @@ class Map():
         if not _coords:
             _coords = coords
 
-        points = self.to_points(_coords, doscale=1)
+        coords = self.to_points(_coords, doscale=1)
         
-        if not points:
-            print('test')
+        if not coords:
             return
-
-        if ftype in ('.Longitude', '.Latitude'):
-            if len(points) < 4:
-                points = points * 2
-            obj_id = self.dw.create_line(points, fill='black', tags=(ftype,))
         else: 
-            # polygon
-            if len(points) < 4:
-                points = points * 2
-            obj_id = self.dw.create_polygon(points, fill='green', outline='black', tags=(ftype,))
+            return coords
+        
+    def draw_map(self, ftype, coords):
+        points = self.convert_coords(coords)
+        if len(points) < 4:
+            points = points * 2
+        obj_id = self.cvs.create_polygon(points, fill='green', outline='black', tags=(ftype,))
         self.map_ids.add(obj_id)
                                 
-    def load_shp_file(self, data=(), docenter=0):
-        # display WKT-objects. Use loadCarta.
-        _data = []
-        for row in data:
-            _row = dict([[i, x] for i, x in enumerate(row)])
-            try:
-                tp, e = self.from_WKT(_row[1])
-            except: 
-                return
-            for i2, coords2 in enumerate(e):
-                for i, coords in enumerate(coords2):
-                    _data += [('Area', coords)]
-        if _data:
-            self.load_map(_data, docenter)
+    def load_shp_file(self, shape, docenter=0):
+        coords = self.shape_to_coords(shape)
+        try:
+            self.load_map([('Area', coords)], docenter)
+        except ValueError as e:
+            print(str(e))
             
-    def from_WKT(self, wkt):
-        # wkt-string -> list of coords
-
-        r = '(-?\\d+\\.?\\d*)[ \t]+[ \t]*(-?\\d+\\.?\\d*)'
-        r1 = '((?:POLYGON|MULTIPOLYGON)[^a-zA-Z]+)'
-
-        wkt = wkt.replace("(", "[").replace(")", "]")
-        tp = wkt[:wkt.find(" ")]
-
-        e = eval(re.sub(r, '[\\1,\\2]', wkt[wkt.find("["):]))
-
-        if tp == 'POLYGON':
-            return tp, [e]
-        if tp == 'MULTIPOLYGON':
-            return tp, e
+    def shape_to_coords(self, shape):
+        try:
+            keep = lambda x: x.isdigit() or x in '- .'
+            coords = ''.join(filter(keep, str(shape))).split(' ')[1:]
+            coords = [(float(a[:8]), float(b[:8])) for a, b in zip(coords[0::2], coords[1::2])]
+        except (ValueError, SyntaxError) as e:
+            print(str(e))
+        return coords
 
     def is_spherical(self):
         return self.mode == 'globe'
@@ -206,12 +195,12 @@ class Map():
 
     def sizeOf(self):
         """Return viewport size as [width, height] disregarding scale (in points)."""
-        return [self.scaleX, self.scaleY]
+        return [self.scale_x, self.scale_y]
 
     def viewsizeOf(self):
         """Return rect. of visible area (in points)."""
-        left, right = [self.scaleX * self.scale * x for x in self.dw.xview()]
-        top, bottom = [self.scaleY * self.scale * y for y in self.dw.yview()]
+        left, right = [self.scale_x * self.scale * x for x in self.cvs.xview()]
+        top, bottom = [self.scale_y * self.scale * y for y in self.cvs.yview()]
         return [left, top, right, bottom]
 
     def view_center(self):
@@ -280,8 +269,6 @@ class Map():
         return degrees(2*(atan(e**(radians(y))) - atan(1)))
 
     def to_sphere(self, coords):
-        """Return list of two `points` for Spherical projection.
-        COORDS coords list [x,y] (in degrees)."""
         self.map_temp['centerof'] = centerof = self.map_temp.get('centerof', [[0,0]])
         x, y, center_x, center_y = [radians(float(x)) for x in coords + centerof[0]]
         center_x += pi
