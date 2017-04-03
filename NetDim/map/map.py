@@ -7,7 +7,7 @@ class Map():
     halfX = 648000.0
     ylimit = 84
     mflood = []
-
+    lonlat = []
     map_temp = {}
     
     def __init__(self, scenario, viewx=500, viewy=250):
@@ -48,36 +48,34 @@ class Map():
         return coords[0][0], coords[0][1]
 
     def create_meridians(self):
-        lonlat = []
         x = -180
         for x in range(-180, 181, 30):
             lon = []
             for y in range(-90, 91, 30):
                 lon += [[x, y]]
-            lonlat += [('.Longitude', list(lon))]
+            self.lonlat.append(list(lon))
         for y in range(-90, 91, 30):
             centerof = [-180, y]
             lat = [centerof]
             for x in range(-180, 181, 30):
                 lat += [[x, y]]
-                lonlat += [('.Latitude', list(lat))]
+                self.lonlat.append(list(lat))
                 label = centerof = None
                 lat.pop(0)
                 
-        for coords in lonlat:
-            coords = self.convert_coords(coords[1])
-        # if ftype in ('.Longitude', '.Latitude'):
+    def draw_meridians(self):
+        for coords in self.lonlat:
+            coords = self.convert_coords(coords)
             if not coords:
                 return
             if len(coords) < 4:
                 coords = coords * 2
             obj_id = self.cvs.create_line(coords, fill='black', tags=('meridians',))
-        # return lonlat
         
-    def load_map(self, data=(), docenter=0):
+    def load_map(self, data):
         for row in data:
             self.mflood.append(row)
-            self.draw_map(*row)
+            self.draw_map(row)
 
     def center_point(self, x=None, y=None):
         # current view
@@ -114,12 +112,13 @@ class Map():
         self.draw_sphere()
         for id in self.map_ids:
             self.cvs.delete(id)
-
-        for ftype, coords in self.mflood:
-            self.draw_map(ftype, coords)
-            
         self.cvs.delete('meridians')
-        self.create_meridians()
+
+        for coords in self.mflood:
+            self.draw_map(coords)
+            
+        self.draw_meridians()
+        # self.create_meridians()
             
         if mcenterof:
             self.center_map(mcenterof)
@@ -149,28 +148,26 @@ class Map():
         _coords = []
         if self.is_spherical():
             for i in range(len(coords) - 1):
-                _coords += self.interpolation(coords[i:i + 2])
+                _coords += self.interpolation(coords[i:i+2])
         if not _coords:
             _coords = coords
-
         coords = self.to_points(_coords, doscale=1)
         
-        if not coords:
-            return
-        else: 
-            return coords
+        return coords
         
-    def draw_map(self, ftype, coords):
+    def draw_map(self, coords):
         points = self.convert_coords(coords)
+        if not points:
+            return
         if len(points) < 4:
             points = points * 2
-        obj_id = self.cvs.create_polygon(points, fill='green', outline='black', tags=(ftype,))
+        obj_id = self.cvs.create_polygon(points, fill='green', outline='black', tags=('Area',))
         self.map_ids.add(obj_id)
                                 
-    def load_shp_file(self, shape, docenter=0):
+    def load_shp_file(self, shape):
         coords = self.shape_to_coords(shape)
         try:
-            self.load_map([('Area', coords)], docenter)
+            self.load_map([coords])
         except ValueError as e:
             print(str(e))
             
@@ -178,7 +175,7 @@ class Map():
         try:
             keep = lambda x: x.isdigit() or x in '- .'
             coords = ''.join(filter(keep, str(shape))).split(' ')[1:]
-            coords = [(float(a[:8]), float(b[:8])) for a, b in zip(coords[0::2], coords[1::2])]
+            coords = [(eval(a[:10]), eval(b[:10])) for a, b in zip(coords[0::2], coords[1::2])]
         except (ValueError, SyntaxError) as e:
             print(str(e))
         return coords

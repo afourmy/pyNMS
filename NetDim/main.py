@@ -1,5 +1,5 @@
 # NetDim
-# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+# Copyright (C) 2017 Antoine Fkourmy (contact@netdim.fr)
 
 import sys
 from inspect import stack
