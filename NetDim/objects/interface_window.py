@@ -27,7 +27,7 @@ class InterfaceWindow(FocusTopLevel):
         for index, property in enumerate(interface.public_properties):
             # creation of the label associated to the property
             label = Label(self)
-            label.text = prop_to_nice_name[property]
+            label.text = prop_to_name[property]
             
             property_entry = Entry(self, width=15)
             property_entry.text = str(getattr(self.interface, property))
@@ -53,7 +53,7 @@ class InterfaceWindow(FocusTopLevel):
             for index, property in enumerate(interface.perAS_properties):
                 # creation of the label associated to the property
                 label = Label(self)
-                label.text = prop_to_nice_name[property]
+                label.text = prop_to_name[property]
                 
                 property_entry = Entry(self, width=15)
                 property_entry.text = str(self.interface(self.AS_combobox.text, property))

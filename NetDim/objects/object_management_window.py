@@ -61,7 +61,7 @@ class ObjectManagementWindow(FocusTopLevel):
                 continue
             
             # creation of the label associated to the property
-            text = prop_to_nice_name[property]
+            text = prop_to_name[property]
             label = Label(self)
             label.text = text
             
@@ -93,7 +93,7 @@ class ObjectManagementWindow(FocusTopLevel):
             for index, property in enumerate(perAS_properties[obj.subtype]):
                 
                 # creation of the label associated to the property
-                text = prop_to_nice_name[property]
+                text = prop_to_name[property]
                 label = Label(self)
                 label.text = text
                 
@@ -179,7 +179,7 @@ class ObjectManagementWindow(FocusTopLevel):
             if property == 'path':
                 setattr(self.current_obj, property, self.current_path)
             if property == 'sites':
-                value = set(re.sub(r'\s+', '', value).split(','))
+                value = filter(None, set(re.sub(r'\s+', '', value).split(',')))
                 value = set(map(self.ms.ss.ntw.convert_node, value))
                 setattr(self.current_obj, property, value)
             elif property in self.property_list:
