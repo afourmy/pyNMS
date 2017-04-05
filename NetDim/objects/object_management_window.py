@@ -104,15 +104,7 @@ class ObjectManagementWindow(FocusTopLevel):
                     
                 label.grid(index+1, 0, pady=1, in_=lf_perAS)
                 pvalue.grid(index+1, 1, pady=1, in_=lf_perAS)
-            
-        # route finding possibilities for a route
-        # TODO 
-        # if type == 'route':
-        #     self.button_compute_path = ttk.Button(self, text='Compute path', 
-        #                             command=lambda: self.find_path())
-        #     self.button_compute_path.grid(row=n+1, column=0, columnspan=2, 
-        #                                                         pady=5, padx=5)
-                                                                
+                                                                            
         button_save_obj = Button(self) 
         button_save_obj.text = 'Save'
         button_save_obj.command = self.save_obj

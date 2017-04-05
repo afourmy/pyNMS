@@ -118,7 +118,7 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
                     self.add_command(label='Remove from area', 
                                 command=lambda: self.change_area('remove'))
                         
-            self.add_separator()
+                self.add_separator()
             
             if set(self.cs.ms.ss.ntw.nodes.values()):
                 self.add_command(label='Add to site', command=self.add_to_site)

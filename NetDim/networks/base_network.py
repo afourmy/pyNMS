@@ -203,7 +203,6 @@ class BaseNetwork(object):
         dict_of_adj_links = self.graph.pop(node.id, {})
         for type_link, adj_obj in dict_of_adj_links.items():
             for neighbor, adj_link in adj_obj:
-                print('base network', node, adj_link)
                 yield adj_link
 
     def remove_link(self, link):
