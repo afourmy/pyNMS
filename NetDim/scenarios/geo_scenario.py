@@ -89,11 +89,15 @@ class GeoScenario(BaseScenario):
             node.logical_x, node.logical_y = node.x, node.y 
             
     def move_to_geographical_coordinates(self, *nodes):
+        if not nodes:
+            nodes = self.ntw.pn['node'].values()
         for node in nodes:
             node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
         self.move_nodes(nodes)
         
     def move_to_logical_coordinates(self, *nodes):
+        if not nodes:
+            nodes = self.ntw.pn['node'].values()
         for node in nodes:
             node.x, node.y = node.logical_x, node.logical_y
         self.move_nodes(nodes)
