@@ -13,7 +13,6 @@ path_app = dirname(abspath(stack()[0][1]))
 if path_app not in sys.path:
     sys.path.append(path_app)
 
-
 import controller
 
 if str.__eq__(__name__, '__main__'):
