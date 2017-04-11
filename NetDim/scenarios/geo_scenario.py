@@ -2,8 +2,15 @@
 # Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
 
 import re
+from os.path import join
+from tkinter import filedialog
 from .base_scenario import BaseScenario
-from math import *    
+from math import *
+try:
+    import shapefile as shp
+    import shapely.geometry as sgeo
+except ImportError:
+    warnings.warn('SHP librairies missing: map import disabled')
 
 def overrider(interface_class):
     def overrider(method):
@@ -119,6 +126,44 @@ class GeoScenario(BaseScenario):
         self.world_map.scale_map(ratio=factor)
         self.update_nodes_coordinates(factor)
         
+    ## Import of shapefile
+    
+    def import_shapefile(self, filepath=None):
+                
+        filepath = filedialog.askopenfilenames(
+                                initialdir = join(self.ms.path_workspace, 'map'),
+                                title = 'Import SHP map', 
+                                filetypes = (
+                                ('shp files','*.shp'),
+                                ('all files','*.*')
+                                ))
+        
+        # no error when closing the window
+        if not filepath: 
+            return
+        else: 
+            self.filepath ,= filepath
+            
+        self.world_map.load_polygon(*self.yield_polygons())
+        
+        for idx in self.world_map.map_ids:
+            self.cvs.tag_lower(idx)
+        
+    def yield_polygons(self):
+        
+        # shapefile with all countries
+        sf = shp.Reader(self.filepath)
+        
+        shapes = sf.shapes()
+        
+        for shape in shapes:
+            shape = sgeo.shape(shape)
+            
+            if shape.geom_type == 'MultiPolygon':
+                yield from shape
+            else:
+                yield shape
+        
 class Map():
 
     delta = 3600.0
@@ -139,15 +184,14 @@ class Map():
         self.mode = 'linear'
         self.change_projection(self.mode)
 
-    def scale_map(self, ratio=1, docenter=1):
-        """Change scale according previous value. Also Slider callback.
-        DOCENTER (opt.) center when scaling {1 (default)|0}."""
-        # remember visible center for center_point
+    def scale_map(self, ratio=1, center=True):
+        # instead of remembering the center before zooming, it would be better
+        # to zoom according to where the mouse is located
         self.map_temp['center_x'] = (self.cvs.xview()[0] + self.cvs.xview()[1])/2
         self.map_temp['center_y'] = (self.cvs.yview()[0] + self.cvs.yview()[1])/2
         # calc ratio of current and previous scale
         self.scale *= float(ratio)
-        # scale and center with ratio, show labels by new scale
+        # update scrollregion and scale
         self.cvs['scrollregion'] = (
                                     0, 
                                     0, 
@@ -155,7 +199,7 @@ class Map():
                                     self.scale_y*self.scale
                                     )
         self.cvs.scale('all', 0, 0, ratio, ratio)
-        if docenter:
+        if center:
             self.center_point()
         
     def get_geographical_coordinates(self, x, y):
@@ -219,19 +263,16 @@ class Map():
         mcenterof = []
         if not self.mode == mode:
             mcenterof = self.map_temp['centerof'] = (centerof or self.center_of())
-        if mode == 'linear':
-            self.scale_x = self.viewx*self.delta
+        self.scale_x = self.viewx*self.delta
+        if mode in ('linear', 'mercator'):
             self.scale_y = self.viewy*self.delta
-        elif 'mode' == 'mercator':
-            self.scale_x = self.viewx*self.delta
+        else:
             self.scale_y = self.to_mercator(90.0)*self.delta*self.viewy/90
-        else: # mode is spheric
-            self.scale_x = self.viewx*self.delta
-            self.scale_y = self.viewy*self.delta
+            
         self.halfX = self.scale_x/2
         self.halfY = self.scale_y/2
         self.mode = mode
-        self.scale_map(docenter=0)
+        self.scale_map(center=False)
         self.draw_sphere()
         for id in self.map_ids:
             self.cvs.delete(id)
@@ -240,8 +281,9 @@ class Map():
         for coords in self.mflood:
             self.draw_map(coords)
             
+        self.create_meridians()
         self.draw_meridians()
-        # self.create_meridians()
+
             
         if mcenterof:
             self.center_map(mcenterof)
@@ -292,12 +334,13 @@ class Map():
                                          )
         self.map_ids.add(obj_id)
                                 
-    def load_shp_file(self, shape):
-        coords = self.shape_to_coords(shape)
-        try:
-            self.load_map([coords])
-        except ValueError as e:
-            print(str(e))
+    def load_polygon(self, *polygons):
+        for polygon in polygons:
+            coords = self.shape_to_coords(str(polygon))
+            try:
+                self.load_map([coords])
+            except ValueError as e:
+                print(str(e))
             
     def shape_to_coords(self, shape):
         try:

@@ -7,7 +7,6 @@ import os
 from scenarios import network_scenario, site_scenario
 from collections import defaultdict
 from os.path import abspath, pardir, join
-from tkinter import ttk, filedialog
 from objects.objects import *
 from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous import graph_algorithms as galg
@@ -30,11 +29,6 @@ try:
     import xlwt
 except ImportError:
     warnings.warn('Excel libraries missing: excel import/export disabled')
-try:
-    import shapefile as shp
-    import shapely.geometry as sgeo
-except ImportError:
-    warnings.warn('SHP librairies missing: map import disabled')
 
 class Controller(MainWindow):
     
@@ -125,11 +119,11 @@ class Controller(MainWindow):
         general_menu.separator()
         
         import_map = MenuEntry(general_menu)
-        import_map.text = 'Import SHP map'
-        import_map.command = self.import_map
+        import_map.text = 'Import shapefile'
+        import_map.command = self.cs.import_shapefile
         
         delete_map = MenuEntry(general_menu)
-        delete_map.text = 'Delete SHP map'
+        delete_map.text = 'Delete map'
         delete_map.command = self.delete_map
         
         general_menu.separator()
@@ -626,42 +620,6 @@ class Controller(MainWindow):
                 
         excel_workbook.save(selected_file.name)
         selected_file.close()
-        
-    def import_map(self, filepath=None):
-                
-        filepath = filedialog.askopenfilenames(
-                                initialdir = join(self.path_workspace, 'map'),
-                                title = 'Import SHP map', 
-                                filetypes = (
-                                ('shp files','*.shp'),
-                                ('all files','*.*')
-                                ))
-        
-        # no error when closing the window
-        if not filepath: 
-            return
-        else: 
-            filepath ,= filepath
-        
-        # shapefile with all countries
-        sf = shp.Reader(filepath)
-        
-        shapes = sf.shapes()
-        
-        for shape in shapes:
-            shape = sgeo.shape(shape)
-
-            if shape.geom_type == 'MultiPolygon':
-                for polygon in shape:
-                    self.cs.world_map.load_shp_file(str(polygon))
-            else:
-                self.cs.world_map.load_shp_file(str(shape))
-            
-
-            # self.cs.world_map.load_shp_file(str(shape))
-            
-        for idx in self.cs.world_map.map_ids:
-            self.cs.cvs.tag_lower(idx)
             
     def delete_map(self):
         

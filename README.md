@@ -14,7 +14,9 @@ The following modules are used in NetDim:
 ```
 PIL / Pillow (mandatory)
 xlrd, xlwt (desirable: used for saving projects)
+shapely, shapefile (optional: used for shapefile import)
 numpy, cvxopt (optional: used for linear programming)
+Exscript (optional: used for network automation)
 ```
 
 In order to use NetDim, you need to run **main.py**.
