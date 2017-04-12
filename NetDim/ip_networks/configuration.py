@@ -1,5 +1,4 @@
-# NetDim
-# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+# NetDim (contact@netdim.fr)
 
 import tkinter as tk
 from tkinter import ttk

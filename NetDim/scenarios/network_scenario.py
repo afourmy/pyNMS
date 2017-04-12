@@ -1,5 +1,4 @@
-# NetDim
-# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+# NetDim (contact@netdim.fr)
 
 from .geo_scenario import GeoScenario
 from networks import main_network
@@ -17,7 +16,7 @@ class NetworkScenario(GeoScenario):
                             lambda e: NetworkSelectionRightClickMenu(e, self))
                             
     def general_menu(self, event):
-        x, y = self._start_pos_main_node
+        x, y = self.start_pos_main_node
         # if the right-click button was pressed, but the position of the 
         # canvas when the button is released hasn't changed, we create
         # the general right-click menu

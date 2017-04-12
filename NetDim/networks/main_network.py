@@ -1,5 +1,4 @@
-# NetDim
-# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+# NetDim (contact@netdim.fr)
 
 from .base_network import BaseNetwork
 from autonomous_system import AS
@@ -61,6 +60,9 @@ class MainNetwork(BaseNetwork):
         2: ('switch', 'oxc'),
         1: ('regenerator', 'splitter', 'antenna')
         }
+        
+        self.prop_to_type['ipS'] = self.convert_IP
+        self.prop_to_type['ipD'] = self.convert_IP
         
     # function filtering AS either per layer or per subtype
     def ASftr(self, filtering_mode, *sts):
@@ -319,7 +321,7 @@ class MainNetwork(BaseNetwork):
         
         # we consider each physical link in the network to be failed, one by one
         for failed_plink in self.plinks.values():
-            self.fdtks = {failed_plink}
+            self.failed_obj = {failed_plink}
             # the physical link being failed, we will recreate all routing tables
             # then use the path finding procedure to map the traffic flows
             self.rt_creation()
@@ -330,7 +332,7 @@ class MainNetwork(BaseNetwork):
                     if curr_traffic > getattr(plink, 'wctraffic' + dir):
                         setattr(plink, 'wctraffic' + dir, curr_traffic)
                         setattr(plink, 'wcfailure', str(failed_plink))
-        self.fdtks.clear()
+        self.failed_obj.clear()
                     
     # this function creates both the ARP and the RARP tables
     def arpt_creation(self):
@@ -447,7 +449,7 @@ class MainNetwork(BaseNetwork):
                 # we count the number of physical links in failure
                 #TODO vraiment utile ? si on recompute, failed_trunk devrait
                 # être égal à 0 normalement
-                failed_plinks = sum(r[-1] in self.fdtks for r in routes)
+                failed_plinks = sum(r[-1] in self.failed_obj for r in routes)
                 # and remove them from share so that they are ignored for 
                 # physical link dimensioning
                 for idx, route in enumerate(routes):
@@ -533,7 +535,7 @@ class MainNetwork(BaseNetwork):
                                                                 
                     
         for neighbor, adj_l3vc in self.gftr(source, 'l3link', 'l3vc'):
-            # if adj_plink in self.fdtks:
+            # if adj_plink in self.failed_obj:
             #     continue
             ex_ip = adj_l3vc('ipaddress', neighbor)
             ex_int = adj_l3vc('interface', source)

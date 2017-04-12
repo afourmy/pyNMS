@@ -1,5 +1,4 @@
-# NetDim
-# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+# NetDim (contact@netdim.fr)
 
 import tkinter as tk
 import re
@@ -54,14 +53,14 @@ class BaseScenario(CustomFrame):
         self.current_label = dict.fromkeys(object_properties, 'None')
         
         # creation mode, object type, and associated bindings
-        self._start_position = [None]*2
+        self.start_position = [None]*2
         self._object_type = 'plink'
         self.drag_item = None
         self.temp_line = None
         
         # used to move several node at once
-        self._start_pos_main_node = [None]*2
-        self._dict_start_position = {}
+        self.start_pos_main_node = [None]*2
+        self.dict_start_position = {}
         
         # the default mode is motion
         self._mode = 'motion'
@@ -228,27 +227,27 @@ class BaseScenario(CustomFrame):
     @adapt_coordinates
     def start_drawing_oval(self, event):
         x, y = event.x, event.y
-        self._start_position = x, y
+        self.start_position = x, y
         self.oval = self.cvs.create_oval(x, y, x, y, tags=('shape', 'object'))
         self.cvs.tag_lower(self.oval)
         
     @adapt_coordinates
     def draw_oval(self, event):
         # draw the line only if they were created in the first place
-        if self._start_position != [None]*2:
+        if self.start_position != [None]*2:
             # update the position of the temporary lines
-            x0, y0 = self._start_position
+            x0, y0 = self.start_position
             self.cvs.coords(self.oval, event.x, event.y, x0, y0)
         
     def create_oval(self, event):
         oval = Oval(self.oval, event.x, event.y)
-        self._start_position = [None]*2
+        self.start_position = [None]*2
         self.object_id_to_object[self.oval] = oval
     
     @adapt_coordinates
     def start_drawing_rectangle(self, event):
         x, y = event.x, event.y
-        self._start_position = x, y
+        self.start_position = x, y
         self.rectangle = self.cvs.create_rectangle(x, y, x, y, 
                                                     tags=('shape', 'object'))
         self.cvs.tag_lower(self.rectangle)
@@ -256,14 +255,14 @@ class BaseScenario(CustomFrame):
     @adapt_coordinates
     def draw_rectangle(self, event):
         # draw the line only if they were created in the first place
-        if self._start_position != [None]*2:
+        if self.start_position != [None]*2:
             # update the position of the temporary lines
-            x0, y0 = self._start_position
+            x0, y0 = self.start_position
             self.cvs.coords(self.rectangle, event.x, event.y, x0, y0)
         
     def create_rectangle(self, event):
         rectangle = Rectangle(self.rectangle, event.x, event.y)
-        self._start_position = [None]*2
+        self.start_position = [None]*2
         self.object_id_to_object[self.rectangle] = rectangle
                   
     @adapt_coordinates
@@ -286,18 +285,18 @@ class BaseScenario(CustomFrame):
     @adapt_coordinates
     def find_closest_node(self, event):
         # record the item and its location
-        self._dict_start_position.clear()
+        self.dict_start_position.clear()
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
         # save the initial position to compute the delta for multiple nodes motion
         main_node_selected = self.object_id_to_object[self.drag_item]
         merged_dict = main_node_selected.image.items()
         layer = [l for l, item_id in merged_dict if item_id == self.drag_item].pop()
         diff = layer * self.diff_y
-        self._start_pos_main_node = event.x, event.y + diff
+        self.start_pos_main_node = event.x, event.y + diff
         if main_node_selected in self.so['node']:
             # for all selected node (sn), we store the initial position
             for sn in self.so['node']:
-                self._dict_start_position[sn] = [sn.x, sn.y + diff]
+                self.dict_start_position[sn] = [sn.x, sn.y + diff]
         else:
             # if ctrl is not pressed, we forget about the old selection, 
             # consider only the newly selected node, and unhighlight everything
@@ -305,7 +304,7 @@ class BaseScenario(CustomFrame):
                 self.unhighlight_all()
             self.highlight_objects(main_node_selected)
             # we update the dict of start position
-            self._dict_start_position[main_node_selected] = self._start_pos_main_node 
+            self.dict_start_position[main_node_selected] = self.start_pos_main_node 
             # we also need to update the highlight to that the old selection
             # is no longer highlighted but the newly selected node is.
             self.highlight_objects(main_node_selected)
@@ -341,14 +340,14 @@ class BaseScenario(CustomFrame):
                 
     @adapt_coordinates
     def find_closest_shape(self, event):
-        self._dict_start_position.clear()
+        self.dict_start_position.clear()
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
         main_shape_selected = self.object_id_to_object[self.drag_item]
-        self._start_pos_main_node = event.x, event.y
+        self.start_pos_main_node = event.x, event.y
         if main_shape_selected in self.so['shape']:
             # for all selected shapes, we store the initial position
             for ss in self.so['shape']:
-                self._dict_start_position[ss] = [ss.x, ss.y]
+                self.dict_start_position[ss] = [ss.x, ss.y]
         else:
             # if ctrl is not pressed, we forget about the old selection, 
             # consider only the newly selected node, and unhighlight everything
@@ -357,7 +356,7 @@ class BaseScenario(CustomFrame):
             self.highlight_objects(main_shape_selected)
             # we update the dict of start position
             x, y = main_shape_selected.x, main_shape_selected.y
-            self._dict_start_position[main_shape_selected] = [x, y]
+            self.dict_start_position[main_shape_selected] = [x, y]
         self.highlight_objects(main_shape_selected)
     
     @adapt_coordinates
@@ -435,7 +434,7 @@ class BaseScenario(CustomFrame):
         # we record the position of the mouse when right-click is pressed
         # to check, when it is released, if the intent was to drag the canvas
         # or to have access to the right-click menu
-        self._start_pos_main_node = event.x, event.y
+        self.start_pos_main_node = event.x, event.y
         self.cvs.scan_mark(event.x, event.y)
 
     def scroll_move(self, event):
@@ -650,8 +649,8 @@ class BaseScenario(CustomFrame):
             # the main node initial position, the main node current position, 
             # and the other node initial position form a rectangle.
             # we find the position of the fourth vertix.
-            x0, y0 = self._start_pos_main_node
-            x1, y1 = self._dict_start_position[selected_node]
+            x0, y0 = self.start_pos_main_node
+            x1, y1 = self.dict_start_position[selected_node]
             selected_node.x = x1 + (event.x - x0)
             selected_node.y = y1 + (event.y + diff - y0)
             self.move_node(selected_node)
@@ -663,8 +662,8 @@ class BaseScenario(CustomFrame):
             self.move_shape(ss, event)
         
     def move_shape(self, shape, event):
-        x0, y0 = self._start_pos_main_node
-        x1, y1 = self._dict_start_position[shape]
+        x0, y0 = self.start_pos_main_node
+        x1, y1 = self.dict_start_position[shape]
         dx, dy = x1 - x0, y1 - y0
         if shape.subtype == 'label':
             self.cvs.coords(shape.id, dx + event.x, dy + event.y)
@@ -828,35 +827,35 @@ class BaseScenario(CustomFrame):
             if not self.ctrl:
                 self.unhighlight_all()
                 self.so.clear()
-            self._start_position = x, y
+            self.start_position = x, y
             # create the temporary line
-            x, y = self._start_position
+            x, y = self.start_position
             self.temp_rectangle = self.cvs.create_rectangle(x, y, x, y)
             self.cvs.tag_raise(self.temp_rectangle)
 
     @adapt_coordinates
     def rectangle_drawing(self, event):
         # draw the line only if they were created in the first place
-        if self._start_position != [None]*2:
+        if self.start_position != [None]*2:
             # update the position of the temporary lines
-            x0, y0 = self._start_position
+            x0, y0 = self.start_position
             self.cvs.coords(self.temp_rectangle, x0, y0, event.x, event.y)
     
     @adapt_coordinates
     def end_point_select_nodes(self, event):
         selection_mode = self.ms.creation_menu.selection_mode
         allowed = tuple(mode for mode, v in selection_mode.items() if v.get())
-        if self._start_position != [None]*2:
+        if self.start_position != [None]*2:
             # delete the temporary lines
             self.cvs.delete(self.temp_rectangle)
             # select all nodes enclosed in the rectangle
-            start_x, start_y = self._start_position
+            start_x, start_y = self.start_position
             for obj in self.cvs.find_enclosed(start_x, start_y, event.x, event.y):
                 if obj in self.object_id_to_object:
                     enclosed_obj = self.object_id_to_object[obj]
                     if enclosed_obj.class_type in allowed:
                         self.highlight_objects(enclosed_obj)
-            self._start_position = [None]*2
+            self.start_position = [None]*2
         
     # 2) Update selected objects and highlight
     def highlight_objects(self, *objects, color='red', dash=False):

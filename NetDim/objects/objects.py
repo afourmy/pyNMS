@@ -1,5 +1,4 @@
-# NetDim
-# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+# NetDim (contact@netdim.fr)
 
 # ordered dicts are needed to have the same menu order 
 from collections import defaultdict, OrderedDict
@@ -22,7 +21,7 @@ def initializer(default_properties):
                                              box_properties,
                                              ):
                         property_manager[self.__class__.subtype] += (k,)
-                    prop_to_nice_name[k] = k
+                    prop_to_name[k] = k
                     
             for property in default_properties:
                 value = default_properties[property]

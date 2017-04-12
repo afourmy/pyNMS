@@ -1,5 +1,4 @@
-# NetDim
-# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+# NetDim (contact@netdim.fr)
 
 import tkinter as tk
 import warnings
@@ -434,7 +433,7 @@ class Controller(MainWindow):
                 for row_index in range(1, sheet.nrows):
                     name, AS_type, id, nodes, links = sheet.row_values(row_index)
                     id = int(id)
-                    subtype = 'ethernet' if AS_type != 'BGP' else 'BGP peering'
+                    subtype = 'ethernet link' if AS_type != 'BGP' else 'BGP peering'
                     nodes = self.cs.ntw.convert_node_set(nodes)
                     links = self.cs.ntw.convert_link_set(links, subtype)
                     self.cs.ntw.AS_factory(AS_type, name, id, links, nodes, True)

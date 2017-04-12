@@ -1,5 +1,4 @@
-# NetDim
-# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+# NetDim (contact@netdim.fr)
 
 from .base_network import BaseNetwork
 from scenarios.insite_scenario import InSiteScenario

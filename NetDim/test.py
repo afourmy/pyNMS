@@ -1,5 +1,4 @@
-# NetDim
-# Copyright (C) 2017 Antoine Fourmy (contact@netdim.fr)
+# NetDim (contact@netdim.fr)
 
 import unittest
 import sys
@@ -64,7 +63,7 @@ class TestExportImport(unittest.TestCase):
         self.assertEqual(x_coord, {42, 24})
         plink ,= self.netdim.cs.ntw.pn['plink'].values()
         self.assertEqual(plink.distance, 666)
-        self.assertEqual(len(self.netdim.cs.ntw.pn['l3link'].values()), 1)
+        self.assertEqual(len(self.netdim.cs.ntw.pn['traffic'].values()), 1)
         
     def test_object_import_xls(self):
         self.object_import('xls')
@@ -97,7 +96,7 @@ class TestFlow(unittest.TestCase):
         
 class TestMST(unittest.TestCase):
  
-    @start_and_import('test_mst1.xls')
+    @start_and_import('test_mst.xls')
     def setUp(self):
         pass
  
