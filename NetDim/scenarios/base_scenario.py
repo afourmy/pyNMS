@@ -457,17 +457,17 @@ class BaseScenario(CustomFrame):
         self.node_size *= 1.2
         self.cvs.scale('all', event.x, event.y, 1.2, 1.2)
         self.cvs.configure(scrollregion=self.cvs.bbox('all'))
-        self.update_nodes_coordinates(factor)
+        self.update_nodes_coordinates(1.2)
         
     @update_coordinates
     def zoomerM(self, event):
-        # unzoom out (unix)
+        # zoom out (unix)
         self.cancel()
         self.diff_y *= 0.8
         self.node_size *= 0.8
         self.cvs.scale('all', event.x, event.y, 0.8, 0.8)
         self.cvs.configure(scrollregion=self.cvs.bbox('all'))
-        self.update_nodes_coordinates(factor)
+        self.update_nodes_coordinates(0.8)
     
     def update_nodes_coordinates(self, factor):
         # scaling changes the coordinates of the oval, and we update 

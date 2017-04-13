@@ -1,6 +1,7 @@
 # NetDim (contact@netdim.fr)
 
 import re
+import warnings
 from os.path import join
 from tkinter import filedialog
 from .base_scenario import BaseScenario
@@ -117,6 +118,26 @@ class GeoScenario(BaseScenario):
         self.node_size *= factor
         self.world_map.scale_map(ratio=factor)
         self.update_nodes_coordinates(factor)
+        
+    @update_coordinates
+    @overrider(BaseScenario)
+    def zoomerP(self, event):
+        # zoom in (unix)
+        self.cancel()
+        self.diff_y *= 1.2
+        self.node_size *= 1.2
+        self.world_map.scale_map(ratio=1.2)
+        self.update_nodes_coordinates(1.2)
+        
+    @update_coordinates
+    @overrider(BaseScenario)
+    def zoomerM(self, event):
+        # zoom out (unix)
+        self.cancel()
+        self.diff_y *= 0.8
+        self.node_size *= 0.8
+        self.world_map.scale_map(ratio=0.8)
+        self.update_nodes_coordinates(0.8)
         
     ## Import of shapefile
     

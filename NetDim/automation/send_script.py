@@ -1,13 +1,17 @@
 # NetDim (contact@netdim.fr)
 
-from pythonic_tkinter.preconfigured_widgets import *
-from tkinter import ttk
 import tkinter as tk
 import re
-from Exscript import Host, Account
-from Exscript.protocols import SSH2
-from Exscript.util.start import start
-from Exscript.util.match import first_match, any_match
+import warnings
+from pythonic_tkinter.preconfigured_widgets import *
+from tkinter import ttk
+try:
+    from Exscript import Host, Account
+    from Exscript.protocols import SSH2
+    from Exscript.util.start import start
+    from Exscript.util.match import first_match, any_match
+except ImportError:
+    warnings.warn('Exscript missing: scripting function will fail')
 
 class SendScript(CustomTopLevel):
     
