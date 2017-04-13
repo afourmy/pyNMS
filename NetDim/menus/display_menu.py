@@ -8,12 +8,19 @@ from PIL import ImageTk
 from pythonic_tkinter.preconfigured_widgets import *
 from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
+from miscellaneous.decorators import update_paths
 
 class DisplayMenu(ScrolledFrame):
     
-    def __init__(self, notebook, master):
-        super().__init__(notebook, width=200, height=600, borderwidth=1, relief='solid')
-        self.ms = master
+    def __init__(self, notebook, controller):
+        self.controller = controller
+        super().__init__(
+                         notebook, 
+                         width = 200, 
+                         height = 600, 
+                         borderwidth = 1, 
+                         relief = 'solid'
+                         )
         font = ('Helvetica', 8, 'bold')
         
         # label frame for multi-layer display
@@ -54,7 +61,7 @@ class DisplayMenu(ScrolledFrame):
         
         for image_type, image_size in self.dict_size_image.items():
             x, y = image_size
-            img_path = join(self.ms.path_icon, image_type + '.png')
+            img_path = join(self.controller.path_icon, image_type + '.png')
             img_pil = ImageTk.Image.open(img_path).resize(image_size)
             img = ImageTk.PhotoImage(img_pil)
             self.dict_image[image_type] = img
@@ -98,7 +105,7 @@ class DisplayMenu(ScrolledFrame):
                     button.config(image=self.dict_image[obj_type])
                     button.config(width=160, height=40)
                 else:
-                    button.config(image=self.ms.dict_image['default'][obj_type])
+                    button.config(image=self.controller.dict_image['default'][obj_type])
                     button.config(width=75, height=75)
                 self.type_to_button[obj_type] = button
         
@@ -126,18 +133,21 @@ class DisplayMenu(ScrolledFrame):
         self.type_to_button['routed traffic'].grid(6, 0, 1, 2, in_=lf_object_display)
         self.type_to_button['static traffic'].grid(6, 2, 1, 2, in_=lf_object_display)
         
+    @update_paths
     def ml_display_mode(self):
-        value = self.ms.cs.switch_display_mode()
+        value = self.scenario.switch_display_mode()
         relief = 'sunken' if value else 'raised'
         self.type_to_button['multi-layer'].config(relief=relief)
 
+    @update_paths
     def update_display(self):
         display_settings = [0] + list(map(lambda x: x.get(), self.layer_boolean))
-        self.ms.cs.display_layer = display_settings
-        self.ms.cs.draw_all(False)
+        self.scenario.display_layer = display_settings
+        self.scenario.draw_all(False)
         
+    @update_paths
     def invert_display(self, obj_type):
-        value = self.ms.cs.show_hide(obj_type)
+        value = self.scenario.show_hide(obj_type)
         relief = 'sunken' if value else 'raised'
         self.type_to_button[obj_type].config(relief=relief)
          

@@ -9,12 +9,20 @@ from tkinter.colorchooser import askcolor
 from pythonic_tkinter.preconfigured_widgets import *
 from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
+from miscellaneous.decorators import update_paths
 
 class DrawingMenu(ScrolledFrame):
     
-    def __init__(self, notebook, master):
-        super().__init__(notebook, width=200, height=600, borderwidth=1, relief='solid')
-        self.ms = master
+    def __init__(self, notebook, controller):
+        self.controller = controller
+        super().__init__(
+                         notebook, 
+                         width = 200, 
+                         height = 600, 
+                         borderwidth = 1, 
+                         relief = 'solid'
+                         )
+
         font = ('Helvetica', 8, 'bold')
 
         # label frame for multi-layer display
@@ -39,7 +47,7 @@ class DrawingMenu(ScrolledFrame):
         }
         
         for image_type, image_size in self.dict_size_image.items():
-            img_path = join(self.ms.path_icon, image_type + '.png')
+            img_path = join(self.controller.path_icon, image_type + '.png')
             if image_type == 'draw':
                 img_pil = ImageTk.Image.open(img_path).resize((150, 150))
             else:
@@ -88,13 +96,6 @@ class DrawingMenu(ScrolledFrame):
         self.drawing_type_list.set(self.drawing_algorithm)
         self.drawing_type_list.grid(3, 0, 1, 2, in_=lf_fb_drawing)
         
-        self.drawing_algorithms = {
-        'Spring-based layout': self.ms.cs.spring_based_drawing,
-        'Fructhermann-Reingold layout': self.ms.cs.FR_drawing,
-        'BFS-clusterization layout': self.ms.cs.bfs_cluster_drawing,
-        'Random': self.random
-        }
-        
         # list of all entries
         self.entries = []
         # parameters labels and entries
@@ -138,31 +139,40 @@ class DrawingMenu(ScrolledFrame):
         self.type_to_button['oval'].grid(0, 2, in_=lf_shapes_drawing)
         self.type_to_button['color'].grid(0, 3, in_=lf_shapes_drawing)
         
+    @update_paths
     def draw(self):
+        self.drawing_algorithms = {
+        'Spring-based layout': self.scenario.spring_based_drawing,
+        'Fructhermann-Reingold layout': self.scenario.FR_drawing,
+        'BFS-clusterization layout': self.scenario.bfs_cluster_drawing,
+        'Random': self.random
+        }
         # apply the algorithm to all selected nodes, or all nodes in the
         # network if nothing is selected
-        nodes = self.ms.cs.so['node'] or self.ms.cs.ntw.pn['node'].values()
+        nodes = self.scenario.so['node'] or self.scenario.network.pn['node'].values()
         if self.drawing_algorithm == 'Random':
-            self.ms.cs.draw_objects(nodes)
-            self.ms.cs.move_nodes(nodes)
+            self.scenario.draw_objects(nodes)
+            self.scenario.move_nodes(nodes)
         else:
             # replace true with a BooleanVar randomly spread nodes on the canvas beforehand
-            self.ms.cs.draw_objects(nodes, self.random_distribution.get())            
+            self.scenario.draw_objects(nodes, self.random_distribution.get())            
             self.drawing_algorithms[self.drawing_type_list.text](nodes)
             
     def get_color(self):
         color = askcolor()
         print(color)
         
+    @update_paths
     def random(self, nodes):
-        self.ms.cs.draw_objects(nodes)
-        self.ms.cs.move_nodes(nodes)
+        self.scenario.draw_objects(nodes)
+        self.scenario.move_nodes(nodes)
         
+    @update_paths
     def change_creation_mode(self, mode):
         # change the mode to creation 
-        self.ms.cs._mode = mode
-        self.ms.cs._creation_mode = mode
-        self.ms.cs.switch_binding()
+        self.scenario._mode = mode
+        self.scenario._creation_mode = mode
+        self.scenario.switch_binding()
         # update the button display
         for shape in ('text', 'rectangle', 'oval'):
             if shape == mode:

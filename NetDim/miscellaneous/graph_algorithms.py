@@ -4,9 +4,8 @@ from pythonic_tkinter.preconfigured_widgets import *
 from collections import OrderedDict
 
 class GraphAlgorithmWindow(FocusTopLevel):
-    def __init__(self, master):
-        super().__init__()
-        self.ms = master
+    def __init__(self, controller):
+        super().__init__(master=controller)
         self.title('Advanced graph options')
 
         ## Shortest path section
@@ -18,10 +17,10 @@ class GraphAlgorithmWindow(FocusTopLevel):
         #   - shortest path with Linear programming
         
         self.sp_algorithms = OrderedDict([
-        ('Constrained A*', self.ms.cs.ntw.A_star),
-        ('Bellman-Ford algorithm', self.ms.cs.ntw.bellman_ford),
-        ('Floyd-Warshall algorithm', self.ms.cs.ntw.floyd_warshall),
-        ('Linear programming', self.ms.cs.ntw.LP_SP_formulation)
+        ('Constrained A*', self.network.A_star),
+        ('Bellman-Ford algorithm', self.network.bellman_ford),
+        ('Floyd-Warshall algorithm', self.network.floyd_warshall),
+        ('Linear programming', self.network.LP_SP_formulation)
         ])
 
         # label frame for shortest path algorithms
@@ -62,10 +61,10 @@ class GraphAlgorithmWindow(FocusTopLevel):
         #   - maximum flow with Linear programming
         
         self.mflow_algorithms = OrderedDict([
-        ('Ford-Fulkerson', self.ms.cs.ntw.ford_fulkerson),
-        ('Edmond-Karps', self.ms.cs.ntw.edmonds_karp),
-        ('Dinic', self.ms.cs.ntw.dinic),
-        ('Linear programming', self.ms.cs.ntw.LP_MF_formulation)
+        ('Ford-Fulkerson', self.network.ford_fulkerson),
+        ('Edmond-Karps', self.network.edmonds_karp),
+        ('Dinic', self.network.dinic),
+        ('Linear programming', self.network.LP_MF_formulation)
         ])
         
         # label frame for maximum flow algorithms
@@ -107,9 +106,9 @@ class GraphAlgorithmWindow(FocusTopLevel):
         #   - Linear programming
         
         self.spair_algorithms = OrderedDict([
-        ('Constrained A*', self.ms.cs.ntw.A_star_shortest_pair),
-        ('Bhandari algorithm', self.ms.cs.ntw.bhandari),
-        ('Suurbale algorithm', self.ms.cs.ntw.suurbale),
+        ('Constrained A*', self.network.A_star_shortest_pair),
+        ('Bhandari algorithm', self.network.bhandari),
+        ('Suurbale algorithm', self.network.suurbale),
         ('Linear programming', lambda: 'to repair')
         ])
 
@@ -155,7 +154,7 @@ class GraphAlgorithmWindow(FocusTopLevel):
         #   - minimum-cost flow with Klein (cycle-cancelling algorithm)
         
         self.mcflow_algorithms = OrderedDict([
-        ('Linear programming', self.ms.cs.ntw.LP_MCF_formulation),
+        ('Linear programming', self.network.LP_MCF_formulation),
         ('Klein', lambda: 'to be implemented')
         ])
         
@@ -206,29 +205,29 @@ class GraphAlgorithmWindow(FocusTopLevel):
             self.max_flow_entry.config(state='readonly')
                                         
     def compute_sp(self):
-        source = self.ms.cs.ntw.nf(name=self.sp_src_entry.text)
-        destination = self.ms.cs.ntw.nf(name=self.sp_dest_entry.text)
+        source = self.network.nf(name=self.sp_src_entry.text)
+        destination = self.network.nf(name=self.sp_dest_entry.text)
         algorithm = self.sp_list.text
         nodes, plinks = self.sp_algorithms[algorithm](source, destination)
-        self.ms.cs.highlight_objects(*(nodes + plinks))
+        self.scenario.highlight_objects(*(nodes + plinks))
         
     def compute_spair(self):
-        source = self.ms.cs.ntw.nf(name=self.spair_src_entry.text)
-        destination = self.ms.cs.ntw.nf(name=self.spair_dest_entry.text)
+        source = self.network.nf(name=self.spair_src_entry.text)
+        destination = self.network.nf(name=self.spair_dest_entry.text)
         algorithm = self.spair_list.text
         nodes, plinks = self.spair_algorithms[algorithm](source, destination)
-        self.ms.cs.highlight_objects(*(nodes + plinks))
+        self.scenario.highlight_objects(*(nodes + plinks))
         
     def compute_mflow(self):
-        source = self.ms.cs.ntw.nf(name=self.mflow_src_entry.text)
-        destination = self.ms.cs.ntw.nf(name=self.mflow_dest_entry.text)
+        source = self.network.nf(name=self.mflow_src_entry.text)
+        destination = self.network.nf(name=self.mflow_dest_entry.text)
         algorithm = self.mflow_algorithms[self.mflow_list.text]
         flow = algorithm(source, destination)   
         print(flow)
         
     def compute_mcflow(self):
-        source = self.ms.cs.ntw.nf(name=self.mcflow_src_entry.text)
-        destination = self.ms.cs.ntw.nf(name=self.mcflow_dest_entry.text)
+        source = self.network.nf(name=self.mcflow_src_entry.text)
+        destination = self.network.nf(name=self.mcflow_dest_entry.text)
         flow = self.flow_entry.text
         algorithm = self.mcflow_algorithms[self.mcflow_list.text]
         cost = algorithm(source, destination, flow)   

@@ -7,10 +7,8 @@ from graph_generation.network_dimension import NetworkDimension
 
 class AdvancedGraph(FocusTopLevel):
     
-    def __init__(self, master):
-        
-        self.ms = master
-        super().__init__()
+    def __init__(self, controller):
+        super().__init__(master=controller)
         font = ('Helvetica', 8, 'bold')
         
         images = (
@@ -23,7 +21,7 @@ class AdvancedGraph(FocusTopLevel):
         self.dict_images = {}
         
         for image_type, image_size in images:
-            img_path = join(self.ms.path_icon, image_type + '.png')
+            img_path = join(controller.path_icon, image_type + '.png')
             img_pil = ImageTk.Image.open(img_path).resize(image_size)
             img = ImageTk.PhotoImage(img_pil)
             self.dict_images[image_type] = img
@@ -43,7 +41,7 @@ class AdvancedGraph(FocusTopLevel):
         for bt_type, (row, col), bt_text in button_config:
             bt = TKButton(self)
             bt.text = bt_text
-            bt.command = lambda t=bt_type: NetworkDimension(self.ms.cs, t)
+            bt.command = lambda t=bt_type: NetworkDimension(controller, t)
             
             bt.grid(row, col, in_=lf_inf_graph)
             bt.config(image=self.dict_images[bt_type], compound='top', font=font)
@@ -89,8 +87,8 @@ class AdvancedGraph(FocusTopLevel):
         bt_gen.grid(len(properties)+1, 0, 1, 2, in_=lf_classic_graph)
                                         
         self.graph_generation = {
-        'Desargues': lambda: self.ms.cs.ntw.petersen(5, 2, 'oxc'),
-        'graph-test': lambda: self.ms.cs.ntw.petersen(6, 3, 'router')
+        'Desargues': lambda: self.network.petersen(5, 2, 'oxc'),
+        'graph-test': lambda: self.network.petersen(6, 3, 'router')
         }
             
         self.update_properties()
@@ -107,4 +105,4 @@ class AdvancedGraph(FocusTopLevel):
     def generate(self):
         selected_graph = self.graph_list.text
         self.graph_generation[selected_graph]()
-        self.ms.cs.draw_all(random=False)
+        self.scenario.draw_all(random=False)

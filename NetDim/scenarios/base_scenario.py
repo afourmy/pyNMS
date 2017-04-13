@@ -12,11 +12,12 @@ from miscellaneous import search
 
 class BaseScenario(CustomFrame):
     
-    def __init__(self, master, name):
-        super().__init__(master.gf)
+    def __init__(self, controller, project, name):
+        super().__init__(project.gf)
         self.name = name
         self.object_id_to_object = {}
-        self.ms = master
+        self.controller = controller
+        self.pj = project
 
         self.cvs = tk.Canvas(
                              self, 
@@ -191,7 +192,7 @@ class BaseScenario(CustomFrame):
             
             if self._creation_mode in node_class:
                 # add bindings to create a node with left-click
-                self.cvs.bind('<ButtonPress-1>', self.create_node_on_binding)
+                self.cvs.bind('<ButtonPress-1>', self.create_node_on_binding, add='+')
                 
             elif self._creation_mode == 'rectangle':
                 # add binding to draw a rectangle
@@ -388,7 +389,7 @@ class BaseScenario(CustomFrame):
                                          + ' ' for property in 
                                          box_properties[co.subtype]
                                          )
-                        x0, y0 = self.ms.winfo_x() + 250, self.ms.winfo_y() + 75
+                        x0, y0 = self.controller.winfo_x() + 250, self.controller.winfo_y() + 75
                         self.pwindow.wm_geometry('+%d+%d' % (x0, y0))
                         try:
                             # mac os compatibility
@@ -444,8 +445,8 @@ class BaseScenario(CustomFrame):
     
     @adapt_coordinates
     def zoomer(self, event):
-        ''' Zoom for window '''
-        self._cancel()
+        # zoom in / zoom out (windows)
+        self.cancel()
         factor = 1.2 if event.delta > 0 else 0.8
         self.diff_y *= factor
         self.node_size *= factor
@@ -455,24 +456,28 @@ class BaseScenario(CustomFrame):
         
     @adapt_coordinates
     def zoomerP(self, event):
-        ''' Zoom for Linux '''
-        self._cancel()
-        self.cvs.scale('all', event.x, event.y, 1.1, 1.1)
+        # zoom in (unix)
+        self.cancel()
+        self.diff_y *= 1.2
+        self.node_size *= 1.2
+        self.cvs.scale('all', event.x, event.y, 1.2, 1.2)
         self.cvs.configure(scrollregion=self.cvs.bbox('all'))
         self.update_nodes_coordinates(factor)
         
     @adapt_coordinates
     def zoomerM(self, event):
-        ''' Zoom for Linux '''
-        self._cancel()
-        self.cvs.scale('all', event.x, event.y, 0.9, 0.9)
+        # unzoom out (unix)
+        self.cancel()
+        self.diff_y *= 0.8
+        self.node_size *= 0.8
+        self.cvs.scale('all', event.x, event.y, 0.8, 0.8)
         self.cvs.configure(scrollregion=self.cvs.bbox('all'))
         self.update_nodes_coordinates(factor)
     
     def update_nodes_coordinates(self, factor):
         # scaling changes the coordinates of the oval, and we update 
         # the corresponding node's coordinates accordingly
-        for node in self.ntw.nodes.values():
+        for node in self.network.nodes.values():
             new_coords = self.cvs.coords(node.oval[1])
             node.logical_x *= factor
             node.logical_y *= factor
@@ -489,7 +494,7 @@ class BaseScenario(CustomFrame):
             # the oval was also resized while scaling
             node.size = abs(new_coords[0] - new_coords[2])/2 
             for type in link_type:
-                for neighbor, t in self.ntw.graph[node.id][type]:
+                for neighbor, t in self.network.graph[node.id][type]:
                     layer = 'all' if not self.layered_display else t.layer
                     link_to_coords = self.link_coordinates(node, neighbor, layer)
                     for link in link_to_coords:
@@ -512,14 +517,14 @@ class BaseScenario(CustomFrame):
     
     @adapt_coordinates
     def create_node_on_binding(self, event):
-        node = self.ntw.nf(node_type=self._creation_mode, x=event.x, y=event.y)
+        node = self.network.nf(node_type=self._creation_mode, x=event.x, y=event.y)
         self.create_node(node)
         # update logical coordinates
         node.logical_x, node.logical_y = node.x, node.y
     
     def create_node(self, node, layer=1):
         s = self.node_size
-        curr_image = self.ms.dict_image['default'][node.subtype]
+        curr_image = self.controller.dict_image['default'][node.subtype]
         y = node.y - (layer - 1) * self.diff_y
         tags = (node.subtype, node.class_type, 'object')
         node.image[layer] = self.cvs.create_image(node.x - (node.imagex)/2, 
@@ -565,7 +570,7 @@ class BaseScenario(CustomFrame):
             if destination_node.class_type == 'node': # because tag filtering doesn't work !
                 # create the link and the associated line
                 if start_node != destination_node:
-                    new_link = self.ntw.lf(
+                    new_link = self.network.lf(
                                            subtype = subtype,
                                            source = start_node, 
                                            destination = destination_node
@@ -629,7 +634,7 @@ class BaseScenario(CustomFrame):
         self.refresh_label(new_link)
     
     def multiple_nodes(self, n, subtype, x, y):
-        for node in self.ntw.multiple_nodes(n, subtype):
+        for node in self.network.multiple_nodes(n, subtype):
             node.x = x
             node.y = y
             
@@ -692,7 +697,7 @@ class BaseScenario(CustomFrame):
                 self.cvs.coords(n.oval[layer], newx - s, y - s, newx + s, y + s)
             self.cvs.coords(n.lid, newx - 15, newy + 10)
             # move the failure icon if need be
-            if n in self.ntw.failed_obj:
+            if n in self.network.failed_obj:
                 self.cvs.coords(self.id_fdtks[n], n.x, n.y)
         
         # move also the virtual line, which length depends on what layer exists
@@ -706,7 +711,7 @@ class BaseScenario(CustomFrame):
     
         # update links coordinates
         for type_link in link_type:
-            for neighbor, t in self.ntw.graph[n.id][type_link]:
+            for neighbor, t in self.network.graph[n.id][type_link]:
                 layer = 'all' if not self.layered_display else t.layer
                 link_to_coords = self.link_coordinates(n, neighbor, layer)
                 for link in link_to_coords:
@@ -715,7 +720,7 @@ class BaseScenario(CustomFrame):
                     self.update_link_label_coordinates(link)
                     # if there is a link in failure, we need to update the
                     # failure icon by retrieving the middle position of the arc
-                    if link in self.ntw.failed_obj:
+                    if link in self.network.failed_obj:
                         mid_x, mid_y = link_to_coords[link][2:4]
                         self.cvs.coords(self.id_fdtks[link], mid_x, mid_y)
                         
@@ -741,7 +746,7 @@ class BaseScenario(CustomFrame):
                 del self.object_id_to_object[obj.oval[1]]
                 del self.object_id_to_object[obj.image[1]]
                 self.cvs.delete(obj.oval[1], obj.image[1], obj.lid)
-                self.remove_objects(*self.ntw.remove_node(obj))
+                self.remove_objects(*self.network.remove_node(obj))
                 if self.layered_display:
                     for layer in range(2, self.nbl + 1):
                         self.cvs.delete(
@@ -763,14 +768,14 @@ class BaseScenario(CustomFrame):
                 # we remove the id in the 'id to object' dictionnary
                 del self.object_id_to_object[obj.line]
                 # we remove the associated link in the network model
-                self.ntw.remove_link(obj)
+                self.network.remove_link(obj)
                 # if the layered display is activate and the link 
                 # to delete is not a physical link
                 if self.layered_display and obj.layer > 1:
                     for edge in (obj.source, obj.destination):
                         # we check if there still are other links of the same
                         # type (i.e at the same layer) between the edge nodes
-                        if not self.ntw.graph[edge.id][obj.type]:
+                        if not self.network.graph[edge.id][obj.type]:
                             # if that's not the case, we delete the upper-layer
                             # projection of the edge nodes, and reset the 
                             # associated 'layer to projection id' dictionnary
@@ -789,7 +794,7 @@ class BaseScenario(CustomFrame):
                 self.cvs.delete(obj.id)
                 del self.object_id_to_object[obj.id]
                 
-            if obj in self.ntw.failed_obj:
+            if obj in self.network.failed_obj:
                 self.remove_failure(obj)
                             
     def erase_graph(self):
@@ -804,12 +809,12 @@ class BaseScenario(CustomFrame):
         self.cvs.delete('node', 'link', 'line', 'label')
         self.id_fdtks.clear()
         
-        for node in self.ntw.nodes.values():
+        for node in self.network.nodes.values():
             for image in ('oval', 'image', 'layer_line'):
                 setattr(node, image, dict.fromkeys(range(1, self.nbl + 1), None))
             
         for type in link_type:
-            for link in self.ntw.pn[type].values():
+            for link in self.network.pn[type].values():
                 link.line = None
                             
     ## Selection / Highlight
@@ -843,7 +848,7 @@ class BaseScenario(CustomFrame):
     
     @adapt_coordinates
     def end_point_select_nodes(self, event):
-        selection_mode = self.ms.creation_menu.selection_mode
+        selection_mode = self.controller.creation_menu.selection_mode
         allowed = tuple(mode for mode, v in selection_mode.items() if v.get())
         if self.start_position != [None]*2:
             # delete the temporary lines
@@ -868,7 +873,7 @@ class BaseScenario(CustomFrame):
                 self.cvs.itemconfig(obj.oval, fill=color)
                 self.cvs.itemconfig(
                                     obj.image[1], 
-                                    image = self.ms.dict_image[color][obj.subtype]
+                                    image = self.controller.dict_image[color][obj.subtype]
                                     )
             elif obj.class_type == 'link':
                 dash = (3, 5) if dash else ()
@@ -887,7 +892,7 @@ class BaseScenario(CustomFrame):
                 self.cvs.itemconfig(obj.oval, fill=obj.color)
                 self.cvs.itemconfig(
                                 obj.image[1], 
-                                image = self.ms.dict_image['default'][obj.subtype]
+                                image = self.controller.dict_image['default'][obj.subtype]
                                 )
             elif obj.class_type == 'link':
                 self.cvs.itemconfig(obj.line, fill=obj.color, 
@@ -985,7 +990,7 @@ class BaseScenario(CustomFrame):
         # whether we want to update the interface label, or the physical link label,
         # since they have the same name
         itf = type == 'Interface'
-        for obj in self.ntw.ftr(type, subtype):
+        for obj in self.network.ftr(type, subtype):
             self.refresh_label(obj, self.current_label[subtype], itf)
     
     def refresh_type_labels(self, type, label=None):
@@ -1048,7 +1053,7 @@ class BaseScenario(CustomFrame):
         self.cvs.coords(link.ilid[1], *self.offcenter(coeff, *self.if_label(link, 'd')))
         
     # cancel the graph drawing job
-    def _cancel(self):
+    def cancel(self):
         if self._job is not None:
             self.cvs.after_cancel(self._job)
             self._job = None
@@ -1059,7 +1064,7 @@ class BaseScenario(CustomFrame):
         dict_link_to_coords = {}
         type = layer if layer == 'all' else self.layers[1][layer]
         real_layer = 1 if layer == 'all' else sum(self.display_layer[:(layer+1)])
-        for id, link in enumerate(self.ntw.links_between(source, destination, type)):
+        for id, link in enumerate(self.network.links_between(source, destination, type)):
             d = ((id + 1) // 2) * 30 * (-1)**id
             xC = (xA + xB) / 2 + d * sin(angle)
             yC = (yA + yB) / 2 - d * cos(angle)
@@ -1073,7 +1078,7 @@ class BaseScenario(CustomFrame):
     
     # 1) Regular drawing
     def draw_objects(self, objects, random=True, draw_site=False):
-        self._cancel()
+        self.cancel()
         for obj in objects:
             if obj.class_type == 'node':
                 if random:
@@ -1083,14 +1088,14 @@ class BaseScenario(CustomFrame):
                     self.create_node(obj)
             else:
                 self.create_link(obj)
-            if obj in self.ntw.failed_obj:
+            if obj in self.network.failed_obj:
                 self.simulate_failure(obj)
              
     def draw_all(self, random=True, draw_site=False):
         self.erase_all()
         # we draw everything except interface
-        for type in set(self.ntw.pn) - {'interface'}:
-            self.draw_objects(self.ntw.pn[type].values(), random, draw_site)
+        for type in set(self.network.pn) - {'interface'}:
+            self.draw_objects(self.network.pn[type].values(), random, draw_site)
             
     # 2) Force-based drawing
     
@@ -1135,12 +1140,12 @@ class BaseScenario(CustomFrame):
         nodes = set(nodes)
         for nodeA in nodes:
             Fx = Fy = 0
-            for nodeB in nodes | v_nodes | set(self.ntw.neighbors(nodeA, 'plink')):
+            for nodeB in nodes | v_nodes | set(self.network.neighbors(nodeA, 'plink')):
                 if nodeA != nodeB:
                     dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
                     dist = self.distance(dx, dy)
                     F_hooke = (0,)*2
-                    if self.ntw.is_connected(nodeA, nodeB, 'plink'):
+                    if self.network.is_connected(nodeA, nodeB, 'plink'):
                         F_hooke = self.hooke_force(dx, dy, dist, L0, k)
                     F_coulomb = self.coulomb_force(dx, dy, dist, cf)
                     Fx += F_hooke[0] + F_coulomb[0] * nodeB.virtual_factor
@@ -1163,7 +1168,7 @@ class BaseScenario(CustomFrame):
     def fruchterman_reingold_layout(self, nodes, limit, opd=0):
         t = 1
         if not opd:
-            opd = sqrt(1200*700/len(self.ntw.plinks))
+            opd = sqrt(1200*700/len(self.network.plinks))
         opd /= 3
         for nA in nodes:
             nA.vx, nA.vy = 0, 0
@@ -1176,7 +1181,7 @@ class BaseScenario(CustomFrame):
                         nA.vx += deltax * opd**2 / dist**2
                         nA.vy += deltay * opd**2 / dist**2
                     
-        for l in self.ntw.plinks.values():
+        for l in self.network.plinks.values():
             deltax = l.source.x - l.destination.x
             deltay = l.source.y - l.destination.y
             dist = self.distance(deltax, deltay)
@@ -1206,7 +1211,7 @@ class BaseScenario(CustomFrame):
             temp = frontier
             frontier = set()
             for node in temp:
-                for neighbor, _ in self.ntw.graph[node.id]['plink']:
+                for neighbor, _ in self.network.graph[node.id]['plink']:
                     if node not in visited:
                         frontier.add(neighbor)
                         node_number += 1
@@ -1217,7 +1222,7 @@ class BaseScenario(CustomFrame):
         n = len(cluster)
         mean_value = lambda axe: sum(getattr(node, axe) for node in cluster)
         x_mean, y_mean = mean_value('x')/n , mean_value('y')/n
-        virtual_node = self.ntw.nf(name = 'vn' + str(nb), node_type = 'cloud')
+        virtual_node = self.network.nf(name = 'vn' + str(nb), node_type = 'cloud')
         virtual_node.x, virtual_node.y = x_mean, y_mean
         virtual_node.virtual_factor = n
         return virtual_node
@@ -1228,7 +1233,7 @@ class BaseScenario(CustomFrame):
         # all nodes one step ahead of the already drawn area
         overall_frontier = {source}
         # all nodes which location has already been set
-        seen = set(self.ntw.nodes.values()) - nodes
+        seen = set(self.network.nodes.values()) - nodes
         # virtuals nodes are the centers of previously clusterized area:
         # they are not connected to any another node, but are equivalent to a
         # coulomb forces of all cluster nodes
@@ -1245,7 +1250,7 @@ class BaseScenario(CustomFrame):
         # number of cluster
         nb_cluster = 0
         # total number of nodes
-        n = len(self.ntw.nodes)
+        n = len(self.network.nodes)
         while overall_frontier:
             new_source = overall_frontier.pop()
             new_frontier, new_cluster = self.bfs_cluster(new_source, seen, size)
@@ -1266,7 +1271,7 @@ class BaseScenario(CustomFrame):
             for vnodeA in virtual_nodes:
                 for vnodeB in virtual_nodes:
                     if vnode_to_cluster[vnodeA] & vnode_to_frontier[vnodeB]:
-                        self.ntw.lf(source=vnodeA, destination=vnodeB)
+                        self.network.lf(source=vnodeA, destination=vnodeB)
         
         # we then apply a spring algorithm on the virtual nodes only
         # we first store the initial position to compute the difference 
@@ -1284,19 +1289,19 @@ class BaseScenario(CustomFrame):
                 node.x, node.y = node.x + dx, node.y + dy
                         
         for node in virtual_nodes:
-            for link in self.ntw.remove_node(node):
-                self.ntw.remove_link(link)
+            for link in self.network.remove_node(node):
+                self.network.remove_link(link)
     
     def retrieve_parameters(self, algorithm):
         entry_value = lambda entry: float(entry.text)
         parameters = []
         if algorithm in ('Spring-based layout', 'BFS-clusterization layout'):
-            parameters += list(map(entry_value, self.ms.drawing_menu.entries))
+            parameters += list(map(entry_value, self.controller.drawing_menu.entries))
         if algorithm == 'Fructhermann-Reingold layout':
-            bound_limit = self.ms.drawing_menu.stay_withing_screen_bounds.get()
+            bound_limit = self.controller.drawing_menu.stay_withing_screen_bounds.get()
             parameters.append(bound_limit)
         if algorithm == 'BFS-clusterization layout':
-            vlinks = self.ms.drawing_menu.virtual_links.get()
+            vlinks = self.controller.drawing_menu.virtual_links.get()
             parameters.append(vlinks)
         return parameters
 
@@ -1305,7 +1310,7 @@ class BaseScenario(CustomFrame):
             # reset the number of iterations
             self.drawing_iteration = 0
         else:
-            self._cancel()
+            self.cancel()
         self.drawing_iteration += 1
         params = self.retrieve_parameters('Spring-based layout')
         self.spring_layout(nodes, *params)
@@ -1317,11 +1322,11 @@ class BaseScenario(CustomFrame):
     def FR_drawing(self, nodes):
         if not self._job:
             # update the optimal pairwise distance
-            self.ms.opd = sqrt(500*500/len(self.ntw.nodes))
+            self.controller.opd = sqrt(500*500/len(self.network.nodes))
             # reset the number of iterations
             self.drawing_iteration = 0
         else:
-            self._cancel()
+            self.cancel()
         self.drawing_iteration += 1
         # retrieve the optimal pairwise distance and the screen limit boolean
         params = self.retrieve_parameters('Fructhermann-Reingold layout')
@@ -1334,11 +1339,11 @@ class BaseScenario(CustomFrame):
     def bfs_cluster_drawing(self, nodes):
         if not self._job:
             # update the optimal pairwise distance
-            self.ms.opd = sqrt(500*500/len(self.ntw.nodes))
+            self.controller.opd = sqrt(500*500/len(self.network.nodes))
             # reset the number of iterations
             self.drawing_iteration = 0
         else:
-            self._cancel()
+            self.cancel()
         params = self.retrieve_parameters('BFS-clusterization layout')
         self.bfs_spring(nodes, *params)
         for node in nodes:
@@ -1373,8 +1378,8 @@ class BaseScenario(CustomFrame):
         
         if self.layered_display:
             self.planal_move(50)
-            min_y = min(node.y for node in self.ntw.nodes.values())
-            max_y = max(node.y for node in self.ntw.nodes.values())
+            min_y = min(node.y for node in self.network.nodes.values())
+            max_y = max(node.y for node in self.network.nodes.values())
             self.diff_y = (max_y - min_y) // 2 + 200
             
         self.unhighlight_all()
@@ -1383,10 +1388,10 @@ class BaseScenario(CustomFrame):
         return self.layered_display
             
     def planal_move(self, angle=45):
-        min_y = min(node.y for node in self.ntw.nodes.values())
-        max_y = max(node.y for node in self.ntw.nodes.values())
+        min_y = min(node.y for node in self.network.nodes.values())
+        max_y = max(node.y for node in self.network.nodes.values())
         
-        for node in self.ntw.nodes.values():
+        for node in self.network.nodes.values():
             diff_y = abs(node.y - min_y)
             new_y = min_y + diff_y * cos(radians(angle))
             node.y = new_y
@@ -1395,12 +1400,12 @@ class BaseScenario(CustomFrame):
     
     def remove_failure(self, *objects):
         for obj in objects:
-            self.ntw.failed_obj.remove(obj)
+            self.network.failed_obj.remove(obj)
             icon_id = self.id_fdtks.pop(obj)
             self.cvs.delete(icon_id)
     
     def remove_failures(self):
-        self.ntw.failed_obj.clear()
+        self.network.failed_obj.clear()
         for idx in self.id_fdtks.values():
             self.cvs.delete(idx)
         self.id_fdtks.clear()
@@ -1409,22 +1414,22 @@ class BaseScenario(CustomFrame):
         for obj in objects:
             if obj in self.id_fdtks:
                 continue
-            self.ntw.failed_obj.add(obj)
+            self.network.failed_obj.add(obj)
             if obj.class_type == 'link':
                 source, destination = obj.source, obj.destination
                 xA, yA, xB, yB = source.x, source.y, destination.x, destination.y
                 id_failure = self.cvs.create_image(
                                                 (xA+xB)/2, 
                                                 (yA+yB)/2, 
-                                                image = self.ms.img_failure
+                                                image = self.controller.img_failure
                                                 )
             else:
                 id_failure = self.cvs.create_image(
                                                 obj.x, 
                                                 obj.y, 
-                                                image = self.ms.img_failure
+                                                image = self.controller.img_failure
                                                 )
-                for _, plink in self.ntw.graph[obj.id]['plink']:
+                for _, plink in self.network.graph[obj.id]['plink']:
                     self.simulate_failure(plink)
             self.id_fdtks[obj] = id_failure
             
@@ -1432,14 +1437,14 @@ class BaseScenario(CustomFrame):
     
     def display_filter(self, filter):
         filter_sites = set(re.sub(r'\s+', '', filter).split(','))
-        for node in self.ntw.nodes.values():
+        for node in self.network.nodes.values():
             state = 'normal' if node.sites & filter_sites else 'hidden'
             self.cvs.itemconfig(node.lid, state=state)
             for layer in range(1, self.nbl + 1):
                 if node.image[layer]:
                     self.cvs.itemconfig(node.image[layer], state=state)
         for link_type in link_type:
-            for link in self.ntw.pn[link_type].values():
+            for link in self.network.pn[link_type].values():
                 state = 'normal' if link.sites & filter_sites else 'hidden'
                 self.cvs.itemconfig(link.line, state=state)
                 self.cvs.itemconfig(link.lid, state=state)
@@ -1451,10 +1456,10 @@ class BaseScenario(CustomFrame):
         self.so.clear()
         self.refresh_all_labels()     
         # self.refresh_failures() 
-        # filter = self.ms.display_menu.filter_entry.text
+        # filter = self.controller.display_menu.filter_entry.text
         # if filter:
         #     self.display_filter(filter)   
-        for AS in self.ntw.pnAS.values():
+        for AS in self.network.pnAS.values():
             AS.management.refresh_display()
             
     ## Other
@@ -1470,12 +1475,12 @@ class BaseScenario(CustomFrame):
         self.display_per_type[subtype] = not self.display_per_type[subtype]
         new_state = 'normal' if self.display_per_type[subtype] else 'hidden'
         if subtype in node_subtype:
-            for node in self.ntw.ftr('node', subtype):
+            for node in self.network.ftr('node', subtype):
                 self.cvs.itemconfig(node.lid, state=new_state)
                 for layer in range(1, self.nbl + 1):
                     self.cvs.itemconfig(node.image[layer], state=new_state)
                     self.cvs.itemconfig(node.layer_line[layer], state=new_state)
-                for link in self.ntw.attached_links(node):
+                for link in self.network.attached_links(node):
                     # if the display is activated for the link's layer, we 
                     # update the state
                     if self.display_layer[link.layer]:
@@ -1483,7 +1488,7 @@ class BaseScenario(CustomFrame):
                         self.cvs.itemconfig(link.lid, state=new_state)
         else:
             type = subtype_to_type[subtype]
-            for link in self.ntw.ftr(type, subtype):
+            for link in self.network.ftr(type, subtype):
                 self.cvs.itemconfig(link.line, state=new_state)
                 self.cvs.itemconfig(link.lid, state=new_state)
         return self.display_per_type[subtype]

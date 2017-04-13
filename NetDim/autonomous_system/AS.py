@@ -25,8 +25,8 @@ class AutonomousSystem(object):
                  imp = False
                  ):
                      
-        self.cs = scenario
-        self.ntw = self.cs.ntw
+        self.scenario = scenario
+        self.network = self.scenario.network
         self.name = name
         self.id = id
         self.links = links
@@ -70,7 +70,7 @@ class AutonomousSystem(object):
             obj.AS.pop(self)
             self.pAS[obj.class_type].discard(obj)
         self.management.destroy()
-        self.ntw.pnAS.pop(self.name)
+        self.network.pnAS.pop(self.name)
             
 class ASWithArea(AutonomousSystem):
     
@@ -207,7 +207,7 @@ class STP_AS(Ethernet_AS):
         visited = set()
         # allowed nodes and links
         allowed_nodes = self.pAS['node']
-        allowed_links =  self.pAS['link'] - self.ntw.failed_obj
+        allowed_links =  self.pAS['link'] - self.network.failed_obj
         # we keep track of all already visited subnetworks so that we 
         # don't add them more than once to the mapping dict.
         heap = [(0, self.root, [])]
@@ -219,7 +219,7 @@ class STP_AS(Ethernet_AS):
                 if path_link:
                     self.SPT_links.add(path_link[-1])
                 visited.add(node)
-                for neighbor, l2vc in self.ntw.gftr(node, 'l2link', 'l2vc'):
+                for neighbor, l2vc in self.network.gftr(node, 'l2link', 'l2vc'):
                     adj_link = l2vc('link', node)
                     remote_link = l2vc('link', neighbor)
                     if adj_link in path_link:
@@ -253,7 +253,7 @@ class IP_AS(AutonomousSystem):
                                                     
     def build_RFT(self):
         allowed_nodes = self.nodes
-        allowed_links =  self.links - self.ntw.failed_obj
+        allowed_links =  self.links - self.network.failed_obj
         for node in self.nodes:
             self.RFT_builder(node, allowed_nodes, allowed_links)
                 
@@ -306,7 +306,7 @@ class RIP_AS(IP_AS):
             dist, node, l3_path, ex_int = heappop(heap)  
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
-                for neighbor, l3vc in self.ntw.gftr(node, 'l3link', 'l3vc'):
+                for neighbor, l3vc in self.network.gftr(node, 'l3link', 'l3vc'):
                     adj_link = l3vc('link', node)
                     remote_link = l3vc('link', neighbor)
                     if l3vc in l3_path:
@@ -397,7 +397,7 @@ class ISIS_AS(ASWithArea, IP_AS):
             # In IS-IS, a router has only one area
             node_area ,= node.AS[self]
             
-            for neighbor, adj_link in self.cs.ntw.graph[node.id]['plink']:
+            for neighbor, adj_link in self.network.graph[node.id]['plink']:
                 
                 # A multi-area IS-IS AS is defined by the status of its nodes.
                 # we automatically update the link area status, by considering 
@@ -446,7 +446,7 @@ class ISIS_AS(ASWithArea, IP_AS):
             dist, node, l3_path, ex_int = heappop(heap)  
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
-                for neighbor, l3vc in self.ntw.gftr(node, 'l3link', 'l3vc'):
+                for neighbor, l3vc in self.network.gftr(node, 'l3link', 'l3vc'):
                     adj_link = l3vc('link', node)
                     remote_link = l3vc('link', neighbor)
                     if l3vc in l3_path:
@@ -578,7 +578,7 @@ class OSPF_AS(ASWithArea, IP_AS):
                 self.border_routers.add(node)
                 self.areas['Backbone'].add_to_area(node)
             
-            for neighbor, adj_link in self.cs.ntw.graph[node.id]['plink']:
+            for neighbor, adj_link in self.network.graph[node.id]['plink']:
 
                 # a multi-area OSPF AS is defined by the area of its link.
                 # we automatically update the node area status, by considering that a 
@@ -603,7 +603,7 @@ class OSPF_AS(ASWithArea, IP_AS):
             dist, node, l3_path, ex_int = heappop(heap)
             if (node, ex_int) not in visited:
                 visited.add((node, ex_int))
-                for neighbor, l3vc in self.ntw.gftr(node, 'l3link', 'l3vc'):
+                for neighbor, l3vc in self.network.gftr(node, 'l3link', 'l3vc'):
                     adj_link = l3vc('link', node)
                     remote_link = l3vc('link', neighbor)
                     if l3vc in l3_path:
@@ -691,7 +691,7 @@ class BGP_AS(ASWithArea, IP_AS):
     def update_AS_topology(self):                
         # update all BGP peering type based on the source and destination AS
         for node in self.nodes:
-            for neighbor, peering in self.ntw.gftr(node, 'l3link', 'BGP peering'):
+            for neighbor, peering in self.network.gftr(node, 'l3link', 'BGP peering'):
                 # add the peering as an AS link
                 self.add_to_AS(peering)
                 # set the peering type
@@ -706,7 +706,7 @@ class BGP_AS(ASWithArea, IP_AS):
         
         # we fill the heap
         source_area ,= source.AS[self]
-        for src_nb, bgp_pr in self.ntw.gftr(source, 'l3link', 'BGP peering'):
+        for src_nb, bgp_pr in self.network.gftr(source, 'l3link', 'BGP peering'):
             nb_area ,= src_nb.AS[self]
             first_AS = [source_area.id] + [nb_area.id]*(nb_area != source_area)
             # Cisco weight is 0 by default
@@ -731,7 +731,7 @@ class BGP_AS(ASWithArea, IP_AS):
                     real_weight = 0 if weight == float('inf') else 1 / weight
                     source.bgpt[ip] |= {(real_weight, nh_ip, node, tuple(AS_path))}
                 visited.add(node)
-                for bgp_nb, bgp_pr in self.ntw.gftr(node, 'l3link', 'BGP peering'):
+                for bgp_nb, bgp_pr in self.network.gftr(node, 'l3link', 'BGP peering'):
                     # excluded and allowed nodes
                     if bgp_nb in visited:
                         continue
@@ -796,11 +796,11 @@ class AreaOperation(CustomTopLevel):
         button_area_operation.grid(2, 0, in_=lf_area_operation)
         
     def update_value(self, scenario):
-        selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
+        selected_AS = scenario.network.AS_factory(name=self.AS_list.get())
         self.area_list['values'] = tuple(map(str, selected_AS.areas))
         
     def area_operation(self, scenario, mode, *objects):
-        selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
+        selected_AS = scenario.network.AS_factory(name=self.AS_list.get())
         selected_area = self.area_list.get()
 
         if mode == 'add':
@@ -832,7 +832,7 @@ class ASOperation(CustomTopLevel):
         
         if mode == 'add':
             # All AS are proposed 
-            values = tuple(map(str, scenario.ntw.pnAS))
+            values = tuple(map(str, scenario.network.pnAS))
         else:
             # Only the common AS among all selected objects
             values = tuple(map(str, AS))
@@ -850,7 +850,7 @@ class ASOperation(CustomTopLevel):
         button_AS_operation.grid(1, 0, 1, 2, in_=lf_AS_operation)
         
     def as_operation(self, scenario, mode, *objects):
-        selected_AS = scenario.ntw.AS_factory(name=self.AS_list.get())
+        selected_AS = scenario.network.AS_factory(name=self.AS_list.get())
 
         if mode == 'add':
             selected_AS.management.add_to_AS(*objects)
@@ -905,9 +905,9 @@ class ASCreation(CustomTopLevel):
 
     def create_AS(self, scenario, nodes, links):
         # automatic initialization of the AS id in case it is empty
-        id = int(self.entry_id.get()) if self.entry_id.get() else len(scenario.ntw.pnAS) + 1
+        id = int(self.entry_id.get()) if self.entry_id.get() else len(scenario.network.pnAS) + 1
         
-        new_AS = scenario.ntw.AS_factory(
+        new_AS = scenario.network.AS_factory(
                                          self.AS_type_list.get(), 
                                          self.entry_name.get(), 
                                          id,

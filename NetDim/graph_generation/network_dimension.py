@@ -4,11 +4,10 @@ from pythonic_tkinter.preconfigured_widgets import *
 from objects.objects import *
 
 class NetworkDimension(CustomTopLevel):    
-    def __init__(self, scenario, type):
-        super().__init__()
+    def __init__(self, controller, type):
+        super().__init__(master=controller)
         self.title('Dimension')
         self.type = type
-        self.cs = scenario
         
         # main label frame
         lf_network_dimension = Labelframe(self)
@@ -16,14 +15,14 @@ class NetworkDimension(CustomTopLevel):
         lf_network_dimension.grid(0, 0)
         
         self.dict_type_to_function = {
-        'star': lambda n, st: scenario.ntw.star(n - 1, st),
-        'ring': lambda n, st: scenario.ntw.ring(n, st),
-        'full-mesh': lambda n, st: scenario.ntw.full_mesh(n, st),
-        'tree': lambda n, st: scenario.ntw.tree(n, st),
-        'square-tiling': lambda n, st: scenario.ntw.square_tiling(n + 1, st),
-        'hypercube': lambda n, st: scenario.ntw.hypercube(n - 1, st),
-        'kneser': lambda n, k, st: scenario.ntw.kneser(n+1, k, st),
-        'petersen': lambda n, k, st: scenario.ntw.petersen(n, k, st)
+        'star': lambda n, st: self.network.star(n - 1, st),
+        'ring': lambda n, st: self.network.ring(n, st),
+        'full-mesh': lambda n, st: self.network.full_mesh(n, st),
+        'tree': lambda n, st: self.network.tree(n, st),
+        'square-tiling': lambda n, st: self.network.square_tiling(n + 1, st),
+        'hypercube': lambda n, st: self.network.hypercube(n - 1, st),
+        'kneser': lambda n, k, st: self.network.kneser(n+1, k, st),
+        'petersen': lambda n, k, st: self.network.petersen(n, k, st)
         }
         
         # offset used to add the addition 'k' parameter in the gui
@@ -82,6 +81,6 @@ class NetworkDimension(CustomTopLevel):
                       )
 
         objects = set(self.dict_type_to_function[self.type](*params))
-        self.cs.draw_objects(objects, random=False)
-        self.cs.move_nodes(filter(lambda o: o.class_type == 'node', objects))
+        self.scenario.draw_objects(objects, random=False)
+        self.scenario.move_nodes(filter(lambda o: o.class_type == 'node', objects))
         self.destroy()

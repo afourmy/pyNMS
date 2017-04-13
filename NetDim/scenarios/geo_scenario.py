@@ -58,7 +58,8 @@ class GeoScenario(BaseScenario):
     @adapt_coordinates
     @overrider(BaseScenario)
     def create_node_on_binding(self, event):
-        node = self.ntw.nf(node_type=self._creation_mode, x=event.x, y=event.y)
+        print('test')
+        node = self.network.nf(node_type=self._creation_mode, x=event.x, y=event.y)
         # update logical and geographical coordinates
         lon, lat = self.world_map.get_geographical_coordinates(node.x, node.y)
         node.longitude, node.latitude = lon, lat
@@ -96,17 +97,21 @@ class GeoScenario(BaseScenario):
             
     def move_to_geographical_coordinates(self, *nodes):
         if not nodes:
-            nodes = self.ntw.pn['node'].values()
+            nodes = self.network.pn['node'].values()
         for node in nodes:
             node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
         self.move_nodes(nodes)
         
     def move_to_logical_coordinates(self, *nodes):
         if not nodes:
-            nodes = self.ntw.pn['node'].values()
+            nodes = self.network.pn['node'].values()
         for node in nodes:
             node.x, node.y = node.logical_x, node.logical_y
         self.move_nodes(nodes)
+        
+    def delete_map(self):
+        for idx in self.world_map.map_ids:
+            self.cvs.delete(idx)
         
     ## Geographical projection menu
     
@@ -118,7 +123,7 @@ class GeoScenario(BaseScenario):
     @overrider(BaseScenario)
     def zoomer(self, event):
         ''' Zoom for window '''
-        self._cancel()
+        self.cancel()
         factor = 1.2 if event.delta > 0 else 0.8
         self.diff_y *= factor
         self.node_size *= factor
@@ -130,12 +135,12 @@ class GeoScenario(BaseScenario):
     def import_shapefile(self, filepath=None):
                 
         filepath = filedialog.askopenfilenames(
-                                initialdir = join(self.ms.path_workspace, 'map'),
-                                title = 'Import SHP map', 
-                                filetypes = (
-                                ('shp files','*.shp'),
-                                ('all files','*.*')
-                                ))
+                        initialdir = join(self.controller.path_workspace, 'map'),
+                        title = 'Import SHP map', 
+                        filetypes = (
+                        ('shp files','*.shp'),
+                        ('all files','*.*')
+                        ))
         
         # no error when closing the window
         if not filepath: 

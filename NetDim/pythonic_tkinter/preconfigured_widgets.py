@@ -30,6 +30,15 @@ class Canvas(tk.Canvas):
 class CustomFrame(tk.Frame):
     
     def __init__(self, *a, **kw):
+        if 'master' in kw:
+            self.controller = controller = kw.pop('master')
+            self.project = controller.current_project
+            self.scenario = controller.current_project.current_scenario
+            self.network_scenario = controller.current_project.network_scenario
+            self.site_scenario = controller.current_project.site_scenario
+            self.network = controller.current_project.current_scenario.network
+            self.site_network = self.site_scenario.network
+            
         super().__init__(*a, **kw)
         color = '#A1DBCD'
         self.configure(background=color)    
@@ -43,15 +52,25 @@ class CustomScrolledText(ScrolledText):
         
 class CustomTopLevel(tk.Toplevel):
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *a, **kw):
+        if 'master' in kw:
+            self.controller = controller = kw.pop('master')
+            self.project = controller.current_project
+            self.scenario = controller.current_project.current_scenario
+            self.network_scenario = controller.current_project.network_scenario
+            self.site_scenario = controller.current_project.site_scenario
+            self.network = controller.current_project.current_scenario.network
+            self.site_network = self.site_scenario.network
+            
+        super().__init__(*a, **kw)
+
         color = '#A1DBCD'
         self.configure(background=color)
         
 class FocusTopLevel(CustomTopLevel):
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *a, **kw):
+        super().__init__(*a, **kw)
         self.var_focus = tk.IntVar()
         checkbutton_focus = Checkbutton(self, variable=self.var_focus)
         checkbutton_focus.text = 'Focus'
@@ -139,6 +158,21 @@ class MainWindow(tk.Tk):
                        ):
             ttk.Style().configure('T' + widget, background=color)
         ttk.Style().configure('Treeview', rowheight=25)
+        
+class InMenu(tk.Menu):
+    
+    @defaultizer(tearoff=0)
+    def __init__(self, *args, **kwargs):
+        if 'master' in kwargs:
+            self.controller = controller = kwargs.pop('master')
+            self.project = controller.current_project
+            self.scenario = controller.current_project.current_scenario
+            self.network_scenario = controller.current_project.network_scenario
+            self.site_scenario = controller.current_project.site_scenario
+            self.network = controller.current_project.current_scenario.network
+            self.site_network = self.site_scenario.network
+            
+        super().__init__(*args, **kwargs)
             
 class Menu(tk.Menu):
     

@@ -18,8 +18,7 @@ class InSiteScenario(BaseScenario):
     def __init__(self, site, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.site = site
-        self.ns = self.ms.ns
-        self.ntw = self.ns.ntw
+        self.network = self.network_scenario.network
         
         # add binding for right-click menu 
         self.cvs.tag_bind('object', '<ButtonPress-3>',
@@ -126,7 +125,7 @@ class InSiteScenario(BaseScenario):
             # the oval was also resized while scaling
             node.site_size[self.site] = abs(new_coords[0] - new_coords[2])/2 
             for type in link_type:
-                for neighbor, t in self.ns.ntw.graph[node.id][type]:
+                for neighbor, t in self.network.graph[node.id][type]:
                     if t not in self.site.ps['link']:
                         continue
                     layer = 'all' if not self.layered_display else t.layer
@@ -155,7 +154,7 @@ class InSiteScenario(BaseScenario):
         # we create the node in both the insite scenario and the network scenario
         # the node will be at its geographical coordinates in the network scenario,
         # and the event coordinates in the insite scenario
-        node = self.ns.ntw.nf(
+        node = self.network.nf(
                               node_type = self._creation_mode,
                               longitude = self.site.longitude,
                               latitude = self.site.latitude
@@ -245,7 +244,7 @@ class InSiteScenario(BaseScenario):
             if destination_node.class_type == 'node': # because tag filtering doesn't work !
                 # create the link and the associated line
                 if start_node != destination_node:
-                    new_link = self.ns.ntw.lf(
+                    new_link = self.network.lf(
                                             subtype = subtype,
                                             source = start_node, 
                                             destination = destination_node
@@ -312,7 +311,7 @@ class InSiteScenario(BaseScenario):
     
     @overrider(BaseScenario)
     def multiple_nodes(self, n, subtype, x, y):
-        for node in self.ns.ntw.multiple_nodes(n, subtype):
+        for node in self.network.multiple_nodes(n, subtype):
             node.site_coords[self.site][0] = x
             node.site_coords[self.site][1] = y
             
@@ -351,7 +350,7 @@ class InSiteScenario(BaseScenario):
                 self.cvs.coords(n.site_oval[self.site][layer], newx - s, y - s, newx + s, y + s)
             self.cvs.coords(n.site_lid[self.site], newx - 15, newy + 10)
             # move the failure icon if need be
-            if n in self.ns.ntw.failed_obj:
+            if n in self.network.failed_obj:
                 self.cvs.coords(self.id_fdtks[n], n.site_coords[self.site][0], n.site_coords[self.site][1])
         
         # move also the virtual line, which length depends on what layer exists
@@ -365,7 +364,7 @@ class InSiteScenario(BaseScenario):
     
         # update links coordinates
         for type_link in link_type:
-            for neighbor, t in self.ns.ntw.graph[n.id][type_link]:
+            for neighbor, t in self.network.graph[n.id][type_link]:
                 if t not in self.site.ps['link']:
                     continue
                 layer = 'all' if not self.layered_display else t.layer
@@ -376,7 +375,7 @@ class InSiteScenario(BaseScenario):
                     self.update_link_label_coordinates(link)
                     # if there is a link in failure, we need to update the
                     # failure icon by retrieving the middle position of the arc
-                    if link in self.ns.ntw.failed_obj:
+                    if link in self.network.failed_obj:
                         mid_x, mid_y = link_to_coords[link][2:4]
                         self.cvs.coords(self.id_fdtks[link], mid_x, mid_y)
             
@@ -422,7 +421,7 @@ class InSiteScenario(BaseScenario):
                 for edge in (obj.source, obj.destination):
                     # we check if there still are other links of the same
                     # type (i.e at the same layer) between the edge nodes
-                    if ((not set(self.ns.ntw.graph[edge.id][obj.type]) 
+                    if ((not set(self.network.graph[edge.id][obj.type]) 
                                 & set(self.site.ps['link']))
                                 and self.site in edge.site_image
                                 ):
@@ -452,7 +451,7 @@ class InSiteScenario(BaseScenario):
         self.so[obj.class_type].discard(obj)
         self.co = None
                         
-        if obj in self.ns.ntw.failed_obj:
+        if obj in self.network.failed_obj:
             self.remove_failure(obj)
                                           
     @overrider(BaseScenario)
@@ -698,7 +697,7 @@ class InSiteScenario(BaseScenario):
         type = layer if layer == 'all' else self.layers[1][layer]
         real_layer = 1 if layer == 'all' else sum(self.display_layer[:(layer+1)])
         for id, link in enumerate(
-                    set(self.ns.ntw.links_between(source, destination, type)) 
+                    set(self.network.links_between(source, destination, type)) 
                     & set(self.site.ps['link'])
                     ):
             d = ((id + 1) // 2) * 30 * (-1)**id
@@ -726,7 +725,7 @@ class InSiteScenario(BaseScenario):
                     self.create_node(obj)
             else:
                 self.create_link(obj)
-            if obj in self.ns.ntw.failed_obj:
+            if obj in self.network.failed_obj:
                 self.simulate_failure(obj)
              
     @overrider(BaseScenario)
@@ -802,7 +801,7 @@ class InSiteScenario(BaseScenario):
         for obj in objects:
             if obj in self.id_fdtks:
                 continue
-            self.ns.ntw.failed_obj.add(obj)
+            self.network.failed_obj.add(obj)
             if obj.class_type == 'link':
                 source, destination = obj.source, obj.destination
                 xA = source.site_coords[self.site][0]

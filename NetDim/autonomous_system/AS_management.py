@@ -8,7 +8,7 @@ class ASManagement(CustomTopLevel):
     def __init__(self, AS, is_imported):
         super().__init__()
         self.AS = AS
-        self.ntw = self.AS.cs.ntw
+        self.network = self.AS.scenario.network
         self.dict_listbox = {}
         self.title('Manage AS')
         
@@ -114,17 +114,17 @@ class ASManagement(CustomTopLevel):
         
     # function to highlight the selected object on the canvas
     def highlight_object(self, event, obj_type):        
-        self.AS.cs.unhighlight_all()
+        self.AS.scenario.unhighlight_all()
         for selected_object in self.dict_listbox[obj_type].selected():
-            so = self.ntw.of(name=selected_object, _type=obj_type)
-            self.AS.cs.highlight_objects(so)
+            so = self.network.of(name=selected_object, _type=obj_type)
+            self.AS.scenario.highlight_objects(so)
             
     # remove the object selected in 'obj_type' listbox from the AS
     def remove_selected(self, obj_type):
         # remove and retrieve the selected object in the listbox
         for selected_obj in self.dict_listbox[obj_type].pop_selected():
             # remove it from the AS as well
-            so = self.ntw.of(name=selected_obj, _type=obj_type)
+            so = self.network.of(name=selected_obj, _type=obj_type)
             self.AS.remove_from_AS(so)
         
     def add_to_AS(self, *objects):
@@ -135,14 +135,14 @@ class ASManagement(CustomTopLevel):
     def find_links(self):
         links_between_domain_nodes = set()
         for node in self.AS.pAS['node']:
-            for neighbor, adj_link in self.ntw.graph[node.id]['plink']:
+            for neighbor, adj_link in self.network.graph[node.id]['plink']:
                 if neighbor in self.AS.pAS['node']:
                     links_between_domain_nodes |= {adj_link}
             #TODO refactor this
-            for neighbor, vc in self.ntw.gftr(node, 'l2link', 'l2vc'):
+            for neighbor, vc in self.network.gftr(node, 'l2link', 'l2vc'):
                 if neighbor in self.AS.pAS['node']:
                     links_between_domain_nodes |= {vc.linkS, vc.linkD}
-            for neighbor, vc in self.ntw.gftr(node, 'l3link', 'l3vc'):
+            for neighbor, vc in self.network.gftr(node, 'l3link', 'l3vc'):
                 if neighbor in self.AS.pAS['node']:
                     links_between_domain_nodes |= {vc.linkS, vc.linkD}
             
@@ -247,11 +247,11 @@ class ASManagementWithArea(ASManagement):
             
     # function to highlight the selected object on the canvas
     def highlight_area_object(self, event, obj_type):        
-        self.AS.cs.unhighlight_all()
+        self.AS.scenario.unhighlight_all()
         lb = self.area_nodes if obj_type == 'node' else self.area_links
         for selected_object in lb.selected():
-            so = self.ntw.of(name=selected_object, _type=obj_type)
-            self.AS.cs.highlight_objects(so)
+            so = self.network.of(name=selected_object, _type=obj_type)
+            self.AS.scenario.highlight_objects(so)
         
     ## Functions used directly from the AS Management window
 
@@ -267,8 +267,8 @@ class ASManagementWithArea(ASManagement):
     def display_area(self, event):
         for area in self.area_names.selected():
             area = self.AS.area_factory(area)
-            self.AS.cs.unhighlight_all()
-            self.AS.cs.highlight_objects(*(area.pa['node'] | area.pa['link']))
+            self.AS.scenario.unhighlight_all()
+            self.AS.scenario.highlight_objects(*(area.pa['node'] | area.pa['link']))
             self.area_nodes.clear()
             self.area_links.clear()
             for node in area.pa['node']:
@@ -348,11 +348,11 @@ class STP_Management(ASManagement):
         button_elect_root.grid(2, 0, in_=lf_stp_specifics)
         
     def highlight_SPT(self):
-        self.AS.cs.highlight_objects(*self.AS.SPT_links)
+        self.AS.scenario.highlight_objects(*self.AS.SPT_links)
         
     def elect_root(self):
         self.AS.root_election()
-        self.AS.cs.highlight_objects(self.AS.root)
+        self.AS.scenario.highlight_objects(self.AS.root)
         
 class VLAN_Management(ASManagementWithArea):
     
@@ -432,7 +432,7 @@ class OSPF_Management(ASManagementWithArea, IPManagement):
     
     def save_parameters(self):
         if self.exit_asbr.get() != 'None':
-            exit_asbr = self.ntw.pn['node'][self.exit_asbr.get()]
+            exit_asbr = self.network.pn['node'][self.exit_asbr.get()]
             self.AS.exit_point = exit_asbr
         self.withdraw()
         

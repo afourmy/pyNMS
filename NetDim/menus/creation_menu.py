@@ -8,12 +8,19 @@ from PIL import ImageTk
 from pythonic_tkinter.preconfigured_widgets import *
 from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
+from miscellaneous.decorators import update_paths
 
 class CreationMenu(ScrolledFrame):
     
-    def __init__(self, notebook, master):
-        super().__init__(notebook, width=200, height=600, borderwidth=1, relief='solid')
-        self.ms = master
+    def __init__(self, notebook, controller):
+        self.controller = controller
+        super().__init__(
+                         notebook, 
+                         width = 200, 
+                         height = 600, 
+                         borderwidth = 1, 
+                         relief = 'solid'
+                         )
         font = ('Helvetica', 8, 'bold')
         
         # label frame for object selection
@@ -53,7 +60,7 @@ class CreationMenu(ScrolledFrame):
         
         for image_type, image_size in self.dict_size_image.items():
             x, y = image_size
-            img_path = join(self.ms.path_icon, image_type + '.png')
+            img_path = join(self.controller.path_icon, image_type + '.png')
             img_pil = ImageTk.Image.open(img_path).resize(image_size)
             img = ImageTk.PhotoImage(img_pil)
             self.dict_image[image_type] = img
@@ -61,14 +68,14 @@ class CreationMenu(ScrolledFrame):
         self.type_to_button = {}
         
         self.type_to_action = {
-        'netdim': self.ms.refresh,
+        'netdim': self.refresh,
         'motion': lambda: self.switch_to('motion'),
-        'multi-layer': self.ms.cs.switch_display_mode,
+        'multi-layer': self.switch_display_mode,
         'site': lambda: self.change_creation_mode('site')
         }
         
         for topo in ('tree', 'star', 'full-mesh', 'ring'):
-            self.type_to_action[topo] = lambda t=topo: NetworkDimension(self.ms.cs, t)
+            self.type_to_action[topo] = lambda t=topo: NetworkDimension(controller, t)
             
         for obj_type in object_properties:
             if obj_type not in ('l2vc', 'l3vc'):
@@ -96,7 +103,7 @@ class CreationMenu(ScrolledFrame):
             if button_type not in node_subtype:
                 button.config(image=self.dict_image[button_type])
             else:
-                button.config(image=self.ms.dict_image['default'][button_type])
+                button.config(image=self.controller.dict_image['default'][button_type])
                 button.config(width=75, height=75)
             if button_type in ('tree', 'star', 'full-mesh', 'ring'):
                 button.config(width=75, height=75)
@@ -147,38 +154,50 @@ class CreationMenu(ScrolledFrame):
         self.type_to_button['star'].grid(0, 1, in_=lf_generation)
         self.type_to_button['full-mesh'].grid(0, 2, in_=lf_generation)
         self.type_to_button['ring'].grid(0, 3, in_=lf_generation)
+       
+    @update_paths
+    def refresh(self):
+        self.project.refresh()
+       
+    @update_paths
+    def switch_display_mode(self):
+        self.current_scenario.switch_display_mode()
 
+    @update_paths
     def update_display(self):
         display_settings = list(map(lambda x: x.get(), self.layer_boolean))
-        self.ms.cs.display_layer = display_settings
-        self.ms.cs.draw_all(False)
+        self.scenario.display_layer = display_settings
+        self.scenario.draw_all(False)
         
+    @update_paths
     def change_selection(self, mode):
-        self.ms.cs.obj_selection = mode
+        self.scenario.obj_selection = mode
         
+    @update_paths
     def switch_to(self, mode):
         relief = tk.SUNKEN if mode == 'motion' else tk.RAISED
         self.type_to_button['motion'].config(relief=relief)
-        self.ms.cs._mode = mode
-        self.ms.cs.switch_binding()
+        self.scenario._mode = mode
+        self.scenario.switch_binding()
         
+    @update_paths
     def change_creation_mode(self, mode):
         # change the view and update the current scenario
         if mode == 'site':
             # if it is a site, display the site scenario
-            self.ms.view_menu.switch_view('site')
+            self.controller.view_menu.switch_view('site')
         else:
-            if self.ms.view_menu.current_view == 'site':
-                self.ms.view_menu.switch_view('network')
+            if self.controller.view_menu.current_view == 'site':
+                self.controller.view_menu.switch_view('network')
         # change the mode to creation 
         self.switch_to('creation')
-        self.ms.cs._creation_mode = mode
+        self.scenario._creation_mode = mode
         for obj_type in self.type_to_button:
             if mode == obj_type:
                 self.type_to_button[obj_type].config(relief='sunken')
             else:
                 self.type_to_button[obj_type].config(relief='flat')
-        self.ms.cs.switch_binding()
+        self.scenario.switch_binding()
         
     def erase_graph(self, scenario):
         scenario.erase_graph()

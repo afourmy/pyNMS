@@ -15,7 +15,7 @@ def overrider(interface_class):
 class SiteScenario(GeoScenario):
 
     def __init__(self, *args, **kwargs):
-        self.ntw = site_network.SiteNetwork(self)
+        self.network = site_network.SiteNetwork(self)
         super().__init__(*args, **kwargs)
         
         # add binding for right-click menu 

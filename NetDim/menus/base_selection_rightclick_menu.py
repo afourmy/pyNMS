@@ -12,6 +12,7 @@ import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
 import ip_networks.bgp_table as ip_bgpt
 import graph_generation.multiple_objects as mobj
+from pythonic_tkinter.preconfigured_widgets import InMenu
 from miscellaneous import site_operations
 from .alignment_menu import AlignmentMenu
 from .map_menu import MapMenu
@@ -19,35 +20,34 @@ from objects.object_management_window import ObjectManagementWindow, PropertyCha
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
                                 
-class BaseSelectionRightClickMenu(tk.Menu):
-    def __init__(self, event, scenario, from_scenario=True):
-        super().__init__(tearoff=0)
-        self.cs = scenario
+class BaseSelectionRightClickMenu(InMenu):
+    def __init__(self, event, controller, from_scenario=True):
+        super().__init__(tearoff=0, master=controller)
         
-        x, y = self.cs.cvs.canvasx(event.x), self.cs.cvs.canvasy(event.y)
+        x, y = self.scenario.cvs.canvasx(event.x), self.scenario.cvs.canvasy(event.y)
 
         if from_scenario:
-            closest_obj = self.cs.cvs.find_closest(x, y)[0]
-            selected_obj = self.cs.object_id_to_object[closest_obj]
+            closest_obj = self.scenario.cvs.find_closest(x, y)[0]
+            selected_obj = self.scenario.object_id_to_object[closest_obj]
             # if the object from which the menu was started does not belong to
             # the current selection, it means the current selection is no longer
             # to be considered, and only the selected objected is considered 
             # as having been selected by the user
                     
-            if selected_obj not in self.cs.so[selected_obj.class_type]:
+            if selected_obj not in self.scenario.so[selected_obj.class_type]:
                 # we empty / unhighlight the selection
-                self.cs.unhighlight_all()
-                self.cs.highlight_objects(selected_obj)
+                self.scenario.unhighlight_all()
+                self.scenario.highlight_objects(selected_obj)
             
         # all selected objects
-        self.all_so = self.cs.so['node'] | self.cs.so['link'] | self.cs.so['shape']
+        self.all_so = self.scenario.so['node'] | self.scenario.so['link'] | self.scenario.so['shape']
         
         # useful booleans
-        self.no_node = not self.cs.so['node']
-        self.no_link = not self.cs.so['link']
-        self.no_shape = not self.cs.so['shape']
-        self.one_node = len(self.cs.so['node']) == 1
-        self.one_link = len(self.cs.so['link']) == 1
+        self.no_node = not self.scenario.so['node']
+        self.no_link = not self.scenario.so['link']
+        self.no_shape = not self.scenario.so['shape']
+        self.one_node = len(self.scenario.so['node']) == 1
+        self.one_link = len(self.scenario.so['link']) == 1
                             
         # exactly one object: property window 
         if self.no_shape and len(self.all_so) == 1:
@@ -68,27 +68,27 @@ class BaseSelectionRightClickMenu(tk.Menu):
             
             # alignment submenu
             self.add_cascade(label='Align nodes', 
-                            menu=AlignmentMenu(self.cs, self.cs.so['node']))
+                            menu=AlignmentMenu(self.scenario, self.scenario.so['node']))
             self.add_separator()
             
             # map submenu
             self.add_cascade(label='Map menu', 
-                            menu=MapMenu(self.cs, self.cs.so['node']))
+                            menu=MapMenu(self.scenario, self.scenario.so['node']))
             self.add_separator()
             
             # multiple links creation menu
             self.add_command(label='Create multiple links', 
-                                command=lambda: self.multiple_links(self.cs))
+                                command=lambda: self.multiple_links(self.scenario))
             self.add_separator()
             
             # only one subtype of nodes
-            if self.cs.so['node']:
+            if self.scenario.so['node']:
                 for subtype in node_subtype:
                     ftr = lambda o, st=subtype: o.subtype == st
-                    if self.cs.so['node'] == set(filter(ftr, self.cs.so['node'])):
+                    if self.scenario.so['node'] == set(filter(ftr, self.scenario.so['node'])):
                         self.add_cascade(label='Change property', 
                                     command= lambda: self.change_property(
-                                                            self.cs.so['node'],
+                                                            self.scenario.so['node'],
                                                             subtype
                                                             )
                                         )
@@ -98,10 +98,10 @@ class BaseSelectionRightClickMenu(tk.Menu):
         if self.no_node and self.no_shape:
             for subtype in link_subtype:
                 ftr = lambda o, st=subtype: o.subtype == st
-                if self.cs.so['link'] == set(filter(ftr, self.cs.so['link'])):
+                if self.scenario.so['link'] == set(filter(ftr, self.scenario.so['link'])):
                     self.add_cascade(label='Change property', 
                                 command= lambda: self.change_property(
-                                                        self.cs.so['link'],
+                                                        self.scenario.so['link'],
                                                         subtype
                                                         )
                                     )
@@ -117,33 +117,33 @@ class BaseSelectionRightClickMenu(tk.Menu):
     def empty_selection_and_destroy_menu(function):
         def wrapper(self, *others):
             function(self, *others)
-            self.cs.unhighlight_all()
+            self.scenario.unhighlight_all()
             self.destroy()
         return wrapper
         
     @empty_selection_and_destroy_menu
     def remove_objects(self):
-        self.cs.remove_objects(*self.all_so)
+        self.scenario.remove_objects(*self.all_so)
                 
     @empty_selection_and_destroy_menu
     def simulate_failure(self, *objects):
-        self.cs.simulate_failure(*objects)
+        self.scenario.simulate_failure(*objects)
         
     @empty_selection_and_destroy_menu
     def remove_failure(self, *objects):
-        self.cs.remove_failure(*objects)
+        self.scenario.remove_failure(*objects)
             
     @empty_selection_and_destroy_menu
     def show_object_properties(self):
         so ,= self.all_so
-        ObjectManagementWindow(self.cs.ms, so)
+        ObjectManagementWindow(self.controller, so)
         
     @empty_selection_and_destroy_menu
     def change_property(self, objects, subtype):
         objects = set(objects)
-        PropertyChanger(self.cs.ms, objects, subtype)
+        PropertyChanger(self.controller, objects, subtype)
         
     @empty_selection_and_destroy_menu
     def multiple_links(self, scenario):
-        mobj.MultipleLinks(scenario, set(self.cs.so['node']))
+        mobj.MultipleLinks(scenario, set(self.scenario.so['node']))
                 

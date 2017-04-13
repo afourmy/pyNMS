@@ -7,13 +7,20 @@ from tkinter import ttk
 from PIL import ImageTk
 from pythonic_tkinter.preconfigured_widgets import *
 from collections import OrderedDict
+from miscellaneous.decorators import update_paths
 
 class RoutingMenu(ScrolledFrame):
     
-    def __init__(self, notebook, master):
-        super().__init__(notebook, width=200, height=600, borderwidth=1, relief='solid')
-        self.ms = master
-        self.ntw = self.ms.cs.ntw
+    def __init__(self, notebook, controller):
+        self.controller = controller
+        super().__init__(
+                         notebook, 
+                         width = 200, 
+                         height = 600, 
+                         borderwidth = 1, 
+                         relief = 'solid'
+                         )
+        
         font = ('Helvetica', 8, 'bold')  
         
         # label frame for object creation
@@ -21,12 +28,12 @@ class RoutingMenu(ScrolledFrame):
         lf_refresh.text = 'Refresh actions'
         lf_refresh.grid(0, 0, sticky='nsew')
         
-        img_path = join(self.ms.path_icon, 'refresh.png')
+        img_path = join(self.controller.path_icon, 'refresh.png')
         img_pil = ImageTk.Image.open(img_path).resize((128, 128))
         self.img_refresh = ImageTk.PhotoImage(img_pil)
         
         button_routing = TKButton(self.infr)
-        button_routing.command = self.ms.refresh
+        button_routing.command = self.refresh
         button_routing.config(image=self.img_refresh, relief='flat')
         button_routing.config(width=150, height=150)
         button_routing.grid(0, 0, sticky='ew', in_=lf_refresh)
@@ -52,4 +59,8 @@ class RoutingMenu(ScrolledFrame):
             button = Checkbutton(self.infr, variable=action_bool)
             button.text = action
             button.grid(id, 0, in_=lf_refresh)
+            
+    @update_paths
+    def refresh(self):
+        self.project.refresh()
         

@@ -8,14 +8,20 @@ from PIL import ImageTk
 from pythonic_tkinter.preconfigured_widgets import *
 from collections import OrderedDict
 from graph_generation.network_dimension import NetworkDimension
+from miscellaneous.decorators import update_paths
 
 class ViewMenu(ScrolledFrame):
     
-    def __init__(self, notebook, master):
-        super().__init__(notebook, width=200, height=600, borderwidth=1, relief='solid')
-        self.ms = master
-        self.cs = self.ms.cs
-        self.ntw = self.cs.ntw
+    def __init__(self, notebook, controller):
+        self.controller = controller
+        super().__init__(
+                         notebook, 
+                         width = 200, 
+                         height = 600, 
+                         borderwidth = 1, 
+                         relief = 'solid'
+                         )
+                         
         font = ('Helvetica', 8, 'bold')
         
         # label frame to switch between site and network view
@@ -39,7 +45,7 @@ class ViewMenu(ScrolledFrame):
         
         for image_type, image_size in self.dict_size_image.items():
             x, y = image_size
-            img_path = join(self.ms.path_icon, image_type + '.png')
+            img_path = join(self.controller.path_icon, image_type + '.png')
             img_pil = ImageTk.Image.open(img_path).resize(image_size)
             img = ImageTk.PhotoImage(img_pil)
             self.dict_image[image_type] = img
@@ -78,7 +84,7 @@ class ViewMenu(ScrolledFrame):
                                          compound = 'top', 
                                          font = font
                                          )
-        self.logical_coord_button.command = lambda: self.ms.cs.move_to_logical_coordinates(*self.ms.cs.so['node'])
+        self.logical_coord_button.command = self.logical_coordinates
         self.logical_coord_button.config(width=125, height=125)
         self.logical_coord_button.grid(0, 0, 2, 2, padx=20, in_=lf_coordinates)
         
@@ -89,33 +95,43 @@ class ViewMenu(ScrolledFrame):
                                      compound = 'top', 
                                      font = font
                                      )
-        self.geo_coord_button.command = lambda: self.ms.cs.move_to_geographical_coordinates(*self.ms.cs.so['node'])
+        self.geo_coord_button.command = self.geographical_coordinates
         self.geo_coord_button.config(width=125, height=125)
         self.geo_coord_button.grid(0, 2, 2, 2, padx=20, in_=lf_coordinates)
         
+    @update_paths
+    def logical_coordinates(self):
+        self.scenario.move_to_logical_coordinates(*self.scenario.so['node'])
+        
+    @update_paths
+    def geographical_coordinates(self):
+        self.scenario.move_to_geographical_coordinates(*self.scenario.so['node'])
+        
+    @update_paths
     def switch_view(self, view):
         self.current_view = view        
         if view == 'site':
             self.site_view_button.config(relief='sunken')
             self.network_view_button.config(relief='raised')
-            self.ms.cs.pack_forget()
-            self.ms.ss.pack()
+            self.scenario.pack_forget()
+            self.site_scenario.pack()
             # update current scenario
-            self.ms.cs = self.ms.ss
+            self.scenario = self.site_scenario
         else:
             # view is network
             self.site_view_button.config(relief='raised')
             self.network_view_button.config(relief='sunken')
-            self.ms.cs.pack_forget()
-            self.ms.ns.pack()
+            self.scenario.pack_forget()
+            self.network_scenario.pack()
             # update current scenario
-            self.ms.cs = self.ms.ns
+            self.scenario = self.network_scenario
             
+    @update_paths
     def enter_site(self, site):
-        self.ms.cs.pack_forget()
+        self.scenario.pack_forget()
         site.scenario.pack()
-        self.ms.cs = site.scenario
+        self.scenario = site.scenario
         self.current_view = site
         # destroy the pwindow of the site scenario
-        self.ms.ss.pwindow.destroy()
+        self.site_scenario.pwindow.destroy()
                     

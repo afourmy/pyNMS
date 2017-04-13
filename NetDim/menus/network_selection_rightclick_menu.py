@@ -22,23 +22,22 @@ from objects.interface_window import InterfaceWindow
 from .base_selection_rightclick_menu import BaseSelectionRightClickMenu
                                 
 class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
-    def __init__(self, event, scenario, from_scenario=True):
-        super().__init__(event, scenario, from_scenario)
-        self.cs = scenario
+    def __init__(self, event, controller, from_scenario=True):
+        super().__init__(event, controller, from_scenario)
             
         # exacly one node and one physical link: menu for the associated interface
         if self.one_node and self.one_link:
-            link ,= self.cs.so['link']
+            link ,= self.scenario.so['link']
             if link.type == 'plink':
-                node ,= self.cs.so['node']
+                node ,= self.scenario.so['node']
                 interface = link('interface', node)
                 self.add_command(label='Interface menu', 
-                    command=lambda: InterfaceWindow(self.cs.master, interface))
+                    command=lambda: InterfaceWindow(self.controller, interface))
                 self.add_separator()
                 
         # exactly one node: configuration menu
         if self.no_link and self.no_shape and self.one_node:
-            node ,= self.cs.so['node']
+            node ,= self.scenario.so['node']
             
             self.add_command(label='Configuration', 
                         command=lambda: self.configure(node))
@@ -83,19 +82,19 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
                             command=lambda: self.create_AS()) 
       
         # at least one AS in the network: add to AS
-        if self.cs.ntw.pnAS and self.no_shape:
+        if self.network.pnAS and self.no_shape:
             self.add_command(label='Add to AS', 
                         command=lambda: self.change_AS('add'))
         
         # we compute the set of common AS among all selected objects
         # providing that no shape were selected
         if self.no_shape:
-            self.common_AS = set(self.cs.ntw.pnAS.values())  
+            self.common_AS = set(self.network.pnAS.values())  
             cmd = lambda o: o.type in ('node', 'plink')
             for obj in filter(cmd, self.all_so):
                 self.common_AS &= obj.AS.keys()
                 
-            self.common_sites = set(self.cs.ntw.ftr('node', 'site'))
+            self.common_sites = set(self.network.ftr('node', 'site'))
             for obj in self.all_so:
                 self.common_sites &= obj.sites
             
@@ -119,7 +118,7 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
                         
                 self.add_separator()
             
-            if set(self.cs.ms.ss.ntw.nodes.values()):
+            if set(self.site_network.nodes.values()):
                 self.add_command(label='Add to site', command=self.add_to_site)
                 
                 if self.common_sites:
@@ -129,17 +128,17 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
         
         # exactly one physical link: 
         if self.no_node and self.no_shape and self.one_link:
-            plink ,= self.cs.so['link']
+            plink ,= self.scenario.so['link']
             # failure simulation menu
             if plink.type == 'plink':                        
                 # interface menu 
                 menu_interfaces = tk.Menu(self, tearoff=0)
                 source_if = plink('interface', plink.source)
                 menu_interfaces.add_command(label='Source interface', 
-                command=lambda: InterfaceWindow(self.cs.master, source_if))
+                command=lambda: InterfaceWindow(self.controller, source_if))
                 destination_if = plink('interface', plink.destination)
                 menu_interfaces.add_command(label='Destination interface', 
-                command=lambda: InterfaceWindow(self.cs.master, destination_if))
+                command=lambda: InterfaceWindow(self.controller, destination_if))
                 self.add_cascade(label='Interface menu', menu=menu_interfaces)
             
         # make the menu appear    
@@ -148,91 +147,91 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
     def empty_selection_and_destroy_menu(function):
         def wrapper(self, *others):
             function(self, *others)
-            self.cs.unhighlight_all()
+            self.scenario.unhighlight_all()
             self.destroy()
         return wrapper
         
     @empty_selection_and_destroy_menu
     def remove_objects(self):
-        self.cs.remove_objects(*self.all_so)
+        self.scenario.remove_objects(*self.all_so)
         
     @empty_selection_and_destroy_menu
     def change_AS(self, mode):
-        AS.ASOperation(self.cs, mode, self.all_so, self.common_AS)
+        AS.ASOperation(self.scenario, mode, self.all_so, self.common_AS)
         
     @empty_selection_and_destroy_menu
     def change_area(self, mode):
-        AS.AreaOperation(self.cs, mode, self.all_so, self.common_AS)
+        AS.AreaOperation(self.scenario, mode, self.all_so, self.common_AS)
         
     @empty_selection_and_destroy_menu
     def simulate_failure(self, *objects):
-        self.cs.simulate_failure(*objects)
+        self.scenario.simulate_failure(*objects)
         
     @empty_selection_and_destroy_menu
     def remove_failure(self, *objects):
-        self.cs.remove_failure(*objects)
+        self.scenario.remove_failure(*objects)
         
     @empty_selection_and_destroy_menu
     def arp_table(self, node):
-        arp_table.ARPTable(node, self.cs)
+        arp_table.ARPTable(node, self.scenario)
         
     @empty_selection_and_destroy_menu
     def switching_table(self, node):
-        switching_table.SwitchingTable(node, self.cs)
+        switching_table.SwitchingTable(node, self.scenario)
         
     @empty_selection_and_destroy_menu
     def routing_table(self, node):
-        ip_rt.RoutingTable(node, self.cs)
+        ip_rt.RoutingTable(node, self.scenario)
         
     @empty_selection_and_destroy_menu
     def bgp_table(self, node):
-        ip_bgpt.BGPTable(node, self.cs)
+        ip_bgpt.BGPTable(node, self.scenario)
         
     @empty_selection_and_destroy_menu
     def configure(self, node):
         if node.subtype == 'router':
-            conf.RouterConfiguration(node, self.cs)
+            conf.RouterConfiguration(node, self.scenario)
         if node.subtype == 'switch':
-            conf.SwitchConfiguration(node, self.cs)
+            conf.SwitchConfiguration(node, self.scenario)
         
     @empty_selection_and_destroy_menu
     def troubleshoot(self, node):
-        ip_ts.Troubleshooting(node, self.cs)
+        ip_ts.Troubleshooting(node, self.scenario)
         
     @empty_selection_and_destroy_menu
     def send_script(self, nodes):
-        SendScript(self.cs, nodes)
+        SendScript(self.scenario, nodes)
         
     @empty_selection_and_destroy_menu
     def connection(self, node):
-        ssh_data = self.cs.ms.ssh_management_window.get()
+        ssh_data = self.controller.ssh_management_window.get()
         ssh_data['IP'] = node.ipaddress
         ssh_connection = '{path} -ssh {username}@{IP} -pw {password}'
         os.system(ssh_connection.format(**ssh_data))
         
     @empty_selection_and_destroy_menu
     def ping(self, node):
-        ip_ping.Ping(node, self.cs)
+        ip_ping.Ping(node, self.scenario)
         
     @empty_selection_and_destroy_menu
     def enter_site(self, site):
-        self.cs.ms.view_menu.enter_site(site)
+        self.controller.view_menu.enter_site(site)
         
     @empty_selection_and_destroy_menu
     def add_to_site(self):
-        site_operations.SiteOperations(self.cs, 'add', self.all_so)
+        site_operations.SiteOperations(self.scenario, 'add', self.all_so)
         
     @empty_selection_and_destroy_menu
     def remove_from_site(self):
-        site_operations.SiteOperations(self.cs, 'remove', self.all_so, 
+        site_operations.SiteOperations(self.scenario, 'remove', self.all_so, 
                                                             self.common_sites)
         
     @empty_selection_and_destroy_menu
     def bgp(self, node):
-        self.cs.ntw.BGPT_builder(node)
+        self.network.BGPT_builder(node)
         
     @empty_selection_and_destroy_menu
     def create_AS(self):
-        nodes, plinks = set(self.cs.so['node']), set(self.cs.so['link'])
-        AS.ASCreation(self.cs, nodes, plinks)
+        nodes, plinks = set(self.scenario.so['node']), set(self.scenario.so['link'])
+        AS.ASCreation(self.scenario, nodes, plinks)
         
