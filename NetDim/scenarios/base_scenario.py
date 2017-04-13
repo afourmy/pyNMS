@@ -9,6 +9,7 @@ from .shape_drawing import *
 from random import randint, choice
 from math import cos, sin, atan2, sqrt, radians
 from miscellaneous import search
+from miscellaneous.decorators import update_coordinates, overrider
 
 class BaseScenario(CustomFrame):
     
@@ -217,22 +218,16 @@ class BaseScenario(CustomFrame):
                                                     event, self._creation_mode)
                 self.cvs.tag_bind('node', '<ButtonRelease-1>', release, add='+')
                 
-    def adapt_coordinates(function):
-        def wrapper(self, event, *others):
-            event.x, event.y = self.cvs.canvasx(event.x), self.cvs.canvasy(event.y)
-            function(self, event, *others)
-        return wrapper
-                
     ## Drawing modes
     
-    @adapt_coordinates
+    @update_coordinates
     def start_drawing_oval(self, event):
         x, y = event.x, event.y
         self.start_position = x, y
         self.oval = self.cvs.create_oval(x, y, x, y, tags=('shape', 'object'))
         self.cvs.tag_lower(self.oval)
         
-    @adapt_coordinates
+    @update_coordinates
     def draw_oval(self, event):
         # draw the line only if they were created in the first place
         if self.start_position != [None]*2:
@@ -245,7 +240,7 @@ class BaseScenario(CustomFrame):
         self.start_position = [None]*2
         self.object_id_to_object[self.oval] = oval
     
-    @adapt_coordinates
+    @update_coordinates
     def start_drawing_rectangle(self, event):
         x, y = event.x, event.y
         self.start_position = x, y
@@ -253,7 +248,7 @@ class BaseScenario(CustomFrame):
                                                     tags=('shape', 'object'))
         self.cvs.tag_lower(self.rectangle)
         
-    @adapt_coordinates
+    @update_coordinates
     def draw_rectangle(self, event):
         # draw the line only if they were created in the first place
         if self.start_position != [None]*2:
@@ -266,7 +261,7 @@ class BaseScenario(CustomFrame):
         self.start_position = [None]*2
         self.object_id_to_object[self.rectangle] = rectangle
                   
-    @adapt_coordinates
+    @update_coordinates
     def create_label(self, event):
         LabelCreation(self, event.x, event.y)
         
@@ -274,7 +269,7 @@ class BaseScenario(CustomFrame):
         self.display_layer[layer] = not self.display_layer[layer]
         self.draw_all(False)
             
-    @adapt_coordinates
+    @update_coordinates
     def closest_route_path(self, event):
         self.unhighlight_all()
         route = self.object_id_to_object[self.cvs.find_closest(event.x, event.y)[0]]
@@ -283,7 +278,7 @@ class BaseScenario(CustomFrame):
     def highlight_route(self, route):
         self.highlight_objects(*route.path)
                 
-    @adapt_coordinates
+    @update_coordinates
     def find_closest_node(self, event):
         # record the item and its location
         self.dict_start_position.clear()
@@ -310,7 +305,7 @@ class BaseScenario(CustomFrame):
             # is no longer highlighted but the newly selected node is.
             self.highlight_objects(main_node_selected)
             
-    @adapt_coordinates
+    @update_coordinates
     def find_closest_link(self, event):
         closest_link = self.cvs.find_closest(event.x, event.y)[0]
         main_link_selected = self.object_id_to_object[closest_link]
@@ -339,7 +334,7 @@ class BaseScenario(CustomFrame):
             if hasattr(main_link_selected, 'path'):
                 self.highlight_objects(*main_link_selected.path)
                 
-    @adapt_coordinates
+    @update_coordinates
     def find_closest_shape(self, event):
         self.dict_start_position.clear()
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
@@ -360,7 +355,7 @@ class BaseScenario(CustomFrame):
             self.dict_start_position[main_shape_selected] = [x, y]
         self.highlight_objects(main_shape_selected)
     
-    @adapt_coordinates
+    @update_coordinates
     def motion(self, event):
         x, y = event.x, event.y
         # if there is at least one object on the canvas
@@ -443,7 +438,7 @@ class BaseScenario(CustomFrame):
 
     ## Zoom / unzoom on the canvas
     
-    @adapt_coordinates
+    @update_coordinates
     def zoomer(self, event):
         # zoom in / zoom out (windows)
         self.cancel()
@@ -454,7 +449,7 @@ class BaseScenario(CustomFrame):
         self.cvs.configure(scrollregion=self.cvs.bbox('all'))
         self.update_nodes_coordinates(factor)
         
-    @adapt_coordinates
+    @update_coordinates
     def zoomerP(self, event):
         # zoom in (unix)
         self.cancel()
@@ -464,7 +459,7 @@ class BaseScenario(CustomFrame):
         self.cvs.configure(scrollregion=self.cvs.bbox('all'))
         self.update_nodes_coordinates(factor)
         
-    @adapt_coordinates
+    @update_coordinates
     def zoomerM(self, event):
         # unzoom out (unix)
         self.cancel()
@@ -515,7 +510,7 @@ class BaseScenario(CustomFrame):
 
     ## Object creation
     
-    @adapt_coordinates
+    @update_coordinates
     def create_node_on_binding(self, event):
         node = self.network.nf(node_type=self._creation_mode, x=event.x, y=event.y)
         self.create_node(node)
@@ -538,14 +533,14 @@ class BaseScenario(CustomFrame):
         if layer == 1:
             self.create_node_label(node)
             
-    @adapt_coordinates
+    @update_coordinates
     def start_link(self, event):
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
         start_node = self.object_id_to_object[self.drag_item]
         self.temp_line = self.cvs.create_line(start_node.x, start_node.y, 
                         event.x, event.y, arrow=tk.LAST, arrowshape=(6,8,3))
         
-    @adapt_coordinates
+    @update_coordinates
     def line_creation(self, event):
         # remove the purple highlight of the closest object when creating 
         # a link: the normal system doesn't work because we are in 'B1-Motion'
@@ -557,7 +552,7 @@ class BaseScenario(CustomFrame):
         # create a line to show the link
         self.cvs.coords(self.temp_line, start_node.x, start_node.y, event.x, event.y)
         
-    @adapt_coordinates
+    @update_coordinates
     def link_creation(self, event, subtype):
         # delete the temporary line
         self.cvs.delete(self.temp_line)
@@ -640,7 +635,7 @@ class BaseScenario(CustomFrame):
             
     ## Motion
     
-    @adapt_coordinates
+    @update_coordinates
     def node_motion(self, event):
         # destroy the tip window when moving a node
         self.pwindow.destroy()
@@ -660,7 +655,7 @@ class BaseScenario(CustomFrame):
             selected_node.y = y1 + (event.y + diff - y0)
             self.move_node(selected_node)
         
-    @adapt_coordinates
+    @update_coordinates
     def shape_motion(self, event):
         shape = self.object_id_to_object[self.drag_item]
         for ss in self.so['shape']:
@@ -838,7 +833,7 @@ class BaseScenario(CustomFrame):
             self.temp_rectangle = self.cvs.create_rectangle(x, y, x, y)
             self.cvs.tag_raise(self.temp_rectangle)
 
-    @adapt_coordinates
+    @update_coordinates
     def rectangle_drawing(self, event):
         # draw the line only if they were created in the first place
         if self.start_position != [None]*2:
@@ -846,7 +841,7 @@ class BaseScenario(CustomFrame):
             x0, y0 = self.start_position
             self.cvs.coords(self.temp_rectangle, x0, y0, event.x, event.y)
     
-    @adapt_coordinates
+    @update_coordinates
     def end_point_select_nodes(self, event):
         selection_mode = self.controller.creation_menu.selection_mode
         allowed = tuple(mode for mode, v in selection_mode.items() if v.get())

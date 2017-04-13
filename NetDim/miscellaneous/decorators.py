@@ -1,3 +1,15 @@
+def overrider(interface_class):
+    def overrider(method):
+        assert(method.__name__ in dir(interface_class))
+        return method
+    return overrider
+    
+def update_coordinates(function):
+    def wrapper(self, event, *others):
+        event.x, event.y = self.cvs.canvasx(event.x), self.cvs.canvasy(event.y)
+        function(self, event, *others)
+    return wrapper
+
 def update_paths(function):
     def wrapper(self, *args, **kwargs):
         if 'master' in kwargs:

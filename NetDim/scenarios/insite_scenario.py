@@ -6,12 +6,7 @@ from menus.insite_general_rightclick_menu import InSiteGeneralRightClickMenu
 from menus.network_selection_rightclick_menu import NetworkSelectionRightClickMenu
 from math import cos, sin, atan2, sqrt, radians
 from random import randint
-
-def overrider(interface_class):
-    def overrider(method):
-        assert(method.__name__ in dir(interface_class))
-        return method
-    return overrider
+from miscellaneous.decorators import update_coordinates, overrider
 
 class InSiteScenario(BaseScenario):
 
@@ -31,7 +26,7 @@ class InSiteScenario(BaseScenario):
     def back_to_site_view(self, _):
         self.ms.view_menu.switch_view('site')
         
-    def adapt_coordinates(function):
+    def update_coordinates(function):
         def wrapper(self, event, *others):
             event.x, event.y = self.cvs.canvasx(event.x), self.cvs.canvasy(event.y)
             function(self, event, *others)
@@ -45,7 +40,7 @@ class InSiteScenario(BaseScenario):
         if (x, y) == (event.x, event.y):
             InSiteGeneralRightClickMenu(event, self)
                 
-    @adapt_coordinates
+    @update_coordinates
     @overrider(BaseScenario)
     def find_closest_node(self, event):
         # record the item and its location
@@ -76,7 +71,7 @@ class InSiteScenario(BaseScenario):
             # is no longer highlighted but the newly selected node is.
             self.highlight_objects(main_node_selected)
             
-    @adapt_coordinates
+    @update_coordinates
     @overrider(BaseScenario)
     def find_closest_link(self, event):
         closest_link = self.cvs.find_closest(event.x, event.y)[0]
@@ -148,7 +143,7 @@ class InSiteScenario(BaseScenario):
 
     ## Object creation
     
-    @adapt_coordinates
+    @update_coordinates
     @overrider(BaseScenario)
     def create_node_on_binding(self, event):
         # we create the node in both the insite scenario and the network scenario
@@ -197,7 +192,7 @@ class InSiteScenario(BaseScenario):
         if layer == 1:
             self.create_node_label(node)
             
-    @adapt_coordinates
+    @update_coordinates
     @overrider(BaseScenario)
     def start_link(self, event):
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
@@ -211,7 +206,7 @@ class InSiteScenario(BaseScenario):
                                         arrowshape = (6,8,3)
                                         )
         
-    @adapt_coordinates
+    @update_coordinates
     @overrider(BaseScenario)
     def line_creation(self, event):
         # remove the purple highlight of the closest object when creating 
@@ -230,7 +225,7 @@ class InSiteScenario(BaseScenario):
                         event.y
                         )
         
-    @adapt_coordinates
+    @update_coordinates
     @overrider(BaseScenario)
     def link_creation(self, event, subtype):
         # delete the temporary line
@@ -317,7 +312,7 @@ class InSiteScenario(BaseScenario):
             
     ## Motion
     
-    @adapt_coordinates
+    @update_coordinates
     @overrider(BaseScenario)
     def node_motion(self, event):
         # destroy the tip window when moving a node

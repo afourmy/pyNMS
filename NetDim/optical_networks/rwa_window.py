@@ -3,9 +3,8 @@
 from pythonic_tkinter.preconfigured_widgets import *
 
 class RWAWindow(FocusTopLevel):
-    def __init__(self, master):
-        super().__init__()   
-        self.ms = master   
+    def __init__(self, controller):
+        super().__init__(master=controller)     
         self.title('Routing and Wavelength Assignment')
                         
         # label frame
@@ -53,12 +52,12 @@ class RWAWindow(FocusTopLevel):
         
     def transform_graph(self):
         name = self.entry_sco.text
-        self.ms.cs.ntw.RWA_graph_transformation(name)
+        self.network.RWA_graph_transformation(name)
 
     def run_algorithm(self):
         algorithm = self.rwa_list.text
         if algorithm == 'Linear programming':
-            self.ms.cs.ntw.LP_RWA_formulation()
+            self.network.LP_RWA_formulation()
         else:
-            self.ms.cs.ntw.largest_degree_first()
+            self.network.largest_degree_first()
         

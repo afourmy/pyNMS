@@ -5,17 +5,12 @@ from os.path import join
 from tkinter import filedialog
 from .base_scenario import BaseScenario
 from math import *
+from miscellaneous.decorators import update_coordinates, overrider
 try:
     import shapefile as shp
     import shapely.geometry as sgeo
 except ImportError:
     warnings.warn('SHP librairies missing: map import disabled')
-
-def overrider(interface_class):
-    def overrider(method):
-        assert(method.__name__ in dir(interface_class))
-        return method
-    return overrider
 
 class GeoScenario(BaseScenario):
 
@@ -27,12 +22,6 @@ class GeoScenario(BaseScenario):
         self.world_map.change_projection('mercator')
         self.world_map.create_meridians()
         self.world_map.center_map([[7, 49]])
-        
-    def adapt_coordinates(function):
-        def wrapper(self, event, *others):
-            event.x, event.y = self.cvs.canvasx(event.x), self.cvs.canvasy(event.y)
-            function(self, event, *others)
-        return wrapper
             
     def switch_binding(self): 
         super(GeoScenario, self).switch_binding()
@@ -48,17 +37,16 @@ class GeoScenario(BaseScenario):
         if self.world_map.is_spherical():
             self.cvs.tag_lower(self.world_map.oval_id)
         
-    @adapt_coordinates
+    @update_coordinates
     def move_sphere(self, event):
         coords = self.world_map.from_points((event.x, event.y), dosphere=1)
         if coords and self.world_map.is_spherical():
             self.world_map.map_temp['centerof'] = coords
             self.world_map.change_projection(self.world_map.mode)
                         
-    @adapt_coordinates
+    @update_coordinates
     @overrider(BaseScenario)
     def create_node_on_binding(self, event):
-        print('test')
         node = self.network.nf(node_type=self._creation_mode, x=event.x, y=event.y)
         # update logical and geographical coordinates
         lon, lat = self.world_map.get_geographical_coordinates(node.x, node.y)
@@ -119,7 +107,7 @@ class GeoScenario(BaseScenario):
         self.world_map.change_projection(mode)
         self.lower_map()
     
-    @adapt_coordinates
+    @update_coordinates
     @overrider(BaseScenario)
     def zoomer(self, event):
         ''' Zoom for window '''

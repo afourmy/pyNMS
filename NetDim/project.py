@@ -72,7 +72,7 @@ class Project():
         # filepath is set for unittest
         if not filepath:
             filepath = filedialog.askopenfilenames(
-                            initialdir = self.path_workspace, 
+                            initialdir = self.controller.path_workspace, 
                             title = 'Import graph', 
                             filetypes = (
                             ('all files','*.*'),
@@ -223,7 +223,7 @@ class Project():
         # filepath is set for unittest
         if not filepath:
             selected_file = filedialog.asksaveasfile(
-                                    initialdir = self.path_workspace, 
+                                    initialdir = self.controller.path_workspace, 
                                     title = 'Export graph', 
                                     mode = 'w', 
                                     defaultextension = '.xls'

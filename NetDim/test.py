@@ -332,8 +332,8 @@ class TestRWA(unittest.TestCase):
         self.netdim.destroy()
         
     def test_RWA(self):
-        sco_new_graph = self.network.RWA_graph_transformation()
-        self.assertEqual(sco_new_graph.network.LP_RWA_formulation(), 3)
+        project_new_graph = self.network.RWA_graph_transformation()
+        self.assertEqual(project_new_graph.network.LP_RWA_formulation(), 3)
         
 if str.__eq__(__name__, '__main__'):
     unittest.main(warnings='ignore')  

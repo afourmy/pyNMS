@@ -1600,7 +1600,7 @@ class MainNetwork(BaseNetwork):
         
         # we compute the path of all traffic physical links
         self.path_finder()
-        graph_sco = self.cs.ms.add_scenario(name)
+        graph_project = self.cs.controller.add_project(name)
         
         # in the new graph, each node corresponds to a traffic path
         # we create one node per traffic physical link in the new scenario            
@@ -1612,21 +1612,21 @@ class MainNetwork(BaseNetwork):
                     if set(tlA.path) & set(tlB.path):
                         nA, nB = tlA.name, tlB.name
                         name = '{} - {}'.format(nA, nB)
-                        graph_sco.ntw.lf(
-                                         source = graph_sco.ntw.nf(
-                                                              name = nA,
-                                                              node_type = 'oxc'
-                                                              ),
-                                         destination = graph_sco.ntw.nf(
-                                                              name = nB,
-                                                              node_type = 'oxc'
-                                                              ),
-                                         name = name
-                                         )
+                        graph_project.network.lf(
+                                    source = graph_project.network.nf(
+                                                        name = nA,
+                                                        node_type = 'oxc'
+                                                        ),
+                                    destination = graph_project.network.nf(
+                                                        name = nB,
+                                                        node_type = 'oxc'
+                                                        ),
+                                    name = name
+                                    )
             visited.add(tlA)
                             
-        graph_sco.draw_all(False)
-        return graph_sco
+        graph_project.current_scenario.draw_all(False)
+        return graph_project
         
     def largest_degree_first(self):
         # we color the transformed graph by allocating colors to largest
