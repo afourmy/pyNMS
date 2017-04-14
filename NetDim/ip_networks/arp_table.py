@@ -1,13 +1,17 @@
 # NetDim (contact@netdim.fr)
 
+import tkinter as tk
+from miscellaneous.decorators import update_paths
 from pythonic_tkinter.preconfigured_widgets import *
 from operator import itemgetter
 
-class ARPTable(CustomTopLevel):
-    def __init__(self, node, view):
+class ARPTable(tk.Toplevel):
+    
+    @update_paths
+    def __init__(self, node, controller):
         super().__init__() 
-        self.cs = view
-        self.ST = ScrolledText(self)
+        
+        self.ST = ScrolledText(self, wrap='word', bg='beige')
         self.wm_attributes('-topmost', True)
 
         introduction = '''

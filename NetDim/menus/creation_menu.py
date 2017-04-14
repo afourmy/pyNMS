@@ -75,7 +75,7 @@ class CreationMenu(ScrolledFrame):
         }
         
         for topo in ('tree', 'star', 'full-mesh', 'ring'):
-            self.type_to_action[topo] = lambda t=topo: NetworkDimension(controller, t)
+            self.type_to_action[topo] = lambda t=topo: NetworkDimension(t, controller)
             
         for obj_type in object_properties:
             if obj_type not in ('l2vc', 'l3vc'):

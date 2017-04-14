@@ -1,15 +1,15 @@
 # NetDim (contact@netdim.fr)
 
-from objects.objects import *
-from pythonic_tkinter.preconfigured_widgets import *
 from menus.network_selection_rightclick_menu import NetworkSelectionRightClickMenu
+from miscellaneous.decorators import update_paths
+from pythonic_tkinter.preconfigured_widgets import *
+from objects.objects import *
 
 class NetworkTreeView(CustomTopLevel):
 
-    def __init__(self, master):
+    @update_paths
+    def __init__(self, controller):
         super().__init__()
-        self.ms = master
-        self.ntw = self.ms.cs.ntw
         self.geometry('1200x500')
         self.title('Network Tree View')
         # TODO add AS property too, botrh in manage AS and here
@@ -23,15 +23,15 @@ class NetworkTreeView(CustomTopLevel):
         # object selection in the treeview
         self.ntv.bind('<ButtonRelease-1>', lambda e: self.select(e))
         # right-click menu
-        self.ntv.bind('<ButtonPress-3>', lambda e: NetworkSelectionRightClickMenu(e, self.ms.cs, False))
+        self.ntv.bind('<ButtonPress-3>', lambda e: NetworkSelectionRightClickMenu(e, self.view, False))
         
         for obj_subtype, properties in object_ie.items():
             obj_type = subtype_to_type[obj_subtype]
-            if tuple(self.ntw.ftr(obj_type, obj_subtype)):
+            if tuple(self.network.ftr(obj_type, obj_subtype)):
                 properties = ('type',) + properties
                 self.ntv.insert('', 'end', obj_subtype, text=obj_subtype.title(), 
                                                                 values=properties)
-            for obj in self.ntw.ftr(obj_type, obj_subtype):
+            for obj in self.network.ftr(obj_type, obj_subtype):
                 values = tuple(map(lambda p: getattr(obj, p), properties))
                 iid = self.ntv.insert(obj_subtype, 'end', text=obj.name, values=values)
                 self.ntv.item(iid, tags=obj_type)
@@ -41,13 +41,13 @@ class NetworkTreeView(CustomTopLevel):
         self.deiconify()
         
     def select(self, event):
-        print('before' + str(self.ms.cs.so))
-        self.ms.cs.unhighlight_all()
+        print('before' + str(self.view.so))
+        self.view.unhighlight_all()
         for item in self.ntv.selection():
             tags = self.ntv.item(item, 'tags')
             if tags:
                 obj_type ,= tags
                 item = self.ntv.item(item)
-                obj = self.ntw.pn[obj_type][self.ntw.name_to_id[item['text']]]
-                self.ms.cs.highlight_objects(obj)
-        print('after' + str(self.ms.cs.so))
+                obj = self.network.pn[obj_type][self.network.name_to_id[item['text']]]
+                self.view.highlight_objects(obj)
+        print('after' + str(self.view.so))

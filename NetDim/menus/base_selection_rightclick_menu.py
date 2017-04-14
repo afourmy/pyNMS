@@ -19,11 +19,11 @@ from .map_menu import MapMenu
 from objects.object_management_window import ObjectManagementWindow, PropertyChanger
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
-from miscellaneous.decorators import initialize_paths
+from miscellaneous.decorators import *
                                 
 class BaseSelectionRightClickMenu(InMenu):
     
-    @initialize_paths
+    @update_paths
     def __init__(self, event, from_view, controller):
         super().__init__(tearoff=0, master=controller)
         
@@ -139,14 +139,14 @@ class BaseSelectionRightClickMenu(InMenu):
     @empty_selection_and_destroy_menu
     def show_object_properties(self):
         so ,= self.all_so
-        ObjectManagementWindow(self.controller, so)
+        ObjectManagementWindow(so, self.controller)
         
     @empty_selection_and_destroy_menu
     def change_property(self, objects, subtype):
         objects = set(objects)
-        PropertyChanger(self.controller, objects, subtype)
+        PropertyChanger(objects, subtype, self.controller)
         
     @empty_selection_and_destroy_menu
     def multiple_links(self, view):
-        mobj.MultipleLinks(view, set(self.view.so['node']))
+        mobj.MultipleLinks(set(self.view.so['node']), self.controller)
                 

@@ -9,16 +9,21 @@ from .shape_drawing import *
 from random import randint, choice
 from math import cos, sin, atan2, sqrt, radians
 from miscellaneous import search
-from miscellaneous.decorators import update_coordinates, overrider
+from miscellaneous.decorators import *
 
 class BaseView(CustomFrame):
     
-    def __init__(self, controller, project, name):
-        super().__init__(project.gf)
-        self.name = name
-        self.object_id_to_object = {}
+    def __init__(self, name, controller):
+        # path update
         self.controller = controller
-        self.project = project
+        self.project = controller.current_project
+        
+        super().__init__(self.project.gf)
+        self.name = name
+        
+
+        
+        self.object_id_to_object = {}
 
         self.cvs = tk.Canvas(
                              self, 
@@ -1072,7 +1077,7 @@ class BaseView(CustomFrame):
     ## Drawing
     
     # 1) Regular drawing
-    def draw_objects(self, objects, random=True, draw_site=False):
+    def draw_objects(self, objects, random=True):
         self.cancel()
         for obj in objects:
             if obj.class_type == 'node':
@@ -1086,11 +1091,11 @@ class BaseView(CustomFrame):
             if obj in self.network.failed_obj:
                 self.simulate_failure(obj)
              
-    def draw_all(self, random=True, draw_site=False):
+    def draw_all(self, random=True):
         self.erase_all()
         # we draw everything except interface
         for type in set(self.network.pn) - {'interface'}:
-            self.draw_objects(self.network.pn[type].values(), random, draw_site)
+            self.draw_objects(self.network.pn[type].values(), random)
             
     # 2) Force-based drawing
     

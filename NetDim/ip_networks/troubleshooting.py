@@ -1,15 +1,17 @@
 # NetDim (contact@netdim.fr)
 
+from miscellaneous.decorators import update_paths
 from tkinter import ttk
 from pythonic_tkinter.preconfigured_widgets import *
 import tkinter as tk
 
 class Troubleshooting(tk.Toplevel):
-    def __init__(self, node, view):
+    
+    @update_paths
+    def __init__(self, node, controller):
         super().__init__() 
         
         notebook = ttk.Notebook(self)
-        
         self.wm_attributes('-topmost', True)
         
         ## General troubleshooting commands

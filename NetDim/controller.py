@@ -50,7 +50,7 @@ class Controller(MainWindow):
         self.cpt_project = 0
 
         # add the first project
-        self.current_project = self.add_project()
+        self.add_project()
         
         ## ----- Persistent windows : -----
                 

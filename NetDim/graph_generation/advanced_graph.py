@@ -1,14 +1,16 @@
 # NetDim (contact@netdim.fr)
 
-from pythonic_tkinter.preconfigured_widgets import *
+from graph_generation.network_dimension import NetworkDimension
+from miscellaneous.decorators import update_paths
 from os.path import join
 from PIL import ImageTk
-from graph_generation.network_dimension import NetworkDimension
+from pythonic_tkinter.preconfigured_widgets import *
 
 class AdvancedGraph(FocusTopLevel):
     
+    @update_paths
     def __init__(self, controller):
-        super().__init__(master=controller)
+        super().__init__()
         font = ('Helvetica', 8, 'bold')
         
         images = (
@@ -41,7 +43,7 @@ class AdvancedGraph(FocusTopLevel):
         for bt_type, (row, col), bt_text in button_config:
             bt = TKButton(self)
             bt.text = bt_text
-            bt.command = lambda t=bt_type: NetworkDimension(controller, t)
+            bt.command = lambda t=bt_type: NetworkDimension(t, controller)
             
             bt.grid(row, col, in_=lf_inf_graph)
             bt.config(image=self.dict_images[bt_type], compound='top', font=font)

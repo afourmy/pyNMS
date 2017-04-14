@@ -1,14 +1,18 @@
 # NetDim (contact@netdim.fr)
 
+from miscellaneous.decorators import update_paths
 from miscellaneous.network_functions import compute_network
 from pythonic_tkinter.preconfigured_widgets import *
 from operator import itemgetter
+import tkinter as tk
 
-class BGPTable(CustomTopLevel):
-    def __init__(self, node, view):
+class BGPTable(tk.Toplevel):
+    
+    @update_paths
+    def __init__(self, node, controller):
         super().__init__() 
-        self.cs = view
-        self.ST = ScrolledText(self)
+        
+        self.ST = ScrolledText(self, wrap='word', bg='beige')
         self.wm_attributes('-topmost', True)
 
         codes = '''

@@ -19,6 +19,7 @@ from objects.object_management_window import PropertyChanger
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
 from .base_selection_rightclick_menu import BaseSelectionRightClickMenu
+from miscellaneous.decorators import *
                                 
 class SiteSelectionRightClickMenu(BaseSelectionRightClickMenu):
     
@@ -34,14 +35,7 @@ class SiteSelectionRightClickMenu(BaseSelectionRightClickMenu):
             
         # make the menu appear    
         self.tk_popup(event.x_root, event.y_root)
-    
-    def empty_selection_and_destroy_menu(function):
-        def wrapper(self, *others):
-            function(self, *others)
-            self.view.unhighlight_all()
-            self.destroy()
-        return wrapper
-        
+            
     @empty_selection_and_destroy_menu
     def enter_site(self, site):
         self.controller.view_menu.enter_site(site)

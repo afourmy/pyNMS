@@ -1,12 +1,14 @@
 # NetDim (contact@netdim.fr)
 
+from miscellaneous.decorators import update_paths
 from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous.network_functions import compute_network
 
 class Ping(FocusTopLevel):
-    def __init__(self, source, view):
+    
+    @update_paths
+    def __init__(self, source, controller):
         super().__init__() 
-        self.cs = view
         
         # main label frame
         lf_ping = Labelframe(self)
@@ -17,7 +19,7 @@ class Ping(FocusTopLevel):
         label_src_IP.text = 'Source IP :'
         
         self.IP_list = Combobox(self, width=15)
-        self.IP_list['values'] = tuple(self.cs.ntw.attached_ips(source))
+        self.IP_list['values'] = tuple(self.network.attached_ips(source))
         self.IP_list.current(0)
         
         label_dst_IP = Label(self)
@@ -40,18 +42,18 @@ class Ping(FocusTopLevel):
         self.ST.grid(row=1, column=0, columnspan=5, in_=lf_ping)
         
     def ping_IP(self, source):
-        src_IP = self.cs.ntw.ip_to_oip[self.IP_list.text]
-        dst_IP = self.cs.ntw.ip_to_oip[self.entry_IP.text]
+        src_IP = self.network.ip_to_oip[self.IP_list.text]
+        dst_IP = self.network.ip_to_oip[self.entry_IP.text]
         # dummy traffic link to retrieve the path of an IP packet
-        traffic = self.cs.ntw.lf(
+        traffic = self.network.lf(
                                     source = source, 
                                     destination = dst_IP.interface.node, 
                                     subtype = 'routed traffic'
                                     )
         traffic.ipS, traffic.ipD = src_IP, dst_IP
         self.ST.delete('1.0', 'end')
-        _, path = self.cs.ntw.RFT_path_finder(traffic)
+        _, path = self.network.RFT_path_finder(traffic)
         self.ST.insert('insert', '\n\n\n'.join(path))
         # delete the dummy traffic link
-        self.cs.ntw.remove_link(traffic)
+        self.network.remove_link(traffic)
 

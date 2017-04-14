@@ -30,7 +30,7 @@ class NetworkGeneralRightClickMenu(InMenu):
         
         # multiple nodes creation
         self.add_command(label='Create multiple nodes', 
-                command=lambda: MultipleNodes(self.view, x, y))
+                command=lambda: MultipleNodes(x, y, self.controller))
                 
         # remove all failures if there is at least one
         if self.network.failed_obj:

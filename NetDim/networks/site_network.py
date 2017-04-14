@@ -29,11 +29,10 @@ class SiteNetwork(BaseNetwork):
             kwargs['id'] = id
             self.nodes[id] = node_class[node_type](**kwargs)
             self.nodes[id].view = InSiteView(
-                                            self.nodes[id], 
-                                            self.view.controller,
-                                            self.view.controller.current_project, 
-                                            kwargs['name']
-                                            )
+                                             self.nodes[id], 
+                                             kwargs['name'],
+                                             self.view.controller,
+                                             )
             self.name_to_id[kwargs['name']] = id
             self.cpt_node += 1
         return self.nodes[id]

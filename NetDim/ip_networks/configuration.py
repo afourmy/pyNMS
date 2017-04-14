@@ -3,13 +3,15 @@
 import tkinter as tk
 from tkinter import ttk
 import re
+from miscellaneous.decorators import update_paths
 from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous.network_functions import tomask
 
 class RouterConfiguration(tk.Toplevel):
-    def __init__(self, node, view):
+    
+    @update_paths
+    def __init__(self, node, controller):
         super().__init__() 
-        self.cs = view
         
         notebook = ttk.Notebook(self)
         pastable_config_frame = ttk.Frame(notebook)
@@ -53,7 +55,7 @@ class RouterConfiguration(tk.Toplevel):
                 
         yield ' {name}(config-if)# exit\n'.format(name=node.name)
         
-        for _, sr in self.cs.ntw.gftr(node, 'route', 'static route', False):
+        for _, sr in self.network.gftr(node, 'route', 'static route', False):
             sntw, mask = sr.dst_sntw.split('/')
             mask = tomask(int(mask))
             yield ' {name}(config)# ip route {sntw} {mask} {nh_ip}\n'\
@@ -65,12 +67,12 @@ class RouterConfiguration(tk.Toplevel):
                                             )
             
         # if node.bgp_AS:
-        #     AS = self.cs.ntw.pnAS[node.bgp_AS]
+        #     AS = self.network.pnAS[node.bgp_AS]
         #     yield ' {name}(config)# router bgp {AS_id}\n'\
         #                                 .format(name=node.name, AS_id=AS.id)
         #     
-        # for bgp_nb, bgp_pr in self.cs.ntw.gftr(node, 'route', 'BGP peering'):
-        #     nb_AS = self.cs.ntw.pnAS[bgp_nb.bgp_AS]
+        # for bgp_nb, bgp_pr in self.network.gftr(node, 'route', 'BGP peering'):
+        #     nb_AS = self.network.pnAS[bgp_nb.bgp_AS]
         #     yield ' {name}(config-router)# neighbor {ip} remote-as {AS}\n'\
         #                             .format(
         #                                     name = node.name, 
@@ -78,7 +80,7 @@ class RouterConfiguration(tk.Toplevel):
         #                                     AS = nb_AS.id
         #                                     )
         
-        for neighbor, adj_plink in self.cs.ntw.graph[node.id]['plink']:
+        for neighbor, adj_plink in self.network.graph[node.id]['plink']:
             interface = adj_plink('interface', node)
             ip = interface.ipaddress
             mask = interface.subnetmask
@@ -133,7 +135,7 @@ class RouterConfiguration(tk.Toplevel):
                 yield ' {name}(config)# router rip\n'\
                                                 .format(name=node.name)
                 
-                for _, adj_plink in self.cs.ntw.graph[node.id]['plink']:
+                for _, adj_plink in self.network.graph[node.id]['plink']:
                     interface = adj_plink('interface', node)
                     if adj_plink in AS.pAS['link']:
                         ip = interface.ipaddress
@@ -150,7 +152,7 @@ class RouterConfiguration(tk.Toplevel):
                 yield ' {name}(config)# router ospf 1\n'\
                                                     .format(name=node.name)
                 
-                for _, adj_plink in self.cs.ntw.graph[node.id]['plink']:
+                for _, adj_plink in self.network.graph[node.id]['plink']:
                     interface = adj_plink('interface', node)
                     if adj_plink in AS.pAS['link']:
                         ip = interface.ipaddress
@@ -222,9 +224,10 @@ class RouterConfiguration(tk.Toplevel):
         yield ' {name}(config)# end\n'.format(name=node.name)
 
 class SwitchConfiguration(tk.Toplevel):
-    def __init__(self, node, view):
+    
+    @update_paths
+    def __init__(self, node, controller):
         super().__init__() 
-        self.cs = view
         
         notebook = ttk.Notebook(self)
         pastable_config_frame = ttk.Frame(notebook)
@@ -268,7 +271,7 @@ class SwitchConfiguration(tk.Toplevel):
                                     .format(name=node.name, vlan_name=VLAN.name)
                     yield ' {name}(config-vlan)# exit\n'.format(name=node.name)
         
-        for _, adj_plink in self.cs.ntw.graph[node.id]['plink']:
+        for _, adj_plink in self.network.graph[node.id]['plink']:
             interface = adj_plink('interface', node)
             yield ' {name}(config)# interface {interface}\n'\
                                 .format(name=node.name, interface=interface)
@@ -305,7 +308,7 @@ class SwitchConfiguration(tk.Toplevel):
                 yield ' {name}(config)# router rip\n'\
                                                 .format(name=node.name)
                 
-                for _, adj_plink in self.cs.ntw.graph[node.id]['plink']:
+                for _, adj_plink in self.network.graph[node.id]['plink']:
                     interface = adj_plink('interface', node)
                     if adj_plink in AS.pAS['link']:
                         ip = interface.ipaddress

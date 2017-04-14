@@ -10,11 +10,14 @@ from miscellaneous.decorators import update_coordinates, overrider
 
 class InSiteView(BaseView):
 
-    def __init__(self, site, controller, project, name):
-        super().__init__(controller, project, name)
+    def __init__(self, site, name, controller):
         self.site = site
-        self.network_view = project.network_view
-        self.network = project.network_view.network
+        super().__init__(name, controller)
+        
+        # update paths
+        self.network_view = self.project.network_view
+        self.network = self.project.network_view.network
+
         # self.network = self.network_view.network
         
         # add binding for right-click menu 
@@ -45,7 +48,6 @@ class InSiteView(BaseView):
     @update_coordinates
     @overrider(BaseView)
     def find_closest_node(self, event):
-        print('test')
         # record the item and its location
         self.dict_start_position.clear()
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]

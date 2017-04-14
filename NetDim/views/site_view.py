@@ -21,7 +21,7 @@ class SiteView(GeographicalView):
         self.cvs.tag_bind('site', '<Double-Button-1>', self.enter_closest_site)
         
     def general_menu(self, event):
-        x, y = self._start_pos_main_node
+        x, y = self.start_pos_main_node
         # if the right-click button was pressed, but the position of the 
         # canvas when the button is released hasn't changed, we create
         # the general right-click menu

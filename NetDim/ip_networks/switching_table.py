@@ -1,13 +1,16 @@
 # NetDim (contact@netdim.fr)
 
+from miscellaneous.decorators import update_paths
 from tkinter.scrolledtext import ScrolledText
 from operator import itemgetter
 import tkinter as tk
 
 class SwitchingTable(tk.Toplevel):
-    def __init__(self, node, view):
+    
+    @update_paths
+    def __init__(self, node, controller):
         super().__init__() 
-        self.cs = view
+        
         self.ST = ScrolledText(self, wrap='word', bg='beige')
         self.wm_attributes('-topmost', True)
 

@@ -4,9 +4,11 @@ from pythonic_tkinter.preconfigured_widgets import *
 from tkinter import filedialog
 
 class SSHWindow(FocusTopLevel):
-    def __init__(self, master):
+    
+    def __init__(self, controller):
         super().__init__()   
-        self.ms = master   
+
+        self.controller = controller
         self.title('SSH connection management')
                         
         # label frame
@@ -59,13 +61,13 @@ class SSHWindow(FocusTopLevel):
         fake_window.focus_force()
         
         filepath = filedialog.askopenfilenames(
-                                            parent = fake_window,
-                                            initialdir = self.ms.path_workspace, 
-                                            title = 'Import graph', 
-                                            filetypes = (
-                                            ('all files','*.*'),
-                                            ('xls files','*.xls'),
-                                            ))
+                                        parent = fake_window,
+                                        initialdir = self.controller.path_workspace, 
+                                        title = 'Import graph', 
+                                        filetypes = (
+                                        ('all files','*.*'),
+                                        ('xls files','*.xls'),
+                                        ))
         
         # no error when closing the window
         if not filepath: 

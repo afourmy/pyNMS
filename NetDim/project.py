@@ -16,18 +16,18 @@ class Project():
     def __init__(self, controller, name):
         self.name = name
         self.controller = controller
+        self.controller.current_project = self
+        
         # global frame that contains network, site, and node views
         self.gf = CustomFrame(width=1300, height=800)        
         
         self.network_view = NetworkView(
-                                        controller, 
-                                        self, 
-                                        '{} : network view'.format(name)
+                                        '{} : network view'.format(name),
+                                        controller
                                         )
         self.site_view = SiteView(
+                                '{} : site view'.format(name),
                                 controller, 
-                                self, 
-                                '{} : site view'.format(name)
                                 )
         self.current_view = self.network_view
         self.network = self.current_view.network

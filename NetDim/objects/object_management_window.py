@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from objects.objects import *
 from pythonic_tkinter.preconfigured_widgets import *
+from miscellaneous.decorators import update_paths
 
 class ObjectManagementWindow(FocusTopLevel):
     
@@ -29,10 +30,10 @@ class ObjectManagementWindow(FocusTopLevel):
     'dst_sntw': (None,)
     }
                 
-    def __init__(self, master, obj):
+    @update_paths
+    def __init__(self, obj, controller):
         super().__init__()
-        self.ms = master
-        self.ntw = self.ms.cs.ntw
+
         self.title('Properties')
         # current node which properties are displayed
         self.current_obj = obj
@@ -127,16 +128,16 @@ class ObjectManagementWindow(FocusTopLevel):
     def conv(self, property):
         value = self.dict_var[property].get().replace(' ','').split(',')
         if property == 'excluded_plinks':
-            return {self.ms.cs.ntw.lf(name=t) for t in filter(None, value)}
+            return {self.network.lf(name=t) for t in filter(None, value)}
         elif property == 'excluded_nodes':
-            return {self.ms.cs.ntw.nf(name=n) for n in filter(None, value)}
+            return {self.network.nf(name=n) for n in filter(None, value)}
         else:
-            return [self.ms.cs.ntw.nf(name=n) for n in filter(None, value)]
+            return [self.network.nf(name=n) for n in filter(None, value)]
     
     def get_user_input(self):
         name = self.dict_var['name'].get()
-        source = self.ms.cs.ntw.nf(name=self.dict_var['source'].get())
-        destination = self.ms.cs.ntw.nf(name=self.dict_var['destination'].get())
+        source = self.network.nf(name=self.dict_var['source'].get())
+        destination = self.network.nf(name=self.dict_var['destination'].get())
         return (
                 name, 
                 source, 
@@ -148,15 +149,15 @@ class ObjectManagementWindow(FocusTopLevel):
         
     def find_path(self):
         name, *parameters = self.get_user_input()
-        nodes, plinks = self.ms.cs.ntw.A_star(*parameters)
+        nodes, plinks = self.network.A_star(*parameters)
         
         if plinks:
-            self.ms.cs.unhighlight_all()
+            self.view.unhighlight_all()
             self.current_path = plinks
             self.dict_var['path'].set(plinks)
-            self.ms.cs.highlight_objects(*(nodes + plinks))
+            self.view.highlight_objects(*(nodes + plinks))
         else:
-            self.ms.cs.unhighlight_all()
+            self.view.unhighlight_all()
             # activate focus to prevent the messagebox from removing the window
             self.var_focus.set(1)
             self.change_focus()
@@ -171,13 +172,13 @@ class ObjectManagementWindow(FocusTopLevel):
                 setattr(self.current_obj, property, self.current_path)
             if property == 'sites':
                 value = filter(None, set(re.sub(r'\s+', '', value).split(',')))
-                value = set(map(self.ms.ss.ntw.convert_node, value))
+                value = set(map(self.site_network.convert_node, value))
                 setattr(self.current_obj, property, value)
             elif property in self.property_list:
                 if property in ('ipS', 'ipD', 'default_route'):
                     # convert the IP to a Object IP, if it isn't None
                     if value:
-                        value = self.ms.cs.ntw.ip_to_oip[value]
+                        value = self.network.ip_to_oip[value]
                 setattr(self.current_obj, property, value)
             else:
                 if property not in self.read_only and 'interface' not in property:
@@ -188,23 +189,23 @@ class ObjectManagementWindow(FocusTopLevel):
                                     ): 
                         value = self.conv(property)
                     else:
-                        value = self.ntw.prop_to_type[property](value)
+                        value = self.network.prop_to_type[property](value)
                         if property == 'name':
                             name = getattr(self.current_obj, property)
-                            id = self.ntw.name_to_id.pop(name)
-                            self.ntw.name_to_id[value] = id
+                            id = self.network.name_to_id.pop(name)
+                            self.network.name_to_id[value] = id
                     setattr(self.current_obj, property, value)
             # refresh the label if it was changed
-            self.ms.cs.refresh_label(self.current_obj)
+            self.view.refresh_label(self.current_obj)
             # move the node on the canvas in case it's coordinates were updated
             if self.current_obj.class_type == 'node':
-                self.ms.cs.move_node(self.current_obj)
+                self.view.move_node(self.current_obj)
              
         if hasattr(self.current_obj, 'AS_properties'):
             if self.current_obj.AS_properties:
                 AS = self.AS_combobox.text
                 for property, entry in self.dict_perAS_properties.items():
-                    value = self.ntw.prop_to_type[property](entry.text)
+                    value = self.network.prop_to_type[property](entry.text)
                     self.current_obj(AS, property, value)
                 
     def save_and_destroy(self):
@@ -223,38 +224,38 @@ class ObjectManagementWindow(FocusTopLevel):
                 # ARP table being overloaded: to be avoided in real-life and
                 # forbidden here.
                 attached_ints = (None,) + tuple(filter(None, 
-                                    self.ntw.nh_ips(self.current_obj)))
+                                    self.network.nh_ips(self.current_obj)))
                 property_widget['values'] = attached_ints
                 property_widget.text = obj_prop
             elif property == 'nh_tk':
                 src_route = self.current_obj.source
                 attached_ints = tuple(filter(None, (plink for _, plink 
-                                in self.ntw.graph[src_route]['plink'])))
+                                in self.network.graph[src_route]['plink'])))
                 property_widget['values'] = attached_ints
                 property_widget.text = obj_prop
             elif property == 'dst_sntw':
                 dest_node = self.current_obj.destination
                 attached_ips = (None,) + tuple(filter(None, 
                             (plink.sntw for _, plink
-                            in self.ntw.graph[dest_node]['plink']
+                            in self.network.graph[dest_node]['plink']
                             ))) 
                 property_widget['values'] = attached_ips
                 property_widget.text = obj_prop
             elif property == 'ipS':
                 src = self.current_obj.source
                 attached_ips = (None,) + tuple(filter(None, 
-                                    self.ntw.attached_ips(src)))
+                                    self.network.attached_ips(src)))
                 property_widget['values'] = attached_ips
                 property_widget.text = obj_prop
             elif property == 'nh_ip':
                 nh_ips = (None,) + tuple(filter(None, 
-                                    self.ntw.nh_ips(self.current_obj)))
+                                    self.network.nh_ips(self.current_obj)))
                 property_widget['values'] = nh_ips
                 property_widget.text = obj_prop
             elif property == 'ipD':
                 dest = self.current_obj.destination
                 attached_ips = (None,) + tuple(filter(None, 
-                                    self.ntw.attached_ips(dest)))
+                                    self.network.attached_ips(dest)))
                 property_widget['values'] = attached_ips
                 property_widget.text = obj_prop
             elif property == 'AS':
@@ -281,10 +282,10 @@ class ObjectManagementWindow(FocusTopLevel):
                 property_widget.text = value
                 
 class PropertyChanger(FocusTopLevel):
-                                    
-    def __init__(self, master, objects, type):
+                                 
+    @update_paths
+    def __init__(self, objects, type, controller):
         super().__init__()
-        self.ms = master
         
         # list of properties
         self.property_list = Combobox(self, width=15)
@@ -302,7 +303,7 @@ class PropertyChanger(FocusTopLevel):
         
     def confirm(self, objects):
         selected_property = self.property_list.text
-        value = self.ms.cs.ntw.prop_to_type[selected_property](self.entry_prop.text)
+        value = self.network.prop_to_type[selected_property](self.entry_prop.text)
         for object in objects:
             setattr(object, selected_property, value)
         self.destroy()

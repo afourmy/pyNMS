@@ -139,11 +139,11 @@ class DisplayMenu(ScrolledFrame):
         relief = 'sunken' if value else 'raised'
         self.type_to_button['multi-layer'].config(relief=relief)
 
-    @update_paths
+    # @update_paths
     def update_display(self):
         display_settings = [0] + list(map(lambda x: x.get(), self.layer_boolean))
-        self.view.display_layer = display_settings
-        self.view.draw_all(False)
+        self.controller.current_project.current_view.display_layer = display_settings
+        self.controller.current_project.current_view.draw_all(False)
         
     @update_paths
     def invert_display(self, obj_type):

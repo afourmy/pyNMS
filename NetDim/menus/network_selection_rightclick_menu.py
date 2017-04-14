@@ -3,6 +3,7 @@
 import os
 import tkinter as tk
 from autonomous_system import AS
+from autonomous_system import AS_operations
 from objects.objects import *
 import ip_networks.configuration as conf
 import ip_networks.troubleshooting as ip_ts
@@ -20,6 +21,7 @@ from objects.object_management_window import PropertyChanger
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
 from .base_selection_rightclick_menu import BaseSelectionRightClickMenu
+from miscellaneous.decorators import *
                                 
 class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
     
@@ -33,7 +35,7 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
                 node ,= self.view.so['node']
                 interface = link('interface', node)
                 self.add_command(label='Interface menu', 
-                    command=lambda: InterfaceWindow(self.controller, interface))
+                    command=lambda: InterfaceWindow(interface, self.controller))
                 self.add_separator()
                 
         # exactly one node: configuration menu
@@ -136,34 +138,19 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
                 menu_interfaces = tk.Menu(self, tearoff=0)
                 source_if = plink('interface', plink.source)
                 menu_interfaces.add_command(label='Source interface', 
-                command=lambda: InterfaceWindow(self.controller, source_if))
+                command=lambda: InterfaceWindow(source_if, self.controller))
                 destination_if = plink('interface', plink.destination)
                 menu_interfaces.add_command(label='Destination interface', 
-                command=lambda: InterfaceWindow(self.controller, destination_if))
+                command=lambda: InterfaceWindow(destination_if, self.controller))
                 self.add_cascade(label='Interface menu', menu=menu_interfaces)
             
         # make the menu appear    
         self.tk_popup(event.x_root, event.y_root)
-    
-    def empty_selection_and_destroy_menu(function):
-        def wrapper(self, *others):
-            function(self, *others)
-            self.view.unhighlight_all()
-            self.destroy()
-        return wrapper
         
     @empty_selection_and_destroy_menu
     def remove_objects(self):
         self.view.remove_objects(*self.all_so)
-        
-    @empty_selection_and_destroy_menu
-    def change_AS(self, mode):
-        AS.ASOperation(self.view, mode, self.all_so, self.common_AS)
-        
-    @empty_selection_and_destroy_menu
-    def change_area(self, mode):
-        AS.AreaOperation(self.view, mode, self.all_so, self.common_AS)
-        
+                
     @empty_selection_and_destroy_menu
     def simulate_failure(self, *objects):
         self.view.simulate_failure(*objects)
@@ -174,30 +161,30 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
         
     @empty_selection_and_destroy_menu
     def arp_table(self, node):
-        arp_table.ARPTable(node, self.view)
+        arp_table.ARPTable(node, self.controller)
         
     @empty_selection_and_destroy_menu
     def switching_table(self, node):
-        switching_table.SwitchingTable(node, self.view)
+        switching_table.SwitchingTable(node, self.controller)
         
     @empty_selection_and_destroy_menu
     def routing_table(self, node):
-        ip_rt.RoutingTable(node, self.view)
+        ip_rt.RoutingTable(node, self.controller)
         
     @empty_selection_and_destroy_menu
     def bgp_table(self, node):
-        ip_bgpt.BGPTable(node, self.view)
+        ip_bgpt.BGPTable(node, self.controller)
         
     @empty_selection_and_destroy_menu
     def configure(self, node):
         if node.subtype == 'router':
-            conf.RouterConfiguration(node, self.view)
+            conf.RouterConfiguration(node, self.controller)
         if node.subtype == 'switch':
-            conf.SwitchConfiguration(node, self.view)
+            conf.SwitchConfiguration(node, self.controller)
         
     @empty_selection_and_destroy_menu
     def troubleshoot(self, node):
-        ip_ts.Troubleshooting(node, self.view)
+        ip_ts.Troubleshooting(node, self.controller)
         
     @empty_selection_and_destroy_menu
     def send_script(self, nodes):
@@ -212,7 +199,7 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
         
     @empty_selection_and_destroy_menu
     def ping(self, node):
-        ip_ping.Ping(node, self.view)
+        ip_ping.Ping(node, self.controller)
         
     @empty_selection_and_destroy_menu
     def enter_site(self, site):
@@ -220,19 +207,37 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
         
     @empty_selection_and_destroy_menu
     def add_to_site(self):
-        site_operations.SiteOperations(self.view, 'add', self.all_so)
+        site_operations.SiteOperations('add', self.all_so, self.controller)
         
     @empty_selection_and_destroy_menu
     def remove_from_site(self):
-        site_operations.SiteOperations(self.view, 'remove', self.all_so, 
-                                                            self.common_sites)
+        site_operations.SiteOperations(
+                                       'remove', 
+                                       self.all_so, 
+                                       self.controller,
+                                       self.common_sites,
+                                       )
+                                                            
         
     @empty_selection_and_destroy_menu
     def bgp(self, node):
         self.network.BGPT_builder(node)
         
+    ## AS operations: 
+    # - add or remove from an AS
+    # - add or remove from an area
+    # - create an AS
+        
+    @empty_selection_and_destroy_menu
+    def change_AS(self, mode):
+        AS_operations.ASOperation(mode, self.all_so, self.common_AS, self.controller)
+        
+    @empty_selection_and_destroy_menu
+    def change_area(self, mode):
+        AS_operations.AreaOperation(mode, self.all_so, self.common_AS, self.controller)
+        
     @empty_selection_and_destroy_menu
     def create_AS(self):
         nodes, plinks = set(self.view.so['node']), set(self.view.so['link'])
-        AS.ASCreation(self.view, nodes, plinks)
+        AS_operations.ASCreation(nodes, plinks, self.controller)
         

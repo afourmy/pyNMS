@@ -1,10 +1,13 @@
 # NetDim (contact@netdim.fr)
 
 from pythonic_tkinter.preconfigured_widgets import *
+from miscellaneous.decorators import update_paths
 
 class Debug(CustomTopLevel):
-    def __init__(self, master):
+    
+    def __init__(self, controller):
         super().__init__() 
+        self.controller = controller
         
         # label frame for debugging
         lf_debug = Labelframe(self)
@@ -27,13 +30,13 @@ class Debug(CustomTopLevel):
         self.debug_list = Combobox(self, width=15)
         self.debug_list['values'] = values
         self.debug_list.current(0)
-        self.debug_list.bind('<<ComboboxSelected>>', lambda e: self.debug(master))
+        self.debug_list.bind('<<ComboboxSelected>>', lambda e: self.debug())
         
         self.entry_debug  = Entry(self, width=60)
 
         button_debug = Button(self, width=10)
         button_debug.text = 'Debug'
-        button_debug.command = lambda: self.query_netdim(master)
+        button_debug.command = lambda: self.query_netdim
                                 
         self.ST = Text(self)
         self.wm_attributes('-topmost', True)                     
@@ -54,29 +57,30 @@ class Debug(CustomTopLevel):
         self.ST.delete('1.0', 'end')
         self.ST.insert('insert', query_result)
         
-    def debug(self, master):
+    @update_paths
+    def debug(self):
         self.ST.delete('1.0', 'end')
         value = self.debug_list.text
         if value == 'Objects':
-            query_result = eval('master.cs.object_id_to_object')
+            query_result = eval('self.view.object_id_to_object')
         elif value == 'Nodes':
-            query_result = eval('master.cs.ntw.nodes')
+            query_result = eval('self.main_network.nodes')
         elif value == 'Physical links':
-            query_result = eval('master.cs.ntw.plinks')
+            query_result = eval('self.main_network.plinks')
         elif value == 'L2 links':
-            query_result = eval('master.cs.ntw.l2links')
+            query_result = eval('self.main_network.l2links')
         elif value == 'L3 links':
-            query_result = eval('master.cs.ntw.l3links')
+            query_result = eval('self.main_network.l3links')
         elif value == 'Traffic links':
-            query_result = eval('master.cs.ntw.traffics')
+            query_result = eval('self.main_network.traffics')
         elif value == 'Interfaces':
-            query_result = eval('master.cs.ntw.interfaces')
+            query_result = eval('self.main_network.interfaces')
         elif value == 'IP addresses':
-            query_result = eval('master.cs.ntw.ip_to_oip')
+            query_result = eval('self.main_network.ip_to_oip')
         else:
             query_result = ''
             # for AS, more details
-            for AS in master.cs.ntw.pnAS.values():
+            for AS in self.main_network.pnAS.values():
                 query_result += '''AS name: {name}
 AS type: {type}
 AS id: {id}

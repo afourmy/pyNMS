@@ -1,6 +1,7 @@
 # NetDim (contact@netdim.fr)
 
 from pythonic_tkinter.preconfigured_widgets import *
+from miscellaneous.decorators import update_paths
 from objects.objects import *
 
 class InterfaceWindow(FocusTopLevel):
@@ -11,9 +12,9 @@ class InterfaceWindow(FocusTopLevel):
                  'macaddress'
                 )
                 
-    def __init__(self, master, interface):
+    @update_paths
+    def __init__(self, interface, controller):
         super().__init__()
-        self.ms = master
         self.interface = interface
         self.title('Manage interface properties')
         self.dict_global_properties = {}
@@ -72,13 +73,13 @@ class InterfaceWindow(FocusTopLevel):
         
     def save_and_destroy(self):
         for property, entry in self.dict_global_properties.items():
-            value = self.ms.objectizer(property, entry.get())
+            value = self.project.objectizer(property, entry.get())
             setattr(self.interface, property, value)
             
         if self.interface.AS_properties:
             AS = self.AS_combobox.text
             for property, entry in self.dict_perAS_properties.items():
-                value = self.ms.objectizer(property, entry.text)
+                value = self.project.objectizer(property, entry.text)
                 self.interface(AS, property, value)
                 
         self.destroy()

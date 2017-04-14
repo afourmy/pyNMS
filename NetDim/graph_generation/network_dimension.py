@@ -1,11 +1,14 @@
 # NetDim (contact@netdim.fr)
 
+from miscellaneous.decorators import update_paths
 from pythonic_tkinter.preconfigured_widgets import *
 from objects.objects import *
 
-class NetworkDimension(CustomTopLevel):    
-    def __init__(self, controller, type):
-        super().__init__(master=controller)
+class NetworkDimension(CustomTopLevel):  
+
+    @update_paths
+    def __init__(self, type, controller):
+        super().__init__()
         self.title('Dimension')
         self.type = type
         

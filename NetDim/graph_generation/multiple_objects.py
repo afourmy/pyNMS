@@ -1,12 +1,15 @@
 # NetDim (contact@netdim.fr)
 
+from miscellaneous.decorators import update_paths
 from pythonic_tkinter.preconfigured_widgets import *
+from objects.objects import *
 
-class MultipleNodes(CustomTopLevel):    
-    def __init__(self, view, x, y):
+class MultipleNodes(CustomTopLevel):  
+
+    @update_paths
+    def __init__(self, x, y, controller):
         super().__init__()
         self.title('Multiple nodes')
-        self.cs = view
         
         # label frame for multiple nodes creation
         lf_multiple_nodes = Labelframe(self)
@@ -21,7 +24,7 @@ class MultipleNodes(CustomTopLevel):
         node_type = Label(self)
         node_type.text = 'Type of node'
         self.node_type_list = Combobox(self, width=7)
-        self.node_type_list['values'] = view.ntw.node_subtype
+        self.node_type_list['values'] = node_subtype
         self.node_type_list.current(0)
     
         # confirmation button
@@ -37,21 +40,22 @@ class MultipleNodes(CustomTopLevel):
         button_confirmation.grid(2, 0, 1, 2, in_=lf_multiple_nodes)
         
     def create_nodes(self, x, y):
-        self.cs.multiple_nodes(
+        self.view.multiple_nodes(
                                int(self.entry_nodes.text), 
                                self.node_type_list.text,
                                x,
                                y
                                )
         
-        self.cs.draw_all(random=False)
+        self.view.draw_all(random=False)
         self.destroy()
         
-class MultipleLinks(CustomTopLevel):    
-    def __init__(self, view, source_nodes):
+class MultipleLinks(CustomTopLevel): 
+
+    @update_paths
+    def __init__(self, source_nodes, controller):
         super().__init__()
         self.title('Multiple links')
-        self.cs = view
         
         # label frame for multiple links creation
         lf_multiple_links = Labelframe(self)
@@ -69,7 +73,7 @@ class MultipleLinks(CustomTopLevel):
         yscroll.grid(1, 1, in_=lf_multiple_links)
         
         # add all nodes of the view to the listbox
-        for node in self.cs.ntw.nodes.values():
+        for node in self.network.nodes.values():
             self.listbox.insert(node.name)
     
         # confirmation button
@@ -84,9 +88,9 @@ class MultipleLinks(CustomTopLevel):
     def create_links(self, source_nodes):
         for selected_node in self.listbox.selected():
             # retrieve the node object based on its name
-            dest_node = self.cs.ntw.nf(name=selected_node)
+            dest_node = self.network.nf(name=selected_node)
             # create links from all selected nodes to the selected node
-            self.cs.ntw.multiple_links(source_nodes, dest_node)
+            self.network.multiple_links(source_nodes, dest_node)
         
-        self.cs.draw_all(random=False)
+        self.view.draw_all(random=False)
         self.destroy()
