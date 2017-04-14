@@ -2,11 +2,11 @@
 
 NetDim is a network design and planning software.
 
-[Visit our website] (http://www.netdim.fr)
+[Visit our website](http://www.netdim.fr)
 
 Contact us: contact@netdim.fr
 
-Watch a quick demo: on the [website] (http://www.netdim.fr) 
+Watch a quick demo: on the [website](http://www.netdim.fr) 
 
 # Getting started
 
