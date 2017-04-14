@@ -15,10 +15,10 @@ def update_paths(function):
         if 'master' in kwargs:
             self.controller = kw.pop('master')
         self.project = self.controller.current_project
-        self.scenario = self.project.current_scenario
-        self.network_scenario = self.project.network_scenario
-        self.site_scenario = self.project.site_scenario
-        self.network = self.scenario.network
-        self.site_network = self.site_scenario.network
+        self.view = self.project.current_view
+        self.network_view = self.project.network_view
+        self.site_view = self.project.site_view
+        self.network = self.view.network
+        self.site_network = self.site_view.network
         function(self, *args, **kwargs)
     return wrapper

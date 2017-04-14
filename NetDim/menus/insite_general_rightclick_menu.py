@@ -5,9 +5,9 @@ from graph_generation.multiple_objects import MultipleNodes
 from pythonic_tkinter.preconfigured_widgets import InMenu
 
 class InSiteGeneralRightClickMenu(InMenu):
-    def __init__(self, event, scenario):
+    def __init__(self, event, view):
         super().__init__(tearoff=0)
-        self.cs = scenario
+        self.cs = view
         x, y = self.cs.cvs.canvasx(event.x), self.cs.cvs.canvasy(event.y)
                 
         # remove all failures if there is at least one

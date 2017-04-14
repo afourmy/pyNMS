@@ -101,11 +101,11 @@ class ViewMenu(ScrolledFrame):
         
     @update_paths
     def logical_coordinates(self):
-        self.scenario.move_to_logical_coordinates(*self.scenario.so['node'])
+        self.view.move_to_logical_coordinates(*self.view.so['node'])
         
     @update_paths
     def geographical_coordinates(self):
-        self.scenario.move_to_geographical_coordinates(*self.scenario.so['node'])
+        self.view.move_to_geographical_coordinates(*self.view.so['node'])
         
     @update_paths
     def switch_view(self, view):
@@ -113,25 +113,25 @@ class ViewMenu(ScrolledFrame):
         if view == 'site':
             self.site_view_button.config(relief='sunken')
             self.network_view_button.config(relief='raised')
-            self.scenario.pack_forget()
-            self.site_scenario.pack()
-            # update current scenario
-            self.scenario = self.site_scenario
+            self.view.pack_forget()
+            self.site_view.pack()
+            # update current view
+            self.view = self.site_view
         else:
             # view is network
             self.site_view_button.config(relief='raised')
             self.network_view_button.config(relief='sunken')
-            self.scenario.pack_forget()
-            self.network_scenario.pack()
-            # update current scenario
-            self.scenario = self.network_scenario
+            self.view.pack_forget()
+            self.network_view.pack()
+            # update current view
+            self.view = self.network_view
             
     @update_paths
     def enter_site(self, site):
-        self.scenario.pack_forget()
-        site.scenario.pack()
-        self.scenario = site.scenario
+        self.view.pack_forget()
+        site.view.pack()
+        self.view = site.view
         self.current_view = site
-        # destroy the pwindow of the site scenario
-        self.site_scenario.pwindow.destroy()
+        # destroy the pwindow of the site view
+        self.site_view.pwindow.destroy()
                     

@@ -105,4 +105,4 @@ class AdvancedGraph(FocusTopLevel):
     def generate(self):
         selected_graph = self.graph_list.text
         self.graph_generation[selected_graph]()
-        self.scenario.draw_all(random=False)
+        self.view.draw_all(random=False)

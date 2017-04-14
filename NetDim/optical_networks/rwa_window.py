@@ -11,7 +11,7 @@ class RWAWindow(FocusTopLevel):
         lf_rwa = Labelframe(self)
         lf_rwa.text = 'Routing and Wavelength Assignment'
                                                         
-        ## Graph transformation and scenario name
+        ## Graph transformation and view name
                 
         sco_name = Label(self)
         sco_name.text = 'Scenario name :'

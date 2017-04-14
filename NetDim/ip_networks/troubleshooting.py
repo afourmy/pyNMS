@@ -5,7 +5,7 @@ from pythonic_tkinter.preconfigured_widgets import *
 import tkinter as tk
 
 class Troubleshooting(tk.Toplevel):
-    def __init__(self, node, scenario):
+    def __init__(self, node, view):
         super().__init__() 
         
         notebook = ttk.Notebook(self)

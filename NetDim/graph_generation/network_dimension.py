@@ -81,6 +81,6 @@ class NetworkDimension(CustomTopLevel):
                       )
 
         objects = set(self.dict_type_to_function[self.type](*params))
-        self.scenario.draw_objects(objects, random=False)
-        self.scenario.move_nodes(filter(lambda o: o.class_type == 'node', objects))
+        self.view.draw_objects(objects, random=False)
+        self.view.move_nodes(filter(lambda o: o.class_type == 'node', objects))
         self.destroy()

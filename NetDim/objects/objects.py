@@ -667,7 +667,7 @@ class Site(Node):
                 obj.site_lid[self] = None
                 obj.site_size[self] = 8
                 # draw the object in the insite view
-                self.scenario.create_node(obj)
+                self.view.create_node(obj)
             else:
                 # it is a link
                 # add the edges first:
@@ -678,7 +678,7 @@ class Site(Node):
                 obj.site_ilid[self] = [None]*2
                 obj.site_lpos[self] = [None]*2
                 # draw the object in the insite view
-                self.scenario.create_link(obj)
+                self.view.create_link(obj)
 
     def remove_from_site(self, *objects):
         for obj in objects:

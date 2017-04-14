@@ -142,20 +142,20 @@ class DrawingMenu(ScrolledFrame):
     @update_paths
     def draw(self):
         self.drawing_algorithms = {
-        'Spring-based layout': self.scenario.spring_based_drawing,
-        'Fructhermann-Reingold layout': self.scenario.FR_drawing,
-        'BFS-clusterization layout': self.scenario.bfs_cluster_drawing,
+        'Spring-based layout': self.view.spring_based_drawing,
+        'Fructhermann-Reingold layout': self.view.FR_drawing,
+        'BFS-clusterization layout': self.view.bfs_cluster_drawing,
         'Random': self.random
         }
         # apply the algorithm to all selected nodes, or all nodes in the
         # network if nothing is selected
-        nodes = self.scenario.so['node'] or self.scenario.network.pn['node'].values()
+        nodes = self.view.so['node'] or self.view.network.pn['node'].values()
         if self.drawing_algorithm == 'Random':
-            self.scenario.draw_objects(nodes)
-            self.scenario.move_nodes(nodes)
+            self.view.draw_objects(nodes)
+            self.view.move_nodes(nodes)
         else:
             # replace true with a BooleanVar randomly spread nodes on the canvas beforehand
-            self.scenario.draw_objects(nodes, self.random_distribution.get())            
+            self.view.draw_objects(nodes, self.random_distribution.get())            
             self.drawing_algorithms[self.drawing_type_list.text](nodes)
             
     def get_color(self):
@@ -164,15 +164,15 @@ class DrawingMenu(ScrolledFrame):
         
     @update_paths
     def random(self, nodes):
-        self.scenario.draw_objects(nodes)
-        self.scenario.move_nodes(nodes)
+        self.view.draw_objects(nodes)
+        self.view.move_nodes(nodes)
         
     @update_paths
     def change_creation_mode(self, mode):
         # change the mode to creation 
-        self.scenario._mode = mode
-        self.scenario._creation_mode = mode
-        self.scenario.switch_binding()
+        self.view._mode = mode
+        self.view._creation_mode = mode
+        self.view.switch_binding()
         # update the button display
         for shape in ('text', 'rectangle', 'oval'):
             if shape == mode:

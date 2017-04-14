@@ -22,14 +22,14 @@ from objects.interface_window import InterfaceWindow
 from .base_selection_rightclick_menu import BaseSelectionRightClickMenu
                                 
 class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
-    def __init__(self, event, controller, from_scenario=True):
-        super().__init__(event, controller, from_scenario)
+    def __init__(self, event, controller, from_view=True):
+        super().__init__(event, controller, from_view)
             
         # exacly one node and one physical link: menu for the associated interface
         if self.one_node and self.one_link:
-            link ,= self.scenario.so['link']
+            link ,= self.view.so['link']
             if link.type == 'plink':
-                node ,= self.scenario.so['node']
+                node ,= self.view.so['node']
                 interface = link('interface', node)
                 self.add_command(label='Interface menu', 
                     command=lambda: InterfaceWindow(self.controller, interface))
@@ -37,7 +37,7 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
                 
         # exactly one node: configuration menu
         if self.no_link and self.no_shape and self.one_node:
-            node ,= self.scenario.so['node']
+            node ,= self.view.so['node']
             
             self.add_command(label='Configuration', 
                         command=lambda: self.configure(node))
@@ -128,7 +128,7 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
         
         # exactly one physical link: 
         if self.no_node and self.no_shape and self.one_link:
-            plink ,= self.scenario.so['link']
+            plink ,= self.view.so['link']
             # failure simulation menu
             if plink.type == 'plink':                        
                 # interface menu 
@@ -147,60 +147,60 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
     def empty_selection_and_destroy_menu(function):
         def wrapper(self, *others):
             function(self, *others)
-            self.scenario.unhighlight_all()
+            self.view.unhighlight_all()
             self.destroy()
         return wrapper
         
     @empty_selection_and_destroy_menu
     def remove_objects(self):
-        self.scenario.remove_objects(*self.all_so)
+        self.view.remove_objects(*self.all_so)
         
     @empty_selection_and_destroy_menu
     def change_AS(self, mode):
-        AS.ASOperation(self.scenario, mode, self.all_so, self.common_AS)
+        AS.ASOperation(self.view, mode, self.all_so, self.common_AS)
         
     @empty_selection_and_destroy_menu
     def change_area(self, mode):
-        AS.AreaOperation(self.scenario, mode, self.all_so, self.common_AS)
+        AS.AreaOperation(self.view, mode, self.all_so, self.common_AS)
         
     @empty_selection_and_destroy_menu
     def simulate_failure(self, *objects):
-        self.scenario.simulate_failure(*objects)
+        self.view.simulate_failure(*objects)
         
     @empty_selection_and_destroy_menu
     def remove_failure(self, *objects):
-        self.scenario.remove_failure(*objects)
+        self.view.remove_failure(*objects)
         
     @empty_selection_and_destroy_menu
     def arp_table(self, node):
-        arp_table.ARPTable(node, self.scenario)
+        arp_table.ARPTable(node, self.view)
         
     @empty_selection_and_destroy_menu
     def switching_table(self, node):
-        switching_table.SwitchingTable(node, self.scenario)
+        switching_table.SwitchingTable(node, self.view)
         
     @empty_selection_and_destroy_menu
     def routing_table(self, node):
-        ip_rt.RoutingTable(node, self.scenario)
+        ip_rt.RoutingTable(node, self.view)
         
     @empty_selection_and_destroy_menu
     def bgp_table(self, node):
-        ip_bgpt.BGPTable(node, self.scenario)
+        ip_bgpt.BGPTable(node, self.view)
         
     @empty_selection_and_destroy_menu
     def configure(self, node):
         if node.subtype == 'router':
-            conf.RouterConfiguration(node, self.scenario)
+            conf.RouterConfiguration(node, self.view)
         if node.subtype == 'switch':
-            conf.SwitchConfiguration(node, self.scenario)
+            conf.SwitchConfiguration(node, self.view)
         
     @empty_selection_and_destroy_menu
     def troubleshoot(self, node):
-        ip_ts.Troubleshooting(node, self.scenario)
+        ip_ts.Troubleshooting(node, self.view)
         
     @empty_selection_and_destroy_menu
     def send_script(self, nodes):
-        SendScript(self.scenario, nodes)
+        SendScript(self.view, nodes)
         
     @empty_selection_and_destroy_menu
     def connection(self, node):
@@ -211,7 +211,7 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
         
     @empty_selection_and_destroy_menu
     def ping(self, node):
-        ip_ping.Ping(node, self.scenario)
+        ip_ping.Ping(node, self.view)
         
     @empty_selection_and_destroy_menu
     def enter_site(self, site):
@@ -219,11 +219,11 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
         
     @empty_selection_and_destroy_menu
     def add_to_site(self):
-        site_operations.SiteOperations(self.scenario, 'add', self.all_so)
+        site_operations.SiteOperations(self.view, 'add', self.all_so)
         
     @empty_selection_and_destroy_menu
     def remove_from_site(self):
-        site_operations.SiteOperations(self.scenario, 'remove', self.all_so, 
+        site_operations.SiteOperations(self.view, 'remove', self.all_so, 
                                                             self.common_sites)
         
     @empty_selection_and_destroy_menu
@@ -232,6 +232,6 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
         
     @empty_selection_and_destroy_menu
     def create_AS(self):
-        nodes, plinks = set(self.scenario.so['node']), set(self.scenario.so['link'])
-        AS.ASCreation(self.scenario, nodes, plinks)
+        nodes, plinks = set(self.view.so['node']), set(self.view.so['link'])
+        AS.ASCreation(self.view, nodes, plinks)
         

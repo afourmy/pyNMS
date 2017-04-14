@@ -5,9 +5,9 @@ from pythonic_tkinter.preconfigured_widgets import *
 from operator import itemgetter
 
 class BGPTable(CustomTopLevel):
-    def __init__(self, node, scenario):
+    def __init__(self, node, view):
         super().__init__() 
-        self.cs = scenario
+        self.cs = view
         self.ST = ScrolledText(self)
         self.wm_attributes('-topmost', True)
 

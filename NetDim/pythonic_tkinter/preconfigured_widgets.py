@@ -33,11 +33,11 @@ class CustomFrame(tk.Frame):
         if 'master' in kw:
             self.controller = controller = kw.pop('master')
             self.project = controller.current_project
-            self.scenario = controller.current_project.current_scenario
-            self.network_scenario = controller.current_project.network_scenario
-            self.site_scenario = controller.current_project.site_scenario
-            self.network = controller.current_project.current_scenario.network
-            self.site_network = self.site_scenario.network
+            self.view = controller.current_project.current_view
+            self.network_view = controller.current_project.network_view
+            self.site_view = controller.current_project.site_view
+            self.network = controller.current_project.current_view.network
+            self.site_network = self.site_view.network
             
         super().__init__(*a, **kw)
         color = '#A1DBCD'
@@ -56,11 +56,11 @@ class CustomTopLevel(tk.Toplevel):
         if 'master' in kw:
             self.controller = controller = kw.pop('master')
             self.project = controller.current_project
-            self.scenario = controller.current_project.current_scenario
-            self.network_scenario = controller.current_project.network_scenario
-            self.site_scenario = controller.current_project.site_scenario
-            self.network = controller.current_project.current_scenario.network
-            self.site_network = self.site_scenario.network
+            self.view = controller.current_project.current_view
+            self.network_view = controller.current_project.network_view
+            self.site_view = controller.current_project.site_view
+            self.network = controller.current_project.current_view.network
+            self.site_network = self.site_view.network
             
         super().__init__(*a, **kw)
 
@@ -166,11 +166,11 @@ class InMenu(tk.Menu):
         if 'master' in kwargs:
             self.controller = controller = kwargs.pop('master')
             self.project = controller.current_project
-            self.scenario = controller.current_project.current_scenario
-            self.network_scenario = controller.current_project.network_scenario
-            self.site_scenario = controller.current_project.site_scenario
-            self.network = controller.current_project.current_scenario.network
-            self.site_network = self.site_scenario.network
+            self.view = controller.current_project.current_view
+            self.network_view = controller.current_project.network_view
+            self.site_view = controller.current_project.site_view
+            self.network = controller.current_project.current_view.network
+            self.site_network = self.site_view.network
             
         super().__init__(*args, **kwargs)
             

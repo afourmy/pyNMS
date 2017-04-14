@@ -21,33 +21,33 @@ from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
                                 
 class BaseSelectionRightClickMenu(InMenu):
-    def __init__(self, event, controller, from_scenario=True):
+    def __init__(self, event, controller, from_view=True):
         super().__init__(tearoff=0, master=controller)
         
-        x, y = self.scenario.cvs.canvasx(event.x), self.scenario.cvs.canvasy(event.y)
+        x, y = self.view.cvs.canvasx(event.x), self.view.cvs.canvasy(event.y)
 
-        if from_scenario:
-            closest_obj = self.scenario.cvs.find_closest(x, y)[0]
-            selected_obj = self.scenario.object_id_to_object[closest_obj]
+        if from_view:
+            closest_obj = self.view.cvs.find_closest(x, y)[0]
+            selected_obj = self.view.object_id_to_object[closest_obj]
             # if the object from which the menu was started does not belong to
             # the current selection, it means the current selection is no longer
             # to be considered, and only the selected objected is considered 
             # as having been selected by the user
                     
-            if selected_obj not in self.scenario.so[selected_obj.class_type]:
+            if selected_obj not in self.view.so[selected_obj.class_type]:
                 # we empty / unhighlight the selection
-                self.scenario.unhighlight_all()
-                self.scenario.highlight_objects(selected_obj)
+                self.view.unhighlight_all()
+                self.view.highlight_objects(selected_obj)
             
         # all selected objects
-        self.all_so = self.scenario.so['node'] | self.scenario.so['link'] | self.scenario.so['shape']
+        self.all_so = self.view.so['node'] | self.view.so['link'] | self.view.so['shape']
         
         # useful booleans
-        self.no_node = not self.scenario.so['node']
-        self.no_link = not self.scenario.so['link']
-        self.no_shape = not self.scenario.so['shape']
-        self.one_node = len(self.scenario.so['node']) == 1
-        self.one_link = len(self.scenario.so['link']) == 1
+        self.no_node = not self.view.so['node']
+        self.no_link = not self.view.so['link']
+        self.no_shape = not self.view.so['shape']
+        self.one_node = len(self.view.so['node']) == 1
+        self.one_link = len(self.view.so['link']) == 1
                             
         # exactly one object: property window 
         if self.no_shape and len(self.all_so) == 1:
@@ -68,27 +68,27 @@ class BaseSelectionRightClickMenu(InMenu):
             
             # alignment submenu
             self.add_cascade(label='Align nodes', 
-                            menu=AlignmentMenu(self.scenario, self.scenario.so['node']))
+                            menu=AlignmentMenu(self.view, self.view.so['node']))
             self.add_separator()
             
             # map submenu
             self.add_cascade(label='Map menu', 
-                            menu=MapMenu(self.scenario, self.scenario.so['node']))
+                            menu=MapMenu(self.view, self.view.so['node']))
             self.add_separator()
             
             # multiple links creation menu
             self.add_command(label='Create multiple links', 
-                                command=lambda: self.multiple_links(self.scenario))
+                                command=lambda: self.multiple_links(self.view))
             self.add_separator()
             
             # only one subtype of nodes
-            if self.scenario.so['node']:
+            if self.view.so['node']:
                 for subtype in node_subtype:
                     ftr = lambda o, st=subtype: o.subtype == st
-                    if self.scenario.so['node'] == set(filter(ftr, self.scenario.so['node'])):
+                    if self.view.so['node'] == set(filter(ftr, self.view.so['node'])):
                         self.add_cascade(label='Change property', 
                                     command= lambda: self.change_property(
-                                                            self.scenario.so['node'],
+                                                            self.view.so['node'],
                                                             subtype
                                                             )
                                         )
@@ -98,18 +98,18 @@ class BaseSelectionRightClickMenu(InMenu):
         if self.no_node and self.no_shape:
             for subtype in link_subtype:
                 ftr = lambda o, st=subtype: o.subtype == st
-                if self.scenario.so['link'] == set(filter(ftr, self.scenario.so['link'])):
+                if self.view.so['link'] == set(filter(ftr, self.view.so['link'])):
                     self.add_cascade(label='Change property', 
                                 command= lambda: self.change_property(
-                                                        self.scenario.so['link'],
+                                                        self.view.so['link'],
                                                         subtype
                                                         )
                                     )
                     self.add_separator()
         
-        # we allow to delete if the menu was generated from the scenario
+        # we allow to delete if the menu was generated from the view
         # (and not the treeview which view cannot be easily updated)
-        if from_scenario:
+        if from_view:
             # at least one object: deletion or create AS
             self.add_command(label='Delete', 
                                 command=lambda: self.remove_objects())
@@ -117,21 +117,21 @@ class BaseSelectionRightClickMenu(InMenu):
     def empty_selection_and_destroy_menu(function):
         def wrapper(self, *others):
             function(self, *others)
-            self.scenario.unhighlight_all()
+            self.view.unhighlight_all()
             self.destroy()
         return wrapper
         
     @empty_selection_and_destroy_menu
     def remove_objects(self):
-        self.scenario.remove_objects(*self.all_so)
+        self.view.remove_objects(*self.all_so)
                 
     @empty_selection_and_destroy_menu
     def simulate_failure(self, *objects):
-        self.scenario.simulate_failure(*objects)
+        self.view.simulate_failure(*objects)
         
     @empty_selection_and_destroy_menu
     def remove_failure(self, *objects):
-        self.scenario.remove_failure(*objects)
+        self.view.remove_failure(*objects)
             
     @empty_selection_and_destroy_menu
     def show_object_properties(self):
@@ -144,6 +144,6 @@ class BaseSelectionRightClickMenu(InMenu):
         PropertyChanger(self.controller, objects, subtype)
         
     @empty_selection_and_destroy_menu
-    def multiple_links(self, scenario):
-        mobj.MultipleLinks(scenario, set(self.scenario.so['node']))
+    def multiple_links(self, view):
+        mobj.MultipleLinks(view, set(self.view.so['node']))
                 

@@ -109,11 +109,11 @@ class Controller(MainWindow):
         
         import_map = MenuEntry(general_menu)
         import_map.text = 'Import shapefile'
-        import_map.command = self.current_project.current_scenario.import_shapefile
+        import_map.command = self.current_project.current_view.import_shapefile
         
         delete_map = MenuEntry(general_menu)
         delete_map.text = 'Delete map'
-        delete_map.command = self.current_project.current_scenario.delete_map
+        delete_map.command = self.current_project.current_view.delete_map
         
         general_menu.separator()
         
@@ -171,7 +171,7 @@ class Controller(MainWindow):
             entry_name = '{type} label'.format(type=type_to_name[obj_type])
             per_type_label_menu.add_cascade(label=entry_name, menu=menu_type)
             for label in labels:
-                cmd = lambda o=obj_type, l=label: self.current_project.current_scenario.refresh_type_labels(o, l)
+                cmd = lambda o=obj_type, l=label: self.current_project.current_view.refresh_type_labels(o, l)
                 type_entry = MenuEntry(menu_type)
                 type_entry.text = prop_to_name[label]
                 type_entry.command = cmd
@@ -188,7 +188,7 @@ class Controller(MainWindow):
             entry_name = '{subtype} label'.format(subtype=obj_type)
             per_subtype_label_menu.add_cascade(label=entry_name, menu=menu_type)
             for label in ('None',) + labels:
-                cmd = lambda o=obj_type, l=label: self.current_project.current_scenario.refresh_subtype_labels(o, l)
+                cmd = lambda o=obj_type, l=label: self.current_project.current_view.refresh_subtype_labels(o, l)
                 type_entry = MenuEntry(menu_type)
                 text = 'None' if label == 'None' else prop_to_name[label]
                 type_entry.text =  text
@@ -273,7 +273,7 @@ class Controller(MainWindow):
             
     def change_current_project(self, event=None):
         # if there's an ongoing drawing process, kill it
-        self.current_project.current_scenario.cancel()
+        self.current_project.current_view.cancel()
         name = self.project_notebook.tab(self.project_notebook.select(), 'text')
         self.current_project = self.dict_project[name]
         

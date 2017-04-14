@@ -46,9 +46,9 @@ class Oval(Shape):
 
 class LabelCreation(CustomTopLevel):
             
-    def __init__(self, scenario, x, y):
+    def __init__(self, view, x, y):
         super().__init__()
-        self.cs = scenario
+        self.cs = view
         
         # labelframe
         lf_label_creation = Labelframe(self)

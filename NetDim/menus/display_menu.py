@@ -135,19 +135,19 @@ class DisplayMenu(ScrolledFrame):
         
     @update_paths
     def ml_display_mode(self):
-        value = self.scenario.switch_display_mode()
+        value = self.view.switch_display_mode()
         relief = 'sunken' if value else 'raised'
         self.type_to_button['multi-layer'].config(relief=relief)
 
     @update_paths
     def update_display(self):
         display_settings = [0] + list(map(lambda x: x.get(), self.layer_boolean))
-        self.scenario.display_layer = display_settings
-        self.scenario.draw_all(False)
+        self.view.display_layer = display_settings
+        self.view.draw_all(False)
         
     @update_paths
     def invert_display(self, obj_type):
-        value = self.scenario.show_hide(obj_type)
+        value = self.view.show_hide(obj_type)
         relief = 'sunken' if value else 'raised'
         self.type_to_button[obj_type].config(relief=relief)
          

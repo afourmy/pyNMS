@@ -1,13 +1,13 @@
 # NetDim (contact@netdim.fr)
 
-from .geo_scenario import GeoScenario
-from .insite_scenario import InSiteScenario
+from .geographical_view import GeographicalView
+from .insite_view import InSiteView
 from networks import site_network
 from menus.site_selection_rightclick_menu import SiteSelectionRightClickMenu
 from menus.site_general_rightclick_menu import SiteGeneralRightClickMenu
 from miscellaneous.decorators import update_coordinates, overrider
 
-class SiteScenario(GeoScenario):
+class SiteView(GeographicalView):
 
     def __init__(self, *args, **kwargs):
         self.network = site_network.SiteNetwork(self)

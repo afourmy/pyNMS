@@ -11,7 +11,7 @@ from math import cos, sin, atan2, sqrt, radians
 from miscellaneous import search
 from miscellaneous.decorators import update_coordinates, overrider
 
-class BaseScenario(CustomFrame):
+class BaseView(CustomFrame):
     
     def __init__(self, controller, project, name):
         super().__init__(project.gf)
@@ -730,7 +730,7 @@ class BaseScenario(CustomFrame):
 
             # FIRST, remove the object from all sites it belongs to 
             for site in set(obj.sites):
-                site.scenario.remove_object_from_insite_view(obj)
+                site.view.remove_object_from_insite_view(obj)
                 site.remove_from_site(obj)
                 
             if hasattr(obj, 'AS'):

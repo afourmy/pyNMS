@@ -21,9 +21,9 @@ from objects.interface_window import InterfaceWindow
 from .base_selection_rightclick_menu import BaseSelectionRightClickMenu
                                 
 class SiteSelectionRightClickMenu(BaseSelectionRightClickMenu):
-    def __init__(self, event, scenario, from_scenario=True):
-        super().__init__(event, scenario, from_scenario)
-        self.cs = scenario
+    def __init__(self, event, view, from_view=True):
+        super().__init__(event, view, from_view)
+        self.cs = view
                 
         # exactly one node: configuration menu
         if self.no_link and self.no_shape and self.one_node:

@@ -161,45 +161,45 @@ class CreationMenu(ScrolledFrame):
        
     @update_paths
     def switch_display_mode(self):
-        self.current_scenario.switch_display_mode()
+        self.current_view.switch_display_mode()
 
     @update_paths
     def update_display(self):
         display_settings = list(map(lambda x: x.get(), self.layer_boolean))
-        self.scenario.display_layer = display_settings
-        self.scenario.draw_all(False)
+        self.view.display_layer = display_settings
+        self.view.draw_all(False)
         
     @update_paths
     def change_selection(self, mode):
-        self.scenario.obj_selection = mode
+        self.view.obj_selection = mode
         
     @update_paths
     def switch_to(self, mode):
         relief = tk.SUNKEN if mode == 'motion' else tk.RAISED
         self.type_to_button['motion'].config(relief=relief)
-        self.scenario._mode = mode
-        self.scenario.switch_binding()
+        self.view._mode = mode
+        self.view.switch_binding()
         
     @update_paths
     def change_creation_mode(self, mode):
-        # change the view and update the current scenario
+        # change the view and update the current view
         if mode == 'site':
-            # if it is a site, display the site scenario
+            # if it is a site, display the site view
             self.controller.view_menu.switch_view('site')
         else:
             if self.controller.view_menu.current_view == 'site':
                 self.controller.view_menu.switch_view('network')
         # change the mode to creation 
         self.switch_to('creation')
-        self.scenario._creation_mode = mode
+        self.view._creation_mode = mode
         for obj_type in self.type_to_button:
             if mode == obj_type:
                 self.type_to_button[obj_type].config(relief='sunken')
             else:
                 self.type_to_button[obj_type].config(relief='flat')
-        self.scenario.switch_binding()
+        self.view.switch_binding()
         
-    def erase_graph(self, scenario):
-        scenario.erase_graph()
-        scenario.ntw.erase_network()
+    def erase_graph(self, view):
+        view.erase_graph()
+        view.ntw.erase_network()
                 

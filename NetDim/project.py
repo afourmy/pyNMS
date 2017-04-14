@@ -1,7 +1,7 @@
 import os
 import warnings
-from scenarios.network_scenario import NetworkScenario
-from scenarios.site_scenario import SiteScenario
+from views.network_view import NetworkView
+from views.site_view import SiteView
 from objects.objects import *
 from pythonic_tkinter.preconfigured_widgets import *
 from tkinter import filedialog
@@ -16,22 +16,22 @@ class Project():
     def __init__(self, controller, name):
         self.name = name
         self.controller = controller
-        # global frame that contains network, site, and node scenarios
+        # global frame that contains network, site, and node views
         self.gf = CustomFrame(width=1300, height=800)        
         
-        self.network_scenario = NetworkScenario(
+        self.network_view = NetworkView(
                                                 controller, 
                                                 self, 
                                                 '{} : network view'.format(name)
                                                 )
-        self.site_scenario = SiteScenario(
+        self.site_view = SiteView(
                                           controller, 
                                           self, 
                                           '{} : site view'.format(name)
                                           )
-        self.current_scenario = self.network_scenario
-        self.network = self.current_scenario.network
-        self.network_scenario.pack()
+        self.current_view = self.network_view
+        self.network = self.current_view.network
+        self.network_view.pack()
         
     def objectizer(self, property, value):
         if value == 'None': 
@@ -52,16 +52,16 @@ class Project():
     def refresh(self):
         
         commands = (
-                    self.current_scenario.network.update_AS_topology,
-                    self.current_scenario.network.vc_creation,
-                    self.current_scenario.network.interface_configuration,
-                    self.current_scenario.network.switching_table_creation,
-                    self.current_scenario.network.routing_table_creation,
-                    self.current_scenario.network.bgp_table_creation,
-                    self.current_scenario.network.redistribution,
-                    self.current_scenario.network.path_finder,
-                    lambda: self.current_scenario.draw_all(False),
-                    self.current_scenario.refresh_display
+                    self.current_view.network.update_AS_topology,
+                    self.current_view.network.vc_creation,
+                    self.current_view.network.interface_configuration,
+                    self.current_view.network.switching_table_creation,
+                    self.current_view.network.routing_table_creation,
+                    self.current_view.network.bgp_table_creation,
+                    self.current_view.network.redistribution,
+                    self.current_view.network.path_finder,
+                    lambda: self.current_view.draw_all(False),
+                    self.current_view.refresh_display
                     )
         
         for idx, boolean in enumerate(self.controller.routing_menu.action_booleans):
@@ -141,11 +141,11 @@ class Project():
                     kwargs = self.mass_objectizer(properties, values)
                     if name in node_subtype:
                         if name == 'site':
-                            self.site_scenario.network.nf(node_type=name, **kwargs)
+                            self.site_view.network.nf(node_type=name, **kwargs)
                         else:
-                            self.network_scenario.network.nf(node_type=name, **kwargs)
+                            self.network_view.network.nf(node_type=name, **kwargs)
                     if name in link_subtype: 
-                        self.network_scenario.network.lf(subtype=name, **kwargs)
+                        self.network_view.network.lf(subtype=name, **kwargs)
                 
             # interface import
             elif name in ('ethernet interface', 'wdm interface'):
@@ -153,13 +153,13 @@ class Project():
                 # creation of ethernet interfaces
                 for row_index in range(1, sheet.nrows):
                     link, node, *args = sheet.row_values(row_index)
-                    link = self.network_scenario.network.convert_link(link)
-                    node = self.network_scenario.network.convert_node(node)
+                    link = self.network_view.network.convert_link(link)
+                    node = self.network_view.network.convert_node(node)
                     interface = link('interface', node)
                     for property, value in zip(if_properties[2:], args):
                         # we convert all (valid) string IPs to an OIPs
                         if property == 'ipaddress' and value != 'none':
-                            value = self.network_scenario.network.OIPf(value, interface)
+                            value = self.network_view.network.OIPf(value, interface)
                         setattr(interface, property, value)
                         
             # AS import
@@ -168,24 +168,24 @@ class Project():
                     name, AS_type, id, nodes, links = sheet.row_values(row_index)
                     id = int(id)
                     subtype = 'ethernet link' if AS_type != 'BGP' else 'BGP peering'
-                    nodes = self.network_scenario.network.convert_node_set(nodes)
-                    links = self.network_scenario.network.convert_link_set(links, subtype)
-                    self.network_scenario.network.AS_factory(AS_type, name, id, links, nodes, True)
+                    nodes = self.network_view.network.convert_node_set(nodes)
+                    links = self.network_view.network.convert_link_set(links, subtype)
+                    self.network_view.network.AS_factory(AS_type, name, id, links, nodes, True)
                 
             # area import
             elif name == 'area':
                 for row_index in range(1, sheet.nrows):
                     name, AS, id, nodes, links = sheet.row_values(row_index)
-                    AS = self.network_scenario.network.AS_factory(name=AS)
-                    nodes = self.network_scenario.network.convert_node_set(nodes)
-                    links = self.network_scenario.network.convert_link_set(links)
+                    AS = self.network_view.network.AS_factory(name=AS)
+                    nodes = self.network_view.network.convert_node_set(nodes)
+                    links = self.network_view.network.convert_link_set(links)
                     new_area = AS.area_factory(name, int(id), links, nodes)
                     
             # per-AS node properties import
             elif name == 'per-AS node properties':
                 for row_index in range(1, sheet.nrows):
                     AS, node, *args = sheet.row_values(row_index)
-                    node = self.network_scenario.network.convert_node(node)
+                    node = self.network_view.network.convert_node(node)
                     for idx, property in enumerate(perAS_properties[node.subtype]):
                         value = self.objectizer(property, args[idx])
                         node(AS, property, value)
@@ -194,9 +194,9 @@ class Project():
             elif name == 'sites':
                 for row_index in range(1, sheet.nrows):
                     name, nodes, links = sheet.row_values(row_index)
-                    site = self.site_scenario.network.convert_node(name)
-                    links = set(self.network_scenario.network.convert_link_list(links))
-                    nodes = set(self.network_scenario.network.convert_node_list(nodes))
+                    site = self.site_view.network.convert_node(name)
+                    links = set(self.network_view.network.convert_link_list(links))
+                    nodes = set(self.network_view.network.convert_node_list(nodes))
                     site.add_to_site(*nodes)
                     site.add_to_site(*links)
                         
@@ -204,16 +204,16 @@ class Project():
             else:
                 for row_index in range(1, sheet.nrows):
                     AS, link, node, *args = sheet.row_values(row_index)
-                    AS = self.network_scenario.network.AS_factory(name=AS)
-                    link = self.network_scenario.network.convert_link(link)
-                    node = self.network_scenario.network.convert_node(node)
+                    AS = self.network_view.network.AS_factory(name=AS)
+                    link = self.network_view.network.convert_link(link)
+                    node = self.network_view.network.convert_node(node)
                     interface = link('interface', node)
                     for idx, property in enumerate(ethernet_interface_perAS_properties):
                         value = self.objectizer(property, args[idx])
                         interface(AS.name, property, value)   
                         
-        self.current_scenario.draw_all(False)
-        self.site_scenario.draw_all(False)
+        self.current_view.draw_all(False)
+        self.site_view.draw_all(False)
         
     def export_project(self, filepath=None):
         
@@ -249,9 +249,9 @@ class Project():
             # hasattr() all the time to check if a property exists.
             obj_type = subtype_to_type[obj_subtype]
             if obj_subtype == 'site':
-                pool_obj = list(self.site_scenario.network.nodes.values())
+                pool_obj = list(self.site_view.network.nodes.values())
             else:
-                pool_obj = list(self.network_scenario.network.ftr(obj_type, obj_subtype))
+                pool_obj = list(self.network_view.network.ftr(obj_type, obj_subtype))
             # we create an excel sheet only if there's at least one object
             # of a given subtype
             if pool_obj:
@@ -261,11 +261,11 @@ class Project():
                     for i, obj in enumerate(pool_obj, 1):
                         xls_sheet.write(i, id, str(getattr(obj, property)))
                     
-        pool_AS = list(self.network_scenario.network.pnAS.values())
+        pool_AS = list(self.network_view.network.pnAS.values())
         
         if pool_AS:
             AS_sheet = excel_workbook.add_sheet('AS')
-            for i, AS in enumerate(self.network_scenario.network.pnAS.values(), 1):
+            for i, AS in enumerate(self.network_view.network.pnAS.values(), 1):
                 AS_sheet.write(i, 0, str(AS.name))
                 AS_sheet.write(i, 1, str(AS.AS_type))
                 AS_sheet.write(i, 2, str(AS.id))
@@ -275,7 +275,7 @@ class Project():
             node_AS_sheet = excel_workbook.add_sheet('per-AS node properties')
                 
             cpt = 1
-            for AS in self.network_scenario.network.pnAS.values():
+            for AS in self.network_view.network.pnAS.values():
                 for node in AS.nodes:
                     node_AS_sheet.write(cpt, 0, AS.name)
                     node_AS_sheet.write(cpt, 1, node.name)
@@ -286,7 +286,7 @@ class Project():
             if_AS_sheet = excel_workbook.add_sheet('per-AS interface properties')
             
             cpt = 1
-            for AS in self.network_scenario.network.pnAS.values():
+            for AS in self.network_view.network.pnAS.values():
                 if AS.AS_type != 'BGP':
                     for link in AS.links:
                         for interface in (link.interfaceS, link.interfaceD):
@@ -298,13 +298,13 @@ class Project():
                             cpt += 1
             
         has_area = lambda a: a.has_area
-        pool_area = list(filter(has_area, self.network_scenario.network.pnAS.values()))
+        pool_area = list(filter(has_area, self.network_view.network.pnAS.values()))
         
         if pool_area:
             area_sheet = excel_workbook.add_sheet('area')
         
             cpt = 1
-            for AS in filter(lambda a: a.has_area, self.network_scenario.network.pnAS.values()):
+            for AS in filter(lambda a: a.has_area, self.network_view.network.pnAS.values()):
                 for area in AS.areas.values():
                     area_sheet.write(cpt, 0, str(area.name))
                     area_sheet.write(cpt, 1, str(area.AS))
@@ -313,9 +313,9 @@ class Project():
                     area_sheet.write(cpt, 4, to_string(area.pa['link']))
                     cpt += 1
              
-        if self.site_scenario.network.nodes:
+        if self.site_view.network.nodes:
             site_sheet = excel_workbook.add_sheet('sites')
-            for cpt, site in enumerate(self.site_scenario.network.nodes.values()):
+            for cpt, site in enumerate(self.site_view.network.nodes.values()):
                 site_sheet.write(cpt, 0, str(site.name))
                 site_sheet.write(cpt, 1, to_string(site.ps['node']))
                 site_sheet.write(cpt, 2, to_string(site.ps['link']))
@@ -350,7 +350,7 @@ class Project():
             
         for row_index in range(sheet.nrows):
             site_name, node = sheet.row_values(row_index)
-            site = self.site_scenario.network.convert_node(site_name)
-            node = self.network_scenario.network.convert_node(node)
+            site = self.site_view.network.convert_node(site_name)
+            node = self.network_view.network.convert_node(node)
             site.add_to_site(node)
                     

@@ -15,9 +15,9 @@ except ImportError:
 
 class SendScript(CustomTopLevel):
     
-    def __init__(self, scenario, nodes):
+    def __init__(self, view, nodes):
         super().__init__()
-        self.cs = scenario
+        self.cs = view
         self.title('Send a script')
         
         # main label frame

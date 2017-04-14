@@ -8,29 +8,29 @@ class NetworkGeneralRightClickMenu(InMenu):
     def __init__(self, event, controller):
         super().__init__(tearoff=0, master=controller)
 
-        x, y = self.scenario.cvs.canvasx(event.x), self.scenario.cvs.canvasy(event.y)
+        x, y = self.view.cvs.canvasx(event.x), self.view.cvs.canvasy(event.y)
         
         # change geographical projection
         projection_menu = tk.Menu(self, tearoff=0)
 
         projection_menu.add_command(
                 label = 'Linear projection', 
-                command= lambda: self.scenario.change_projection('linear')
+                command= lambda: self.view.change_projection('linear')
                 )
         projection_menu.add_command(
                 label = 'Mercator projection', 
-                command= lambda: self.scenario.change_projection('mercator')
+                command= lambda: self.view.change_projection('mercator')
                 )
         projection_menu.add_command(
                 label = 'Spherical projection', 
-                command= lambda: self.scenario.change_projection('globe')
+                command= lambda: self.view.change_projection('globe')
                 )
 
         self.add_cascade(label='Geographical projection', menu=projection_menu)
         
         # multiple nodes creation
         self.add_command(label='Create multiple nodes', 
-                command=lambda: MultipleNodes(self.scenario, x, y))
+                command=lambda: MultipleNodes(self.view, x, y))
                 
         # remove all failures if there is at least one
         if self.network.failed_obj:
@@ -46,7 +46,7 @@ class NetworkGeneralRightClickMenu(InMenu):
         self.tk_popup(event.x_root, event.y_root)
 
     def remove_all_failures(self):
-        self.scenario.remove_failures()
+        self.view.remove_failures()
         self.destroy()
         
     def refresh(self):

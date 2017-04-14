@@ -4,7 +4,7 @@ import re
 import warnings
 from os.path import join
 from tkinter import filedialog
-from .base_scenario import BaseScenario
+from .base_view import BaseView
 from math import *
 from miscellaneous.decorators import update_coordinates, overrider
 try:
@@ -13,7 +13,7 @@ try:
 except ImportError:
     warnings.warn('SHP librairies missing: map import disabled')
 
-class GeoScenario(BaseScenario):
+class GeographicalView(BaseView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -25,7 +25,7 @@ class GeoScenario(BaseScenario):
         self.world_map.center_map([[7, 49]])
             
     def switch_binding(self): 
-        super(GeoScenario, self).switch_binding()
+        super(GeographicalView, self).switch_binding()
         
         # if self._mode == 'motion':
         #     self.cvs.tag_bind('water', '<ButtonPress-1>', self.move_sphere, add='+')
@@ -46,7 +46,7 @@ class GeoScenario(BaseScenario):
             self.world_map.change_projection(self.world_map.mode)
                         
     @update_coordinates
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def create_node_on_binding(self, event):
         node = self.network.nf(node_type=self._creation_mode, x=event.x, y=event.y)
         # update logical and geographical coordinates
@@ -55,9 +55,9 @@ class GeoScenario(BaseScenario):
         node.logical_x, node.logical_y = node.x, node.y
         self.create_node(node)
       
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def create_node(self, node, layer=1):
-        super(GeoScenario, self).create_node(node, layer)
+        super(GeographicalView, self).create_node(node, layer)
         # if the node wasn't created from the binding (e.g import or graph
         # generation), its canvas coordinates are initialized at (0, 0). 
         # we draw the node in the middle of the canvas for the user to see them
@@ -65,10 +65,10 @@ class GeoScenario(BaseScenario):
             # node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
             node.x, node.y = self.world_map.view_center()
 
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def create_link(self, new_link):
         # create the link
-        super(GeoScenario, self).create_link(new_link)
+        super(GeographicalView, self).create_link(new_link)
         # the link is now at the bottom of the stack after calling tag_lower
         # if the map is activated, we need to lower all map objects to be 
         # able to see the link
@@ -109,7 +109,7 @@ class GeoScenario(BaseScenario):
         self.lower_map()
     
     @update_coordinates
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def zoomer(self, event):
         ''' Zoom for window '''
         self.cancel()
@@ -120,7 +120,7 @@ class GeoScenario(BaseScenario):
         self.update_nodes_coordinates(factor)
         
     @update_coordinates
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def zoomerP(self, event):
         # zoom in (unix)
         self.cancel()
@@ -130,7 +130,7 @@ class GeoScenario(BaseScenario):
         self.update_nodes_coordinates(1.2)
         
     @update_coordinates
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def zoomerM(self, event):
         # zoom out (unix)
         self.cancel()
@@ -186,10 +186,10 @@ class Map():
     lonlat = []
     map_temp = {}
     
-    def __init__(self, scenario, viewx=500, viewy=250):
+    def __init__(self, view, viewx=500, viewy=250):
         self.viewx, self.viewy = viewx, viewy
-        # scenario canvas
-        self.cvs = scenario.cvs
+        # view canvas
+        self.cvs = view.cvs
         # self.map_obj
         # set of all canvas ids
         self.map_ids = set()

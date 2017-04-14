@@ -13,9 +13,9 @@ from objects.object_management_window import PropertyChanger
 from collections import OrderedDict
                                 
 class RightClickMenu(tk.Menu):
-    def __init__(self, event, scenario):
+    def __init__(self, event, view):
         super().__init__(tearoff=0)
-        self.cs = scenario
+        self.cs = view
         
         x, y = self.cs.canvasx(event.x), self.cs.canvasy(event.y)
 
@@ -200,8 +200,8 @@ class RightClickMenu(tk.Menu):
         PropertyChanger(self.cs.ms, objects, subtype)
         
     @empty_selection_and_destroy_menu
-    def multiple_links(self, scenario):
-        mobj.MultipleLinks(scenario, self.cs.so['node'])
+    def multiple_links(self, view):
+        mobj.MultipleLinks(view, self.cs.so['node'])
         
     #TODO temporary
     @empty_selection_and_destroy_menu
@@ -209,9 +209,9 @@ class RightClickMenu(tk.Menu):
         self.cs.ntw.BGPT_builder(node)
         
 class GeneralRightClickMenu(tk.Menu):
-    def __init__(self, event, scenario):
+    def __init__(self, event, view):
         super().__init__(tearoff=0)
-        self.cs = scenario
+        self.cs = view
         x, y = self.cs.canvasx(event.x), self.cs.canvasy(event.y)
         
         # drawing mode selection
@@ -250,13 +250,13 @@ class GeneralRightClickMenu(tk.Menu):
         
 class DrawingMenu(tk.Menu):
     #TODO does the menu destroy itself ? I don't thing so
-    def __init__(self, scenario, nodes):
+    def __init__(self, view, nodes):
         super().__init__(tearoff=0)
-        self.cs = scenario
+        self.cs = view
         
         cmds = {
-        'Random': lambda: scenario.draw_objects(nodes, True),
-        'FBA': lambda: scenario.automatic_drawing(nodes),
+        'Random': lambda: view.draw_objects(nodes, True),
+        'FBA': lambda: view.automatic_drawing(nodes),
         'Both': lambda: self.both(nodes)
         }
     
@@ -270,9 +270,9 @@ class DrawingMenu(tk.Menu):
         
 class AlignMenu(tk.Menu):
     
-    def __init__(self, scenario, nodes):
+    def __init__(self, view, nodes):
         super().__init__(tearoff=0)
-        self.cs = scenario
+        self.cs = view
         
         cmds = OrderedDict([
         ('Horizontal alignment', lambda: self.cs.align(nodes)),

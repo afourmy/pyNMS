@@ -6,7 +6,7 @@ from math import sqrt
 
 class BaseNetwork(object):
     
-    def __init__(self, scenario):
+    def __init__(self, view):
         self.nodes = {}
         self.plinks = {}
         self.l2links = {}
@@ -21,7 +21,7 @@ class BaseNetwork(object):
                    'l3link': self.l3links,
                    'traffic': self.traffics, 
                    }
-        self.cs = scenario
+        self.cs = view
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link = self.cpt_node = self.cpt_AS = 1
         # useful for tests and listbox when we want to retrieve an object

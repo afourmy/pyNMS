@@ -14,9 +14,9 @@ AD = {
 }
 
 class RoutingTable(tk.Toplevel):
-    def __init__(self, node, scenario):
+    def __init__(self, node, view):
         super().__init__() 
-        self.cs = scenario
+        self.cs = view
         self.ST = ScrolledText(self, wrap='word', bg='beige')
         self.wm_attributes('-topmost', True)
 

@@ -1,6 +1,6 @@
 # NetDim (contact@netdim.fr)
 
-from .base_scenario import BaseScenario
+from .base_view import BaseView
 from objects.objects import *
 from menus.insite_general_rightclick_menu import InSiteGeneralRightClickMenu
 from menus.network_selection_rightclick_menu import NetworkSelectionRightClickMenu
@@ -8,12 +8,12 @@ from math import cos, sin, atan2, sqrt, radians
 from random import randint
 from miscellaneous.decorators import update_coordinates, overrider
 
-class InSiteScenario(BaseScenario):
+class InSiteView(BaseView):
 
     def __init__(self, site, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.site = site
-        self.network = self.network_scenario.network
+        self.network = self.network_view.network
         
         # add binding for right-click menu 
         self.cvs.tag_bind('object', '<ButtonPress-3>',
@@ -22,7 +22,7 @@ class InSiteScenario(BaseScenario):
         # add binding to exit the insite view, back to the site view
         self.cvs.bind('<space>', self.back_to_site_view)
         
-    # upon pressing space, back to the site scenario
+    # upon pressing space, back to the site view
     def back_to_site_view(self, _):
         self.ms.view_menu.switch_view('site')
         
@@ -41,7 +41,7 @@ class InSiteScenario(BaseScenario):
             InSiteGeneralRightClickMenu(event, self)
                 
     @update_coordinates
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def find_closest_node(self, event):
         # record the item and its location
         self._dict_start_position.clear()
@@ -72,7 +72,7 @@ class InSiteScenario(BaseScenario):
             self.highlight_objects(main_node_selected)
             
     @update_coordinates
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def find_closest_link(self, event):
         closest_link = self.cvs.find_closest(event.x, event.y)[0]
         main_link_selected = self.object_id_to_object[closest_link]
@@ -101,7 +101,7 @@ class InSiteScenario(BaseScenario):
             if hasattr(main_link_selected, 'path'):
                 self.highlight_objects(*main_link_selected.path)
                           
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def update_nodes_coordinates(self, factor):
         # scaling changes the coordinates of the oval, and we update 
         # the corresponding node's coordinates accordingly
@@ -144,11 +144,11 @@ class InSiteScenario(BaseScenario):
     ## Object creation
     
     @update_coordinates
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def create_node_on_binding(self, event):
-        # we create the node in both the insite scenario and the network scenario
-        # the node will be at its geographical coordinates in the network scenario,
-        # and the event coordinates in the insite scenario
+        # we create the node in both the insite view and the network view
+        # the node will be at its geographical coordinates in the network view,
+        # and the event coordinates in the insite view
         node = self.network.nf(
                               node_type = self._creation_mode,
                               longitude = self.site.longitude,
@@ -163,7 +163,7 @@ class InSiteScenario(BaseScenario):
         self.ns.create_node(node)
         self.ns.move_to_geographical_coordinates(node)
     
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def create_node(self, node, layer=1):
         s = self.node_size
         curr_image = self.ms.dict_image['default'][node.subtype]
@@ -193,7 +193,7 @@ class InSiteScenario(BaseScenario):
             self.create_node_label(node)
             
     @update_coordinates
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def start_link(self, event):
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
         start_node = self.object_id_to_object[self.drag_item]
@@ -207,7 +207,7 @@ class InSiteScenario(BaseScenario):
                                         )
         
     @update_coordinates
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def line_creation(self, event):
         # remove the purple highlight of the closest object when creating 
         # a link: the normal system doesn't work because we are in 'B1-Motion'
@@ -226,7 +226,7 @@ class InSiteScenario(BaseScenario):
                         )
         
     @update_coordinates
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def link_creation(self, event, subtype):
         # delete the temporary line
         self.cvs.delete(self.temp_line)
@@ -245,10 +245,10 @@ class InSiteScenario(BaseScenario):
                                             destination = destination_node
                                             )
                     self.site.add_to_site(new_link)
-                    # add in the network scenario as well
+                    # add in the network view as well
                     self.ns.create_link(new_link)
                     
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def create_link(self, new_link):
         edges = (new_link.source, new_link.destination)
         real_layer = sum(self.display_layer[:(new_link.layer+1)])
@@ -304,7 +304,7 @@ class InSiteScenario(BaseScenario):
         self._create_link_label(new_link)
         self.refresh_label(new_link)
     
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def multiple_nodes(self, n, subtype, x, y):
         for node in self.network.multiple_nodes(n, subtype):
             node.site_coords[self.site][0] = x
@@ -313,7 +313,7 @@ class InSiteScenario(BaseScenario):
     ## Motion
     
     @update_coordinates
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def node_motion(self, event):
         # destroy the tip window when moving a node
         self.pwindow.destroy()
@@ -333,7 +333,7 @@ class InSiteScenario(BaseScenario):
             selected_node.site_coords[self.site][1] = y1 + (event.y + diff - y0)
             self.move_node(selected_node)
           
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def move_node(self, n):
         newx, newy = float(n.site_coords[self.site][0]), float(n.site_coords[self.site][1])
         s = self.node_size
@@ -376,7 +376,7 @@ class InSiteScenario(BaseScenario):
             
     ## Object deletion
     
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def remove_objects(self, *objects):
         self.ns.remove_objects(*objects)
                   
@@ -449,7 +449,7 @@ class InSiteScenario(BaseScenario):
         if obj in self.network.failed_obj:
             self.remove_failure(obj)
                                           
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def erase_all(self):
         self.erase_graph()
         self.cvs.delete('node', 'link', 'line', 'label')
@@ -466,7 +466,7 @@ class InSiteScenario(BaseScenario):
     ## Selection / Highlight
                 
     # 2) Update selected objects and highlight
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def highlight_objects(self, *objects, color='red', dash=False):
         # highlight in red = selection: everything that is highlighted in red
         # is considered selected, and everything that isn't, unselected.
@@ -489,7 +489,7 @@ class InSiteScenario(BaseScenario):
                 else:
                     self.cvs.itemconfig(obj.id, outline=color)
                 
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def unhighlight_objects(self, *objects):
         for obj in objects:
             self.so[obj.class_type].discard(obj)
@@ -511,7 +511,7 @@ class InSiteScenario(BaseScenario):
                             
     ## Object labelling
                 
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def create_node_label(self, node):
         node.site_lid[self.site] = self.cvs.create_text(
                                 node.site_coords[self.site][0] - 15, 
@@ -523,7 +523,7 @@ class InSiteScenario(BaseScenario):
         self.refresh_label(node)
         
     # refresh the label for one object with the current object label
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def refresh_label(self, obj, label_type=None, itf=False):
         # label_type is None if we simply want to update the label value
         # but not change the type of label displayed.
@@ -581,7 +581,7 @@ class InSiteScenario(BaseScenario):
             self.cvs.itemconfig(label_id, text=getattr(obj, label_type))
             
     # change label and refresh it for all objects
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def refresh_subtype_labels(self, subtype, label=False):
         # by default, this function simply refreshes all labels:
         # label defaults to False
@@ -598,7 +598,7 @@ class InSiteScenario(BaseScenario):
         for obj in set(self.ntw.ftr(type, subtype)) & set(self.site.get_obj()):
             self.refresh_label(obj, self.current_label[subtype], itf)
            
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def _create_link_label(self, link):
         coeff = self.compute_coeff(link)
         link.site_lid[self.site] = self.cvs.create_text(
@@ -633,7 +633,7 @@ class InSiteScenario(BaseScenario):
                             )
         self.refresh_label(link)
                         
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def compute_coeff(self, link):
         # compute the slope of the link's line
         try:
@@ -646,7 +646,7 @@ class InSiteScenario(BaseScenario):
             coeff = 0
         return coeff
         
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def if_label(self, link, end='s'):
         # compute the position of the interface label. Instead of placing the 
         # interface label in the middle of the line between the middle point lpos
@@ -665,7 +665,7 @@ class InSiteScenario(BaseScenario):
                             + link.destination.site_coords[self.site][1]/2)
         return if_label_x, if_label_y
              
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def update_link_label_coordinates(self, link):
         coeff = self.compute_coeff(link)
         self.cvs.coords(
@@ -681,7 +681,7 @@ class InSiteScenario(BaseScenario):
                         *self.offcenter(coeff, *self.if_label(link, 'd'))
                         )
 
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def link_coordinates(self, source, destination, layer='all'):
         xA = source.site_coords[self.site][0]
         yA = source.site_coords[self.site][1]
@@ -708,7 +708,7 @@ class InSiteScenario(BaseScenario):
     
     # 1) Regular drawing
 
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def draw_objects(self, objects, random_drawing=True):
         self._cancel()
         for obj in objects:
@@ -723,7 +723,7 @@ class InSiteScenario(BaseScenario):
             if obj in self.network.failed_obj:
                 self.simulate_failure(obj)
              
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def draw_all(self, random=True, draw_site=False):
         self.erase_all()
         # we draw everything except interface
@@ -732,7 +732,7 @@ class InSiteScenario(BaseScenario):
             
     # 3) Alignment / distribution
     
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def align(self, nodes, horizontal=True):
         # alignment can be either horizontal (horizontal = True) or vertical
         minimum = min(
@@ -743,7 +743,7 @@ class InSiteScenario(BaseScenario):
             setattr(node, 'y'*horizontal or 'x', minimum)
         self.move_nodes(nodes)
         
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def distribute(self, nodes, horizontal=True):
         # uniformly distribute the nodes between the minimum and
         # the maximum lontitude/latitude of the selection
@@ -764,7 +764,7 @@ class InSiteScenario(BaseScenario):
                 
     ## Multi-layer display
                 
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def switch_display_mode(self):
         self.layered_display = not self.layered_display
         
@@ -779,7 +779,7 @@ class InSiteScenario(BaseScenario):
         
         return self.layered_display
             
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def planal_move(self, angle=45):
         min_y = min(node.site_coords[self.site][1] for node in self.site.ps['node'])
         max_y = max(node.site_coords[self.site][1] for node in self.site.ps['node'])
@@ -791,7 +791,7 @@ class InSiteScenario(BaseScenario):
             
     ## Failure simulation
     
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def simulate_failure(self, *objects):
         for obj in objects:
             if obj in self.id_fdtks:
@@ -821,7 +821,7 @@ class InSiteScenario(BaseScenario):
     ## Other
                 
     # show/hide display per type of objects
-    @overrider(BaseScenario)
+    @overrider(BaseView)
     def show_hide(self, subtype):
         self.display_per_type[subtype] = not self.display_per_type[subtype]
         new_state = 'normal' if self.display_per_type[subtype] else 'hidden'

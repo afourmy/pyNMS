@@ -1,8 +1,8 @@
 # NetDim (contact@netdim.fr)
 
-from .scenario import Scenario
+from .view import View
 
-class NodeScenario(Scenario):
+class NodeView(View):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -22,8 +22,8 @@ def start_and_import(filename):
         def wrapper(self):
             self.netdim = controller.Controller(path_app)
             self.project = self.netdim.current_project
-            self.scenario = self.netdim.current_project.current_scenario
-            self.network = self.netdim.current_project.current_scenario.network
+            self.view = self.netdim.current_project.current_view
+            self.network = self.netdim.current_project.current_view.network
             path_test = path_parent + '\\Tests\\'
             self.project.import_project(path_test + filename)
             function(self)
@@ -36,16 +36,16 @@ class TestExportImport(unittest.TestCase):
     def setUpClass(cls):
         super(TestExportImport, cls).setUpClass()
         cls.netdim = controller.Controller(path_app)
-        src = cls.netdim.current_project.current_scenario.network.nf(name='s')
-        dest = cls.netdim.current_project.current_scenario.network.nf(name='d')
+        src = cls.netdim.current_project.current_view.network.nf(name='s')
+        dest = cls.netdim.current_project.current_view.network.nf(name='d')
         dest.x, src.x = 42, 24
-        plink = cls.netdim.current_project.current_scenario.network.lf(
+        plink = cls.netdim.current_project.current_view.network.lf(
                                      name = 't', 
                                      source = src, 
                                      destination = dest
                                      )
         plink.distance = 666
-        route = cls.netdim.current_project.current_scenario.network.lf(
+        route = cls.netdim.current_project.current_view.network.lf(
                                      subtype = 'routed traffic',
                                      source = src, 
                                      destination = dest
@@ -61,11 +61,11 @@ class TestExportImport(unittest.TestCase):
     def object_import(self, ext):
         self.netdim = controller.Controller(path_app)
         self.netdim.current_project.import_project(path_parent + '\\Tests\\test_export.' + ext)
-        x_coord = set(map(lambda n: n.x, self.netdim.current_project.current_scenario.network.pn['node'].values()))
+        x_coord = set(map(lambda n: n.x, self.netdim.current_project.current_view.network.pn['node'].values()))
         self.assertEqual(x_coord, {42, 24})
-        plink ,= self.netdim.current_project.current_scenario.network.pn['plink'].values()
+        plink ,= self.netdim.current_project.current_view.network.pn['plink'].values()
         self.assertEqual(plink.distance, 666)
-        self.assertEqual(len(self.netdim.current_project.current_scenario.network.pn['traffic'].values()), 1)
+        self.assertEqual(len(self.netdim.current_project.current_view.network.pn['traffic'].values()), 1)
         
     def test_object_import_xls(self):
         self.object_import('xls')

@@ -1603,7 +1603,7 @@ class MainNetwork(BaseNetwork):
         graph_project = self.cs.controller.add_project(name)
         
         # in the new graph, each node corresponds to a traffic path
-        # we create one node per traffic physical link in the new scenario            
+        # we create one node per traffic physical link in the new view            
         visited = set()
         # tl stands for traffic physical link
         for tlA in self.traffics.values():
@@ -1625,7 +1625,7 @@ class MainNetwork(BaseNetwork):
                                     )
             visited.add(tlA)
                             
-        graph_project.current_scenario.draw_all(False)
+        graph_project.current_view.draw_all(False)
         return graph_project
         
     def largest_degree_first(self):

@@ -3,10 +3,10 @@
 from pythonic_tkinter.preconfigured_widgets import *
 
 class MultipleNodes(CustomTopLevel):    
-    def __init__(self, scenario, x, y):
+    def __init__(self, view, x, y):
         super().__init__()
         self.title('Multiple nodes')
-        self.cs = scenario
+        self.cs = view
         
         # label frame for multiple nodes creation
         lf_multiple_nodes = Labelframe(self)
@@ -21,7 +21,7 @@ class MultipleNodes(CustomTopLevel):
         node_type = Label(self)
         node_type.text = 'Type of node'
         self.node_type_list = Combobox(self, width=7)
-        self.node_type_list['values'] = scenario.ntw.node_subtype
+        self.node_type_list['values'] = view.ntw.node_subtype
         self.node_type_list.current(0)
     
         # confirmation button
@@ -48,10 +48,10 @@ class MultipleNodes(CustomTopLevel):
         self.destroy()
         
 class MultipleLinks(CustomTopLevel):    
-    def __init__(self, scenario, source_nodes):
+    def __init__(self, view, source_nodes):
         super().__init__()
         self.title('Multiple links')
-        self.cs = scenario
+        self.cs = view
         
         # label frame for multiple links creation
         lf_multiple_links = Labelframe(self)
@@ -68,7 +68,7 @@ class MultipleLinks(CustomTopLevel):
         self.listbox.grid(1, 0, in_=lf_multiple_links)
         yscroll.grid(1, 1, in_=lf_multiple_links)
         
-        # add all nodes of the scenario to the listbox
+        # add all nodes of the view to the listbox
         for node in self.cs.ntw.nodes.values():
             self.listbox.insert(node.name)
     

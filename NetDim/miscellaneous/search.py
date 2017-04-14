@@ -6,9 +6,9 @@ from pythonic_tkinter.preconfigured_widgets import *
 
 class SearchWindow(CustomTopLevel):
     
-    def __init__(self, scenario):
+    def __init__(self, view):
         super().__init__()
-        self.cs = scenario
+        self.cs = view
         
         # label frame for area properties
         lf_search = Labelframe(self)

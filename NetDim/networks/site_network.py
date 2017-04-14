@@ -1,7 +1,7 @@
 # NetDim (contact@netdim.fr)
 
 from .base_network import BaseNetwork
-from scenarios.insite_scenario import InSiteScenario
+from views.insite_view import InSiteView
 from objects.objects import *
 
 def overrider(interface_class):
@@ -28,7 +28,7 @@ class SiteNetwork(BaseNetwork):
             id = self.cpt_node
             kwargs['id'] = id
             self.nodes[id] = node_class[node_type](**kwargs)
-            self.nodes[id].scenario = InSiteScenario(
+            self.nodes[id].view = InSiteView(
                                                      self.nodes[id], 
                                                      self.cs.ms, 
                                                      kwargs['name']

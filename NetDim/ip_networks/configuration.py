@@ -7,9 +7,9 @@ from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous.network_functions import tomask
 
 class RouterConfiguration(tk.Toplevel):
-    def __init__(self, node, scenario):
+    def __init__(self, node, view):
         super().__init__() 
-        self.cs = scenario
+        self.cs = view
         
         notebook = ttk.Notebook(self)
         pastable_config_frame = ttk.Frame(notebook)
@@ -222,9 +222,9 @@ class RouterConfiguration(tk.Toplevel):
         yield ' {name}(config)# end\n'.format(name=node.name)
 
 class SwitchConfiguration(tk.Toplevel):
-    def __init__(self, node, scenario):
+    def __init__(self, node, view):
         super().__init__() 
-        self.cs = scenario
+        self.cs = view
         
         notebook = ttk.Notebook(self)
         pastable_config_frame = ttk.Frame(notebook)

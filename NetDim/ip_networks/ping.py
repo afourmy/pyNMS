@@ -4,9 +4,9 @@ from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous.network_functions import compute_network
 
 class Ping(FocusTopLevel):
-    def __init__(self, source, scenario):
+    def __init__(self, source, view):
         super().__init__() 
-        self.cs = scenario
+        self.cs = view
         
         # main label frame
         lf_ping = Labelframe(self)

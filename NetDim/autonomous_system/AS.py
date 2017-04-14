@@ -17,7 +17,7 @@ class AutonomousSystem(object):
 
     def __init__(
                  self, 
-                 scenario,
+                 view,
                  name, 
                  id,
                  links = set(), 
@@ -25,8 +25,8 @@ class AutonomousSystem(object):
                  imp = False
                  ):
                      
-        self.scenario = scenario
-        self.network = self.scenario.network
+        self.view = view
+        self.network = self.view.network
         self.name = name
         self.id = id
         self.links = links
@@ -36,7 +36,7 @@ class AutonomousSystem(object):
         self.pAS = {'link': self.links, 'node': self.nodes}
         
         # unselect everything
-        scenario.unhighlight_all()
+        view.unhighlight_all()
         
     def __repr__(self):
         return self.name
@@ -763,7 +763,7 @@ class AreaOperation(CustomTopLevel):
     
     # Add objects to an area, or remove objects from an area
     
-    def __init__(self, scenario, mode, obj, AS=set()):
+    def __init__(self, view, mode, obj, AS=set()):
         super().__init__()
         
         title = 'Add to area' if mode == 'add' else 'Remove from area'
@@ -781,26 +781,26 @@ class AreaOperation(CustomTopLevel):
         self.AS_list = Combobox(self, width=15)
         self.AS_list['values'] = values
         self.AS_list.current(0)
-        self.AS_list.bind('<<ComboboxSelected>>', lambda e: self.update_value(scenario))
+        self.AS_list.bind('<<ComboboxSelected>>', lambda e: self.update_value(view))
         
         self.area_list = Combobox(self, width=15)
-        self.update_value(scenario)
+        self.update_value(view)
         self.area_list.current(0)
 
         button_area_operation = Button(self)
         button_area_operation.text = 'OK'
-        button_area_operation.command = lambda: self.area_operation(scenario, mode, *obj)
+        button_area_operation.command = lambda: self.area_operation(view, mode, *obj)
         
         self.AS_list.grid(0, 0, in_=lf_area_operation)
         self.area_list.grid(1, 0, in_=lf_area_operation)
         button_area_operation.grid(2, 0, in_=lf_area_operation)
         
-    def update_value(self, scenario):
-        selected_AS = scenario.network.AS_factory(name=self.AS_list.get())
+    def update_value(self, view):
+        selected_AS = view.network.AS_factory(name=self.AS_list.get())
         self.area_list['values'] = tuple(map(str, selected_AS.areas))
         
-    def area_operation(self, scenario, mode, *objects):
-        selected_AS = scenario.network.AS_factory(name=self.AS_list.get())
+    def area_operation(self, view, mode, *objects):
+        selected_AS = view.network.AS_factory(name=self.AS_list.get())
         selected_area = self.area_list.get()
 
         if mode == 'add':
@@ -814,7 +814,7 @@ class ASOperation(CustomTopLevel):
     
     # Add objects to an AS, or remove objects from an AS
     
-    def __init__(self, scenario, mode, obj, AS=set()):
+    def __init__(self, view, mode, obj, AS=set()):
         super().__init__()
         
         title = {
@@ -832,7 +832,7 @@ class ASOperation(CustomTopLevel):
         
         if mode == 'add':
             # All AS are proposed 
-            values = tuple(map(str, scenario.network.pnAS))
+            values = tuple(map(str, view.network.pnAS))
         else:
             # Only the common AS among all selected objects
             values = tuple(map(str, AS))
@@ -844,13 +844,13 @@ class ASOperation(CustomTopLevel):
 
         button_AS_operation = Button(self)
         button_AS_operation.text = 'OK'
-        button_AS_operation.command = lambda: self.as_operation(scenario, mode, *obj)
+        button_AS_operation.command = lambda: self.as_operation(view, mode, *obj)
         
         self.AS_list.grid(0, 0, 1, 2, in_=lf_AS_operation)
         button_AS_operation.grid(1, 0, 1, 2, in_=lf_AS_operation)
         
-    def as_operation(self, scenario, mode, *objects):
-        selected_AS = scenario.network.AS_factory(name=self.AS_list.get())
+    def as_operation(self, view, mode, *objects):
+        selected_AS = view.network.AS_factory(name=self.AS_list.get())
 
         if mode == 'add':
             selected_AS.management.add_to_AS(*objects)
@@ -862,7 +862,7 @@ class ASOperation(CustomTopLevel):
         self.destroy()
         
 class ASCreation(CustomTopLevel):
-    def __init__(self, scenario, nodes, links):
+    def __init__(self, view, nodes, links):
         super().__init__()
         self.title('Create AS')
         
@@ -879,7 +879,7 @@ class ASCreation(CustomTopLevel):
         # retrieve and save node data
         button_create_AS = Button(self)
         button_create_AS.text = 'Create AS'
-        button_create_AS.command = lambda: self.create_AS(scenario, nodes, links)
+        button_create_AS.command = lambda: self.create_AS(view, nodes, links)
                         
         # Label for the name/type of the AS
         label_name = Label(self)
@@ -903,11 +903,11 @@ class ASCreation(CustomTopLevel):
         self.AS_type_list.grid(2, 1, in_=lf_create_AS)
         button_create_AS.grid(3, 0, 1, 2, in_=lf_create_AS)
 
-    def create_AS(self, scenario, nodes, links):
+    def create_AS(self, view, nodes, links):
         # automatic initialization of the AS id in case it is empty
-        id = int(self.entry_id.get()) if self.entry_id.get() else len(scenario.network.pnAS) + 1
+        id = int(self.entry_id.get()) if self.entry_id.get() else len(view.network.pnAS) + 1
         
-        new_AS = scenario.network.AS_factory(
+        new_AS = view.network.AS_factory(
                                          self.AS_type_list.get(), 
                                          self.entry_name.get(), 
                                          id,

@@ -8,7 +8,7 @@ class ASManagement(CustomTopLevel):
     def __init__(self, AS, is_imported):
         super().__init__()
         self.AS = AS
-        self.network = self.AS.scenario.network
+        self.network = self.AS.view.network
         self.dict_listbox = {}
         self.title('Manage AS')
         
@@ -114,10 +114,10 @@ class ASManagement(CustomTopLevel):
         
     # function to highlight the selected object on the canvas
     def highlight_object(self, event, obj_type):        
-        self.AS.scenario.unhighlight_all()
+        self.AS.view.unhighlight_all()
         for selected_object in self.dict_listbox[obj_type].selected():
             so = self.network.of(name=selected_object, _type=obj_type)
-            self.AS.scenario.highlight_objects(so)
+            self.AS.view.highlight_objects(so)
             
     # remove the object selected in 'obj_type' listbox from the AS
     def remove_selected(self, obj_type):
@@ -247,11 +247,11 @@ class ASManagementWithArea(ASManagement):
             
     # function to highlight the selected object on the canvas
     def highlight_area_object(self, event, obj_type):        
-        self.AS.scenario.unhighlight_all()
+        self.AS.view.unhighlight_all()
         lb = self.area_nodes if obj_type == 'node' else self.area_links
         for selected_object in lb.selected():
             so = self.network.of(name=selected_object, _type=obj_type)
-            self.AS.scenario.highlight_objects(so)
+            self.AS.view.highlight_objects(so)
         
     ## Functions used directly from the AS Management window
 
@@ -267,8 +267,8 @@ class ASManagementWithArea(ASManagement):
     def display_area(self, event):
         for area in self.area_names.selected():
             area = self.AS.area_factory(area)
-            self.AS.scenario.unhighlight_all()
-            self.AS.scenario.highlight_objects(*(area.pa['node'] | area.pa['link']))
+            self.AS.view.unhighlight_all()
+            self.AS.view.highlight_objects(*(area.pa['node'] | area.pa['link']))
             self.area_nodes.clear()
             self.area_links.clear()
             for node in area.pa['node']:
@@ -348,11 +348,11 @@ class STP_Management(ASManagement):
         button_elect_root.grid(2, 0, in_=lf_stp_specifics)
         
     def highlight_SPT(self):
-        self.AS.scenario.highlight_objects(*self.AS.SPT_links)
+        self.AS.view.highlight_objects(*self.AS.SPT_links)
         
     def elect_root(self):
         self.AS.root_election()
-        self.AS.scenario.highlight_objects(self.AS.root)
+        self.AS.view.highlight_objects(self.AS.root)
         
 class VLAN_Management(ASManagementWithArea):
     

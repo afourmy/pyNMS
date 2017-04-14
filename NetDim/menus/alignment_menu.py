@@ -5,9 +5,9 @@ from collections import OrderedDict
 
 class AlignmentMenu(Menu):
     
-    def __init__(self, scenario, nodes):
+    def __init__(self, view, nodes):
         super().__init__(0)
-        self.cs = scenario
+        self.cs = view
         
         cmds = OrderedDict([
         ('Horizontal alignment', lambda: self.cs.align(nodes)),

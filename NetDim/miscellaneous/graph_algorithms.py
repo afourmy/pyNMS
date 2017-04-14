@@ -209,14 +209,14 @@ class GraphAlgorithmWindow(FocusTopLevel):
         destination = self.network.nf(name=self.sp_dest_entry.text)
         algorithm = self.sp_list.text
         nodes, plinks = self.sp_algorithms[algorithm](source, destination)
-        self.scenario.highlight_objects(*(nodes + plinks))
+        self.view.highlight_objects(*(nodes + plinks))
         
     def compute_spair(self):
         source = self.network.nf(name=self.spair_src_entry.text)
         destination = self.network.nf(name=self.spair_dest_entry.text)
         algorithm = self.spair_list.text
         nodes, plinks = self.spair_algorithms[algorithm](source, destination)
-        self.scenario.highlight_objects(*(nodes + plinks))
+        self.view.highlight_objects(*(nodes + plinks))
         
     def compute_mflow(self):
         source = self.network.nf(name=self.mflow_src_entry.text)

@@ -1,11 +1,11 @@
 # NetDim (contact@netdim.fr)
 
-from .geo_scenario import GeoScenario
+from .geographical_view import GeographicalView
 from networks import main_network
 from menus.network_selection_rightclick_menu import NetworkSelectionRightClickMenu
 from menus.network_general_rightclick_menu import NetworkGeneralRightClickMenu
 
-class NetworkScenario(GeoScenario):
+class NetworkView(GeographicalView):
 
     def __init__(self, *args, **kwargs):
         self.network = main_network.MainNetwork(self)
