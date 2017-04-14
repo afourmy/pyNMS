@@ -15,7 +15,7 @@ class SiteView(GeographicalView):
         
         # add binding for right-click menu 
         self.cvs.tag_bind('object', '<ButtonPress-3>',
-                                lambda e: SiteSelectionRightClickMenu(e, self))
+                    lambda e: SiteSelectionRightClickMenu(e, self.controller))
                                 
         # add binding to enter a site 
         self.cvs.tag_bind('site', '<Double-Button-1>', self.enter_closest_site)
@@ -32,4 +32,4 @@ class SiteView(GeographicalView):
     def enter_closest_site(self, event):
         closest_site_id = self.cvs.find_closest(event.x, event.y)[0]
         selected_site = self.object_id_to_object[closest_site_id]
-        self.ms.view_menu.enter_site(selected_site)
+        self.controller.view_menu.enter_site(selected_site)

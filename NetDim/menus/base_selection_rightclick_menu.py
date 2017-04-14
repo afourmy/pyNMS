@@ -19,9 +19,12 @@ from .map_menu import MapMenu
 from objects.object_management_window import ObjectManagementWindow, PropertyChanger
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
+from miscellaneous.decorators import initialize_paths
                                 
 class BaseSelectionRightClickMenu(InMenu):
-    def __init__(self, event, controller, from_view=True):
+    
+    @initialize_paths
+    def __init__(self, event, from_view, controller):
         super().__init__(tearoff=0, master=controller)
         
         x, y = self.view.cvs.canvasx(event.x), self.view.cvs.canvasy(event.y)

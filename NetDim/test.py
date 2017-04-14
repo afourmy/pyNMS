@@ -17,6 +17,8 @@ path_parent = abspath(join(path_app, pardir))
 
 import controller
 
+# @start_and_import(name of the file to be imported)
+# starting a project and importing a file: used for tests
 def start_and_import(filename):
     def inner_decorator(function):
         def wrapper(self):

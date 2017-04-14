@@ -18,7 +18,7 @@ class BaseView(CustomFrame):
         self.name = name
         self.object_id_to_object = {}
         self.controller = controller
-        self.pj = project
+        self.project = project
 
         self.cvs = tk.Canvas(
                              self, 
@@ -118,7 +118,7 @@ class BaseView(CustomFrame):
         self.cvs.bind('<ButtonRelease-3>', self.general_menu)
         
         # search window
-        self.search_window = search.SearchWindow(self)
+        self.search_window = search.SearchWindow(controller)
         
         # use Ctrl+F to look for an object
         self.cvs.bind('<Control-Key-f>', lambda e: self.search_window.deiconify())

@@ -1,14 +1,15 @@
 # NetDim (contact@netdim.fr)
 
 import re
+from .decorators import update_paths
 from objects.objects import *
 from pythonic_tkinter.preconfigured_widgets import *
 
 class SearchWindow(CustomTopLevel):
     
-    def __init__(self, view):
+    def __init__(self, controller):
         super().__init__()
-        self.cs = view
+        self.controller = controller
         
         # label frame for area properties
         lf_search = Labelframe(self)
@@ -55,20 +56,21 @@ class SearchWindow(CustomTopLevel):
         self.property_list['values'] = properties
         self.property_list.current(0)
         
+    @update_paths
     def search(self):
-        self.cs.unhighlight_all()
+        self.view.unhighlight_all()
         subtype, property = self.subtypes_list.text, self.property_list.text
         property = name_to_prop[property]
         type = subtype_to_type[subtype]
         input = self.entry_search.text
-        for obj in self.cs.ntw.ftr(type, subtype):
+        for obj in self.network.ftr(type, subtype):
             value = getattr(obj, property)
             if not self.is_regex.get():
-                converted_input = self.cs.ms.objectizer(property, input)
+                converted_input = self.project.objectizer(property, input)
                 if value == converted_input:
-                    self.cs.highlight_objects(obj)
+                    self.view.highlight_objects(obj)
             else:
                 if re.search(str(input), str(value)):
-                    self.cs.highlight_objects(obj)
+                    self.view.highlight_objects(obj)
                 
         

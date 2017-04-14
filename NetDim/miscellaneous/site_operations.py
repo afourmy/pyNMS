@@ -4,7 +4,7 @@ from pythonic_tkinter.preconfigured_widgets import *
 
 class SiteOperations(CustomTopLevel):
     
-    # Add objects to an AS, or remove objects from an AS
+    # Add objects to a site, or remove objects from a site
     
     def __init__(self, view, mode, obj, sites=set()):
         super().__init__()

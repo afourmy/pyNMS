@@ -115,7 +115,7 @@ class MainNetwork(BaseNetwork):
         if name not in self.pnAS:
             # creation of the AS
             self.pnAS[name] = AS.AS_class[AS_type](
-                                                    self.cs,
+                                                    self.view,
                                                     name, 
                                                     id,
                                                     plinks, 
@@ -229,7 +229,7 @@ class MainNetwork(BaseNetwork):
                                      )
                         vc("link", node, source_plink)
                         vc("link", neighbor, destination_plink)
-                        self.cs.create_link(vc)
+                        self.view.create_link(vc)
                         
     def vc_creation(self):
         # clear all existing multi-access segments
@@ -237,7 +237,7 @@ class MainNetwork(BaseNetwork):
         for i in (2, 3):
             type, subtype = 'l{}link'.format(i), 'l{}vc'.format(i)
             for vc in list(self.ftr(type, subtype)):
-                self.cs.remove_objects(vc)
+                self.view.remove_objects(vc)
             self.segment_finder(i)
             self.multi_access_network(i)
             
@@ -317,7 +317,7 @@ class MainNetwork(BaseNetwork):
         # we need to remove all failures before dimensioning the physical links:
         # the set of failed physical link will be redefined, but we also need the
         # icons to be cleaned from the canvas
-        self.cs.remove_failures()
+        self.view.remove_failures()
         
         # we consider each physical link in the network to be failed, one by one
         for failed_plink in self.plinks.values():
@@ -1600,7 +1600,7 @@ class MainNetwork(BaseNetwork):
         
         # we compute the path of all traffic physical links
         self.path_finder()
-        graph_project = self.cs.controller.add_project(name)
+        graph_project = self.view.controller.add_project(name)
         
         # in the new graph, each node corresponds to a traffic path
         # we create one node per traffic physical link in the new view            

@@ -22,8 +22,9 @@ from objects.interface_window import InterfaceWindow
 from .base_selection_rightclick_menu import BaseSelectionRightClickMenu
                                 
 class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
+    
     def __init__(self, event, controller, from_view=True):
-        super().__init__(event, controller, from_view)
+        super().__init__(event, from_view, controller)
             
         # exacly one node and one physical link: menu for the associated interface
         if self.one_node and self.one_link:

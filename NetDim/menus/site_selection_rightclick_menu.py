@@ -21,13 +21,13 @@ from objects.interface_window import InterfaceWindow
 from .base_selection_rightclick_menu import BaseSelectionRightClickMenu
                                 
 class SiteSelectionRightClickMenu(BaseSelectionRightClickMenu):
-    def __init__(self, event, view, from_view=True):
-        super().__init__(event, view, from_view)
-        self.cs = view
+    
+    def __init__(self, event, controller, from_view=True):
+        super().__init__(event, from_view, controller)
                 
         # exactly one node: configuration menu
         if self.no_link and self.no_shape and self.one_node:
-            node ,= self.cs.so['node']
+            node ,= self.view.so['node']
             
             self.add_command(label='Enter site', 
                         command=lambda: self.enter_site(node))
@@ -38,12 +38,12 @@ class SiteSelectionRightClickMenu(BaseSelectionRightClickMenu):
     def empty_selection_and_destroy_menu(function):
         def wrapper(self, *others):
             function(self, *others)
-            self.cs.unhighlight_all()
+            self.view.unhighlight_all()
             self.destroy()
         return wrapper
         
     @empty_selection_and_destroy_menu
     def enter_site(self, site):
-        self.cs.ms.view_menu.enter_site(site)
+        self.controller.view_menu.enter_site(site)
         
         

@@ -10,21 +10,23 @@ from miscellaneous.decorators import update_coordinates, overrider
 
 class InSiteView(BaseView):
 
-    def __init__(self, site, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, site, controller, project, name):
+        super().__init__(controller, project, name)
         self.site = site
-        self.network = self.network_view.network
+        self.network_view = project.network_view
+        self.network = project.network_view.network
+        # self.network = self.network_view.network
         
         # add binding for right-click menu 
         self.cvs.tag_bind('object', '<ButtonPress-3>',
-                                lambda e: NetworkSelectionRightClickMenu(e, self))
+                lambda e: NetworkSelectionRightClickMenu(e, self.controller))
         
         # add binding to exit the insite view, back to the site view
         self.cvs.bind('<space>', self.back_to_site_view)
         
     # upon pressing space, back to the site view
     def back_to_site_view(self, _):
-        self.ms.view_menu.switch_view('site')
+        self.controller.view_menu.switch_view('site')
         
     def update_coordinates(function):
         def wrapper(self, event, *others):
@@ -33,7 +35,7 @@ class InSiteView(BaseView):
         return wrapper
         
     def general_menu(self, event):
-        x, y = self._start_pos_main_node
+        x, y = self.start_pos_main_node
         # if the right-click button was pressed, but the position of the 
         # canvas when the button is released hasn't changed, we create
         # the general right-click menu
@@ -43,19 +45,20 @@ class InSiteView(BaseView):
     @update_coordinates
     @overrider(BaseView)
     def find_closest_node(self, event):
+        print('test')
         # record the item and its location
-        self._dict_start_position.clear()
+        self.dict_start_position.clear()
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
         # save the initial position to compute the delta for multiple nodes motion
         main_node_selected = self.object_id_to_object[self.drag_item]
         merged_dict = main_node_selected.site_image[self.site].items()
         layer = [l for l, item_id in merged_dict if item_id == self.drag_item].pop()
         diff = layer * self.diff_y
-        self._start_pos_main_node = event.x, event.y + diff
+        self.start_pos_main_node = event.x, event.y + diff
         if main_node_selected in self.so['node']:
             # for all selected node (sn), we store the initial position
             for sn in self.so['node']:
-                self._dict_start_position[sn] = [
+                self.dict_start_position[sn] = [
                                             sn.site_coords[self.site][0], 
                                             sn.site_coords[self.site][1] + diff
                                             ]
@@ -66,7 +69,7 @@ class InSiteView(BaseView):
                 self.unhighlight_all()
             self.highlight_objects(main_node_selected)
             # we update the dict of start position
-            self._dict_start_position[main_node_selected] = self._start_pos_main_node 
+            self.dict_start_position[main_node_selected] = self.start_pos_main_node 
             # we also need to update the highlight to that the old selection
             # is no longer highlighted but the newly selected node is.
             self.highlight_objects(main_node_selected)
@@ -160,13 +163,13 @@ class InSiteView(BaseView):
         node.site_coords[self.site] = [event.x, event.y]
         self.move_node(node)
         # create the node in the network view and move to the site coordinates
-        self.ns.create_node(node)
-        self.ns.move_to_geographical_coordinates(node)
+        self.network_view.create_node(node)
+        self.network_view.move_to_geographical_coordinates(node)
     
     @overrider(BaseView)
     def create_node(self, node, layer=1):
         s = self.node_size
-        curr_image = self.ms.dict_image['default'][node.subtype]
+        curr_image = self.controller.dict_image['default'][node.subtype]
         y = node.site_coords[self.site][1] - (layer - 1) * self.diff_y
         tags = (node.subtype, node.class_type, 'object')
         node.site_image[self.site][layer] = self.cvs.create_image(
@@ -246,7 +249,7 @@ class InSiteView(BaseView):
                                             )
                     self.site.add_to_site(new_link)
                     # add in the network view as well
-                    self.ns.create_link(new_link)
+                    self.network_view.create_link(new_link)
                     
     @overrider(BaseView)
     def create_link(self, new_link):
@@ -327,8 +330,8 @@ class InSiteView(BaseView):
             # the main node initial position, the main node current position, 
             # and the other node initial position form a rectangle.
             # we find the position of the fourth vertix.
-            x0, y0 = self._start_pos_main_node
-            x1, y1 = self._dict_start_position[selected_node]
+            x0, y0 = self.start_pos_main_node
+            x1, y1 = self.dict_start_position[selected_node]
             selected_node.site_coords[self.site][0] = x1 + (event.x - x0)
             selected_node.site_coords[self.site][1] = y1 + (event.y + diff - y0)
             self.move_node(selected_node)
@@ -378,7 +381,7 @@ class InSiteView(BaseView):
     
     @overrider(BaseView)
     def remove_objects(self, *objects):
-        self.ns.remove_objects(*objects)
+        self.network_view.remove_objects(*objects)
                   
     def remove_object_from_insite_view(self, obj):
         if obj.class_type == 'node':
@@ -477,7 +480,7 @@ class InSiteView(BaseView):
                 self.cvs.itemconfig(obj.site_oval[self.site], fill=color)
                 self.cvs.itemconfig(
                                     obj.site_image[self.site][1], 
-                                    image = self.ms.dict_image[color][obj.subtype]
+                                    image = self.controller.dict_image[color][obj.subtype]
                                     )
             elif obj.class_type == 'link':
                 dash = (3, 5) if dash else ()
@@ -497,7 +500,7 @@ class InSiteView(BaseView):
                 self.cvs.itemconfig(obj.site_oval[self.site], fill=obj.color)
                 self.cvs.itemconfig(
                                 obj.site_image[self.site][1], 
-                                image = self.ms.dict_image['default'][obj.subtype]
+                                image = self.controller.dict_image['default'][obj.subtype]
                                 )
             elif obj.class_type == 'link':
                 self.cvs.itemconfig(obj.site_line[self.site], fill=obj.color, 
@@ -806,13 +809,13 @@ class InSiteView(BaseView):
                 id_failure = self.cvs.create_image(
                                                 (xA+xB)/2, 
                                                 (yA+yB)/2, 
-                                                image = self.ms.img_failure
+                                                image = self.controller.img_failure
                                                 )
             else:
                 id_failure = self.cvs.create_image(
                                                 obj.x, 
                                                 obj.y, 
-                                                image = self.ms.img_failure
+                                                image = self.controller.img_failure
                                                 )
                 for _, plink in self.ntw.graph[obj.site_id[self.site]]['plink']:
                     self.simulate_failure(plink)

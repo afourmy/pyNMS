@@ -161,7 +161,7 @@ class CreationMenu(ScrolledFrame):
        
     @update_paths
     def switch_display_mode(self):
-        self.current_view.switch_display_mode()
+        self.view.switch_display_mode()
 
     @update_paths
     def update_display(self):
@@ -175,7 +175,7 @@ class CreationMenu(ScrolledFrame):
         
     @update_paths
     def switch_to(self, mode):
-        relief = tk.SUNKEN if mode == 'motion' else tk.RAISED
+        relief = 'sunken' if mode == 'motion' else 'raised'
         self.type_to_button['motion'].config(relief=relief)
         self.view._mode = mode
         self.view.switch_binding()
@@ -200,6 +200,6 @@ class CreationMenu(ScrolledFrame):
         self.view.switch_binding()
         
     def erase_graph(self, view):
-        view.erase_graph()
-        view.ntw.erase_network()
+        self.view.erase_graph()
+        self.network.erase_network()
                 

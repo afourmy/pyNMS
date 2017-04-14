@@ -20,15 +20,15 @@ class Project():
         self.gf = CustomFrame(width=1300, height=800)        
         
         self.network_view = NetworkView(
-                                                controller, 
-                                                self, 
-                                                '{} : network view'.format(name)
-                                                )
+                                        controller, 
+                                        self, 
+                                        '{} : network view'.format(name)
+                                        )
         self.site_view = SiteView(
-                                          controller, 
-                                          self, 
-                                          '{} : site view'.format(name)
-                                          )
+                                controller, 
+                                self, 
+                                '{} : site view'.format(name)
+                                )
         self.current_view = self.network_view
         self.network = self.current_view.network
         self.network_view.pack()

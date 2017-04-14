@@ -3,23 +3,7 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
-            
-def overrider(interface_class):
-    def overrider(method):
-        assert(method.__name__ in dir(interface_class))
-        return method
-    return overrider
-    
-# decorating __init__ to initialize properties
-def defaultizer(**default_kwargs_values):
-    def inner_decorator(init):
-        def wrapper(self, *args, **kwargs):
-            for property, default_value in default_kwargs_values.items():
-                if property not in kwargs:
-                    kwargs[property] = default_value
-            init(self, *args, **kwargs)
-        return wrapper
-    return inner_decorator
+from miscellaneous.decorators import overrider, defaultizer
     
 class Canvas(tk.Canvas):
     
@@ -29,17 +13,8 @@ class Canvas(tk.Canvas):
 
 class CustomFrame(tk.Frame):
     
-    def __init__(self, *a, **kw):
-        if 'master' in kw:
-            self.controller = controller = kw.pop('master')
-            self.project = controller.current_project
-            self.view = controller.current_project.current_view
-            self.network_view = controller.current_project.network_view
-            self.site_view = controller.current_project.site_view
-            self.network = controller.current_project.current_view.network
-            self.site_network = self.site_view.network
-            
-        super().__init__(*a, **kw)
+    def __init__(self, *args, **kwargs):            
+        super().__init__(*args, **kwargs)
         color = '#A1DBCD'
         self.configure(background=color)    
         
@@ -52,18 +27,8 @@ class CustomScrolledText(ScrolledText):
         
 class CustomTopLevel(tk.Toplevel):
     
-    def __init__(self, *a, **kw):
-        if 'master' in kw:
-            self.controller = controller = kw.pop('master')
-            self.project = controller.current_project
-            self.view = controller.current_project.current_view
-            self.network_view = controller.current_project.network_view
-            self.site_view = controller.current_project.site_view
-            self.network = controller.current_project.current_view.network
-            self.site_network = self.site_view.network
-            
-        super().__init__(*a, **kw)
-
+    def __init__(self, *args, **kwargs):            
+        super().__init__(*args, **kwargs)
         color = '#A1DBCD'
         self.configure(background=color)
         

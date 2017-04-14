@@ -3,6 +3,7 @@
 from pythonic_tkinter.preconfigured_widgets import *
 
 class RWAWindow(FocusTopLevel):
+    
     def __init__(self, controller):
         super().__init__(master=controller)     
         self.title('Routing and Wavelength Assignment')

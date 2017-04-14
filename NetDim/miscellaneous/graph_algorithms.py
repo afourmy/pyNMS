@@ -2,10 +2,14 @@
 
 from pythonic_tkinter.preconfigured_widgets import *
 from collections import OrderedDict
+from miscellaneous.decorators import update_paths
 
 class GraphAlgorithmWindow(FocusTopLevel):
+    
     def __init__(self, controller):
-        super().__init__(master=controller)
+        super().__init__()
+        self.controller = controller
+        
         self.title('Advanced graph options')
 
         ## Shortest path section
@@ -15,13 +19,6 @@ class GraphAlgorithmWindow(FocusTopLevel):
         #   - shortest path with Bellman-Ford
         #   - shortest path with Floyd-Warshall
         #   - shortest path with Linear programming
-        
-        self.sp_algorithms = OrderedDict([
-        ('Constrained A*', self.network.A_star),
-        ('Bellman-Ford algorithm', self.network.bellman_ford),
-        ('Floyd-Warshall algorithm', self.network.floyd_warshall),
-        ('Linear programming', self.network.LP_SP_formulation)
-        ])
 
         # label frame for shortest path algorithms
         lf_sp = Labelframe(self)
@@ -29,7 +26,12 @@ class GraphAlgorithmWindow(FocusTopLevel):
 
         # List of shortest path algorithms
         self.sp_list = Combobox(self, width=30)
-        self.sp_list['values'] = tuple(self.sp_algorithms.keys())
+        self.sp_list['values'] = (
+                                  'Constrained A*',
+                                  'Bellman-Ford algorithm', 
+                                  'Floyd-Warshall algorithm',
+                                  'Linear programming'
+                                  )
         self.sp_list.current(0)
                                 
         sp_src_label = Label(self)
@@ -60,20 +62,18 @@ class GraphAlgorithmWindow(FocusTopLevel):
         #   - maximum flow with Dinic
         #   - maximum flow with Linear programming
         
-        self.mflow_algorithms = OrderedDict([
-        ('Ford-Fulkerson', self.network.ford_fulkerson),
-        ('Edmond-Karps', self.network.edmonds_karp),
-        ('Dinic', self.network.dinic),
-        ('Linear programming', self.network.LP_MF_formulation)
-        ])
-        
         # label frame for maximum flow algorithms
         lf_mflow = Labelframe(self)
         lf_mflow.text = 'Maximum flow algorithms'
         
         # List of flow path algorithms
         self.mflow_list = Combobox(self, width=30)
-        self.mflow_list['values'] = tuple(self.mflow_algorithms.keys())
+        self.mflow_list['values'] = (
+                                    'Ford-Fulkerson',
+                                    'Edmond-Karps', 
+                                    'Dinic', 
+                                    'Linear programming'
+                                    )
         self.mflow_list.current(0)
         self.mflow_list.bind('<<ComboboxSelected>>', self.readonly)
                                         
@@ -104,13 +104,6 @@ class GraphAlgorithmWindow(FocusTopLevel):
         #   - Bhandari algorithm
         #   - Suurbale algorithm
         #   - Linear programming
-        
-        self.spair_algorithms = OrderedDict([
-        ('Constrained A*', self.network.A_star_shortest_pair),
-        ('Bhandari algorithm', self.network.bhandari),
-        ('Suurbale algorithm', self.network.suurbale),
-        ('Linear programming', lambda: 'to repair')
-        ])
 
         # label frame for shortest pair algorithms
         lf_spair = Labelframe(self) 
@@ -118,7 +111,13 @@ class GraphAlgorithmWindow(FocusTopLevel):
 
         # List of shortest path algorithms
         self.spair_list = Combobox(self, width=30)
-        self.spair_list['values'] = tuple(self.spair_algorithms.keys())
+        self.spair_list['values'] = (
+                                    'Constrained A*', 
+                                    'Bhandari algorithm', 
+                                    'Suurbale algorithm', 
+                                    'Linear programming'
+                                    )
+
         self.spair_list.current(0)
                                 
         spair_src_label = Label(self)
@@ -153,18 +152,14 @@ class GraphAlgorithmWindow(FocusTopLevel):
         #   - minimum-cost flow with Linear programming
         #   - minimum-cost flow with Klein (cycle-cancelling algorithm)
         
-        self.mcflow_algorithms = OrderedDict([
-        ('Linear programming', self.network.LP_MCF_formulation),
-        ('Klein', lambda: 'to be implemented')
-        ])
-        
         # label frame for maximum flow algorithms
         lf_mcflow = Labelframe(self)
         lf_mcflow.text = 'Minimum-cost flow algorithms'
         
         # List of flow path algorithms
         self.mcflow_list = Combobox(self, width=30)
-        self.mcflow_list['values'] = tuple(self.mcflow_algorithms.keys())
+        self.mcflow_list['values'] = ('Linear programming', 'Klein')
+
         self.mcflow_list.current(0)
         self.mcflow_list.bind('<<ComboboxSelected>>', self.readonly)
                                         
@@ -203,32 +198,54 @@ class GraphAlgorithmWindow(FocusTopLevel):
             self.max_flow_entry.config(state=tk.NORMAL)
         else:
             self.max_flow_entry.config(state='readonly')
-                                        
+                 
+    @update_paths
     def compute_sp(self):
         source = self.network.nf(name=self.sp_src_entry.text)
         destination = self.network.nf(name=self.sp_dest_entry.text)
-        algorithm = self.sp_list.text
-        nodes, plinks = self.sp_algorithms[algorithm](source, destination)
+        algorithm = {
+                    'Constrained A*': self.network.A_star,
+                    'Bellman-Ford algorithm': self.network.bellman_ford,
+                    'Floyd-Warshall algorithm': self.network.floyd_warshall,
+                    'Linear programming': self.network.LP_SP_formulation
+                    }[self.sp_list.text]
+        nodes, plinks = algorithm(source, destination)
         self.view.highlight_objects(*(nodes + plinks))
         
-    def compute_spair(self):
-        source = self.network.nf(name=self.spair_src_entry.text)
-        destination = self.network.nf(name=self.spair_dest_entry.text)
-        algorithm = self.spair_list.text
-        nodes, plinks = self.spair_algorithms[algorithm](source, destination)
-        self.view.highlight_objects(*(nodes + plinks))
-        
+    @update_paths
     def compute_mflow(self):
         source = self.network.nf(name=self.mflow_src_entry.text)
         destination = self.network.nf(name=self.mflow_dest_entry.text)
-        algorithm = self.mflow_algorithms[self.mflow_list.text]
+        algorithm = {
+                    'Ford-Fulkerson': self.network.ford_fulkerson,
+                    'Edmond-Karps': self.network.edmonds_karp,
+                    'Dinic': self.network.dinic,
+                    'Linear programming': self.network.LP_MF_formulation
+                    }[self.mflow_list.text]
         flow = algorithm(source, destination)   
         print(flow)
         
+    @update_paths
+    def compute_spair(self):
+        source = self.network.nf(name=self.spair_src_entry.text)
+        destination = self.network.nf(name=self.spair_dest_entry.text)
+        algorithm = {
+                    'Constrained A*': self.network.A_star_shortest_pair,
+                    'Bhandari algorithm': self.network.bhandari,
+                    'Suurbale algorithm': self.network.suurbale,
+                    'Linear programming': lambda: 'to repair'
+                    }[self.spair_list.text]
+        nodes, plinks = algorithm(source, destination)
+        self.view.highlight_objects(*(nodes + plinks))
+        
+    @update_paths
     def compute_mcflow(self):
         source = self.network.nf(name=self.mcflow_src_entry.text)
         destination = self.network.nf(name=self.mcflow_dest_entry.text)
         flow = self.flow_entry.text
-        algorithm = self.mcflow_algorithms[self.mcflow_list.text]
+        algorithm = {
+                    'Linear programming': self.network.LP_MCF_formulation,
+                    'Klein': lambda: 'to be implemented'
+                    }[self.mcflow_list.text]
         cost = algorithm(source, destination, flow)   
         print(cost)
