@@ -12,7 +12,7 @@ import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
 import ip_networks.bgp_table as ip_bgpt
 import graph_generation.multiple_objects as mobj
-from pythonic_tkinter.preconfigured_widgets import InMenu
+from pythonic_tkinter.preconfigured_widgets import Menu
 from miscellaneous import site_operations
 from .alignment_menu import AlignmentMenu
 from .map_menu import MapMenu
@@ -21,7 +21,7 @@ from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
 from miscellaneous.decorators import *
                                 
-class BaseSelectionRightClickMenu(InMenu):
+class BaseSelectionRightClickMenu(Menu):
     
     @update_paths
     def __init__(self, event, from_view, controller):

@@ -2,12 +2,15 @@
 
 import tkinter as tk
 from graph_generation.multiple_objects import MultipleNodes
+from miscellaneous.decorators import update_paths
+from pythonic_tkinter.preconfigured_widgets import Menu
 
-class SiteGeneralRightClickMenu(tk.Menu):
-    def __init__(self, event, view):
-        super().__init__(tearoff=0)
-        self.cs = view
-        x, y = self.cs.cvs.canvasx(event.x), self.cs.cvs.canvasy(event.y)
+class SiteGeneralRightClickMenu(Menu):
+    
+    @update_paths
+    def __init__(self, event, controller):
+        super().__init__()
+        x, y = self.view.cvs.canvasx(event.x), self.view.cvs.canvasy(event.y)
                 
         # change geographical projection
         projection_menu = tk.Menu(self, tearoff=0)

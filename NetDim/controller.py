@@ -125,8 +125,9 @@ class Controller(MainWindow):
         exit.text = 'Exit'
         exit.command = self.destroy
 
-        general_menu.create_menu()
-        netdim_menu.add_cascade(label='Main',menu=general_menu)
+        main_cascade = MenuCascade(netdim_menu)
+        main_cascade.text = 'Main'
+        main_cascade.inner_menu = general_menu
                 
         # advanced menu:
         
@@ -156,8 +157,9 @@ class Controller(MainWindow):
         script_creation_entry.text = 'Script creation'
         script_creation_entry.command = self.script_creation_window.deiconify
         
-        advanced_menu.create_menu()
-        netdim_menu.add_cascade(label='Network routing',menu=advanced_menu)
+        main_cascade = MenuCascade(netdim_menu)
+        main_cascade.text = 'Network routing'
+        main_cascade.inner_menu = advanced_menu
 
         # choose which label to display per type or subtype of object:
         # - a first menu contains all types of objects, each type unfolding
@@ -175,12 +177,10 @@ class Controller(MainWindow):
                 type_entry = MenuEntry(menu_type)
                 type_entry.text = prop_to_name[label]
                 type_entry.command = cmd
-            menu_type.create_menu()
                     
-        netdim_menu.add_cascade(
-                                label = 'Per-type labels', 
-                                menu = per_type_label_menu
-                                )
+        per_type_cascade = MenuCascade(netdim_menu)
+        per_type_cascade.text = 'Per-type labels'
+        per_type_cascade.inner_menu = per_type_label_menu
         
         per_subtype_label_menu = Menu(netdim_menu)
         for obj_type, labels in object_ie.items():
@@ -193,12 +193,10 @@ class Controller(MainWindow):
                 text = 'None' if label == 'None' else prop_to_name[label]
                 type_entry.text =  text
                 type_entry.command = cmd
-            menu_type.create_menu()
                     
-        netdim_menu.add_cascade(
-                                label = 'Per-subtype labels', 
-                                menu = per_subtype_label_menu
-                                )
+        per_subtype_cascade = MenuCascade(netdim_menu)
+        per_subtype_cascade.text = 'Per-subtype labels'
+        per_subtype_cascade.inner_menu = per_subtype_label_menu
         
         self.config(menu=netdim_menu)
         

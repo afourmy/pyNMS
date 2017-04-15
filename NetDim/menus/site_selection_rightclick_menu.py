@@ -19,7 +19,7 @@ from objects.object_management_window import PropertyChanger
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
 from .base_selection_rightclick_menu import BaseSelectionRightClickMenu
-from miscellaneous.decorators import *
+from miscellaneous.decorators import empty_selection_and_destroy_menu
                                 
 class SiteSelectionRightClickMenu(BaseSelectionRightClickMenu):
     

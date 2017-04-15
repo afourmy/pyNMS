@@ -2,9 +2,9 @@
 
 import tkinter as tk
 from graph_generation.multiple_objects import MultipleNodes
-from pythonic_tkinter.preconfigured_widgets import InMenu
+from pythonic_tkinter.preconfigured_widgets import Menu
 
-class InSiteGeneralRightClickMenu(InMenu):
+class InSiteGeneralRightClickMenu(Menu):
     def __init__(self, event, view):
         super().__init__(tearoff=0)
         self.cs = view

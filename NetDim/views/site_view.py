@@ -26,7 +26,7 @@ class SiteView(GeographicalView):
         # canvas when the button is released hasn't changed, we create
         # the general right-click menu
         if (x, y) == (event.x, event.y):
-            SiteGeneralRightClickMenu(event, self)
+            SiteGeneralRightClickMenu(event, self.controller)
            
     @update_coordinates
     def enter_closest_site(self, event):

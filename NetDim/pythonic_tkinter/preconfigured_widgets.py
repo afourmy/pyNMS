@@ -5,11 +5,35 @@ from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 from miscellaneous.decorators import overrider, defaultizer
     
+class Binding(object):
+    
+    def __init__(self, canvas, tag=None, add=''):
+        self.canvas = canvas
+        self.add = add
+        self.tag = tag
+        
+    def bind(self):
+        if not self.tag:
+            self.canvas.bind(self.event, self.command, self.add)
+        else:
+            self.canvas.tag_bind(self.tag, self.event, self.command, self.add) 
+        
+    def unbind(self):
+        if not self.tag:
+            self.canvas.unbind(self.event)
+        else:
+            self.canvas.tag_unbind(self.tag, self.event)
+            
 class Canvas(tk.Canvas):
     
     @defaultizer(background='white', width=1000, height=800)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+    # bind multiple bindings at once
+    def binds(self, *bindings):
+        for binding in bindings:
+            binding.bind()
 
 class CustomFrame(tk.Frame):
     
@@ -123,62 +147,56 @@ class MainWindow(tk.Tk):
                        ):
             ttk.Style().configure('T' + widget, background=color)
         ttk.Style().configure('Treeview', rowheight=25)
-        
-class InMenu(tk.Menu):
-    
-    @defaultizer(tearoff=0)
-    def __init__(self, *args, **kwargs):
-        if 'master' in kwargs:
-            self.controller = controller = kwargs.pop('master')
-            self.project = controller.current_project
-            self.view = controller.current_project.current_view
-            self.network_view = controller.current_project.network_view
-            self.site_view = controller.current_project.site_view
-            self.network = controller.current_project.current_view.network
-            self.site_network = self.site_view.network
-            
-        super().__init__(*args, **kwargs)
             
 class Menu(tk.Menu):
     
     @defaultizer(tearoff=0)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.menu_entries = []
+        self.index = 1
         
     def separator(self):
-        self.menu_entries.append('separator')
+        self.index += 1
+        self.add_separator()
         
-    def create_menu(self):
-        for entry in self.menu_entries:
-            if entry == 'separator':
-                self.add_separator()
-            else:
-                self.add('command', {'label': entry.label, 'command': entry.cmd})  
+class MenuCascade(object):
+
+    def __init__(self, menu):
+        self.menu = menu
+        
+    @property
+    def inner_menu(self):
+        return self.inner
+        
+    @inner_menu.setter
+    def inner_menu(self, value):
+        self.menu.add_cascade(label=self.text, menu=value)
+        self.inner = value
             
 class MenuEntry(object):
     
     
     def __init__(self, menu):
-        menu.menu_entries.append(self)
-        self.label = 'Menu text'
-        self.cmd = lambda: None
+        self.index = menu.index
+        menu.index += 1
+        self.menu = menu 
+        self.menu.add('command', {})
         
     @property
     def text(self):
-        return self.label
+        self.menu.entrycget(self.index, 'text')
         
     @text.setter
     def text(self, value):
-        self.label = value
+        self.menu.entryconfigure(self.index, label=value)
         
     @property
     def command(self):
-        return self.command
+        self.menu.entrycget(self.index, 'command')
         
     @command.setter
-    def command(self, cmd):
-        self.cmd = cmd
+    def command(self, value):
+        self.menu.entryconfig(self.index, command=value)
             
 class NoDuplicateListbox(ImprovedListbox):
     
