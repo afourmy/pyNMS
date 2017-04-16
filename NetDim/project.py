@@ -31,7 +31,7 @@ class Project():
                                 )
         self.current_view = self.network_view
         self.network = self.current_view.network
-        self.network_view.pack()
+        self.network_view.pack(fill='both', expand=True)
         
     def objectizer(self, property, value):
         if value == 'None': 

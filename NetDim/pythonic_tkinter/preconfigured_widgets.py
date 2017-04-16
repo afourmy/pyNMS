@@ -25,7 +25,7 @@ class Binding(object):
         else:
             self.canvas.tag_unbind(self.tag, self.event)
             
-class Canvas(tk.Canvas):
+class BindingCanvas(tk.Canvas):
     
     @defaultizer(background='white', width=1000, height=800)
     def __init__(self, *args, **kwargs):
@@ -345,7 +345,8 @@ subwidget_creation = (
                       ('Checkbutton', ttk.Checkbutton, (4, 4, 'w')),
                       ('Separator', ttk.Separator, (4, 4, 'ew')),
                       ('ScrolledFrame', VerticalScrolledFrame, (4, 4, 'w')),
-                      ('AScrolledText', CustomScrolledText, (4, 4, 'w'))
+                      ('AScrolledText', CustomScrolledText, (4, 4, 'w')),
+                      ('Canvas', BindingCanvas, (4, 4, 'w'))
                       )
     
 for subwidget, ttk_class, defaults in subwidget_creation:

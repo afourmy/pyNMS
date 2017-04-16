@@ -177,30 +177,15 @@ class Controller(MainWindow):
             entry_name = '{type} label'.format(type=type_to_name[obj_type])
             per_type_label_menu.add_cascade(label=entry_name, menu=menu_type)
             for label in labels:
-                cmd = lambda o=obj_type, l=label: self.current_project.current_view.refresh_type_labels(o, l)
+                def update_label(o=obj_type, l=label):
+                    self.current_project.current_view.refresh_type_labels(o, l)
                 type_entry = MenuEntry(menu_type)
                 type_entry.text = prop_to_name[label]
-                type_entry.command = cmd
+                type_entry.command = update_label
                     
         per_type_cascade = MenuCascade(netdim_menu)
         per_type_cascade.text = 'Per-type labels'
         per_type_cascade.inner_menu = per_type_label_menu
-        
-        per_subtype_label_menu = Menu(netdim_menu)
-        for obj_type, labels in object_ie.items():
-            menu_type = Menu(netdim_menu)
-            entry_name = '{subtype} label'.format(subtype=obj_type)
-            per_subtype_label_menu.add_cascade(label=entry_name, menu=menu_type)
-            for label in ('None',) + labels:
-                cmd = lambda o=obj_type, l=label: self.current_project.current_view.refresh_subtype_labels(o, l)
-                type_entry = MenuEntry(menu_type)
-                text = 'None' if label == 'None' else prop_to_name[label]
-                type_entry.text =  text
-                type_entry.command = cmd
-                    
-        per_subtype_cascade = MenuCascade(netdim_menu)
-        per_subtype_cascade.text = 'Per-subtype labels'
-        per_subtype_cascade.inner_menu = per_subtype_label_menu
         
         self.config(menu=netdim_menu)
         
@@ -209,58 +194,52 @@ class Controller(MainWindow):
         # dict of nodes image for node creation
         self.dict_image = defaultdict(dict)
         self.dict_pil = defaultdict(dict)
-        
-        self.node_size_image = {
-        'router': (33, 25), 
-        'switch': (54, 36),
-        'oxc': (35, 32), 
-        'host': (35, 32), 
-        'regenerator': (64, 50), 
-        'splitter': (64, 50),
-        'antenna': (35, 35),
-        'cloud': (60, 35),
-        'firewall': (40, 40),
-        'load_balancer': (60, 40),
-        'server': (52, 52),
-        'site': (50, 50)
-        }
-        
+                
         for color in ('default', 'red', 'purple'):
             for node_type in node_subtype:
-                img_path = join(self.path_icon, ''.join(
-                                            (color, '_', node_type, '.gif')))
-                img_pil = ImageTk.Image.open(img_path).resize(
-                                            self.node_size_image[node_type])
+                obj_class = node_class[node_type]
+                x, y = obj_class.imagex, obj_class.imagey
+                img_path = join(self.path_icon, ''.join((
+                                                        color, 
+                                                        '_', 
+                                                        node_type, 
+                                                        '.gif'
+                                                        ))
+                                )
+                img_pil = ImageTk.Image.open(img_path).resize((x, y))
                 img = ImageTk.PhotoImage(img_pil)
                 self.dict_image[color][node_type] = img
                 self.dict_pil[color][node_type] = img_pil
                 
         # image for a link failure
-        img_pil = ImageTk.Image.open(join(self.path_icon, 'failure.png'))\
-                                                                .resize((20, 20))
+        img_pil = ImageTk.Image.open(join(
+                                          self.path_icon, 
+                                          'failure.png'
+                                          )
+                                    ).resize((20, 20))
         self.img_failure = ImageTk.PhotoImage(img_pil)
         
         self.menu_notebook = Notebook(self)
         
         # main menu for creation and selection of objects
         self.creation_menu = creation_menu.CreationMenu(self.menu_notebook, self)
-        self.creation_menu.pack(fill='both', side='left')
+        self.creation_menu.pack()
     
         # routing menu (addresss allocation + tables creation + routing)
         self.routing_menu = routing_menu.RoutingMenu(self.menu_notebook, self)
-        self.routing_menu.pack(fill='both', side='left')
+        self.routing_menu.pack()
         
         # drawing menu (force-based algorithm parameters + paint-like drawing)
         self.drawing_menu = drawing_menu.DrawingMenu(self.menu_notebook, self)
-        self.drawing_menu.pack(fill='both', side='left')
+        self.drawing_menu.pack()
         
         # display menu to control the display
         self.display_menu = display_menu.DisplayMenu(self.menu_notebook, self)
-        self.display_menu.pack(fill='both', side='left')
+        self.display_menu.pack()
         
         # display menu to control the display
         self.view_menu = view_menu.ViewMenu(self.menu_notebook, self)
-        self.view_menu.pack(fill='both', side='left')
+        self.view_menu.pack()
         
         self.menu_notebook.add(self.creation_menu, text=' Creation ')
         self.menu_notebook.add(self.routing_menu, text=' Routing ')

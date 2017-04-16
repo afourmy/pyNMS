@@ -19,17 +19,15 @@ class BaseView(CustomFrame):
         
         super().__init__(self.project.gf)
         self.name = name
-        
-
-        
+    
         self.object_id_to_object = {}
 
-        self.cvs = tk.Canvas(
-                             self, 
-                             bg = '#FFFFFF', 
-                             width = 1300, 
-                             height = 800,
-                             )
+        self.cvs = Canvas(
+                        self, 
+                        bg = '#FFFFFF', 
+                        width = 1300, 
+                        height = 800,
+                        )
                              
         hbar = Scrollbar(self, orient='horizontal')
         hbar.pack(side='bottom', fill='x')

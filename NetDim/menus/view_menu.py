@@ -114,7 +114,7 @@ class ViewMenu(ScrolledFrame):
             self.site_view_button.config(relief='sunken')
             self.network_view_button.config(relief='raised')
             self.project.current_view.pack_forget()
-            self.site_view.pack()
+            self.site_view.pack(fill='both', expand=True)
             # update current view
             self.project.current_view = self.site_view
         else:
@@ -122,14 +122,14 @@ class ViewMenu(ScrolledFrame):
             self.site_view_button.config(relief='raised')
             self.network_view_button.config(relief='sunken')
             self.site_view.pack_forget()
-            self.network_view.pack()
+            self.network_view.pack(fill='both', expand=True)
             # update current view
             self.project.current_view = self.network_view
             
     @update_paths
     def enter_site(self, site):
         self.project.current_view.pack_forget()
-        site.view.pack()
+        site.view.pack(fill='both', expand=True)
         self.controller.current_project.current_view = site.view
         self.current_view = site
         # destroy the pwindow of the site view
