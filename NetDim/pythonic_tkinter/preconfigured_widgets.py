@@ -7,16 +7,17 @@ from miscellaneous.decorators import overrider, defaultizer
     
 class Binding(object):
     
-    def __init__(self, canvas, tag=None, add=''):
+    def __init__(self, canvas, *tags, add=''):
         self.canvas = canvas
         self.add = add
-        self.tag = tag
+        self.tags = tags
         
     def bind(self):
-        if not self.tag:
+        if not self.tags:
             self.canvas.bind(self.event, self.command, self.add)
         else:
-            self.canvas.tag_bind(self.tag, self.event, self.command, self.add) 
+            for tag in self.tags:
+                self.canvas.tag_bind(tag, self.event, self.command, self.add) 
         
     def unbind(self):
         if not self.tag:

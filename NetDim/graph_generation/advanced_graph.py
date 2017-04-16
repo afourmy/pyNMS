@@ -8,7 +8,6 @@ from pythonic_tkinter.preconfigured_widgets import *
 
 class AdvancedGraph(FocusTopLevel):
     
-    @update_paths
     def __init__(self, controller):
         super().__init__()
         font = ('Helvetica', 8, 'bold')
@@ -87,11 +86,6 @@ class AdvancedGraph(FocusTopLevel):
         bt_gen.text = 'Generate'
         bt_gen.command = self.generate
         bt_gen.grid(len(properties)+1, 0, 1, 2, in_=lf_classic_graph)
-                                        
-        self.graph_generation = {
-        'Desargues': lambda: self.network.petersen(5, 2, 'oxc'),
-        'graph-test': lambda: self.network.petersen(6, 3, 'router')
-        }
             
         self.update_properties()
         # hide the window when closed
@@ -104,7 +98,11 @@ class AdvancedGraph(FocusTopLevel):
         for idx, value in enumerate(self.graph_properties[selected_graph]):
             self.var_labels[idx].configure(text=value)
             
+    @update_paths
     def generate(self):
         selected_graph = self.graph_list.text
-        self.graph_generation[selected_graph]()
+        {
+        'Desargues': lambda: self.network.petersen(5, 2, 'oxc'),
+        'graph-test': lambda: self.network.petersen(6, 3, 'router')
+        }[selected_graph]()
         self.view.draw_all(random=False)

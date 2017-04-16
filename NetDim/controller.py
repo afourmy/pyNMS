@@ -7,6 +7,7 @@ from collections import defaultdict
 from os.path import abspath, pardir, join
 from objects.objects import *
 from pythonic_tkinter.preconfigured_widgets import *
+from miscellaneous import search
 from miscellaneous import graph_algorithms as galg
 from miscellaneous import network_tree_view as ntv
 from miscellaneous import debug
@@ -48,9 +49,6 @@ class Controller(MainWindow):
         self.dict_project = {}
         # project counter
         self.cpt_project = 0
-
-        # add the first project
-        self.add_project()
         
         ## ----- Persistent windows : -----
                 
@@ -71,6 +69,12 @@ class Controller(MainWindow):
         
         # Script creation window
         self.script_creation_window = script_creation.ScriptCreation(self)
+        
+        # Search window
+        self.search_window = search.SearchWindow(self)
+
+        # add the first project
+        self.add_project()
         
         ## ----- Menus : -----
         

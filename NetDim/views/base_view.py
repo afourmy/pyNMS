@@ -8,7 +8,6 @@ from objects.objects import *
 from .shape_drawing import *
 from random import randint, choice
 from math import cos, sin, atan2, sqrt, radians
-from miscellaneous import search
 from miscellaneous.decorators import *
 
 class BaseView(CustomFrame):
@@ -42,7 +41,7 @@ class BaseView(CustomFrame):
         
         self.cvs.config(width=1300, height=800)
         self.cvs.config(xscrollcommand=hbar.set, yscrollcommand=vbar.set)
-        self.cvs.pack(side=tk.LEFT, expand=1, fill=tk.BOTH)
+        self.cvs.pack(side='left', expand=1, fill='both')
         
         # erase the map if one was created before
         self.update()
@@ -106,37 +105,64 @@ class BaseView(CustomFrame):
         # initialization of all bindings for nodes creation
         self.switch_binding()
         
-        ## bindings that remain available in both modes
-        # highlight the path of a route/traffic link with left-click
-        self.cvs.tag_bind('route', '<ButtonPress-1>', self.closest_route_path)
-        
-        # zoom and unzoom on windows
-        self.cvs.bind('<MouseWheel>',self.zoomer)
-        
-        # same on linux
-        self.cvs.bind('<Button-4>', self.zoomerP)
-        self.cvs.bind('<Button-5>', self.zoomerM)
-        
-        # use the right-click to move the background
-        self.cvs.bind('<ButtonPress-3>', self.scroll_start)
-        self.cvs.bind('<B3-Motion>', self.scroll_move)
-        self.cvs.bind('<ButtonRelease-3>', self.general_menu)
-        
-        # search window
-        self.search_window = search.SearchWindow(controller)
-        
-        # use Ctrl+F to look for an object
-        self.cvs.bind('<Control-Key-f>', lambda e: self.search_window.deiconify())
-        
-        # initialize other bindings depending on the mode
-        self.switch_binding()
-        
-        # window and highlight when hovering over an object
-        self.cvs.bind('<Motion>', lambda e: self.motion(e))
+        # window properties upon hovering over an object
         self.pwindow = None
         
         # we also keep track of the closest object for the motion function
         self.co = None
+        
+        ## persistent bindings (remain available in both modes)
+                
+        # zoom and unzoom on windows
+        window_zoom_binding = Binding(self.cvs)
+        window_zoom_binding.event = '<MouseWheel>'
+        window_zoom_binding.command = self.zoomer
+        window_zoom_binding.bind()
+        
+        # zoom and unzoom on unix
+        unix_zoom_in_binding = Binding(self.cvs)
+        unix_zoom_in_binding.event = '<Button-4>'
+        unix_zoom_in_binding.command = self.zoomerP
+        unix_zoom_in_binding.bind()
+        
+        unix_zoom_out_binding = Binding(self.cvs)
+        unix_zoom_out_binding.event = '<Button-5>'
+        unix_zoom_out_binding.command = self.zoomerM
+        unix_zoom_out_binding.bind()
+        
+        # use the right-click to move the background
+        scroll_start_binding = Binding(self.cvs)
+        scroll_start_binding.event = '<ButtonPress-3>'
+        scroll_start_binding.command = self.scroll_start
+        scroll_start_binding.bind()
+        
+        scroll_motion_binding = Binding(self.cvs)
+        scroll_motion_binding.event = '<B3-Motion>'
+        scroll_motion_binding.command = self.scroll_move
+        scroll_motion_binding.bind()
+        
+        general_menu_binding = Binding(self.cvs)
+        general_menu_binding.event = '<ButtonRelease-3>'
+        general_menu_binding.command = self.general_menu
+        general_menu_binding.bind()
+        
+        # window and highlight when hovering over an object
+        hovering_object_binding = Binding(self.cvs)
+        hovering_object_binding.event = '<Motion>'
+        hovering_object_binding.command = self.motion
+        hovering_object_binding.bind()
+        
+        # highlight the path of a route/traffic link with left-click
+        closest_route_binding = Binding(self.cvs, 'optical channel')
+        closest_route_binding.event = '<ButtonPress-1>'
+        closest_route_binding.command = lambda _: 42
+        closest_route_binding.bind()
+        
+        # use Ctrl+F to search for an object
+        search_binding = Binding(self.cvs)
+        search_binding.event = '<Control-Key-f>'
+        search_binding.command = lambda e: controller.search_window.deiconify()
+        search_binding.bind()
         
         # add nodes to a current selection by pressing control
         self.ctrl = False
@@ -144,12 +170,25 @@ class BaseView(CustomFrame):
         def change_ctrl(value):
             self.ctrl = value
             
-        self.cvs.bind('<Control-KeyRelease>', lambda _: change_ctrl(False))
-        self.cvs.bind('<Control-KeyPress>', lambda _: change_ctrl(True))
+        press_ctrl_binding = Binding(self.cvs)
+        press_ctrl_binding.event = '<Control-KeyPress>'
+        press_ctrl_binding.command = lambda _: change_ctrl(True)
+        press_ctrl_binding.bind()
+            
+        release_ctrl_binding = Binding(self.cvs)
+        release_ctrl_binding.event = '<Control-KeyRelease>'
+        release_ctrl_binding.command = lambda _: change_ctrl(False)
+        release_ctrl_binding.bind()
         
         # display/undisplay a layer by pressing the associated number
-        for layer in range(1, self.nbl):
-            self.cvs.bind(str(layer), lambda _, l=layer: self.invert_layer_display(l))
+        for layer in range(1, self.nbl + 1):
+            layer_display_binding = Binding(self.cvs)
+            layer_display_binding.event = str(layer)
+            layer_display_binding.command = lambda _, l=layer: self.invert_layer_display(l)
+            layer_display_binding.bind()
+        
+        # initialize other bindings depending on the mode
+        self.switch_binding()
             
     ## Bindings
         
@@ -276,6 +315,7 @@ class BaseView(CustomFrame):
             
     @update_coordinates
     def closest_route_path(self, event):
+        print('test')
         self.unhighlight_all()
         route = self.object_id_to_object[self.cvs.find_closest(event.x, event.y)[0]]
         self.highlight_route(route)
