@@ -9,6 +9,8 @@ class MultipleNodes(CustomTopLevel):
     @update_paths
     def __init__(self, x, y, controller):
         super().__init__()
+        self.x = x
+        self.y = y
         self.title('Multiple nodes')
         
         # label frame for multiple nodes creation
@@ -30,7 +32,7 @@ class MultipleNodes(CustomTopLevel):
         # confirmation button
         button_confirmation = Button(self)
         button_confirmation.text = 'OK'
-        button_confirmation.command = lambda: self.create_nodes(x, y)
+        button_confirmation.command = self.create_nodes
         
         # position in the grid
         nb_nodes.grid(0, 0, in_=lf_multiple_nodes)
@@ -39,12 +41,12 @@ class MultipleNodes(CustomTopLevel):
         self.node_type_list.grid(1, 1, in_=lf_multiple_nodes)
         button_confirmation.grid(2, 0, 1, 2, in_=lf_multiple_nodes)
         
-    def create_nodes(self, x, y):
+    def create_nodes(self):
         self.view.multiple_nodes(
                                int(self.entry_nodes.text), 
                                self.node_type_list.text,
-                               x,
-                               y
+                               self.x,
+                               self.y
                                )
         
         self.view.draw_all(random=False)
@@ -55,6 +57,7 @@ class MultipleLinks(CustomTopLevel):
     @update_paths
     def __init__(self, source_nodes, controller):
         super().__init__()
+        self.source_nodes = source_nodes
         self.title('Multiple links')
         
         # label frame for multiple links creation
@@ -85,12 +88,12 @@ class MultipleLinks(CustomTopLevel):
         dest_nodes.grid(0, 0, in_=lf_multiple_links)
         button_confirmation.grid(2, 0, 1, 2, in_=lf_multiple_links)
         
-    def create_links(self, source_nodes):
+    def create_links(self):
         for selected_node in self.listbox.selected():
             # retrieve the node object based on its name
             dest_node = self.network.nf(name=selected_node)
             # create links from all selected nodes to the selected node
-            self.network.multiple_links(source_nodes, dest_node)
+            self.network.multiple_links(self.source_nodes, dest_node)
         
         self.view.draw_all(random=False)
         self.destroy()

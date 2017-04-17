@@ -115,6 +115,8 @@ class ASCreation(CustomTopLevel):
     @update_paths
     def __init__(self, nodes, links, controller):
         super().__init__()
+        self.nodes = nodes
+        self.links = links
         self.title('Create AS')
         
         # main label frame
@@ -130,7 +132,7 @@ class ASCreation(CustomTopLevel):
         # retrieve and save node data
         button_create_AS = Button(self)
         button_create_AS.text = 'Create AS'
-        button_create_AS.command = lambda: self.create_AS(nodes, links)
+        button_create_AS.command = self.create_AS
                         
         # Label for the name/type of the AS
         label_name = Label(self)
@@ -154,7 +156,7 @@ class ASCreation(CustomTopLevel):
         self.AS_type_list.grid(2, 1, in_=lf_create_AS)
         button_create_AS.grid(3, 0, 1, 2, in_=lf_create_AS)
 
-    def create_AS(self, nodes, links):
+    def create_AS(self):
         # automatic initialization of the AS id in case it is empty
         id = int(self.entry_id.get()) if self.entry_id.get() else len(self.network.pnAS) + 1
         
@@ -162,8 +164,8 @@ class ASCreation(CustomTopLevel):
                                          self.AS_type_list.get(), 
                                          self.entry_name.get(), 
                                          id,
-                                         links, 
-                                         nodes
+                                         self.links, 
+                                         self.nodes
                                          )
         self.destroy()
             

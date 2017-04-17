@@ -313,7 +313,6 @@ class BaseView(CustomFrame):
             
     @update_coordinates
     def closest_route_path(self, event):
-        print('test')
         self.unhighlight_all()
         route = self.object_id_to_object[self.cvs.find_closest(event.x, event.y)[0]]
         self.highlight_route(route)
@@ -375,7 +374,7 @@ class BaseView(CustomFrame):
                                                )
         if main_link_selected.type in ('traffic', 'route'):
             if hasattr(main_link_selected, 'path'):
-                self.highlight_objects(*main_link_selected.path)
+                self.ss(*main_link_selected.path)
                 
     @update_coordinates
     def find_closest_shape(self, event):
@@ -1042,7 +1041,7 @@ class BaseView(CustomFrame):
     def _create_link_label(self, link):
         coeff = self.compute_coeff(link)
         link.lid = self.cvs.create_text(*self.offcenter(coeff, *link.lpos), 
-                            anchor='nw', fill='red', tags='label', font='bold')
+                    anchor='nw', fill='red', tags='label', font='bold')
         # we also create the interface labels, which position is at 1/4
         # of the line between the end point and the middle point
         # source interface label coordinates:

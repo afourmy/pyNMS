@@ -1,19 +1,18 @@
 # NetDim (contact@netdim.fr)
 
 import tkinter as tk
-import warnings
 from project import Project
 from collections import defaultdict
 from os.path import abspath, pardir, join
 from objects.objects import *
 from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous import search
-from miscellaneous import graph_algorithms as galg
+from miscellaneous import graph_algorithms
 from miscellaneous import network_tree_view as ntv
 from miscellaneous import debug
 from ip_networks import ssh_management
-from graph_generation import advanced_graph as adv_gr
-from optical_networks import rwa_window as rwaw
+from graph_generation import advanced_graph
+from optical_networks import rwa_window
 from automation import script_creation
 from menus import (
                    creation_menu, 
@@ -53,13 +52,13 @@ class Controller(MainWindow):
         ## ----- Persistent windows : -----
                 
         # advanced graph options
-        self.advanced_graph_options = galg.GraphAlgorithmWindow(self)
+        self.advanced_graph_options = graph_algorithms.GraphAlgorithmWindow(self)
         
         # routing and wavelength assignment window
-        self.rwa_window = rwaw.RWAWindow(self)
+        self.rwa_window = rwa_window.RWAWindow(self)
         
         # graph generation window
-        self.advanced_graph = adv_gr.AdvancedGraph(self)
+        self.advanced_graph = advanced_graph.AdvancedGraph(self)
         
         # debug window
         self.debug_window = debug.Debug(self)

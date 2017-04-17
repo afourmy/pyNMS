@@ -51,7 +51,7 @@ class ViewMenu(ScrolledFrame):
             self.dict_image[image_type] = img
         
         self.type_to_button = {}
-        font = ('Helvetica', 8, 'bold')
+
         self.current_view = 'network'
                 
         # site view
@@ -80,7 +80,7 @@ class ViewMenu(ScrolledFrame):
         self.logical_coord_button = TKButton(self.infr)
         self.logical_coord_button.config(
                                          image = self.dict_image['logical_coord'],
-                                         text = 'Logical coordinates',
+                                         text = 'Logical',
                                          compound = 'top', 
                                          font = font
                                          )
@@ -91,7 +91,7 @@ class ViewMenu(ScrolledFrame):
         self.geo_coord_button = TKButton(self.infr)
         self.geo_coord_button.config(
                                      image = self.dict_image['geo_coord'],
-                                     text = 'Geo coordinates',
+                                     text = 'Geographical',
                                      compound = 'top', 
                                      font = font
                                      )

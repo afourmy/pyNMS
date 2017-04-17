@@ -4,6 +4,8 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.scrolledtext import ScrolledText
 from miscellaneous.decorators import overrider, defaultizer
+
+COLOR = 'lavender'
     
 class Binding(object):
     
@@ -40,7 +42,7 @@ class CustomFrame(tk.Frame):
     
     def __init__(self, *args, **kwargs):            
         super().__init__(*args, **kwargs)
-        color = '#A1DBCD'
+        color = COLOR
         self.configure(background=color)    
         
 class CustomScrolledText(ScrolledText):
@@ -54,7 +56,7 @@ class CustomTopLevel(tk.Toplevel):
     
     def __init__(self, *args, **kwargs):            
         super().__init__(*args, **kwargs)
-        color = '#A1DBCD'
+        color = COLOR
         self.configure(background=color)
         
 class FocusTopLevel(CustomTopLevel):
@@ -123,7 +125,7 @@ class ImprovedListbox(tk.Listbox):
             
 class ImprovedTKButton(tk.Button):
     
-    @defaultizer(bg='#A1DBCD')
+    @defaultizer(bg=COLOR)
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
@@ -137,7 +139,7 @@ class MainWindow(tk.Tk):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        color = '#A1DBCD'
+        color = COLOR
         for widget in (
                        'Button',
                        'Radiobutton',
@@ -230,7 +232,7 @@ class VerticalScrolledFrame(CustomFrame):
                            bd = 0, 
                            highlightthickness = 0,
                            yscrollcommand = vscrollbar.set, 
-                           background = '#A1DBCD'
+                           background = COLOR
                            )
         canvas.pack(side='left', fill='both', expand=1)
         vscrollbar.config(command=canvas.yview)

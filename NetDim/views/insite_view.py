@@ -638,7 +638,7 @@ class InSiteView(BaseView):
                             )
         self.refresh_label(link)
                         
-    @overrider(BaseView)
+    #@overrider(BaseView)
     def compute_coeff(self, link):
         # compute the slope of the link's line
         try:
