@@ -22,7 +22,7 @@ class BaseView(CustomFrame):
     
         self.object_id_to_object = {}
 
-        self.cvs = Canvas(
+        self.cvs = BindingCanvas(
                         self, 
                         bg = '#FFFFFF', 
                         width = 1300, 
@@ -100,9 +100,6 @@ class BaseView(CustomFrame):
         self.src_label = None
         self.dest_label = None
         
-        # initialization of all bindings for nodes creation
-        self.switch_binding()
-        
         # window properties upon hovering over an object
         self.pwindow = None
         
@@ -178,12 +175,96 @@ class BaseView(CustomFrame):
         release_ctrl_binding.command = lambda _: change_ctrl(False)
         release_ctrl_binding.bind()
         
+        # set the focus on the canvas when clicking on it
+        # allows for the keyboard binding to work properly
+        focus_binding = Binding(self.cvs)
+        focus_binding.event = '<1>'
+        focus_binding.command = lambda _: self.cvs.focus_set()
+        focus_binding.bind()
+        
         # display/undisplay a layer by pressing the associated number
         for layer in range(1, self.nbl + 1):
             layer_display_binding = Binding(self.cvs)
             layer_display_binding.event = str(layer)
             layer_display_binding.command = lambda _, l=layer: self.invert_layer_display(l)
             layer_display_binding.bind()
+            
+        ## non-persistent bindings: 
+        
+        self.non_persistent_bindings = defaultdict(set)
+        
+        # 1) bindings used for selection mode
+                
+        # 1.A) selection bindings
+        closest_node_binding = Binding(self.cvs, 'node', add='+')
+        closest_node_binding.event = '<Button-1>'
+        closest_node_binding.command = self.find_closest_node
+        self.non_persistent_bindings['selection'].add(closest_node_binding)
+        
+        closest_link_binding = Binding(self.cvs, 'link', add='+')
+        closest_link_binding.event = '<Button-1>'
+        closest_link_binding.command = self.find_closest_link
+        self.non_persistent_bindings['selection'].add(closest_link_binding)
+        
+        closest_shape_binding = Binding(self.cvs, 'shape', add='+')
+        closest_shape_binding.event = '<Button-1>'
+        closest_shape_binding.command = self.find_closest_shape
+        self.non_persistent_bindings['selection'].add(closest_shape_binding)
+        
+        start_selection_binding = Binding(self.cvs, add='+')
+        start_selection_binding.event = '<ButtonPress-1>'
+        start_selection_binding.command = self.start_point_select_objects
+        self.non_persistent_bindings['selection'].add(start_selection_binding)
+        
+        rectangle_drawing_binding = Binding(self.cvs)
+        rectangle_drawing_binding.event = '<B1-Motion>'
+        rectangle_drawing_binding.command = self.rectangle_drawing
+        self.non_persistent_bindings['selection'].add(rectangle_drawing_binding)
+        
+        end_selection_binding = Binding(self.cvs, add='+')
+        end_selection_binding.event = '<ButtonRelease-1>'
+        end_selection_binding.command = self.end_point_select_nodes
+        self.non_persistent_bindings['selection'].add(end_selection_binding)
+        
+        # 1.B) motion bindings
+        
+        node_motion_binding = Binding(self.cvs, 'node')
+        node_motion_binding.event = '<B1-Motion>'
+        node_motion_binding.command = self.node_motion
+        self.non_persistent_bindings['selection'].add(node_motion_binding)
+        
+        shape_motion_binding = Binding(self.cvs, 'shape')
+        shape_motion_binding.event = '<B1-Motion>'
+        shape_motion_binding.command = self.shape_motion
+        self.non_persistent_bindings['selection'].add(shape_motion_binding)
+        
+        # 2) binding used for creation
+        
+        # 2.A) node creation
+        node_creation_binding = Binding(self.cvs)
+        node_creation_binding.event = '<ButtonPress-1>'
+        node_creation_binding.command = self.create_node_on_binding
+        self.non_persistent_bindings['node'].add(node_creation_binding)
+        
+        # 2.B) shape creation: rectangle
+        start_rectangle_binding = Binding(self.cvs)
+        start_rectangle_binding.event = '<ButtonPress-1>'
+        start_rectangle_binding.command = self.start_drawing_rectangle
+        self.non_persistent_bindings['rectangle'].add(start_rectangle_binding)
+        
+        draw_rectangle_binding = Binding(self.cvs)
+        draw_rectangle_binding.event = '<B1-Motion>'
+        draw_rectangle_binding.command = self.draw_rectangle
+        self.non_persistent_bindings['rectangle'].add(draw_rectangle_binding)
+        
+        create_rectangle_binding = Binding(self.cvs)
+        create_rectangle_binding.event = '<ButtonRelease-1>'
+        create_rectangle_binding.command = self.create_rectangle
+        self.non_persistent_bindings['rectangle'].add(draw_rectangle_binding)
+        
+                # self.cvs.bind('<ButtonPress-1>', self.start_drawing_rectangle)
+                # self.cvs.bind('<B1-Motion>', self.draw_rectangle)
+                # self.cvs.bind('<ButtonRelease-1>', self.create_rectangle)
         
         # initialize other bindings depending on the mode
         self.switch_binding()
@@ -206,22 +287,20 @@ class BaseView(CustomFrame):
             self.cvs.tag_unbind('shape', '<B1-Motion>')
             self.cvs.tag_unbind('node', '<ButtonRelease-1>')
             
-            # set the focus on the canvas when clicking on it
-            # allows for the keyboard binding to work properly
-            self.cvs.bind('<1>', lambda event: self.cvs.focus_set())
+            self.cvs.binds(*self.non_persistent_bindings['selection'])
             
-            # add bindings to drag a node with left-click
-            self.cvs.tag_bind('link', '<Button-1>', self.find_closest_link, add='+')
-            self.cvs.tag_bind('node', '<Button-1>', self.find_closest_node, add='+')
-            self.cvs.tag_bind('shape', '<Button-1>', self.find_closest_shape, add='+')
-            
-            self.cvs.tag_bind('node', '<B1-Motion>', self.node_motion)
-            self.cvs.tag_bind('shape', '<B1-Motion>', self.shape_motion)
-            
-            # add binding to select all nodes in a rectangle
-            self.cvs.bind('<ButtonPress-1>', self.start_point_select_objects, add='+')
-            self.cvs.bind('<B1-Motion>', self.rectangle_drawing)
-            self.cvs.bind('<ButtonRelease-1>', self.end_point_select_nodes, add='+')
+            # # add bindings to drag a node with left-click
+            # self.cvs.tag_bind('link', '<Button-1>', self.find_closest_link, add='+')
+            # self.cvs.tag_bind('node', '<Button-1>', self.find_closest_node, add='+')
+            # self.cvs.tag_bind('shape', '<Button-1>', self.find_closest_shape, add='+')
+            # 
+            # self.cvs.tag_bind('node', '<B1-Motion>', self.node_motion)
+            # self.cvs.tag_bind('shape', '<B1-Motion>', self.shape_motion)
+            # 
+            # # add binding to select all nodes in a rectangle
+            # self.cvs.bind('<ButtonPress-1>', self.start_point_select_objects, add='+')
+            # self.cvs.bind('<B1-Motion>', self.rectangle_drawing)
+            # self.cvs.bind('<ButtonRelease-1>', self.end_point_select_nodes, add='+')
             
         else:
             # unbind unecessary bindings
