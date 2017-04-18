@@ -87,7 +87,7 @@ class GeographicalView(BaseView):
         if not nodes:
             nodes = self.network.pn['node'].values()
         for node in nodes:
-            node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
+            node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]])
         self.move_nodes(nodes)
         
     def move_to_logical_coordinates(self, *nodes):
@@ -211,16 +211,7 @@ class Map():
             self.center_point()
         
     def get_geographical_coordinates(self, x, y):
-        # move figure part
-        coords = self.from_points([x, y], dosphere=1)
-        if coords and hasattr(self, 'coords'):
-            coords = self.coords[2] + coords
-            self.coords[0] = self.distance(coords)
-            self.draw_map(coords, 'CurrFigure')
-            self.draw_map([coords[1]], 'CurrFigure')
-        # calc and show coords under cursor
-        coords = self.from_points((x, y), dosphere=1) or [(0, 0)]
-        return coords[0][0], coords[0][1]
+        return self.from_points([x, y], dosphere=1)
 
     def create_meridians(self):
         x = -180
@@ -240,7 +231,7 @@ class Map():
                 
     def draw_meridians(self):
         for coords in self.lonlat:
-            coords = self.convert_coords(coords)
+            coords = self.to_points(coords)
             if not coords:
                 return
             if len(coords) < 4:
@@ -267,12 +258,8 @@ class Map():
         self.cvs.xview('moveto', moveX)
         self.cvs.yview('moveto', moveY)
 
-    def change_projection(self, mode='linear', centerof=None):
-        if hasattr(self, 'center'):
-            self.center = self.center_of()
-        else:
-            self.center = [[0, 0]]
-        
+    def change_projection(self, mode='linear'):
+
         self.scale_x = self.viewx*self.delta
         if mode in ('linear', 'mercator'):
             self.scale_y = self.viewy*self.delta
@@ -281,6 +268,7 @@ class Map():
             
         self.halfX = self.scale_x/2
         self.halfY = self.scale_y/2
+        self.center = self.center_of()
         self.mode = mode
         self.scale_map(center=False)
         self.draw_sphere()
@@ -293,10 +281,10 @@ class Map():
             
         self.create_meridians()
         self.draw_meridians()
-        self.center_map(self.center)
+        self.center_map([[7, 49]])
 
     def center_map(self, centerof=[[0,0]]):
-        pts = self.to_points(centerof, doscale=1)
+        pts = self.to_points(centerof)
         if pts:
             self.center_point(*pts)
 
@@ -314,12 +302,9 @@ class Map():
                                                 fill = '#40A4DF', 
                                                 tags = ('water')
                                                 )
-
-    def convert_coords(self, coords):
-        return self.to_points(coords, doscale=1)
         
     def draw_map(self, coords):
-        points = self.convert_coords(coords)
+        points = self.to_points(coords)
         if not points:
             return
         if len(points) < 4:
@@ -328,7 +313,7 @@ class Map():
                                          points, 
                                          fill = 'green', 
                                          outline = 'black', 
-                                         tags=('land',)
+                                         tags=('Area',)
                                          )
         self.map_ids.add(obj_id)
                                 
@@ -353,41 +338,32 @@ class Map():
         return self.mode == 'globe'
 
     def center_of(self):
-        if self.is_spherical():
-            return self.center
-        else:
-            return self.from_points(self.view_center())
+        return self.from_points(self.view_center())
 
     def view_center(self):
         cx = (self.scale_x*self.scale*x for x in self.cvs.xview())
         cy = (self.scale_y*self.scale*y for y in self.cvs.yview())
-        return (sum(cx)/2, sum(cy)/2)
+        return [[sum(cx)/2, sum(cy)/2]]
 
-    def to_points(self, coords, doscale=0):
+    def to_points(self, coords=[]):
         points = []
         for x, y in coords:
-            if self.mode in ('linear', 'mercator'):
-                x = float(x)
-                y = -y
-                if self.mode == 'mercator':
-                    y = self.to_mercator(float(y))
-            else:
-                # self.mode is 'globe':
+            x, y = float(x), -y
+            if self.mode == 'mercator':
+                y = self.to_mercator(float(y))
+            if self.mode == 'globe':
                 tmp = self.to_sphere([x, y])
                 if not tmp:
                     continue
                 x, y = tmp
             _x = x * self.delta + self.halfX 
             _y = y * self.delta + self.halfY
-            if doscale:
-                points += [_x * self.scale, _y * self.scale]
-            else:
-                points += [_x, _y]
+            points += [_x * self.scale, _y * self.scale]
         return points
 
-    def from_points(self, points=[], dosphere=0):
+    def from_points(self, points, dosphere=0):
         b, coords = 0, []
-        x, y = points
+        x, y = points[0]
         x = (x / self.scale - self.halfX) / self.delta
         y = -(y / self.scale - self.halfY) / self.delta
         if self.mode == 'mercator':
@@ -420,7 +396,7 @@ class Map():
         EPSLN = 1.0e-10
         # args
         centerof = self.center or [[0, 0]]
-        x, y, center_x, center_y = [radians(float(x)) for x in coords + centerof[0]]
+        x, y, center_x, center_y = [radians(float(x)) for x in coords + centerof]
         rh = sqrt(x * x + y * y) + EPSLN
         if rh > 1:
             return []
@@ -448,3 +424,4 @@ class Map():
         # length of the great circle between two points (km)
         x, y, x1, y1 = [radians(x) for x in coords[0] + coords[1]]
         return 6378.136 * acos(cos(y)*cos(y1)*cos(x - x1) + sin(y)*sin(y1))
+
