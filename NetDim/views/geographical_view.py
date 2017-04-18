@@ -180,7 +180,6 @@ class Map():
 
     delta = 3600.0
     halfX = 648000.0
-    mflood = []
     lonlat = []
     map_temp = {}
     
@@ -190,7 +189,10 @@ class Map():
         self.map_ids = set()
         self.scale = 0.05
         self.mode = 'mercator'
+        # set containing all polygons to redraw the map with another projection
+        self.polygons = []
         self.change_projection(self.mode)
+        
 
     def scale_map(self, ratio=1, center=True):
         # instead of remembering the center before zooming, it would be better
@@ -247,11 +249,6 @@ class Map():
                 coords = coords * 2
             obj_id = self.cvs.create_line(coords, fill='black', tags=('meridians',), smooth=True)
         
-    def load_map(self, data):
-        for row in data:
-            self.mflood.append(row)
-            self.draw_map(row)
-
     def center_point(self, x=None, y=None):
         # current view
         scrollX = self.cvs.xview()
@@ -268,10 +265,7 @@ class Map():
         self.cvs.yview('moveto', moveY)
 
     def change_projection(self, mode='linear', centerof=None):
-        if hasattr(self, 'center'):
-            self.center = self.center_of()
-        else:
-            self.center = [[0, 0]]
+        self.center = [[7, 49]]
         
         self.scale_x = self.viewx*self.delta
         if mode in ('linear', 'mercator'):
@@ -288,15 +282,15 @@ class Map():
             self.cvs.delete(id)
         self.cvs.delete('meridians')
 
-        for coords in self.mflood:
+        for coords in self.polygons:
             self.draw_map(coords)
             
         self.create_meridians()
         self.draw_meridians()
         self.center_map(self.center)
 
-    def center_map(self, centerof=[[0,0]]):
-        pts = self.to_points(centerof, doscale=1)
+    def center_map(self, center):
+        pts = self.to_points(center, doscale=1)
         if pts:
             self.center_point(*pts)
 
@@ -336,27 +330,24 @@ class Map():
         for polygon in polygons:
             coords = self.shape_to_coords(str(polygon))
             try:
-                self.load_map([coords])
+                self.load_map(coords)
             except ValueError as e:
                 print(str(e))
+                
+    def load_map(self, polygon_coords):
+        self.polygons.append(polygon_coords)
+        self.draw_map(polygon_coords)
             
     def shape_to_coords(self, shape):
         try:
             keep = lambda x: x.isdigit() or x in '- .'
             coords = ''.join(filter(keep, str(shape))).split(' ')[1:]
-            coords = [(eval(a[:10]), eval(b[:10])) for a, b in zip(coords[0::2], coords[1::2])]
+            return [(eval(a[:10]), eval(b[:10])) for a, b in zip(coords[0::2], coords[1::2])]
         except (ValueError, SyntaxError) as e:
             print(str(e))
-        return coords
 
     def is_spherical(self):
         return self.mode == 'globe'
-
-    def center_of(self):
-        if self.is_spherical():
-            return self.center
-        else:
-            return self.from_points(self.view_center())
 
     def view_center(self):
         cx = (self.scale_x*self.scale*x for x in self.cvs.xview())
@@ -412,6 +403,7 @@ class Map():
                     degrees(cos(y)*sin(cx - x)),
                     degrees(-sin(y)*cos(cy) - sin(cy)*cos(y)*cos(cx - x))
                     ]
+                    
 
     def from_sphere(self, coords):
         # internal
