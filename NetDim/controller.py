@@ -250,6 +250,22 @@ class Controller(MainWindow):
         
         # notebooks of projects
         self.project_notebook.pack(side='left', fill='both', expand=1)
+        
+        # drag and drop system
+        self.bind_all('<B1-Motion>', self.display_icon, add='+')
+        # if motion is called, the left-click button was released and we 
+        # can stop the drag and drop process
+        self.bind_all('<Motion>', self.stop_dnd)
+        self.dnd = False
+            
+    def stop_dnd(self, event):
+        self.dnd = False
+        
+    def display_icon(self, event):
+        # if the drag and drop process is on-going
+        if self.dnd:
+            # we display the appropriate icon
+            print(self.dnd)
             
     def change_current_project(self, event=None):
         # if there's an ongoing drawing process, kill it

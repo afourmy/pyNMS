@@ -150,12 +150,12 @@ class InSiteView(BaseView):
     
     @update_coordinates
     @overrider(BaseView)
-    def create_node_on_binding(self, event):
+    def create_node_on_binding(self, event, subtype):
         # we create the node in both the insite view and the network view
         # the node will be at its geographical coordinates in the network view,
         # and the event coordinates in the insite view
         node = self.network.nf(
-                              node_type = self._creation_mode,
+                              node_type = subtype,
                               longitude = self.site.longitude,
                               latitude = self.site.latitude
                               )

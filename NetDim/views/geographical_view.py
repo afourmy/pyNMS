@@ -23,8 +23,8 @@ class GeographicalView(BaseView):
         self.world_map.create_meridians()
         self.world_map.center_map([[7, 49]])
             
-    def switch_binding(self): 
-        super(GeographicalView, self).switch_binding()
+    def switch_binding(self, mode): 
+        super(GeographicalView, self).switch_binding(self.mode)
         
         # if self._mode == 'motion':
         #     self.cvs.tag_bind('water', '<ButtonPress-1>', self.move_sphere, add='+')
@@ -46,8 +46,8 @@ class GeographicalView(BaseView):
                         
     @update_coordinates
     @overrider(BaseView)
-    def create_node_on_binding(self, event):
-        node = self.network.nf(node_type=self._creation_mode, x=event.x, y=event.y)
+    def create_node_on_binding(self, event, subtype):
+        node = self.network.nf(node_type=subtype, x=event.x, y=event.y)
         # update logical and geographical coordinates
         lon, lat = self.world_map.get_geographical_coordinates(node.x, node.y)
         node.longitude, node.latitude = lon, lat
@@ -305,7 +305,7 @@ class Map():
                                                 vx/2 + R, 
                                                 vy/2 + R,
                                                 outline = 'black', 
-                                                fill = '#40A4DF', 
+                                                fill = 'deep sky blue', 
                                                 tags = ('water')
                                                 )
 
@@ -320,7 +320,7 @@ class Map():
             points = points * 2
         obj_id = self.cvs.create_polygon(
                                          points, 
-                                         fill = 'green', 
+                                         fill = 'medium sea green', 
                                          outline = 'black', 
                                          tags=('land',)
                                          )

@@ -11,7 +11,7 @@ from graph_generation.network_dimension import NetworkDimension
 from miscellaneous.decorators import update_paths
 
 class CreationMenu(ScrolledFrame):
-    
+        
     def __init__(self, notebook, controller):
         self.controller = controller
         super().__init__(
@@ -105,6 +105,8 @@ class CreationMenu(ScrolledFrame):
             else:
                 button.config(image=self.controller.dict_image['default'][button_type])
                 button.config(width=75, height=75)
+                set_dnd = lambda _, button=button_type: self.activate_dnd(button)
+                button.bind('<Button-1>', set_dnd)
             if button_type in ('tree', 'star', 'full-mesh', 'ring'):
                 button.config(width=75, height=75)
             self.type_to_button[button_type] = button
@@ -154,6 +156,9 @@ class CreationMenu(ScrolledFrame):
         self.type_to_button['star'].grid(0, 1, in_=lf_generation)
         self.type_to_button['full-mesh'].grid(0, 2, in_=lf_generation)
         self.type_to_button['ring'].grid(0, 3, in_=lf_generation)
+        
+    def activate_dnd(self, node_type):
+        self.controller.dnd = node_type
        
     @update_paths
     def refresh(self):
@@ -177,8 +182,8 @@ class CreationMenu(ScrolledFrame):
     def switch_to(self, mode):
         relief = 'sunken' if mode == 'motion' else 'raised'
         self.type_to_button['motion'].config(relief=relief)
-        self.view._mode = mode
-        self.view.switch_binding()
+        self.view.mode = mode
+        self.view.switch_binding(mode)
         
     @update_paths
     def change_creation_mode(self, mode):
@@ -191,13 +196,13 @@ class CreationMenu(ScrolledFrame):
                 self.controller.view_menu.switch_view('network')
         # change the mode to creation 
         self.switch_to('creation')
-        self.view._creation_mode = mode
+        self.view.creation_mode = mode
         for obj_type in self.type_to_button:
             if mode == obj_type:
                 self.type_to_button[obj_type].config(relief='sunken')
             else:
                 self.type_to_button[obj_type].config(relief='flat')
-        self.view.switch_binding()
+        self.view.switch_binding(mode)
         
     def erase_graph(self, view):
         self.view.erase_graph()

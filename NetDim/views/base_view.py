@@ -67,9 +67,9 @@ class BaseView(CustomFrame):
         self.dict_start_position = {}
         
         # the default mode is motion
-        self._mode = 'motion'
+        self.mode = 'motion'
         # the default creation mode is router
-        self._creation_mode = 'router'
+        self.creation_mode = 'router'
         # the default shape creation mode is text
         self.shape_creation_mode = 'text'
         
@@ -141,6 +141,13 @@ class BaseView(CustomFrame):
         general_menu_binding.command = self.general_menu
         general_menu_binding.bind()
         
+        # drag and drop binding
+        # enter is triggered when the left-button of the mouse is released
+        drag_and_drop_binding = Binding(self.cvs, add='+')
+        drag_and_drop_binding.event = '<Enter>'
+        drag_and_drop_binding.command = self.dnd_node_creation
+        drag_and_drop_binding.bind()
+        
         # window and highlight when hovering over an object
         hovering_object_binding = Binding(self.cvs)
         hovering_object_binding.event = '<Motion>'
@@ -161,7 +168,6 @@ class BaseView(CustomFrame):
         
         # add nodes to a current selection by pressing control
         self.ctrl = False
-        
         def change_ctrl(value):
             self.ctrl = value
             
@@ -174,13 +180,6 @@ class BaseView(CustomFrame):
         release_ctrl_binding.event = '<Control-KeyRelease>'
         release_ctrl_binding.command = lambda _: change_ctrl(False)
         release_ctrl_binding.bind()
-        
-        # set the focus on the canvas when clicking on it
-        # allows for the keyboard binding to work properly
-        focus_binding = Binding(self.cvs)
-        focus_binding.event = '<1>'
-        focus_binding.command = lambda _: self.cvs.focus_set()
-        focus_binding.bind()
         
         # display/undisplay a layer by pressing the associated number
         for layer in range(1, self.nbl + 1):
@@ -226,6 +225,13 @@ class BaseView(CustomFrame):
         end_selection_binding.command = self.end_point_select_nodes
         self.non_persistent_bindings['selection'].add(end_selection_binding)
         
+        # set the focus on the canvas when clicking on it
+        # allows for the keyboard binding to work properly
+        focus_binding = Binding(self.cvs, add='+')
+        focus_binding.event = '<ButtonPress-1>'
+        focus_binding.command = lambda _: self.cvs.focus_set()
+        self.non_persistent_bindings['selection'].add(focus_binding)
+        
         # 1.B) motion bindings
         
         node_motion_binding = Binding(self.cvs, 'node')
@@ -239,14 +245,8 @@ class BaseView(CustomFrame):
         self.non_persistent_bindings['selection'].add(shape_motion_binding)
         
         # 2) binding used for creation
-        
-        # 2.A) node creation
-        node_creation_binding = Binding(self.cvs)
-        node_creation_binding.event = '<ButtonPress-1>'
-        node_creation_binding.command = self.create_node_on_binding
-        self.non_persistent_bindings['node'].add(node_creation_binding)
-        
-        # 2.B) shape creation: rectangle
+                
+        # 2.A) shape creation: rectangle
         start_rectangle_binding = Binding(self.cvs)
         start_rectangle_binding.event = '<ButtonPress-1>'
         start_rectangle_binding.command = self.start_drawing_rectangle
@@ -262,20 +262,39 @@ class BaseView(CustomFrame):
         create_rectangle_binding.command = self.create_rectangle
         self.non_persistent_bindings['rectangle'].add(draw_rectangle_binding)
         
-                # self.cvs.bind('<ButtonPress-1>', self.start_drawing_rectangle)
-                # self.cvs.bind('<B1-Motion>', self.draw_rectangle)
-                # self.cvs.bind('<ButtonRelease-1>', self.create_rectangle)
+        
+        # self.cvs.bind('<ButtonPress-1>', self.start_drawing_oval)
+        # self.cvs.bind('<B1-Motion>', self.draw_oval)
+        # self.cvs.bind('<ButtonRelease-1>', self.create_oval)
+        
+        # 2.B) 
         
         # initialize other bindings depending on the mode
-        self.switch_binding()
+        self.switch_binding('selection')
             
     ## Bindings
+    
+    @update_coordinates
+    def create_node_on_binding(self, event, subtype):
+        node = self.network.nf(
+                               node_type = subtype, 
+                               x = event.x, 
+                               y = event.y
+                               )
+        self.create_node(node)
+        # update logical coordinates
+        node.logical_x, node.logical_y = node.x, node.y
+    
+    def dnd_node_creation(self, event):
+        if self.controller.dnd:
+            self.create_node_on_binding(event, self.controller.dnd)
+            self.controller.dnd = False
         
-    def switch_binding(self):   
+    def switch_binding(self, mode):   
         # if there were selected nodes, so that they don't remain highlighted
         self.unhighlight_all()
         
-        if self._mode == 'motion':
+        if mode == 'motion':
             # unbind unecessary bindings
             self.cvs.unbind('<Button 1>')
             self.cvs.unbind('<B1-Motion>')
@@ -311,24 +330,20 @@ class BaseView(CustomFrame):
             self.cvs.tag_unbind('node', '<Button-1>')
             self.cvs.tag_unbind('link', '<Button-1>')
             self.cvs.tag_unbind('Area', '<ButtonPress-1>')
-            
-            if self._creation_mode in node_class:
-                # add bindings to create a node with left-click
-                self.cvs.bind('<ButtonPress-1>', self.create_node_on_binding, add='+')
-                
-            elif self._creation_mode == 'rectangle':
+
+            if self.creation_mode == 'rectangle':
                 # add binding to draw a rectangle
                 self.cvs.bind('<ButtonPress-1>', self.start_drawing_rectangle)
                 self.cvs.bind('<B1-Motion>', self.draw_rectangle)
                 self.cvs.bind('<ButtonRelease-1>', self.create_rectangle)
                 
-            elif self._creation_mode == 'oval':
+            elif self.creation_mode == 'oval':
                 # add binding to draw a rectangle
                 self.cvs.bind('<ButtonPress-1>', self.start_drawing_oval)
                 self.cvs.bind('<B1-Motion>', self.draw_oval)
                 self.cvs.bind('<ButtonRelease-1>', self.create_oval)
                 
-            elif self._creation_mode == 'text':
+            elif self.creation_mode == 'text':
                 self.cvs.bind('<ButtonPress-1>', self.create_label)
                 
             else:
@@ -336,7 +351,7 @@ class BaseView(CustomFrame):
                 self.cvs.tag_bind('node', '<Button-1>', self.start_link, add='+')
                 self.cvs.tag_bind('node', '<B1-Motion>', self.line_creation, add='+')
                 release = lambda event, type=type: self.link_creation(
-                                                    event, self._creation_mode)
+                                                    event, self.creation_mode)
                 self.cvs.tag_bind('node', '<ButtonRelease-1>', release, add='+')
                 
     ## Drawing modes
@@ -630,13 +645,6 @@ class BaseView(CustomFrame):
             self.cvs.itemconfigure(label.id, font=font)
 
     ## Object creation
-    
-    @update_coordinates
-    def create_node_on_binding(self, event):
-        node = self.network.nf(node_type=self._creation_mode, x=event.x, y=event.y)
-        self.create_node(node)
-        # update logical coordinates
-        node.logical_x, node.logical_y = node.x, node.y
     
     def create_node(self, node, layer=1):
         s = self.node_size
