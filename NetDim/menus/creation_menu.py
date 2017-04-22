@@ -70,17 +70,24 @@ class CreationMenu(ScrolledFrame):
         self.type_to_action = {
         'netdim': self.refresh,
         'motion': lambda: self.switch_to('motion'),
-        'multi-layer': self.switch_display_mode,
-        'site': lambda: self.change_creation_mode('site')
+        'multi-layer': self.switch_display_mode
         }
         
         for topo in ('tree', 'star', 'full-mesh', 'ring'):
             self.type_to_action[topo] = lambda t=topo: NetworkDimension(t, controller)
             
-        for obj_type in object_properties:
+        for obj_type in link_class:
             if obj_type not in ('l2vc', 'l3vc'):
                 cmd = lambda o=obj_type: self.change_creation_mode(o)
                 self.type_to_action[obj_type] = cmd
+                
+        for obj_type in node_class:
+            label = TKLabel(image=self.controller.dict_image['default'][obj_type])
+            label.image = self.controller.dict_image['default'][obj_type]
+            label.config(width=75, height=75)
+            set_dnd = lambda _, type=obj_type: self.change_creation_mode(type)
+            label.bind('<Button-1>', set_dnd)
+            self.type_to_button[obj_type] = label
         
         for button_type, cmd in self.type_to_action.items():
             button = TKButton(self.infr, relief='flat', command=cmd)                
@@ -103,10 +110,7 @@ class CreationMenu(ScrolledFrame):
             if button_type not in node_subtype:
                 button.config(image=self.dict_image[button_type])
             else:
-                button.config(image=self.controller.dict_image['default'][button_type])
-                button.config(width=75, height=75)
-                set_dnd = lambda _, button=button_type: self.activate_dnd(button)
-                button.bind('<Button-1>', set_dnd)
+                pass
             if button_type in ('tree', 'star', 'full-mesh', 'ring'):
                 button.config(width=75, height=75)
             self.type_to_button[button_type] = button
@@ -187,6 +191,8 @@ class CreationMenu(ScrolledFrame):
         
     @update_paths
     def change_creation_mode(self, mode):
+        # activate drag and drop
+        self.activate_dnd(mode)
         # change the view and update the current view
         if mode == 'site':
             # if it is a site, display the site view

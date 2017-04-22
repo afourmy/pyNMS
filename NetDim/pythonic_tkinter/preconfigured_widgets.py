@@ -129,6 +129,12 @@ class ImprovedTKButton(tk.Button):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
+class ImprovedTKLabel(tk.Label):
+    
+    @defaultizer(bg=COLOR)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
 class LF(ttk.LabelFrame):
     
     @defaultizer(padding=(6, 6, 12, 12))
@@ -338,6 +344,7 @@ subwidget_creation = (
                       # ttk buttons do not have a relief option:
                       # tk buttons can therefore be useful too
                       ('TKButton', ImprovedTKButton, (4, 4, 'w')),
+                      ('TKLabel', ImprovedTKLabel, (4, 4, 'w')),
                       ('Radiobutton', ttk.Radiobutton, (4, 4, 'w')),
                       ('Labelframe', LF, (10, 10, 'w')),
                       ('Listbox', ImprovedListbox, (0, 0, 'w')),

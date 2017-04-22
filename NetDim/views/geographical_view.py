@@ -23,12 +23,6 @@ class GeographicalView(BaseView):
             
     def switch_binding(self, mode): 
         super(GeographicalView, self).switch_binding(self.mode)
-            
-    # set the map object at the bottom of the stack
-    def lower_map(self):
-        for map_obj in self.world_map.map_ids:
-            self.cvs.tag_lower(map_obj)
-        self.cvs.tag_lower(self.world_map.oval_id)
         
     @update_coordinates
     def move_sphere(self, event):
@@ -64,7 +58,7 @@ class GeographicalView(BaseView):
         # the link is now at the bottom of the stack after calling tag_lower
         # if the map is activated, we need to lower all map objects to be 
         # able to see the link
-        self.lower_map()
+        self.world_map.lower_map()
             
     ## Map Menu
     
@@ -148,28 +142,14 @@ class GeographicalView(BaseView):
         if not filepath: 
             return
         else: 
-            self.filepath ,= filepath
-            
-        self.world_map.load_polygon(*self.yield_polygons())
+            filepath ,= filepath
+            self.world_map.create_map(filepath)
         
-        for idx in self.world_map.map_ids:
-            self.cvs.tag_lower(idx)
-        self.cvs.tag_lower(self.world_map.oval_id)
+        # *self.world_map.yield_polygons(filepath)
         
-    def yield_polygons(self):
-        
-        # shapefile with all countries
-        sf = shp.Reader(self.filepath)
-        
-        shapes = sf.shapes()
-        
-        for shape in shapes:
-            shape = sgeo.shape(shape)
-            
-            if shape.geom_type == 'MultiPolygon':
-                yield from shape
-            else:
-                yield shape
+        # for idx in self.world_map.map_ids:
+        #     self.cvs.tag_lower(idx)
+        # self.cvs.tag_lower(self.world_map.oval_id)
                 
 from pyproj import Proj
         
@@ -184,96 +164,124 @@ class Map():
         self.cvs = view.cvs
         self.map_ids = set()
         self.projection = 'mercator'
-        # set containing all polygons to redraw the map with another projection
+        # set containing all polygons 
+        # used to redraw the map upon changing the projection
         self.polygons = []
-        self.change_projection()
+        self.scale = 1
+        # indicates whether a map is currently displayed or not
+        self.display = False
+        
+    def create_map(self, filepath):
+        self.land_coordinates = self.yield_lands(filepath)
+        self.draw_map()
+        
+    def draw_map(self):
+        # first, delete the existing map objects
+        self.cvs.delete('land', 'water')
+        # draw the water
+        self.draw_water()
+        # loop over the polygons in the shapefile
+        for land in self.land_coordinates:
+            try:
+                # draw the land on the canvas
+                self.draw_land(land)
+            except ValueError as e:
+                print(str(e))
+        self.display = True
+                
+    def yield_lands(self, filepath):        
+        # read the shapefile
+        sf = shp.Reader(filepath)       
+        # retrieve the shapes it contains (polygons or multipolygons) 
+        shapes = sf.shapes() 
+        for shape in shapes:
+            # make it a shapely shape
+            shape = sgeo.shape(shape)
+            # if it is a multipolygon, yield the polygons it is composed of
+            if shape.geom_type == 'MultiPolygon':
+                yield from map(self.shape_to_coords, shape)
+            # else yield the polygon itself
+            else:
+                yield self.shape_to_coords(shape)
 
     def scale_map(self, ratio, event):
         self.scale *= float(ratio)
 
-    def change_projection(self, centerof=None):
-        # initialize the scale
+    def change_projection(self, projection):
+        # reset the scale to 1
         self.scale = 1
-        # self.scale_map(center=False)
-        # self.draw_sphere()
+        # update the projection
+        self.projection = projection
+        # draw the map
+        self.draw_map()
         for id in self.map_ids:
             self.cvs.delete(id)
         self.draw_water()
         for coords in self.polygons:
             self.draw_map(coords)
-        self.cvs.tag_lower(self.oval_id)
-            
+        self.cvs.tag_lower(self.water_id)
         
-
-    def draw_water(self):
-        self.cvs.delete('water')
-        if self.projection == 'mercator':
-            x0, y0 = self.to_projected_coordinates([[-180, 85]])
-            x1, y1 = self.to_projected_coordinates([[180, -85]])
-            self.oval_id = self.cvs.create_rectangle(
-                                                    0,
-                                                    0,
-                                                    0, 
-                                                    0,
-                                                    outline = 'black', 
-                                                    fill = 'deep sky blue', 
-                                                    tags = ('water')
-                                                    )
-        # if self.is_spherical():
-        #     R = 180/pi*self.scale
-        #     vx, vy = self.scale_x*self.scale, self.scale_y*self.scale
-        #     self.oval_id = self.cvs.create_oval(
-        #                                         vx/2 - R, 
-        #                                         vy/2 - R, 
-        #                                         vx/2 + R, 
-        #                                         vy/2 + R,
-        #                                         outline = 'black', 
-        #                                         fill = 'deep sky blue', 
-        #                                         tags = ('water')
-        #                                         )
-        
-    def draw_map(self, coords):
-        points = self.to_projected_coordinates(coords)
+    def draw_land(self, land):
+        # create the polygon the canvas
         obj_id = self.cvs.create_polygon(
-                                         points, 
-                                         fill = 'medium sea green', 
+                                         *self.to_projected_coordinates(*land), 
+                                         fill = 'green3', 
                                          outline = 'black', 
-                                         tags=('land',)
+                                         tags = ('land',)
                                          )
         self.map_ids.add(obj_id)
-                                
-    def load_polygon(self, *polygons):
-        for polygon in polygons:
-            coords = self.shape_to_coords(str(polygon))
-            try:
-                self.load_map(coords)
-            except ValueError as e:
-                print(str(e))
+
+    def draw_water(self):
+        if self.projection == 'mercator':
+            (x0, y0) ,= self.to_projected_coordinates((-180, 84))
+            (x1, y1) ,= self.to_projected_coordinates((180, -84))
+            self.water_id = self.cvs.create_rectangle(
+                                                    x1,
+                                                    y1,
+                                                    x0, 
+                                                    y0,
+                                                    outline = 'black', 
+                                                    fill = 'deep sky blue', 
+                                                    tags = ('water',)
+                                                    )
+        if self.projection == 'spherical':
+            (cx, cy) ,= self.to_projected_coordinates((7, 49))
+            self.water_id = self.cvs.create_oval(
+                                                cx - 6378000,
+                                                cy - 6378000,
+                                                cx + 6378000, 
+                                                cy + 6378000,
+                                                outline = 'black', 
+                                                fill = 'deep sky blue', 
+                                                tags = ('water',)
+                                                )
                 
-    def view_center(self):
-        return (sum(self.cvs.xview())/2, sum(self.cvs.yview())/2)
-                
-    def load_map(self, polygon_coords):
-        self.polygons.append(polygon_coords)
-        self.draw_map(polygon_coords)
-            
     def shape_to_coords(self, shape):
+        # convert a stringified shape to a list of coordinates
         try:
             keep = lambda x: x.isdigit() or x in '- .'
             coords = ''.join(filter(keep, str(shape))).split(' ')[1:]
             return [(eval(a[:10]), eval(b[:10])) for a, b in zip(coords[0::2], coords[1::2])]
         except (ValueError, SyntaxError) as e:
             print(str(e))
+            
+    # set the map object at the bottom of the stack
+    def lower_map(self):
+        for map_obj in self.map_ids:
+            self.cvs.tag_lower(map_obj)
+        self.cvs.tag_lower(self.water_id)
+                                
+    def view_center(self):
+        return (sum(self.cvs.xview())/2, sum(self.cvs.yview())/2)
 
-    def to_projected_coordinates(self, coords):
-        points = []
+    def to_projected_coordinates(self, *coords):
+        # points = []
         for longitude, latitude in coords:
             px, py = self.projections[self.projection](longitude, latitude)
-            points += [px, -py]
-        return points
+            yield (px, -py)
+        # return points
 
     def to_geographical_coordinates(self, x, y):
         px, py = x/self.scale, -y/self.scale
         lon, lat = self.projections[self.projection](px, py, inverse=True)
-        print(lon, lat)
         return lon, lat
