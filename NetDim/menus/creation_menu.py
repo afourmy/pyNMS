@@ -83,7 +83,7 @@ class CreationMenu(ScrolledFrame):
                 self.type_to_action[obj_type] = cmd
         
         for button_type, cmd in self.type_to_action.items():
-            button = TKButton(self.infr, relief=tk.FLAT, command=cmd)                
+            button = TKButton(self.infr, relief='flat', command=cmd)                
             if button_type in link_class:
                 button.configure(text={
                                        'ethernet link': 'Ethernet link',
@@ -198,6 +198,8 @@ class CreationMenu(ScrolledFrame):
         self.switch_to('creation')
         self.view.creation_mode = mode
         for obj_type in self.type_to_button:
+            if obj_type in node_subtype:
+                continue
             if mode == obj_type:
                 self.type_to_button[obj_type].config(relief='sunken')
             else:

@@ -9,23 +9,23 @@ COLOR = 'lavender'
     
 class Binding(object):
     
-    def __init__(self, canvas, *tags, add=''):
-        self.canvas = canvas
+    def __init__(self, parent, *tags, add=''):
+        self.parent = parent
         self.add = add
         self.tags = tags
         
     def bind(self):
         if not self.tags:
-            self.canvas.bind(self.event, self.command, self.add)
+            self.parent.bind(self.event, self.command, self.add)
         else:
             for tag in self.tags:
-                self.canvas.tag_bind(tag, self.event, self.command, self.add) 
+                self.parent.tag_bind(tag, self.event, self.command, self.add) 
         
     def unbind(self):
         if not self.tag:
-            self.canvas.unbind(self.event)
+            self.parent.unbind(self.event)
         else:
-            self.canvas.tag_unbind(self.tag, self.event)
+            self.parent.tag_unbind(self.tag, self.event)
             
 class BindingCanvas(tk.Canvas):
     

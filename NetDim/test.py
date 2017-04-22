@@ -18,7 +18,6 @@ path_parent = abspath(join(path_app, pardir))
 import controller
 from autonomous_system.AS_operations import ASCreation
 from graph_generation.network_dimension import NetworkDimension
-
 from ip_networks.arp_table import ARPTable
 from ip_networks.bgp_table import BGPTable
 from ip_networks.configuration import RouterConfiguration

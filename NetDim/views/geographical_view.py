@@ -20,22 +20,15 @@ class GeographicalView(BaseView):
         
         # initialize the map 
         self.world_map = Map(self)
-        self.world_map.create_meridians()
-        self.world_map.center_map([[7, 49]])
             
     def switch_binding(self, mode): 
         super(GeographicalView, self).switch_binding(self.mode)
-        
-        # if self._mode == 'motion':
-        #     self.cvs.tag_bind('water', '<ButtonPress-1>', self.move_sphere, add='+')
-        #     self.cvs.tag_bind('Area', '<ButtonPress-1>', self.move_sphere, add='+')
             
     # set the map object at the bottom of the stack
     def lower_map(self):
         for map_obj in self.world_map.map_ids:
             self.cvs.tag_lower(map_obj)
-        if self.world_map.is_spherical():
-            self.cvs.tag_lower(self.world_map.oval_id)
+        self.cvs.tag_lower(self.world_map.oval_id)
         
     @update_coordinates
     def move_sphere(self, event):
@@ -49,7 +42,7 @@ class GeographicalView(BaseView):
     def create_node_on_binding(self, event, subtype):
         node = self.network.nf(node_type=subtype, x=event.x, y=event.y)
         # update logical and geographical coordinates
-        lon, lat = self.world_map.get_geographical_coordinates(node.x, node.y)
+        lon, lat = self.world_map.to_geographical_coordinates(node.x, node.y)
         node.longitude, node.latitude = lon, lat
         node.logical_x, node.logical_y = node.x, node.y
         self.create_node(node)
@@ -103,8 +96,8 @@ class GeographicalView(BaseView):
         
     ## Geographical projection menu
     
-    def change_projection(self, mode):
-        self.world_map.change_projection(mode)
+    def change_projection(self, projection):
+        self.world_map.change_projection(projection)
         self.lower_map()
     
     @update_coordinates
@@ -115,28 +108,29 @@ class GeographicalView(BaseView):
         factor = 1.2 if event.delta > 0 else 0.8
         self.diff_y *= factor
         self.node_size *= factor
-        self.world_map.scale_map(ratio=factor)
+        self.cvs.scale('all', 0, 0, factor, factor)
+        self.world_map.scale_map(factor, event)
         self.update_nodes_coordinates(factor)
-        
-    @update_coordinates
-    @overrider(BaseView)
-    def zoomerP(self, event):
-        # zoom in (unix)
-        self.cancel()
-        self.diff_y *= 1.2
-        self.node_size *= 1.2
-        self.world_map.scale_map(ratio=1.2)
-        self.update_nodes_coordinates(1.2)
-        
-    @update_coordinates
-    @overrider(BaseView)
-    def zoomerM(self, event):
-        # zoom out (unix)
-        self.cancel()
-        self.diff_y *= 0.8
-        self.node_size *= 0.8
-        self.world_map.scale_map(ratio=0.8)
-        self.update_nodes_coordinates(0.8)
+    #     
+    # @update_coordinates
+    # @overrider(BaseView)
+    # def zoomerP(self, event):
+    #     # zoom in (unix)
+    #     self.cancel()
+    #     self.diff_y *= 1.2
+    #     self.node_size *= 1.2
+    #     self.world_map.scale_map(1.2)
+    #     self.update_nodes_coordinates(1.2)
+    #     
+    # @update_coordinates
+    # @overrider(BaseView)
+    # def zoomerM(self, event):
+    #     # zoom out (unix)
+    #     self.cancel()
+    #     self.diff_y *= 0.8
+    #     self.node_size *= 0.8
+    #     self.world_map.scale_map(0.8)
+    #     self.update_nodes_coordinates(0.8)
         
     ## Import of shapefile
     
@@ -160,6 +154,7 @@ class GeographicalView(BaseView):
         
         for idx in self.world_map.map_ids:
             self.cvs.tag_lower(idx)
+        self.cvs.tag_lower(self.world_map.oval_id)
         
     def yield_polygons(self):
         
@@ -175,149 +170,70 @@ class GeographicalView(BaseView):
                 yield from shape
             else:
                 yield shape
+                
+from pyproj import Proj
         
 class Map():
 
-    delta = 3600.0
-    halfX = 648000.0
-    lonlat = []
-    map_temp = {}
+    projections = {
+    'mercator': Proj(init="epsg:3395"),
+    'spherical': Proj('+proj=ortho +lat_0=49 +lon_0=7')
+    }
     
-    def __init__(self, view, viewx=500, viewy=250):
-        self.viewx, self.viewy = viewx, viewy
+    def __init__(self, view):
         self.cvs = view.cvs
         self.map_ids = set()
-        self.scale = 0.05
-        self.mode = 'mercator'
+        self.projection = 'mercator'
         # set containing all polygons to redraw the map with another projection
         self.polygons = []
-        self.change_projection(self.mode)
-        
+        self.change_projection()
 
-    def scale_map(self, ratio=1, center=True):
-        # instead of remembering the center before zooming, it would be better
-        # to zoom according to where the mouse is located
-        self.cx = (self.cvs.xview()[0] + self.cvs.xview()[1])/2
-        self.cy = (self.cvs.yview()[0] + self.cvs.yview()[1])/2
-        # calc ratio of current and previous scale
+    def scale_map(self, ratio, event):
         self.scale *= float(ratio)
-        # update scrollregion and scale
-        self.cvs['scrollregion'] = (
-                                    0, 
-                                    0, 
-                                    self.scale_x*self.scale, 
-                                    self.scale_y*self.scale
-                                    )
-        self.cvs.scale('all', 0, 0, ratio, ratio)
-        if center:
-            self.center_point()
-        
-    def get_geographical_coordinates(self, x, y):
-        # move figure part
-        coords = self.from_points([x, y], dosphere=1)
-        if coords and hasattr(self, 'coords'):
-            coords = self.coords[2] + coords
-            self.coords[0] = self.distance(coords)
-            self.draw_map(coords, 'CurrFigure')
-            self.draw_map([coords[1]], 'CurrFigure')
-        # calc and show coords under cursor
-        coords = self.from_points((x, y), dosphere=1) or [(0, 0)]
-        return coords[0][0], coords[0][1]
 
-    def create_meridians(self):
-        x = -180
-        for x in range(-180, 181, 30):
-            lon = []
-            for y in range(-90, 91, 30):
-                lon += [[x, y]]
-            self.lonlat.append(list(lon))
-        for y in range(-90, 91, 30):
-            centerof = [-180, y]
-            lat = [centerof]
-            for x in range(-180, 181, 30):
-                lat += [[x, y]]
-                self.lonlat.append(list(lat))
-                label = centerof = None
-                lat.pop(0)
-                
-    def draw_meridians(self):
-        for coords in self.lonlat:
-            coords = self.convert_coords(coords)
-            if not coords:
-                return
-            if len(coords) < 4:
-                coords = coords * 2
-            obj_id = self.cvs.create_line(coords, fill='black', tags=('meridians',), smooth=True)
-        
-    def center_point(self, x=None, y=None):
-        # current view
-        scrollX = self.cvs.xview()
-        scrollY = self.cvs.yview()
-        if x and y:
-            # center by point
-            moveX = x/(self.scale_x*self.scale) - (scrollX[1] - scrollX[0])/2.0
-            moveY = y/(self.scale_y*self.scale) - (scrollY[1] - scrollY[0])/2.0
-        else:
-            # visible center
-            moveX = self.cx - (scrollX[1] - scrollX[0]) / 2.0
-            moveY = self.cy - (scrollY[1] - scrollY[0]) / 2.0
-        self.cvs.xview('moveto', moveX)
-        self.cvs.yview('moveto', moveY)
-
-    def change_projection(self, mode='linear', centerof=None):
-        self.center = [[7, 49]]
-        
-        self.scale_x = self.viewx*self.delta
-        if mode in ('linear', 'mercator'):
-            self.scale_y = self.viewy*self.delta
-        else:
-            self.scale_y = self.to_mercator(90.0)*self.delta*self.viewy/90
-            
-        self.halfX = self.scale_x/2
-        self.halfY = self.scale_y/2
-        self.mode = mode
-        self.scale_map(center=False)
-        self.draw_sphere()
+    def change_projection(self, centerof=None):
+        # initialize the scale
+        self.scale = 1
+        # self.scale_map(center=False)
+        # self.draw_sphere()
         for id in self.map_ids:
             self.cvs.delete(id)
-        self.cvs.delete('meridians')
-
+        self.draw_water()
         for coords in self.polygons:
             self.draw_map(coords)
+        self.cvs.tag_lower(self.oval_id)
             
-        self.create_meridians()
-        self.draw_meridians()
-        self.center_map(self.center)
+        
 
-    def center_map(self, center):
-        pts = self.to_points(center, doscale=1)
-        if pts:
-            self.center_point(*pts)
-
-    def draw_sphere(self):
+    def draw_water(self):
         self.cvs.delete('water')
-        if self.is_spherical():
-            R = 180/pi*self.delta*self.scale
-            vx, vy = self.scale_x*self.scale, self.scale_y*self.scale
-            self.oval_id = self.cvs.create_oval(
-                                                vx/2 - R, 
-                                                vy/2 - R, 
-                                                vx/2 + R, 
-                                                vy/2 + R,
-                                                outline = 'black', 
-                                                fill = 'deep sky blue', 
-                                                tags = ('water')
-                                                )
-
-    def convert_coords(self, coords):
-        return self.to_points(coords, doscale=1)
+        if self.projection == 'mercator':
+            x0, y0 = self.to_projected_coordinates([[-180, 85]])
+            x1, y1 = self.to_projected_coordinates([[180, -85]])
+            self.oval_id = self.cvs.create_rectangle(
+                                                    0,
+                                                    0,
+                                                    0, 
+                                                    0,
+                                                    outline = 'black', 
+                                                    fill = 'deep sky blue', 
+                                                    tags = ('water')
+                                                    )
+        # if self.is_spherical():
+        #     R = 180/pi*self.scale
+        #     vx, vy = self.scale_x*self.scale, self.scale_y*self.scale
+        #     self.oval_id = self.cvs.create_oval(
+        #                                         vx/2 - R, 
+        #                                         vy/2 - R, 
+        #                                         vx/2 + R, 
+        #                                         vy/2 + R,
+        #                                         outline = 'black', 
+        #                                         fill = 'deep sky blue', 
+        #                                         tags = ('water')
+        #                                         )
         
     def draw_map(self, coords):
-        points = self.convert_coords(coords)
-        if not points:
-            return
-        if len(points) < 4:
-            points = points * 2
+        points = self.to_projected_coordinates(coords)
         obj_id = self.cvs.create_polygon(
                                          points, 
                                          fill = 'medium sea green', 
@@ -334,6 +250,9 @@ class Map():
             except ValueError as e:
                 print(str(e))
                 
+    def view_center(self):
+        return (sum(self.cvs.xview())/2, sum(self.cvs.yview())/2)
+                
     def load_map(self, polygon_coords):
         self.polygons.append(polygon_coords)
         self.draw_map(polygon_coords)
@@ -346,97 +265,15 @@ class Map():
         except (ValueError, SyntaxError) as e:
             print(str(e))
 
-    def is_spherical(self):
-        return self.mode == 'globe'
-
-    def view_center(self):
-        cx = (self.scale_x*self.scale*x for x in self.cvs.xview())
-        cy = (self.scale_y*self.scale*y for y in self.cvs.yview())
-        return (sum(cx)/2, sum(cy)/2)
-
-    def to_points(self, coords, doscale=0):
+    def to_projected_coordinates(self, coords):
         points = []
-        for x, y in coords:
-            if self.mode in ('linear', 'mercator'):
-                x = float(x)
-                y = -y
-                if self.mode == 'mercator':
-                    y = self.to_mercator(float(y))
-            else:
-                # self.mode is 'globe':
-                tmp = self.to_sphere([x, y])
-                if not tmp:
-                    continue
-                x, y = tmp
-            _x = x * self.delta + self.halfX 
-            _y = y * self.delta + self.halfY
-            if doscale:
-                points += [_x * self.scale, _y * self.scale]
-            else:
-                points += [_x, _y]
+        for longitude, latitude in coords:
+            px, py = self.projections[self.projection](longitude, latitude)
+            points += [px, -py]
         return points
 
-    def from_points(self, points=[], dosphere=0):
-        b, coords = 0, []
-        x, y = points
-        x = (x / self.scale - self.halfX) / self.delta
-        y = -(y / self.scale - self.halfY) / self.delta
-        if self.mode == 'mercator':
-            y = self.from_mercator(y)
-        return [[x, y]]
-
-    def to_mercator(self, y):
-        # latitude in mercator projection
-        if abs(y) > 84: 
-            y = 84*np.sign(y)
-        return degrees(log(tan(radians(y)/2 + atan(1))))
-
-    def from_mercator(self, y):
-        # latitude from mercator projection
-        return degrees(2*(atan(e**(radians(y))) - atan(1)))
-
-    def to_sphere(self, coords):
-        x, y, cx, cy = [radians(float(x)) for x in coords + self.center[0]]
-        cx += pi
-        if sin(y) * sin(cy) - cos(y)*cos(cy)*cos(cx - x) > 0:
-            return [
-                    degrees(cos(y)*sin(cx - x)),
-                    degrees(-sin(y)*cos(cy) - sin(cy)*cos(y)*cos(cx - x))
-                    ]
-                    
-
-    def from_sphere(self, coords):
-        # internal
-        asinz = lambda x: asin([x, ([-1.0, 1.0][x > 1.0])][abs(x) > 1.0])
-        adjust_lon = lambda x: [(x - ([1, -1][x < 0] * 2.0 * pi)), x][abs( x ) < pi]
-        EPSLN = 1.0e-10
-        # args
-        centerof = self.center or [[0, 0]]
-        x, y, center_x, center_y = [radians(float(x)) for x in coords + centerof[0]]
-        rh = sqrt(x * x + y * y) + EPSLN
-        if rh > 1:
-            return []
-        sin_p14 = sin(center_y)
-        cos_p14 = cos(center_y)
-        z = asinz(rh/1)
-        lon = center_x
-        if abs(rh) <= EPSLN :
-            lat = center_y
-        lat = asinz(cos(z)*sin_p14 + (y*sin(z)*cos_p14)/rh)
-        con = abs(center_y) - pi/2
-        if abs(con) <= EPSLN:
-            if center_y >= EPSLN:
-                lon = adjust_lon(center_x + atan2(x, y))
-            else:
-                lon = adjust_lon(center_x - atan2(-x, y))
-        con = cos(z) - sin_p14*sin(lat)
-        if abs(con) >= EPSLN or abs(x) >= EPSLN:
-            lon = adjust_lon(center_x + atan2((x*sin(z)*cos_p14), (con*rh)));
-        x = degrees(lon)
-        y = degrees(lat)
-        return [x, y]
-
-    def distance(self, coords):
-        # length of the great circle between two points (km)
-        x, y, x1, y1 = [radians(x) for x in coords[0] + coords[1]]
-        return 6378.136 * acos(cos(y)*cos(y1)*cos(x - x1) + sin(y)*sin(y1))
+    def to_geographical_coordinates(self, x, y):
+        px, py = x/self.scale, -y/self.scale
+        lon, lat = self.projections[self.projection](px, py, inverse=True)
+        print(lon, lat)
+        return lon, lat

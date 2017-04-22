@@ -170,9 +170,9 @@ class DrawingMenu(ScrolledFrame):
     @update_paths
     def change_creation_mode(self, mode):
         # change the mode to creation 
-        self.view._mode = mode
-        self.view._creation_mode = mode
-        self.view.switch_binding()
+        self.view.mode = mode
+        self.view.creation_mode = mode
+        self.view.switch_binding('creation')
         # update the button display
         for shape in ('text', 'rectangle', 'oval'):
             if shape == mode:

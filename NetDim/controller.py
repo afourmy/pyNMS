@@ -265,7 +265,7 @@ class Controller(MainWindow):
         # if the drag and drop process is on-going
         if self.dnd:
             # we display the appropriate icon
-            print(self.dnd)
+            pass
             
     def change_current_project(self, event=None):
         # if there's an ongoing drawing process, kill it

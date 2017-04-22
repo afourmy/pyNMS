@@ -262,13 +262,44 @@ class BaseView(CustomFrame):
         create_rectangle_binding.command = self.create_rectangle
         self.non_persistent_bindings['rectangle'].add(draw_rectangle_binding)
         
+        # 2.B) shape creation: oval
+        start_oval_binding = Binding(self.cvs)
+        start_oval_binding.event = '<ButtonPress-1>'
+        start_oval_binding.command = self.start_drawing_oval
+        self.non_persistent_bindings['oval'].add(start_oval_binding)
         
-        # self.cvs.bind('<ButtonPress-1>', self.start_drawing_oval)
-        # self.cvs.bind('<B1-Motion>', self.draw_oval)
-        # self.cvs.bind('<ButtonRelease-1>', self.create_oval)
+        draw_oval_binding = Binding(self.cvs)
+        draw_oval_binding.event = '<B1-Motion>'
+        draw_oval_binding.command = self.draw_oval
+        self.non_persistent_bindings['oval'].add(draw_oval_binding)
         
-        # 2.B) 
+        create_oval_binding = Binding(self.cvs)
+        create_oval_binding.event = '<ButtonRelease-1>'
+        create_oval_binding.command = self.create_oval
+        self.non_persistent_bindings['oval'].add(draw_oval_binding)
         
+        # 2.C) shape creation: label
+        create_label_binding = Binding(self.cvs)
+        create_label_binding.event = '<ButtonPress-1>'
+        create_label_binding.command = self.create_label
+        self.non_persistent_bindings['text'].add(create_label_binding)
+        
+        # 2.D) link creation
+        start_link_binding = Binding(self.cvs, 'node', add='+')
+        start_link_binding.event = '<ButtonPress-1>'
+        start_link_binding.command = self.start_link
+        self.non_persistent_bindings['link'].add(start_link_binding)
+        
+        draw_link_binding = Binding(self.cvs, 'node', add='+')
+        draw_link_binding.event = '<B1-Motion>'
+        draw_link_binding.command = self.line_creation
+        self.non_persistent_bindings['link'].add(draw_link_binding)
+        
+        create_link_binding = Binding(self.cvs, 'node', add='+')
+        create_link_binding.event = '<ButtonRelease-1>'
+        create_link_binding.command = self.link_creation
+        self.non_persistent_bindings['link'].add(create_link_binding)
+                
         # initialize other bindings depending on the mode
         self.switch_binding('selection')
             
@@ -308,19 +339,6 @@ class BaseView(CustomFrame):
             
             self.cvs.binds(*self.non_persistent_bindings['selection'])
             
-            # # add bindings to drag a node with left-click
-            # self.cvs.tag_bind('link', '<Button-1>', self.find_closest_link, add='+')
-            # self.cvs.tag_bind('node', '<Button-1>', self.find_closest_node, add='+')
-            # self.cvs.tag_bind('shape', '<Button-1>', self.find_closest_shape, add='+')
-            # 
-            # self.cvs.tag_bind('node', '<B1-Motion>', self.node_motion)
-            # self.cvs.tag_bind('shape', '<B1-Motion>', self.shape_motion)
-            # 
-            # # add binding to select all nodes in a rectangle
-            # self.cvs.bind('<ButtonPress-1>', self.start_point_select_objects, add='+')
-            # self.cvs.bind('<B1-Motion>', self.rectangle_drawing)
-            # self.cvs.bind('<ButtonRelease-1>', self.end_point_select_nodes, add='+')
-            
         else:
             # unbind unecessary bindings
             self.cvs.unbind('<Button-1>')
@@ -330,29 +348,11 @@ class BaseView(CustomFrame):
             self.cvs.tag_unbind('node', '<Button-1>')
             self.cvs.tag_unbind('link', '<Button-1>')
             self.cvs.tag_unbind('Area', '<ButtonPress-1>')
-
-            if self.creation_mode == 'rectangle':
-                # add binding to draw a rectangle
-                self.cvs.bind('<ButtonPress-1>', self.start_drawing_rectangle)
-                self.cvs.bind('<B1-Motion>', self.draw_rectangle)
-                self.cvs.bind('<ButtonRelease-1>', self.create_rectangle)
-                
-            elif self.creation_mode == 'oval':
-                # add binding to draw a rectangle
-                self.cvs.bind('<ButtonPress-1>', self.start_drawing_oval)
-                self.cvs.bind('<B1-Motion>', self.draw_oval)
-                self.cvs.bind('<ButtonRelease-1>', self.create_oval)
-                
-            elif self.creation_mode == 'text':
-                self.cvs.bind('<ButtonPress-1>', self.create_label)
-                
+            
+            if self.creation_mode in ('rectangle', 'oval', 'text'):
+                self.cvs.binds(*self.non_persistent_bindings[self.creation_mode])
             else:
-                # add bindings to create a link between two nodes
-                self.cvs.tag_bind('node', '<Button-1>', self.start_link, add='+')
-                self.cvs.tag_bind('node', '<B1-Motion>', self.line_creation, add='+')
-                release = lambda event, type=type: self.link_creation(
-                                                    event, self.creation_mode)
-                self.cvs.tag_bind('node', '<ButtonRelease-1>', release, add='+')
+                self.cvs.binds(*self.non_persistent_bindings['link'])
                 
     ## Drawing modes
     
@@ -682,7 +682,7 @@ class BaseView(CustomFrame):
         self.cvs.coords(self.temp_line, start_node.x, start_node.y, event.x, event.y)
         
     @update_coordinates
-    def link_creation(self, event, subtype):
+    def link_creation(self, event):
         # delete the temporary line
         self.cvs.delete(self.temp_line)
         # node from which the link starts
@@ -695,7 +695,7 @@ class BaseView(CustomFrame):
                 # create the link and the associated line
                 if start_node != destination_node:
                     new_link = self.network.lf(
-                                           subtype = subtype,
+                                           subtype = self.creation_mode,
                                            source = start_node, 
                                            destination = destination_node
                                            )
