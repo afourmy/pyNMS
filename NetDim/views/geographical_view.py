@@ -10,6 +10,7 @@ from miscellaneous.decorators import update_coordinates, overrider
 try:
     import shapefile as shp
     import shapely.geometry as sgeo
+    from pyproj import Proj
 except ImportError:
     warnings.warn('SHP librairies missing: map import disabled')
 
@@ -84,15 +85,7 @@ class GeographicalView(BaseView):
             node.x, node.y = node.logical_x, node.logical_y
         self.move_nodes(nodes)
         
-    def delete_map(self):
-        for idx in self.world_map.map_ids:
-            self.cvs.delete(idx)
-        
     ## Geographical projection menu
-    
-    def change_projection(self, projection):
-        self.world_map.change_projection(projection)
-        self.lower_map()
     
     @update_coordinates
     @overrider(BaseView)
@@ -142,56 +135,37 @@ class GeographicalView(BaseView):
         if not filepath: 
             return
         else: 
-            filepath ,= filepath
-            self.world_map.create_map(filepath)
-        
-        # *self.world_map.yield_polygons(filepath)
-        
-        # for idx in self.world_map.map_ids:
-        #     self.cvs.tag_lower(idx)
-        # self.cvs.tag_lower(self.world_map.oval_id)
-                
-from pyproj import Proj
+            self.world_map.shapefile ,= filepath
+            self.world_map.draw_map()
         
 class Map():
 
     projections = {
     'mercator': Proj(init="epsg:3395"),
-    'spherical': Proj('+proj=ortho +lat_0=49 +lon_0=7')
+    'spherical': Proj('+proj=ortho +lat_0=47 +lon_0=28')
     }
     
     def __init__(self, view):
         self.cvs = view.cvs
         self.map_ids = set()
-        self.projection = 'mercator'
+        self.projection = 'spherical'
         # set containing all polygons 
         # used to redraw the map upon changing the projection
-        self.polygons = []
+        self.land_coordinates = []
         self.scale = 1
-        # indicates whether a map is currently displayed or not
-        self.display = False
-        
-    def create_map(self, filepath):
-        self.land_coordinates = self.yield_lands(filepath)
-        self.draw_map()
         
     def draw_map(self):
         # first, delete the existing map objects
-        self.cvs.delete('land', 'water')
+        self.delete_map()
         # draw the water
         self.draw_water()
         # loop over the polygons in the shapefile
-        for land in self.land_coordinates:
-            try:
-                # draw the land on the canvas
-                self.draw_land(land)
-            except ValueError as e:
-                print(str(e))
-        self.display = True
+        for land in self.yield_lands():
+            self.draw_land(land)
                 
-    def yield_lands(self, filepath):        
+    def yield_lands(self):        
         # read the shapefile
-        sf = shp.Reader(filepath)       
+        sf = shp.Reader(self.shapefile)       
         # retrieve the shapes it contains (polygons or multipolygons) 
         shapes = sf.shapes() 
         for shape in shapes:
@@ -214,12 +188,6 @@ class Map():
         self.projection = projection
         # draw the map
         self.draw_map()
-        for id in self.map_ids:
-            self.cvs.delete(id)
-        self.draw_water()
-        for coords in self.polygons:
-            self.draw_map(coords)
-        self.cvs.tag_lower(self.water_id)
         
     def draw_land(self, land):
         # create the polygon the canvas
@@ -245,7 +213,7 @@ class Map():
                                                     tags = ('water',)
                                                     )
         if self.projection == 'spherical':
-            (cx, cy) ,= self.to_projected_coordinates((7, 49))
+            (cx, cy) ,= self.to_projected_coordinates((28, 47))
             self.water_id = self.cvs.create_oval(
                                                 cx - 6378000,
                                                 cy - 6378000,
@@ -258,29 +226,25 @@ class Map():
                 
     def shape_to_coords(self, shape):
         # convert a stringified shape to a list of coordinates
-        try:
-            keep = lambda x: x.isdigit() or x in '- .'
-            coords = ''.join(filter(keep, str(shape))).split(' ')[1:]
-            return [(eval(a[:10]), eval(b[:10])) for a, b in zip(coords[0::2], coords[1::2])]
-        except (ValueError, SyntaxError) as e:
-            print(str(e))
+        keep = lambda x: x.isdigit() or x in '- .'
+        coords = ''.join(filter(keep, str(shape))).split(' ')[1:]
+        for longitude, latitude in zip(coords[0::2], coords[1::2]):
+            yield eval(longitude[:10]), eval(latitude[:10])
             
     # set the map object at the bottom of the stack
     def lower_map(self):
         for map_obj in self.map_ids:
             self.cvs.tag_lower(map_obj)
         self.cvs.tag_lower(self.water_id)
-                                
-    def view_center(self):
-        return (sum(self.cvs.xview())/2, sum(self.cvs.yview())/2)
+        
+    def delete_map(self):
+        self.cvs.delete('land', 'water')
 
     def to_projected_coordinates(self, *coords):
-        # points = []
         for longitude, latitude in coords:
             px, py = self.projections[self.projection](longitude, latitude)
-            yield (px, -py)
-        # return points
-
+            yield px, -py
+        
     def to_geographical_coordinates(self, x, y):
         px, py = x/self.scale, -y/self.scale
         lon, lat = self.projections[self.projection](px, py, inverse=True)

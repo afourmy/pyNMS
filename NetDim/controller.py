@@ -116,7 +116,7 @@ class Controller(MainWindow):
         
         delete_map = MenuEntry(general_menu)
         delete_map.text = 'Delete map'
-        delete_map.command = self.current_project.current_view.delete_map
+        delete_map.command = self.current_project.current_view.world_map.delete_map
         
         general_menu.separator()
         
