@@ -988,7 +988,7 @@ class EthernetLink(PhysicalLink):
         
 class OpticalLink(PhysicalLink):
     
-    color = 'orange'
+    color = 'violet red'
     subtype = 'optical link'
     
     ie_properties = {
@@ -1069,6 +1069,8 @@ class OpticalInterface(Interface):
 class VirtualConnection(Link):  
     
     ie_properties = {}
+    color = 'bisque3'
+    dash = (3,5)
 
     @initializer(ie_properties)
     def __init__(self, **kwargs):
@@ -1098,8 +1100,6 @@ class L2VC(VirtualConnection):
     type = 'l2link'
     subtype = 'l2vc'
     layer = 2
-    color = 'pink'
-    dash = ()
     
     ie_properties = {}
 
@@ -1112,8 +1112,6 @@ class L3VC(VirtualConnection):
     type = 'l3link'
     subtype = 'l3vc'
     layer = 3
-    color = 'black'
-    dash = ()
     
     ie_properties = {}
 
@@ -1122,12 +1120,11 @@ class L3VC(VirtualConnection):
         super().__init__()
         
 class Route(Link):
-    
-    dash = (3,5)
-    
+        
     ie_properties = {
                     'path' : 'list()'
                     }
+    dash = ()
     
     @initializer(ie_properties)
     def __init__(self, **kwargs):
@@ -1149,7 +1146,7 @@ class OpticalChannel(Route):
 
     type = 'l2link'
     subtype = 'optical channel'
-    color = 'violet'
+    color = 'sienna1'
     layer = 2
     
     ie_properties = {}
@@ -1166,7 +1163,7 @@ class EtherChannel(Route):
 
     type = 'l2link'
     subtype = 'etherchannel'
-    color = 'violet'
+    color = 'firebrick3'
     layer = 2
     
     ie_properties = {}
@@ -1183,7 +1180,7 @@ class PseudoWire(Route):
 
     type = 'l3link'
     subtype = 'pseudowire'
-    color = 'violet'
+    color = 'purple2'
     layer = 3
     
     ie_properties = {}
@@ -1200,7 +1197,7 @@ class BGPPeering(Route):
 
     type = 'l3link'
     subtype = 'BGP peering'
-    color = 'violet'
+    color = 'aquamarine2'
     layer = 3
     
     ie_properties = {
@@ -1224,7 +1221,6 @@ class Traffic(Link):
     type = 'traffic'
     subtype = type
     dash = (7,1,1,1)
-    color = 'purple'
     layer = 4
     
     ie_properties = {
@@ -1237,7 +1233,7 @@ class Traffic(Link):
         
 class RoutedTraffic(Traffic):
         
-    color = 'forest green'
+    color = 'cyan4'
     subtype = 'routed traffic'
     
     ie_properties = {
@@ -1251,7 +1247,7 @@ class RoutedTraffic(Traffic):
         
 class StaticTraffic(Traffic):
     
-    color = 'chartreuse'
+    color = 'green3'
     subtype = 'static traffic'
     
     ie_properties = {

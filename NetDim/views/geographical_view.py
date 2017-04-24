@@ -49,8 +49,9 @@ class GeographicalView(BaseView):
         # generation), its canvas coordinates are initialized at (0, 0). 
         # we draw the node in the middle of the canvas for the user to see them
         if not node.x and not node.y:
+            pass
             # node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
-            node.x, node.y = self.world_map.view_center()
+            # node.x, node.y = self.world_map.view_center()
 
     @overrider(BaseView)
     def create_link(self, new_link):
@@ -95,7 +96,7 @@ class GeographicalView(BaseView):
         factor = 1.2 if event.delta > 0 else 0.8
         self.diff_y *= factor
         self.node_size *= factor
-        self.cvs.scale('all', 0, 0, factor, factor)
+        self.cvs.scale('all', event.x, event.y, factor, factor)
         self.world_map.scale_map(factor, event)
         self.update_nodes_coordinates(factor)
     #     
@@ -148,11 +149,13 @@ class Map():
     def __init__(self, view):
         self.cvs = view.cvs
         self.map_ids = set()
-        self.projection = 'spherical'
+        self.projection = 'mercator'
         # set containing all polygons 
         # used to redraw the map upon changing the projection
         self.land_coordinates = []
         self.scale = 1
+        self.offset = (0, 0)
+        self.active = False
         
     def draw_map(self):
         # first, delete the existing map objects
@@ -162,6 +165,7 @@ class Map():
         # loop over the polygons in the shapefile
         for land in self.yield_lands():
             self.draw_land(land)
+        self.active = True
                 
     def yield_lands(self):        
         # read the shapefile
@@ -180,10 +184,16 @@ class Map():
 
     def scale_map(self, ratio, event):
         self.scale *= float(ratio)
+        offset_x, offset_y = self.offset
+        self.offset = (
+                       offset_x*ratio + event.x*(1 - ratio), 
+                       offset_y*ratio + event.y*(1 - ratio)
+                       )
 
     def change_projection(self, projection):
-        # reset the scale to 1
+        # reset the scale to 1 and the offset to 0
         self.scale = 1
+        self.offset = (0, 0)
         # update the projection
         self.projection = projection
         # draw the map
@@ -233,9 +243,10 @@ class Map():
             
     # set the map object at the bottom of the stack
     def lower_map(self):
-        for map_obj in self.map_ids:
-            self.cvs.tag_lower(map_obj)
-        self.cvs.tag_lower(self.water_id)
+        if self.active:
+            for map_obj in self.map_ids:
+                self.cvs.tag_lower(map_obj)
+            self.cvs.tag_lower(self.water_id)
         
     def delete_map(self):
         self.cvs.delete('land', 'water')
@@ -246,6 +257,7 @@ class Map():
             yield px, -py
         
     def to_geographical_coordinates(self, x, y):
-        px, py = x/self.scale, -y/self.scale
+        offset_x, offset_y = self.offset
+        px, py = (x - offset_x)/self.scale, (offset_y - y)/self.scale
         lon, lat = self.projections[self.projection](px, py, inverse=True)
         return lon, lat
