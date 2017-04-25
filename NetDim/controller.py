@@ -14,13 +14,13 @@ from ip_networks import ssh_management
 from graph_generation import advanced_graph
 from optical_networks import rwa_window
 from automation import script_creation
-from menus import (
-                   creation_menu, 
-                   routing_menu,
-                   display_menu, 
-                   drawing_menu, 
-                   view_menu
-                   )
+from main_menus import (
+                        creation_menu, 
+                        routing_menu,
+                        display_menu, 
+                        drawing_menu, 
+                        view_menu
+                        )
 from PIL import ImageTk
 
 class Controller(MainWindow):
