@@ -41,7 +41,7 @@ def start_netdim_and_import_project(filename):
     def inner_decorator(function):
         @start_netdim
         def wrapper(self):
-            path_test = path_parent + '\\Tests\\'
+            path_test = path_parent + '\\tests\\'
             self.pj.import_project(path_test + filename)
             function(self)
         return wrapper
@@ -66,7 +66,7 @@ class TestExportImport(unittest.TestCase):
                             destination = dest
                             )
         # export in excel and csv
-        path = '\\Tests\\test_export.'
+        path = '\\tests\\test_export.'
         self.pj.export_project(''.join((path_parent, path, 'xls')))
         self.ct.destroy()
                 
@@ -74,7 +74,7 @@ class TestExportImport(unittest.TestCase):
         self.ct.destroy()
         
     def object_import(self, ext):
-        self.pj.import_project(path_parent + '\\Tests\\test_export.' + ext)
+        self.pj.import_project(path_parent + '\\tests\\test_export.' + ext)
         x_coord = set(map(lambda n: n.x, self.nk.pn['node'].values()))
         self.assertEqual(x_coord, {42, 24})
         plink ,= self.nk.pn['plink'].values()

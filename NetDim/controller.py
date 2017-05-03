@@ -29,8 +29,8 @@ class Controller(MainWindow):
         super().__init__()
         self.path_app = path_app
         path_parent = abspath(join(path_app, pardir))
-        self.path_icon = join(path_parent, 'Icons')
-        self.path_workspace = join(path_parent, 'Workspace')
+        self.path_icon = join(path_parent, 'icons')
+        self.path_workspace = join(path_parent, 'workspace')
             
         ## ----- Initialization : -----
         self.title('NetDim')
