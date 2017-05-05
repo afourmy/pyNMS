@@ -359,11 +359,12 @@ perAS_properties = OrderedDict([
 # top-level menu: all types with types common properties
 
 type_labels = OrderedDict([
-('node', node_common_ie_properties),
-('plink', plink_common_ie_properties),
+('node', node_common_ie_properties + ('position', 'coordinates')),
+('plink', plink_common_ie_properties + ('capacity', 'flow', 'traffic', 'wctraffic')),
 ('l2link', route_common_ie_properties),
 ('l3link', route_common_ie_properties),
-('traffic', traffic_common_ie_properties)
+('traffic', traffic_common_ie_properties),
+('interface', ('name', 'ipaddress', 'cost')),
 ])
 
 ## Box properties
@@ -441,6 +442,9 @@ box_properties = OrderedDict([
 # Properties <-> User-friendly names
 
 prop_to_name = {
+'coordinates': 'Coordinates',
+'capacity': 'Capacity',
+'flow': 'Flow',
 'name': 'Name',
 'type': 'Type',
 'protocol': 'Protocol',
@@ -468,6 +472,7 @@ prop_to_name = {
 'traffic': 'Traffic',
 'trafficSD': 'Traffic S -> D', 
 'trafficDS': 'Traffic D -> S', 
+'wctraffic': 'Worst case traffic',
 'wctrafficSD': 'Worst case traffic S -> D', 
 'wctrafficDS': 'Worst case traffic D -> S', 
 'wcfailure': 'Worst case failure',
@@ -501,6 +506,7 @@ prop_to_name = {
 'excluded_nodes': 'Excluded nodes',
 'excluded_plinks': 'Excluded physical links',
 'path': 'Path',
+'position': 'Position',
 'subnets': 'Subnets', 
 'site_type': 'Type of site',
 'sites': 'Sites',
@@ -519,7 +525,8 @@ type_to_name = {
 'plink': 'Physical link',
 'l2link': 'Layer-2 link',
 'l3link': 'Layer-3 link',
-'traffic': 'Traffic link'
+'traffic': 'Traffic link',
+'interface': 'Interface',
 }
 
 name_to_type = {v: k for k, v in type_to_name.items()}
@@ -1318,6 +1325,7 @@ type_to_subtype = {
 'plink': tuple(plink_class.keys()),
 'l2link': tuple(l2link_class.keys()),
 'l3link': tuple(l3link_class.keys()),
-'traffic': tuple(traffic_class.keys())
+'traffic': tuple(traffic_class.keys()),
+'interface': ('ethernet interface', 'optical interface')
 }
 

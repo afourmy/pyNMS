@@ -49,9 +49,7 @@ class GeographicalView(BaseView):
         # generation), its canvas coordinates are initialized at (0, 0). 
         # we draw the node in the middle of the canvas for the user to see them
         if not node.x and not node.y:
-            pass
-            # node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
-            # node.x, node.y = self.world_map.view_center()
+            node.x, node.y = self.canvas_center()
 
     @overrider(BaseView)
     def create_link(self, new_link):

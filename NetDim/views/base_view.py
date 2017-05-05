@@ -49,7 +49,7 @@ class BaseView(CustomFrame):
         self.drawing_iteration = 0
             
         # default link width and node size
-        self.LINK_WIDTH = 5
+        self.link_width = 5
         self.node_size = 8
         
         # default label display
@@ -468,7 +468,7 @@ class BaseView(CustomFrame):
                                                )
         if main_link_selected.type in ('traffic', 'route'):
             if hasattr(main_link_selected, 'path'):
-                self.ss(*main_link_selected.path)
+                self.highlight_objects(*main_link_selected.path)
                 
     @update_coordinates
     def find_closest_shape(self, event):
@@ -745,7 +745,7 @@ class BaseView(CustomFrame):
                                 'object'
                                 ), 
                         fill = link.color, 
-                        width = self.LINK_WIDTH, 
+                        width = self.link_width, 
                         dash = link.dash, 
                         smooth = True,
                         state = 'normal' if self.display_layer[link.layer] else 'hidden'
@@ -1020,7 +1020,7 @@ class BaseView(CustomFrame):
                                 )
             elif obj.class_type == 'link':
                 self.cvs.itemconfig(obj.line, fill=obj.color, 
-                                        width=self.LINK_WIDTH, dash=obj.dash)
+                                        width=self.link_width, dash=obj.dash)
             # object is a shape
             else:
                 if obj.subtype == 'label':
@@ -1113,7 +1113,12 @@ class BaseView(CustomFrame):
         # interface is a boolean that tells the 'refresh_label' function
         # whether we want to update the interface label, or the physical link label,
         # since they have the same name
-        itf = type == 'Interface'
+        itf = type == 'interface'
+        #TODO: ilid should be associated with the interface, not with the link
+        if itf:
+            type = 'plink'
+            subtype = subtype.split()[0] + ' link'
+            self.current_label[subtype] = label
         for obj in self.network.ftr(type, subtype):
             self.refresh_label(obj, self.current_label[subtype], itf)
     
