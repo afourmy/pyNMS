@@ -97,26 +97,28 @@ class GeographicalView(BaseView):
         self.cvs.scale('all', event.x, event.y, factor, factor)
         self.world_map.scale_map(factor, event)
         self.update_nodes_coordinates(factor)
-    #     
-    # @update_coordinates
-    # @overrider(BaseView)
-    # def zoomerP(self, event):
-    #     # zoom in (unix)
-    #     self.cancel()
-    #     self.diff_y *= 1.2
-    #     self.node_size *= 1.2
-    #     self.world_map.scale_map(1.2)
-    #     self.update_nodes_coordinates(1.2)
-    #     
-    # @update_coordinates
-    # @overrider(BaseView)
-    # def zoomerM(self, event):
-    #     # zoom out (unix)
-    #     self.cancel()
-    #     self.diff_y *= 0.8
-    #     self.node_size *= 0.8
-    #     self.world_map.scale_map(0.8)
-    #     self.update_nodes_coordinates(0.8)
+        
+    @update_coordinates
+    @overrider(BaseView)
+    def zoomerP(self, event):
+        # zoom in (unix)
+        self.cancel()
+        self.diff_y *= 1.2
+        self.node_size *= 1.2
+        self.cvs.scale('all', event.x, event.y, 1.2, 1.2)
+        self.world_map.scale_map(1.2, event)
+        self.update_nodes_coordinates(1.2)
+        
+    @update_coordinates
+    @overrider(BaseView)
+    def zoomerM(self, event):
+        # zoom out (unix)
+        self.cancel()
+        self.diff_y *= 0.8
+        self.node_size *= 0.8
+        self.cvs.scale('all', event.x, event.y, 0.8, 0.8)
+        self.world_map.scale_map(0.8, event)
+        self.update_nodes_coordinates(0.8)
         
     ## Import of shapefile
     
