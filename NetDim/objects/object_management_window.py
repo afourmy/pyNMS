@@ -86,9 +86,9 @@ class ObjectManagementWindow(FocusTopLevel):
             self.dict_perAS_properties = {}
             
             # AS combobox
-            self.AS_combobox = Combobox(self, width=20)
+            self.AS_combobox = Combobox(self, width=30)
             self.AS_combobox.bind('<<ComboboxSelected>>', self.update_AS_properties)
-            self.AS_combobox.grid(0, 0, in_=lf_perAS)
+            self.AS_combobox.grid(0, 0, 1, 2, in_=lf_perAS)
         
             for index, property in enumerate(perAS_properties[obj.subtype]):
                 

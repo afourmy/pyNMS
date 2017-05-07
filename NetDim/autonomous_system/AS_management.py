@@ -74,9 +74,9 @@ class ASManagement(CustomTopLevel):
             listbox.bind('<<ListboxSelect>>', 
                             lambda e, type=type: self.highlight_object(e, type))
                             
-            label.grid(0, 2 * index, in_=lf_objects)
-            listbox.grid(1, 2 * index, in_=lf_objects)
-            yscroll.grid(1, 1 + 2 * index, in_=lf_objects)
+            label.grid(0, 2*index, in_=lf_objects)
+            listbox.grid(1, 2*index, in_=lf_objects)
+            yscroll.grid(1, 1 + 2*index, in_=lf_objects)
         
         # find domain physical links: the physical links between nodes of the AS
         button_find_links = Button(common_frame) 

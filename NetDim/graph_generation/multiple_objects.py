@@ -48,7 +48,6 @@ class MultipleNodes(CustomTopLevel):
                                self.x,
                                self.y
                                )
-        
         self.view.draw_all(random=False)
         self.destroy()
         
@@ -82,7 +81,7 @@ class MultipleLinks(CustomTopLevel):
         # confirmation button
         button_confirmation = Button(self)
         button_confirmation.text = 'OK',
-        button_confirmation.command = lambda: self.create_links(source_nodes)
+        button_confirmation.command = self.create_links
         
         # position in the grid
         dest_nodes.grid(0, 0, in_=lf_multiple_links)
@@ -94,6 +93,5 @@ class MultipleLinks(CustomTopLevel):
             dest_node = self.network.nf(name=selected_node)
             # create links from all selected nodes to the selected node
             self.network.multiple_links(self.source_nodes, dest_node)
-        
         self.view.draw_all(random=False)
         self.destroy()

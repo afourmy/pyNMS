@@ -232,16 +232,18 @@ class InSiteView(BaseView):
         
     @update_coordinates
     @overrider(BaseView)
-    def link_creation(self, event, subtype):
+    def link_creation(self, event):
         # delete the temporary line
         self.cvs.delete(self.temp_line)
         # node from which the link starts
         start_node = self.object_id_to_object[self.drag_item]
         # node close to the point where the mouse button is released
         self.drag_item = self.cvs.find_closest(event.x, event.y)[0]
-        if self.drag_item in self.object_id_to_object: # to avoid labels
+        # to avoid labels
+        if self.drag_item in self.object_id_to_object: 
             destination_node = self.object_id_to_object[self.drag_item]
-            if destination_node.class_type == 'node': # because tag filtering doesn't work !
+            # because tag filtering doesn't work !
+            if destination_node.class_type == 'node': 
                 # create the link and the associated line
                 if start_node != destination_node:
                     new_link = self.network.lf(
@@ -297,7 +299,7 @@ class InSiteView(BaseView):
                                                     'object'
                                                     ), 
                                             fill = link.color, 
-                                            width = self.LINK_WIDTH, 
+                                            width = self.link_width, 
                                             dash = link.dash, 
                                             smooth = True,
                                             state = state
@@ -506,7 +508,7 @@ class InSiteView(BaseView):
                                 )
             elif obj.class_type == 'link':
                 self.cvs.itemconfig(obj.site_line[self.site], fill=obj.color, 
-                                        width=self.LINK_WIDTH, dash=obj.dash)
+                                        width=self.link_width, dash=obj.dash)
             # object is a shape
             else:
                 if obj.subtype == 'label':

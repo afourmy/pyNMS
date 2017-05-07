@@ -64,7 +64,7 @@ class GeographicalView(BaseView):
     
     def update_geographical_coordinates(self, *nodes):
         for node in nodes:
-            node.longitude, node.latitude = self.world_map.get_geographical_coordinates(node.x, node.y)
+            node.longitude, node.latitude = self.world_map.to_geographical_coordinates(node.x, node.y)
             
     def update_logical_coordinates(self, *nodes):
         for node in nodes:
@@ -74,7 +74,7 @@ class GeographicalView(BaseView):
         if not nodes:
             nodes = self.network.pn['node'].values()
         for node in nodes:
-            node.x, node.y = self.world_map.to_points([[node.longitude, node.latitude]], 1)
+            node.x, node.y = self.world_map.to_canvas_coordinates(node.longitude, node.latitude)
         self.move_nodes(nodes)
         
     def move_to_logical_coordinates(self, *nodes):
@@ -250,11 +250,15 @@ class Map():
         
     def delete_map(self):
         self.cvs.delete('land', 'water')
+        
+    def to_canvas_coordinates(self, longitude, latitude):
+        px, py = self.projections[self.projection](longitude, latitude)
+        offset_x, offset_y = self.offset
+        return px*self.scale + offset_x, -py*self.scale + offset_y
 
     def to_projected_coordinates(self, *coords):
-        for longitude, latitude in coords:
-            px, py = self.projections[self.projection](longitude, latitude)
-            yield px, -py
+        for coord in coords:
+            yield self.to_canvas_coordinates(*coord)
         
     def to_geographical_coordinates(self, x, y):
         offset_x, offset_y = self.offset
