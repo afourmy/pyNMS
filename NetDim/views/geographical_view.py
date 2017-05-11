@@ -128,8 +128,8 @@ class GeographicalView(BaseView):
                         initialdir = join(self.controller.path_workspace, 'map'),
                         title = 'Import SHP map', 
                         filetypes = (
-                        ('shp files','*.shp'),
-                        ('all files','*.*')
+                        ('shp files', '*.shp'),
+                        ('all files', '*.*')
                         ))
         
         # no error when closing the window
@@ -172,6 +172,7 @@ class Map():
         sf = shp.Reader(self.shapefile)       
         # retrieve the shapes it contains (polygons or multipolygons) 
         shapes = sf.shapes() 
+        p = True
         for shape in shapes:
             # make it a shapely shape
             shape = sgeo.shape(shape)
@@ -181,6 +182,7 @@ class Map():
             # else yield the polygon itself
             else:
                 yield self.shape_to_coords(shape)
+
 
     def scale_map(self, ratio, event):
         self.scale *= float(ratio)
@@ -201,8 +203,11 @@ class Map():
         
     def draw_land(self, land):
         # create the polygon the canvas
+        # coords = (self.to_canvas_coordinates(*coord) for coord in land)
+        test = (self.to_canvas_coordinates(*c) for c in zip(land[0::2], land[1::2]))
+        coords = sum(test, tuple())
         obj_id = self.cvs.create_polygon(
-                                         *self.to_projected_coordinates(*land), 
+                                         coords, 
                                          fill = 'green3', 
                                          outline = 'black', 
                                          tags = ('land',)
@@ -211,8 +216,8 @@ class Map():
 
     def draw_water(self):
         if self.projection == 'mercator':
-            (x0, y0) ,= self.to_projected_coordinates((-180, 84))
-            (x1, y1) ,= self.to_projected_coordinates((180, -84))
+            x0, y0 = self.to_canvas_coordinates(-180, 84)
+            x1, y1 = self.to_canvas_coordinates(180, -84)
             self.water_id = self.cvs.create_rectangle(
                                                     x1,
                                                     y1,
@@ -223,7 +228,7 @@ class Map():
                                                     tags = ('water',)
                                                     )
         if self.projection == 'spherical':
-            (cx, cy) ,= self.to_projected_coordinates((28, 47))
+            cx, cy = self.to_canvas_coordinates(28, 47)
             self.water_id = self.cvs.create_oval(
                                                 cx - 6378000,
                                                 cy - 6378000,
@@ -235,11 +240,7 @@ class Map():
                                                 )
                 
     def shape_to_coords(self, shape):
-        # convert a stringified shape to a list of coordinates
-        keep = lambda x: x.isdigit() or x in '- .'
-        coords = ''.join(filter(keep, str(shape))).split(' ')[1:]
-        for longitude, latitude in zip(coords[0::2], coords[1::2]):
-            yield eval(longitude[:10]), eval(latitude[:10])
+        return str(shape)[10:-2].replace(', ', ',').replace(' ', ',').split(',')
             
     # set the map object at the bottom of the stack
     def lower_map(self):
@@ -253,15 +254,8 @@ class Map():
         
     def to_canvas_coordinates(self, longitude, latitude):
         px, py = self.projections[self.projection](longitude, latitude)
-        offset_x, offset_y = self.offset
-        return px*self.scale + offset_x, -py*self.scale + offset_y
-
-    def to_projected_coordinates(self, *coords):
-        for coord in coords:
-            yield self.to_canvas_coordinates(*coord)
+        return px*self.scale + self.offset[0], -py*self.scale + self.offset[1]
         
     def to_geographical_coordinates(self, x, y):
-        offset_x, offset_y = self.offset
-        px, py = (x - offset_x)/self.scale, (offset_y - y)/self.scale
-        lon, lat = self.projections[self.projection](px, py, inverse=True)
-        return lon, lat
+        px, py = (x - self.offset[0])/self.scale, (self.offset[1] - y)/self.scale
+        return self.projections[self.projection](px, py, inverse=True)

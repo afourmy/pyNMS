@@ -18,6 +18,7 @@ path_parent = abspath(join(path_app, pardir))
 import controller
 from autonomous_system.AS_operations import ASCreation
 from graph_generation.network_dimension import NetworkDimension
+from graph_generation.multiple_objects import MultipleNodes, MultipleLinks
 from ip_networks.arp_table import ARPTable
 from ip_networks.bgp_table import BGPTable
 from ip_networks.configuration import RouterConfiguration
@@ -501,9 +502,6 @@ class TestFullMeshRIP(unittest.TestCase):
         # generate the ping and troubleshooting tab
         troubleshooting = Troubleshooting(router, self.ct)
         ping = Ping(router, self.ct)
-
-from graph_generation.multiple_objects import MultipleNodes
-from graph_generation.multiple_objects import MultipleLinks
         
 class TestMultipleObjectGeneration(unittest.TestCase):
      
@@ -533,9 +531,6 @@ class TestMultipleObjectGeneration(unittest.TestCase):
         
         # there should be 9 links in total
         self.assertEqual(len(self.nk.pn['plink']), 9)
-
-        
-                
         
 if str.__eq__(__name__, '__main__'):
     unittest.main(warnings='ignore')  

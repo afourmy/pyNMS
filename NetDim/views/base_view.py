@@ -1111,8 +1111,8 @@ class BaseView(CustomFrame):
         # need to retrieve, since that's where we store the interfaces values
         obj_type = 'plink' if type == 'Interface' else type.lower()
         # interface is a boolean that tells the 'refresh_label' function
-        # whether we want to update the interface label, or the physical link label,
-        # since they have the same name
+        # whether we want to update the interface label, or the physical 
+        # link label, since they have the same name
         itf = type == 'interface'
         #TODO: ilid should be associated with the interface, not with the link
         if itf:
