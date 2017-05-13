@@ -159,30 +159,34 @@ class Map():
         
     def draw_map(self):
         # first, delete the existing map objects
-        self.delete_map()
+        self.cvs.delete('land', 'water')
         # draw the water
         self.draw_water()
         # loop over the polygons in the shapefile
-        for land in self.yield_lands():
-            self.draw_land(land)
+        for shape in self.yield_shapes():
+            str_shape = str(shape)[10:-2].replace(', ', ',').replace(' ', ',')
+            list_shape = str_shape.replace('(', '').replace(')', '').split(',')
+            self.draw_land(list_shape)
         self.active = True
                 
-    def yield_lands(self):        
+    def yield_shapes(self):        
         # read the shapefile
         sf = shp.Reader(self.shapefile)       
         # retrieve the shapes it contains (polygons or multipolygons) 
         shapes = sf.shapes() 
-        p = True
         for shape in shapes:
             # make it a shapely shape
             shape = sgeo.shape(shape)
             # if it is a multipolygon, yield the polygons it is composed of
             if shape.geom_type == 'MultiPolygon':
-                yield from map(self.shape_to_coords, shape)
+                yield from shape
             # else yield the polygon itself
             else:
-                yield self.shape_to_coords(shape)
-
+                print(shape.geom_type)
+                yield shape
+                
+    def delete_map(self):
+        self.cvs.delete('land', 'water')
 
     def scale_map(self, ratio, event):
         self.scale *= float(ratio)
@@ -203,11 +207,9 @@ class Map():
         
     def draw_land(self, land):
         # create the polygon the canvas
-        # coords = (self.to_canvas_coordinates(*coord) for coord in land)
-        test = (self.to_canvas_coordinates(*c) for c in zip(land[0::2], land[1::2]))
-        coords = sum(test, tuple())
+        coords = (self.to_canvas_coordinates(*c) for c in zip(land[0::2], land[1::2]))
         obj_id = self.cvs.create_polygon(
-                                         coords, 
+                                         sum(coords, tuple()), 
                                          fill = 'green3', 
                                          outline = 'black', 
                                          tags = ('land',)
@@ -238,9 +240,6 @@ class Map():
                                                 fill = 'deep sky blue', 
                                                 tags = ('water',)
                                                 )
-                
-    def shape_to_coords(self, shape):
-        return str(shape)[10:-2].replace(', ', ',').replace(' ', ',').split(',')
             
     # set the map object at the bottom of the stack
     def lower_map(self):
@@ -248,9 +247,6 @@ class Map():
             for map_obj in self.map_ids:
                 self.cvs.tag_lower(map_obj)
             self.cvs.tag_lower(self.water_id)
-        
-    def delete_map(self):
-        self.cvs.delete('land', 'water')
         
     def to_canvas_coordinates(self, longitude, latitude):
         px, py = self.projections[self.projection](longitude, latitude)
