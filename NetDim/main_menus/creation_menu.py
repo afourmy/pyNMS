@@ -109,8 +109,6 @@ class CreationMenu(ScrolledFrame):
                 button.configure(compound='top', font=font)                                                        
             if button_type not in node_subtype:
                 button.config(image=self.dict_image[button_type])
-            else:
-                pass
             if button_type in ('tree', 'star', 'full-mesh', 'ring'):
                 button.config(width=75, height=75)
             self.type_to_button[button_type] = button

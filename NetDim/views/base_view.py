@@ -434,7 +434,6 @@ class BaseView(CustomFrame):
             # consider only the newly selected node, and unhighlight everything
             if not self.ctrl:
                 self.unhighlight_all()
-            self.highlight_objects(main_node_selected)
             # we update the dict of start position
             self.dict_start_position[main_node_selected] = self.start_pos_main_node 
             # we also need to update the highlight to that the old selection
