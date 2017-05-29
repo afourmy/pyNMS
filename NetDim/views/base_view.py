@@ -55,6 +55,8 @@ class BaseView(CustomFrame):
         # default label display
         # None means that no label is displayed: it is the default setting
         self.current_label = dict.fromkeys(object_properties, 'None')
+        self.current_label['ethernet interface'] = None
+        self.current_label['optical interface'] = None
         
         # creation mode, object type, and associated bindings
         self.start_position = [None]*2
@@ -1094,7 +1096,8 @@ class BaseView(CustomFrame):
             self.cvs.itemconfig(label_id[0], text=valueS)
             self.cvs.itemconfig(label_id[1], text=valueD)
         else:
-            self.cvs.itemconfig(label_id, text=getattr(obj, label_type))
+            if hasattr(obj, str(label_type)):
+                self.cvs.itemconfig(label_id, text=getattr(obj, label_type))
             
     # two functions to refresh label: type and subtype
     # refreshing a type means refreshing all subtypes of that type
@@ -1128,6 +1131,7 @@ class BaseView(CustomFrame):
     def refresh_all_labels(self):
         for subtype in object_properties:
             self.refresh_subtype_labels(subtype)
+        self.refresh_type_labels('interface')
                         
     def _create_link_label(self, link):
         coeff = self.compute_coeff(link)
