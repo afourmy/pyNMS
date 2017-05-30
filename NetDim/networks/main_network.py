@@ -324,7 +324,7 @@ class MainNetwork(BaseNetwork):
             self.failed_obj = {failed_plink}
             # the physical link being failed, we will recreate all routing tables
             # then use the path finding procedure to map the traffic flows
-            self.rt_creation()
+            self.routing_table_creation()
             self.path_finder()
             for plink in self.plinks.values():
                 for dir in ('SD', 'DS'):
@@ -576,6 +576,10 @@ class MainNetwork(BaseNetwork):
                     router.bgpt[ip] |= {(0, nh, router, ())}
         for AS in self.ASftr('subtype', 'BGP'):
             AS.build_RFT()
+            
+    def route(self):
+        self.routing_table_creation()
+        self.path_finder()
             
     def redistribution(self):
         pass
@@ -1467,10 +1471,6 @@ class MainNetwork(BaseNetwork):
                    
     def WSP_TS(self, AS):
         
-        self.update_AS_topology()
-        self.ip_allocation()
-        self.interface_allocation()
-        
         AS_links = list(AS.pAS['link'])
         
         # a cost assignment solution is a vector of 2*n value where n is
@@ -1513,7 +1513,7 @@ class MainNetwork(BaseNetwork):
                 
             # create the routing tables with the newly allocated costs,
             # route all traffic flows and find the network congestion ratio
-            self.rt_creation()
+            self.routing_table_creation()
             self.path_finder()
             
             curr_ncr, *_ = self.ncr_computation(AS_links)

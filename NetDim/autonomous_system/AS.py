@@ -244,7 +244,7 @@ class IP_AS(AutonomousSystem):
         for obj in objects:            
             if obj.subtype == 'router':
                 obj.AS_properties[self.name].update({
-                                                    'LB_paths': 4,
+                                                    'LB_paths': 1,
                                                     'router_id': None
                                                     })
                                                     

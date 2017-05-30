@@ -132,7 +132,7 @@ class Project():
             # if the sheet cannot be found, there's nothing to import
             except xlrd.biffh.XLRDError:
                 continue
-                
+            print(name)
             # nodes and links import
             if name in all_subtypes:
                 properties = sheet.row_values(0)
@@ -148,7 +148,7 @@ class Project():
                         self.network_view.network.lf(subtype=name, **kwargs)
                 
             # interface import
-            elif name in ('ethernet interface', 'wdm interface'):
+            elif name in ('ethernet interface', 'optical interface'):
                 if_properties = sheet.row_values(0)
                 # creation of ethernet interfaces
                 for row_index in range(1, sheet.nrows):
@@ -213,6 +213,7 @@ class Project():
                         interface(AS.name, property, value)   
                         
         self.current_view.draw_all(False)
+        self.current_view.move_to_geographical_coordinates()
         self.site_view.draw_all(False)
         
     def export_project(self, filepath=None):

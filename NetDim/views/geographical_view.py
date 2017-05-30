@@ -84,6 +84,10 @@ class GeographicalView(BaseView):
             node.x, node.y = node.logical_x, node.logical_y
         self.move_nodes(nodes)
         
+    def change_projection(self, projection):
+        self.world_map.change_projection(projection)
+        self.move_to_geographical_coordinates()
+        
     ## Geographical projection menu
     
     @update_coordinates
@@ -168,6 +172,7 @@ class Map():
             list_shape = str_shape.replace('(', '').replace(')', '').split(',')
             self.draw_land(list_shape)
         self.active = True
+        self.lower_map()
                 
     def yield_shapes(self):        
         # read the shapefile
@@ -182,7 +187,6 @@ class Map():
                 yield from shape
             # else yield the polygon itself
             else:
-                print(shape.geom_type)
                 yield shape
                 
     def delete_map(self):

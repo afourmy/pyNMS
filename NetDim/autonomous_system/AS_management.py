@@ -41,6 +41,11 @@ class ASManagement(CustomTopLevel):
         button_delete_AS.text='Delete AS'
         button_delete_AS.command = lambda: self.AS.delete_AS()
         
+        # automatic cost allocation
+        button_automatic_cost_allocation = Button(common_frame) 
+        button_automatic_cost_allocation.text='Automatic cost allocation'
+        button_automatic_cost_allocation.command = lambda: self.network.WSP_TS(AS)
+        
         # the type of a domain cannot change after domain creation.
         AS_type = Label(common_frame) 
         AS_type.text = AS.AS_type
@@ -53,6 +58,7 @@ class ASManagement(CustomTopLevel):
         entry_id.grid(1, 1, in_=lf_management)
         AS_type.grid(2, 1, in_=lf_management)
         button_delete_AS.grid(0, 2, in_=lf_management)
+        button_automatic_cost_allocation.grid(1, 2, in_=lf_management)
         
         # label frame for links and nodes
         lf_objects = Labelframe(common_frame)
@@ -103,7 +109,7 @@ class ASManagement(CustomTopLevel):
             self.withdraw()
             
     ## Functions used directly from the AS Management window
-    
+        
     # refresh display
     def refresh_display(self):
         # populate the listbox with all AS objects

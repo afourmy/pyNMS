@@ -1086,8 +1086,8 @@ class BaseView(CustomFrame):
             # or if it is the cost and there is a single AS, we retrieve the
             # AS interface cost
             if label_type == 'cost':
-                if len(obj.interfaceS.AS_properties) == 1:
-                    AS ,= obj.interfaceS.AS_properties
+                    # take the first AS
+                    AS = list(obj.interfaceS.AS_properties)[0]
                     valueS = obj.interfaceS(AS, 'cost')
                     valueD = obj.interfaceD(AS, 'cost')
             else:
