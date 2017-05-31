@@ -38,6 +38,11 @@ class RoutingMenu(ScrolledFrame):
         button_routing.config(width=150, height=150)
         button_routing.grid(0, 0, sticky='ew', in_=lf_refresh)
         
+        select_all_button = Button(self)
+        select_all_button.text = 'Select / Unselect all'
+        select_all_button.command = self.selection
+        select_all_button.grid(1, 0, sticky='ew', in_=lf_refresh)
+        
         self.actions = (
                         'Update AS topology',
                         'Creation of all virtual connections',
@@ -52,7 +57,7 @@ class RoutingMenu(ScrolledFrame):
                         )
         
         self.action_booleans = []
-        for id, action in enumerate(self.actions, 1):
+        for id, action in enumerate(self.actions, 3):
             action_bool = tk.BooleanVar()
             action_bool.set('interface' not in action)
             self.action_booleans.append(action_bool)
@@ -63,4 +68,11 @@ class RoutingMenu(ScrolledFrame):
     @update_paths
     def refresh(self):
         self.project.refresh()
+        
+    def selection(self):
+        values = list(map(lambda a: a.get(), self.action_booleans))
+        select_all = len(set(values)) > 1 or True not in values
+        for action_bool in self.action_booleans:
+            action_bool.set(select_all)
+
         

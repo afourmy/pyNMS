@@ -37,9 +37,6 @@ class Controller(MainWindow):
         netdim_icon = tk.PhotoImage(file=join(self.path_icon, 'netdim_icon.gif'))
         self.tk.call('wm', 'iconphoto', self._w, netdim_icon)
         
-        # dict of script (script name -> Script object)
-        self.scripts = {}
-        
         # project notebook
         self.project_notebook = Notebook(self)
         self.project_notebook.bind('<ButtonRelease-1>', self.change_current_project)
@@ -48,6 +45,9 @@ class Controller(MainWindow):
         self.dict_project = {}
         # project counter
         self.cpt_project = 0
+        
+        # dict of script (script name -> Script object)
+        self.scripts = {}
         
         ## ----- Persistent windows : -----
                 
@@ -175,7 +175,7 @@ class Controller(MainWindow):
             menu_type = Menu(netdim_menu)
             entry_name = '{type} label'.format(type=type_to_name[obj_type])
             per_type_label_menu.add_cascade(label=entry_name, menu=menu_type)
-            for label in labels:
+            for label in ('None',) + labels:
                 def update_label(o=obj_type, l=label):
                     self.current_project.current_view.refresh_type_labels(o, l)
                 type_entry = MenuEntry(menu_type)

@@ -17,7 +17,7 @@ class SendScript(CustomTopLevel):
     
     def __init__(self, view, nodes):
         super().__init__()
-        self.cs = view
+        self.view = view
         self.title('Send a script')
         
         # main label frame
@@ -27,7 +27,7 @@ class SendScript(CustomTopLevel):
         
         # List of AS type
         self.script_list = Combobox(self, width=21)
-        self.script_list['values'] = tuple(self.cs.ms.scripts)
+        self.script_list['values'] = tuple(view.project.controller.scripts)
         # line below triggers an error when no script defined
         # add a check in the menu when the whole thing is working properly
         # self.script_list.current(0)
@@ -63,9 +63,9 @@ class SendScript(CustomTopLevel):
             conn.execute(command)
 
     def send_script(self, nodes):
-        script = self.cs.ms.scripts[self.script_list.text]
-        # self.account = Account(self.entry_username.text, self.entry_password.text)
-        self.account = Account('antoine', 'cisco')
+        script = self.view.project.controller.scripts[self.script_list.text]
+        self.account = Account(self.entry_username.text, self.entry_password.text)
+        # self.account = Account('antoine', 'cisco')
         hosts = []
         
         for node in nodes:

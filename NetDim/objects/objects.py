@@ -487,6 +487,7 @@ prop_to_name = {
 'macaddressS': 'MAC address (source)',
 'macaddressD': 'MAC address (destination)',
 'macaddress': 'MAC address',
+'None': 'None',
 'local_pref': 'Local preference',
 'sntw': 'Subnetwork',
 'throughput': 'Throughput',
