@@ -19,7 +19,8 @@ from main_menus import (
                         routing_menu,
                         display_menu, 
                         drawing_menu, 
-                        view_menu
+                        view_menu,
+                        sdn_menu
                         )
 from PIL import ImageTk
 
@@ -240,11 +241,16 @@ class Controller(MainWindow):
         self.view_menu = view_menu.ViewMenu(self.menu_notebook, self)
         self.view_menu.pack()
         
+        # SDN menu to interface with Mininet and SDN libraries
+        self.sdn_menu = sdn_menu.SDN_Menu(self.menu_notebook, self)
+        self.sdn_menu.pack()
+        
         self.menu_notebook.add(self.creation_menu, text=' Creation ')
         self.menu_notebook.add(self.routing_menu, text=' Routing ')
         self.menu_notebook.add(self.drawing_menu, text=' Drawing ')
         self.menu_notebook.add(self.display_menu, text=' Display ')
         self.menu_notebook.add(self.view_menu, text=' View ')
+        self.menu_notebook.add(self.sdn_menu, text=' SDN ')
         
         self.menu_notebook.pack(side='left', fill='both')
         

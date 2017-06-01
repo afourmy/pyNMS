@@ -70,6 +70,8 @@ subtype_to_type = {
 'firewall': 'node',
 'load_balancer': 'node',
 'server': 'node',
+'sdn_switch': 'node',
+'sdn_controller': 'node',
 'ethernet link': 'plink',
 'optical link': 'plink',
 'l2vc': 'l2link',
@@ -256,6 +258,8 @@ object_properties = OrderedDict([
 ('firewall', node_common_properties),
 ('load_balancer', node_common_properties),
 ('server', node_common_properties),
+('sdn_switch', node_common_properties),
+('sdn_controller', node_common_properties),
 
 ('ethernet link', plink_common_properties),
 ('optical link', plink_common_properties + ('lambda_capacity',)),
@@ -297,6 +301,8 @@ object_ie = OrderedDict([
 ('firewall', node_common_ie_properties),
 ('load_balancer', node_common_ie_properties),
 ('server', node_common_ie_properties),
+('sdn_switch', node_common_ie_properties),
+('sdn_controller', node_common_ie_properties),
 
 ('ethernet link', plink_common_ie_properties),
 ('optical link', plink_common_ie_properties + ('lambda_capacity',)),
@@ -415,6 +421,8 @@ box_properties = OrderedDict([
 ('firewall', node_box_properties),
 ('load_balancer', node_box_properties),
 ('server', node_box_properties),
+('sdn_switch', node_box_properties),
+('sdn_controller', node_box_properties),
 
 ('ethernet link', plink_box_properties),
 ('optical link', plink_box_properties + ('lambda_capacity',)),
@@ -869,6 +877,32 @@ class Server(Node):
     def __init__(self, **kwargs):
         super().__init__()
         
+class SDN_Switch(Node):
+
+    color = 'black'
+    subtype = 'sdn_switch'
+    layer = 3
+    imagex, imagey = 26, 26
+    
+    ie_properties = {}
+    
+    @initializer(ie_properties)
+    def __init__(self, **kwargs):
+        super().__init__()
+        
+class SDN_Controller(Node):
+
+    color = 'black'
+    subtype = 'sdn_controller'
+    layer = 3
+    imagex, imagey = 26, 26
+    
+    ie_properties = {}
+    
+    @initializer(ie_properties)
+    def __init__(self, **kwargs):
+        super().__init__()
+        
 ## Links
 class Link(NDobject):
     
@@ -1283,7 +1317,9 @@ node_class = OrderedDict([
 ('firewall', Firewall),
 ('load_balancer', LoadBalancer),
 ('server', Server),
-('site', Site)
+('site', Site),
+('sdn_switch', SDN_Switch),
+('sdn_controller', SDN_Controller)
 ])
 
 # layer 1 (physical links)
