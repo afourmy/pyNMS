@@ -250,7 +250,7 @@ object_properties = OrderedDict([
 ('router', node_common_properties + ('default_route',)),
 ('switch', node_common_properties + ('base_macaddress',)),
 ('oxc', node_common_properties),
-('host', node_common_properties),
+('host', node_common_properties + ('mininet_name',)),
 ('antenna', node_common_properties),
 ('regenerator', node_common_properties),
 ('splitter', node_common_properties),
@@ -258,8 +258,8 @@ object_properties = OrderedDict([
 ('firewall', node_common_properties),
 ('load_balancer', node_common_properties),
 ('server', node_common_properties),
-('sdn_switch', node_common_properties),
-('sdn_controller', node_common_properties),
+('sdn_switch', node_common_properties + ('mininet_name',)),
+('sdn_controller', node_common_properties + ('mininet_name',)),
 
 ('ethernet link', plink_common_properties),
 ('optical link', plink_common_properties + ('lambda_capacity',)),
@@ -413,7 +413,7 @@ box_properties = OrderedDict([
 ('router', node_box_properties + ('default_route',)),
 ('switch', node_box_properties + ('base_macaddress',)),
 ('oxc', node_box_properties),
-('host', node_box_properties),
+('host', node_box_properties + ('mininet_name',)),
 ('antenna', node_box_properties),
 ('regenerator', node_box_properties),
 ('splitter', node_box_properties),
@@ -421,8 +421,8 @@ box_properties = OrderedDict([
 ('firewall', node_box_properties),
 ('load_balancer', node_box_properties),
 ('server', node_box_properties),
-('sdn_switch', node_box_properties),
-('sdn_controller', node_box_properties),
+('sdn_switch', node_box_properties + ('mininet_name',)),
+('sdn_controller', node_box_properties + ('mininet_name',)),
 
 ('ethernet link', plink_box_properties),
 ('optical link', plink_box_properties + ('lambda_capacity',)),
@@ -495,6 +495,7 @@ prop_to_name = {
 'macaddressS': 'MAC address (source)',
 'macaddressD': 'MAC address (destination)',
 'macaddress': 'MAC address',
+'mininet_name': 'Mininet name',
 'None': 'None',
 'local_pref': 'Local preference',
 'sntw': 'Subnetwork',
@@ -784,7 +785,11 @@ class Host(Node):
     def __init__(self, **kwargs):
         self.rt = {}
         self.default_route = None
+        self.mininet_name = None
         super().__init__()
+        
+    def mininet_conf(self):
+        return '{n} = net.addHost(\'{n}\')\n'.format(n=self.mininet_name)
         
 class Regenerator(Node):
 
@@ -888,7 +893,11 @@ class SDN_Switch(Node):
     
     @initializer(ie_properties)
     def __init__(self, **kwargs):
+        self.mininet_name = None
         super().__init__()
+        
+    def mininet_conf(self):
+        return '{n} = net.addSwitch(\'{n}\')\n'.format(n=self.mininet_name)
         
 class SDN_Controller(Node):
 
@@ -901,7 +910,11 @@ class SDN_Controller(Node):
     
     @initializer(ie_properties)
     def __init__(self, **kwargs):
+        self.mininet_name = None
         super().__init__()
+        
+    def mininet_conf(self):
+        return '{n} = net.addController(\'{n}\')\n'.format(n=self.mininet_name)
         
 ## Links
 class Link(NDobject):

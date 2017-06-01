@@ -55,6 +55,7 @@ class BaseNetwork(object):
         'logical_x': float,
         'logical_y': float,
         'macaddress': str,
+        'mininet_name': str,
         'name': str,
         'node': self.convert_node, 
         'protocol': str,

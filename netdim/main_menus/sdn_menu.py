@@ -57,24 +57,41 @@ class SDN_Menu(ScrolledFrame):
         self.view.creation_mode = mode
         self.view.switch_binding(mode)
         
+    @update_paths
     def start_mininet(self):
-        # path_file = join(self.controller.path_app, 'mininet.txt')
-        # with open(path_file, 'w') as file:
-        #     file.write('sudo mn --custom /home/test_mininet/custom.py')
-        #     file.close()
-        #     
-        #     # start an ssh session
-        #     ssh = paramiko.SSHClient() 
-        #     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        #     # connect to the VM
-        #     ssh.connect('192.168.56.101', username='mininet', password='mininet')
-        #     sftp = ssh.open_sftp()
-        #     # send the file the Mininet's VM
-        #     sftp.put(path_file, '/home/test_mininet/test.py')
-        #     # close the SFTP and SSH sessions
-        #     sftp.close()
-        #     ssh.close()
+        sdn_nodes = ('host', 'sdn_switch', 'sdn_controller')
+        path_file = join(self.controller.path_app, 'SDN', 'mininet.py')
+        # allocation mininet's name to every host, switch and controller
+        self.main_network.mininet_configuration()
+        with open(path_file, 'w') as file:
+            file.write('from mininet.net import Mininet\n')
+            file.write('from mininet.cli import CLI\n')
+            file.write('net = Mininet()\n')
+            for node in self.network.ftr('node', *sdn_nodes):
+                file.write(node.mininet_conf())
+            for link in self.network.ftr('plink', 'ethernet link'):
+                if (link.source.subtype in ('host', 'sdn_switch')
+                    and link.destination.subtype in ('host', 'sdn_switch')):
+                    file.write('net.addLink({},{})\n'.format(
+                                        link.source.mininet_name,
+                                        link.destination.mininet_name
+                                        ))
+            file.write('net.start()\n')
+            file.write('CLI(net)\n')
+            file.close()
+            
+        # start an ssh session
+        ssh = paramiko.SSHClient() 
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        # connect to the VM
+        ssh.connect('192.168.56.101', username='mininet', password='mininet')
+        sftp = ssh.open_sftp()
+        # send the file the Mininet's VM
+        sftp.put(path_file, '/home/test_mininet/test.py')
+        # close the SFTP and SSH sessions
+        sftp.close()
+        ssh.close()
         path_putty = join(self.controller.path_app, 'SDN', 'start_mininet.txt')
         p = Popen(['putty', '-ssh', 'mininet@192.168.56.101', 
-        '-pw', 'mininet', '-m', path_putty, '-t'])
+        '-pw', 'mininet', '-X', '-m', path_putty, '-t'])
         

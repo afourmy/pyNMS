@@ -306,6 +306,13 @@ class MainNetwork(BaseNetwork):
         self.mac_allocation()
         self.ip_allocation()
         self.interface_allocation()
+        
+    def mininet_configuration(self):
+        first_letter = {'host': 'h', 'sdn_switch': 's', 'sdn_controller': 'c'}
+        for subtype in ('host', 'sdn_switch', 'sdn_controller'):
+            letter = first_letter[subtype]
+            for idx, node in enumerate(self.ftr('node', subtype), 1):
+                node.mininet_name = letter + str(idx)
                 
     # WC physical link dimensioning: this computes the maximum traffic the physical link
     # may have to carry considering all possible physical link failure. 

@@ -1,1 +1,1 @@
-sudo mn --custom /home/test_mininet/custom.py
+sudo mn --custom /home/test_mininet/test.py
