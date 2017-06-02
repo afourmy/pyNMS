@@ -3,9 +3,14 @@
 from miscellaneous.decorators import update_paths
 from objects.objects import *
 from os.path import join
+from PIL import ImageTk
 from pythonic_tkinter.preconfigured_widgets import *
 from subprocess import Popen
-import paramiko 
+import warnings
+try:
+    import paramiko 
+except ImportError:
+    warnings.warn('paramiko missing: graphic mininet disabled')
 
 class SDN_Menu(ScrolledFrame):
         
@@ -26,11 +31,17 @@ class SDN_Menu(ScrolledFrame):
         lf_management.grid(1, 0, sticky='nsew')
         
         self.type_to_button = {}
+        self.images = {}
                 
         for obj_type in ('sdn_switch', 'sdn_controller'):
-            label = TKLabel(image=self.controller.dict_image['default'][obj_type])
-            label.image = self.controller.dict_image['default'][obj_type]
-            label.config(width=75, height=75)
+            img_name = 'default_{}.gif'.format(obj_type)
+            img_path = join(self.controller.path_icon, img_name)
+            img_pil = ImageTk.Image.open(img_path).resize((100, 100))
+            self.images[obj_type] = ImageTk.PhotoImage(img_pil)
+            label = TKLabel(image=self.images[obj_type])
+            # label.image = 
+            # = self.controller.dict_image['default'][obj_type]
+            label.config(width=150, height=150)
             set_dnd = lambda _, type=obj_type: self.change_creation_mode(type)
             label.bind('<Button-1>', set_dnd)
             self.type_to_button[obj_type] = label
@@ -41,7 +52,7 @@ class SDN_Menu(ScrolledFrame):
         start_mininet_button.grid(1, 0, 1, 2, sticky='ew', in_=lf_management)
                 
         # node creation
-        self.type_to_button['sdn_switch'].grid(0, 0, padx=2, in_=lf_management)
+        self.type_to_button['sdn_switch'].grid(0, 0, padx=20, in_=lf_management)
         self.type_to_button['sdn_controller'].grid(0, 1, padx=2, in_=lf_management)
         
     def activate_dnd(self, node_type):

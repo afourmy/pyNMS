@@ -887,7 +887,7 @@ class SDN_Switch(Node):
     color = 'black'
     subtype = 'sdn_switch'
     layer = 3
-    imagex, imagey = 26, 26
+    imagex, imagey = 40, 40
     
     ie_properties = {}
     
@@ -904,7 +904,7 @@ class SDN_Controller(Node):
     color = 'black'
     subtype = 'sdn_controller'
     layer = 3
-    imagex, imagey = 26, 26
+    imagex, imagey = 40, 40
     
     ie_properties = {}
     
