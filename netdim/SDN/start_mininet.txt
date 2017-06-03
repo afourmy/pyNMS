@@ -1,1 +1,1 @@
-sudo mn --custom /home/test_mininet/test.py
+sudo mn --custom /home/test_mininet/test.py --controller remote,ip=0.0.0.0,port=6633

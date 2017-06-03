@@ -77,7 +77,15 @@ class SDN_Menu(ScrolledFrame):
         with open(path_file, 'w') as file:
             file.write('from mininet.net import Mininet\n')
             file.write('from mininet.cli import CLI\n')
+            file.write('from mininet.node import RemoteController\n')
             file.write('net = Mininet()\n')
+            file.write('''c0 = net.addController(
+                           name='c0',
+                           controller=RemoteController,
+                           ip='0.0.0.0',
+                           protocol='tcp',
+                           port=6633)\n'''
+                        )
             for node in self.network.ftr('node', *sdn_nodes):
                 file.write(node.mininet_conf())
             for link in self.network.ftr('plink', 'ethernet link'):
