@@ -98,7 +98,7 @@ class SDN_Menu(ScrolledFrame):
             button.text = parameter.split(' ')[1]
             button.grid(id, 0, in_=lf_pox_management)
             
-        start_POX_button = Button(self)
+        start_POX_button = Button(self, width=35)
         start_POX_button.text = 'Start POX'
         start_POX_button.command = self.start_POX
         start_POX_button.grid(5, 0, 1, 2, sticky='ew', in_=lf_pox_management)

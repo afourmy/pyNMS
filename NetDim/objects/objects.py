@@ -380,6 +380,48 @@ type_labels = OrderedDict([
 ('interface', ('name', 'ipaddress', 'cost')),
 ])
 
+subtype_labels = OrderedDict([
+('site', node_common_ie_properties),
+('router', node_common_ie_properties + ('default_route',)),
+('switch', node_common_ie_properties + ('base_macaddress',)),
+('oxc', node_common_ie_properties),
+('host', node_common_ie_properties),
+('antenna', node_common_ie_properties),
+('regenerator', node_common_ie_properties),
+('splitter', node_common_ie_properties),
+('cloud', node_common_ie_properties),
+('firewall', node_common_ie_properties),
+('load_balancer', node_common_ie_properties),
+('server', node_common_ie_properties),
+('sdn_switch', node_common_ie_properties),
+('sdn_controller', node_common_ie_properties + controller_properties),
+
+('ethernet link', plink_common_ie_properties),
+('optical link', plink_common_ie_properties + ('lambda_capacity',)),
+
+('optical channel', route_common_ie_properties),
+('etherchannel', route_common_ie_properties),
+
+('pseudowire', route_common_ie_properties),
+
+('BGP peering', route_common_ie_properties + (
+'bgp_type',
+'ipS',
+'ipD',
+'weightS',
+'weightD'
+)),
+
+('routed traffic', traffic_common_ie_properties + (
+'ipS',
+'ipD'
+)),
+('static traffic', traffic_common_ie_properties),
+
+('ethernet interface', ethernet_interface_properties),
+('optical interface', interface_common_properties)
+])
+
 ## Box properties
 # box properties defines which properties are to be displayed in the
 # upper left corner of the canvas when hoverin over an object
@@ -453,6 +495,37 @@ box_properties = OrderedDict([
 ('routed traffic', traffic_common_properties),
 ('static traffic', traffic_common_properties)
 ])
+
+# Objects <-> User-friendly names
+
+obj_to_name = {
+'site': 'Site',
+'router': 'Router',
+'oxc': 'Optical switch',
+'host': 'Host',
+'antenna': 'Antenna',
+'regenerator': 'Regenerator',
+'splitter': 'Splitter',
+'switch': 'Switch',
+'cloud': 'Cloud',
+'firewall': 'Firewall',
+'load_balancer': 'Load Balancer',
+'server': 'Server',
+'sdn_switch': 'SDN Switch',
+'sdn_controller': 'SDN controller',
+'ethernet link': 'Ethernet link',
+'optical link': 'Optical link',
+'l2vc': 'Layer-2 flow',
+'l3vc': 'Layer-3 flow',
+'optical channel': 'Optical Channel',
+'etherchannel': 'Etherchannel',
+'pseudowire': 'Pseudowire',
+'BGP peering': 'BGP peering',
+'routed traffic': 'Routed traffic',
+'static traffic': 'Static traffic',
+'ethernet interface': 'Ethernet interface',
+'optical interface': 'Optical interface'
+}
 
 # Properties <-> User-friendly names
 

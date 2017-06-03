@@ -108,14 +108,7 @@ class DisplayMenu(ScrolledFrame):
                     button.config(image=self.controller.dict_image['default'][obj_type])
                     button.config(width=75, height=75)
                 self.type_to_button[obj_type] = button
-                            
-        # per_subtype_label_menu = Menu(netdim_menu)
-        # for obj_type, labels in object_ie.items():
-        #     menu_type = Menu(netdim_menu)
-        #     entry_name = '{subtype} label'.format(subtype=obj_type)
-        #     per_subtype_label_menu.add_cascade(label=entry_name, menu=menu_type)
 
-                
         for subtype, button in self.type_to_button.items():
             button.bind('<Button-3>', lambda e, s=subtype: self.label_menu(e, s))
         
@@ -147,7 +140,7 @@ class DisplayMenu(ScrolledFrame):
     def label_menu(self, event, subtype):
         print(subtype)
         label_subtype_menu = Menu(self)
-        labels = type_labels[subtype_to_type[subtype]]
+        labels = subtype_labels[subtype]
         for label in ('None',) + labels:
             def update_label(s=subtype, l=label):
                 self.view.refresh_subtype_labels(s, l)

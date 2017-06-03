@@ -2,13 +2,6 @@ from mininet.net import Mininet
 from mininet.cli import CLI
 from mininet.node import DefaultController, RemoteController
 net = Mininet()
-h1 = net.addHost('h1')
-h2 = net.addHost('h2')
-sdn_controller11 = net.addController(
-name = 'sdn_controller11',
-controller = RemoteController,
-ip = '0.0.0.0',
-port = 6633)
 s1 = net.addSwitch('s1')
 s2 = net.addSwitch('s2')
 s3 = net.addSwitch('s3')
@@ -25,6 +18,13 @@ s13 = net.addSwitch('s13')
 s14 = net.addSwitch('s14')
 s15 = net.addSwitch('s15')
 s16 = net.addSwitch('s16')
+h1 = net.addHost('h1')
+h2 = net.addHost('h2')
+sdn_controller19 = net.addController(
+name = 'sdn_controller19',
+controller = RemoteController,
+ip = '0.0.0.0',
+port = 6633)
 net.addLink(s1,s2)
 net.addLink(s3,s4)
 net.addLink(s1,s3)
@@ -57,7 +57,7 @@ net.addLink(s5,s13)
 net.addLink(s6,s14)
 net.addLink(s7,s15)
 net.addLink(s8,s16)
-net.addLink(h1,s7)
-net.addLink(h2,s10)
+net.addLink(h1,s4)
+net.addLink(h2,s9)
 net.start()
 CLI(net)
