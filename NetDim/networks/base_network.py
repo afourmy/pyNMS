@@ -37,6 +37,9 @@ class BaseNetwork(object):
         self.prop_to_type = {
         'capacitySD': int, 
         'capacityDS': int,
+        'controller_type' : str,
+        'controller_IP' : str,
+        'controller_port' : int,
         'costSD': float, 
         'costDS': float, 
         'cost': float,

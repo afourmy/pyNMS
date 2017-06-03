@@ -26,9 +26,19 @@ class SDN_Menu(ScrolledFrame):
         font = ('Helvetica', 8, 'bold')
         
         # label frame for object selection
-        lf_management = Labelframe(self.infr)
-        lf_management.text = 'SDN mangement'
-        lf_management.grid(1, 0, sticky='nsew')
+        lf_network_creation = Labelframe(self.infr)
+        lf_network_creation.text = 'Network creation'
+        lf_network_creation.grid(0, 0, sticky='nsew')
+        
+        # label frame to configure the VM parameters
+        lf_VM_management = Labelframe(self.infr)
+        lf_VM_management.text = 'Mininet VM parameters'
+        lf_VM_management.grid(1, 0, sticky='nsew')
+        
+        # label frame to configure the controller parameters
+        lf_pox_management = Labelframe(self.infr)
+        lf_pox_management.text = 'POX controller parameters'
+        lf_pox_management.grid(2, 0, sticky='nsew')
         
         self.type_to_button = {}
         self.images = {}
@@ -39,21 +49,63 @@ class SDN_Menu(ScrolledFrame):
             img_pil = ImageTk.Image.open(img_path).resize((100, 100))
             self.images[obj_type] = ImageTk.PhotoImage(img_pil)
             label = TKLabel(image=self.images[obj_type])
-            # label.image = 
-            # = self.controller.dict_image['default'][obj_type]
             label.config(width=150, height=150)
             set_dnd = lambda _, type=obj_type: self.change_creation_mode(type)
             label.bind('<Button-1>', set_dnd)
             self.type_to_button[obj_type] = label
-            
+                    
+        label_mininet_IP = Label(self.infr)
+        label_mininet_IP.text = 'VM IP'
+        self.entry_mininet_IP = Entry(self.infr, width=18)
+        self.entry_mininet_IP.text = '192.168.56.101'
+        
+        label_mininet_username = Label(self.infr)
+        label_mininet_username.text = 'VM Username'
+        self.entry_mininet_username = Entry(self.infr, width=18)
+        self.entry_mininet_username.text = 'mininet'
+        
+        label_mininet_password = Label(self.infr)
+        label_mininet_password.text = 'VM Password'
+        self.entry_mininet_password = Entry(self.infr, width=18)
+        self.entry_mininet_password.text = 'mininet'
+        
         start_mininet_button = Button(self)
         start_mininet_button.text = 'Start Mininet'
         start_mininet_button.command = self.start_mininet
-        start_mininet_button.grid(1, 0, 1, 2, sticky='ew', in_=lf_management)
+        
+        label_mininet_IP.grid(0, 0, padx=20, in_=lf_VM_management)
+        label_mininet_username.grid(1, 0, padx=20, in_=lf_VM_management)
+        label_mininet_password.grid(2, 0, padx=20, in_=lf_VM_management)
+        self.entry_mininet_IP.grid(0, 1, in_=lf_VM_management)
+        self.entry_mininet_username.grid(1, 1, in_=lf_VM_management)
+        self.entry_mininet_password.grid(2, 1, in_=lf_VM_management)
+        start_mininet_button.grid(3, 0, 1, 2, sticky='ew', in_=lf_VM_management)
+        
+        self.pox_parameters = (
+                        ' forwarding.l2_learning',
+                        ' openflow.spanning_tree --no-flood --hold-down',
+                        ' log.level --DEBUG samples.pretty_log',
+                        ' openflow.discovery host_tracker',
+                        ' info.packet_dump'
+                        )
+        
+        self.pox_parameters_booleans = []
+        for id, parameter in enumerate(self.pox_parameters):
+            parameter_bool = tk.BooleanVar()
+            parameter_bool.set(True)
+            self.pox_parameters_booleans.append(parameter_bool)
+            button = Checkbutton(self.infr, variable=parameter_bool)
+            button.text = parameter.split(' ')[1]
+            button.grid(id, 0, in_=lf_pox_management)
+            
+        start_POX_button = Button(self)
+        start_POX_button.text = 'Start POX'
+        start_POX_button.command = self.start_POX
+        start_POX_button.grid(5, 0, 1, 2, sticky='ew', in_=lf_pox_management)
                 
         # node creation
-        self.type_to_button['sdn_switch'].grid(0, 0, padx=20, in_=lf_management)
-        self.type_to_button['sdn_controller'].grid(0, 1, padx=2, in_=lf_management)
+        self.type_to_button['sdn_switch'].grid(0, 0, padx=20, in_=lf_network_creation)
+        self.type_to_button['sdn_controller'].grid(0, 1, padx=2, in_=lf_network_creation)
         
     def activate_dnd(self, node_type):
         self.controller.dnd = node_type
@@ -77,15 +129,8 @@ class SDN_Menu(ScrolledFrame):
         with open(path_file, 'w') as file:
             file.write('from mininet.net import Mininet\n')
             file.write('from mininet.cli import CLI\n')
-            file.write('from mininet.node import RemoteController\n')
+            file.write('from mininet.node import DefaultController, RemoteController\n')
             file.write('net = Mininet()\n')
-            file.write('''c0 = net.addController(
-                           name='c0',
-                           controller=RemoteController,
-                           ip='0.0.0.0',
-                           protocol='tcp',
-                           port=6633)\n'''
-                        )
             for node in self.network.ftr('node', *sdn_nodes):
                 file.write(node.mininet_conf())
             for link in self.network.ftr('plink', 'ethernet link'):
@@ -103,14 +148,59 @@ class SDN_Menu(ScrolledFrame):
         ssh = paramiko.SSHClient() 
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         # connect to the VM
-        ssh.connect('192.168.56.101', username='mininet', password='mininet')
+        ssh.connect(
+                    self.entry_mininet_IP.text, 
+                    username = self.entry_mininet_username.text, 
+                    password = self.entry_mininet_password.text
+                    )
         sftp = ssh.open_sftp()
         # send the file the Mininet's VM
         sftp.put(path_file, '/home/test_mininet/test.py')
         # close the SFTP and SSH sessions
         sftp.close()
         ssh.close()
-        path_putty = join(self.controller.path_app, 'SDN', 'start_mininet.txt')
-        p = Popen(['putty', '-ssh', 'mininet@192.168.56.101', 
-        '-pw', 'mininet', '-X', '-m', path_putty, '-t'])
+        path_putty_file = join(self.controller.path_app, 'SDN', 'start_mininet.txt')
+        start_shell_commands = [
+                                'putty',
+                                '-ssh',
+                                '{}@{}'.format(
+                                               self.entry_mininet_username.text,
+                                               self.entry_mininet_IP.text
+                                               ),
+                                '-pw',
+                                self.entry_mininet_password.text,
+                                '-X',
+                                '-m',
+                                path_putty_file,
+                                '-t'
+                                ]
+        p = Popen(start_shell_commands)
+        
+    @update_paths
+    def start_POX(self):
+        path_putty_file = join(self.controller.path_app, 'SDN', 'pox.txt')
+        pox_command = 'sudo ~/pox/pox.py'
+        for id, parameter in enumerate(self.pox_parameters):
+            if self.pox_parameters_booleans[id].get():
+                pox_command += parameter
+        for controller in self.network.ftr('node', 'sdn_controller'):
+            if controller.controller_type == 'RemoteController':
+                with open(path_putty_file, 'w') as file:
+                    file.write(pox_command)
+                    file.close()
+                start_shell_commands = [
+                                        'putty',
+                                        '-ssh',
+                                        '{}@{}'.format(
+                                            self.entry_mininet_username.text,
+                                            self.entry_mininet_IP.text
+                                            ),
+                                        '-pw',
+                                        self.entry_mininet_password.text,
+                                        '-X',
+                                        '-m',
+                                        path_putty_file,
+                                        '-t'
+                                        ]
+                p = Popen(start_shell_commands)
         

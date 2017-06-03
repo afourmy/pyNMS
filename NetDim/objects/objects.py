@@ -245,6 +245,13 @@ traffic_common_ie_properties = obj_common_properties + (
 ## Common properties per subtype
 # properties shared by all objects of a given subtype
 
+# controller properties
+controller_properties = (
+'controller_type',
+'controller_IP',
+'controller_port',
+)
+
 object_properties = OrderedDict([
 ('site', node_common_properties + ('site_type',)),
 ('router', node_common_properties + ('default_route',)),
@@ -259,7 +266,7 @@ object_properties = OrderedDict([
 ('load_balancer', node_common_properties),
 ('server', node_common_properties),
 ('sdn_switch', node_common_properties + ('mininet_name',)),
-('sdn_controller', node_common_properties + ('mininet_name',)),
+('sdn_controller', node_common_properties + controller_properties),
 
 ('ethernet link', plink_common_properties),
 ('optical link', plink_common_properties + ('lambda_capacity',)),
@@ -422,7 +429,7 @@ box_properties = OrderedDict([
 ('load_balancer', node_box_properties),
 ('server', node_box_properties),
 ('sdn_switch', node_box_properties + ('mininet_name',)),
-('sdn_controller', node_box_properties + ('mininet_name',)),
+('sdn_controller', node_box_properties + controller_properties),
 
 ('ethernet link', plink_box_properties),
 ('optical link', plink_box_properties + ('lambda_capacity',)),
@@ -472,6 +479,9 @@ prop_to_name = {
 'linkD': 'Destination link', 
 'logical_x': 'Logical X coordinate',
 'logical_y': 'Logical Y coordinate',
+'controller_type' : 'Controller type',
+'controller_IP' : 'Controller IP',
+'controller_port' : 'Controller Port',
 'costSD': 'Cost S -> D', 
 'costDS': 'Cost D -> S', 
 'cost': 'Cost',
@@ -910,11 +920,23 @@ class SDN_Controller(Node):
     
     @initializer(ie_properties)
     def __init__(self, **kwargs):
-        self.mininet_name = None
+        self.controller_type = 'DefaultController'
+        self.controller_IP = '0.0.0.0'
+        self.controller_port = 6633
         super().__init__()
         
     def mininet_conf(self):
-        return '{n} = net.addController(\'{n}\')\n'.format(n=self.mininet_name)
+        return ('{name} = net.addController(\n'
+                        'name = \'{name}\',\n'
+                        'controller = {type},\n'
+                        'ip = \'{ip}\',\n'
+                        'port = {port})\n').format(
+                                name = self.name,
+                                type = self.controller_type,
+                                ip = self.controller_IP,
+                                port = self.controller_port
+                                )
+                        
         
 ## Links
 class Link(NDobject):
