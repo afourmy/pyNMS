@@ -127,21 +127,22 @@ class GeographicalView(BaseView):
     ## Import of shapefile
     
     def import_shapefile(self, filepath=None):
-                
-        filepath = filedialog.askopenfilenames(
+        if not filepath:
+            filepath = filedialog.askopenfilenames(
                         initialdir = join(self.controller.path_workspace, 'map'),
                         title = 'Import SHP map', 
                         filetypes = (
                         ('shp files', '*.shp'),
                         ('all files', '*.*')
                         ))
-        
-        # no error when closing the window
-        if not filepath: 
-            return
-        else: 
-            self.world_map.shapefile ,= filepath
-            self.world_map.draw_map()
+            # no error when closing the window
+            if not filepath: 
+                return
+            else: 
+                self.world_map.shapefile ,= filepath
+        else:
+            self.world_map.shapefile = filepath
+        self.world_map.draw_map()
         
 class Map():
 

@@ -1,5 +1,6 @@
 # NetDim (contact@netdim.fr)
 
+import os
 import tkinter as tk
 from project import Project
 from collections import defaultdict
@@ -30,8 +31,9 @@ class Controller(MainWindow):
         super().__init__()
         self.path_app = path_app
         path_parent = abspath(join(path_app, pardir))
-        self.path_icon = join(path_parent, 'icons')
-        self.path_workspace = join(path_parent, 'workspace')
+        self.path_icon = join(path_parent, 'Icons')
+        self.path_workspace = join(path_parent, 'Workspace')
+        self.path_shapefiles = join(path_parent, 'Shapefiles')
             
         ## ----- Initialization : -----
         self.title('NetDim')
@@ -111,9 +113,19 @@ class Controller(MainWindow):
 
         general_menu.separator()
         
-        import_map = MenuEntry(general_menu)
-        import_map.text = 'Import shapefile'
-        import_map.command = self.current_project.current_view.import_shapefile
+        shapefiles_menu = Menu(general_menu)
+        for filename in os.listdir(self.path_shapefiles):
+            entry = MenuEntry(shapefiles_menu)
+            entry.text = filename
+            entry.command = lambda f=filename: self.import_shapefile(f)
+            
+        browse_entry = MenuEntry(shapefiles_menu)
+        browse_entry.text = 'Browse'
+        browse_entry.command = lambda: self.current_project.current_view.import_shapefile()
+        
+        shapefiles_cascade = MenuCascade(general_menu)
+        shapefiles_cascade.text = 'Shapefiles'
+        shapefiles_cascade.inner_menu = shapefiles_menu
         
         delete_map = MenuEntry(general_menu)
         delete_map.text = 'Delete map'
@@ -272,6 +284,10 @@ class Controller(MainWindow):
         if self.dnd:
             # we display the appropriate icon
             pass
+            
+    def import_shapefile(self, filename):
+        filepath = self.path_shapefiles + '//{}'.format(filename)
+        self.current_project.current_view.import_shapefile(filepath)
             
     def change_current_project(self, event=None):
         # if there's an ongoing drawing process, kill it
