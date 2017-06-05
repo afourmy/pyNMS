@@ -18,7 +18,7 @@ class SearchWindow(CustomTopLevel):
         
         # list of types
         self.subtypes_list = Combobox(self, width=20)
-        self.subtypes_list['values'] = tuple(object_properties.keys())
+        self.subtypes_list['values'] = tuple(name_to_obj.keys())
         self.subtypes_list.current(0)
         self.subtypes_list.bind('<<ComboboxSelected>>', self.update_properties)
         
@@ -51,7 +51,7 @@ class SearchWindow(CustomTopLevel):
         
     def update_properties(self, *_):
         subtype = self.subtypes_list.text
-        properties = object_properties[subtype]
+        properties = object_properties[name_to_obj[subtype]]
         properties = tuple(prop_to_name[p] for p in properties)
         self.property_list['values'] = properties
         self.property_list.current(0)
@@ -59,8 +59,8 @@ class SearchWindow(CustomTopLevel):
     @update_paths
     def search(self):
         self.view.unhighlight_all()
-        subtype, property = self.subtypes_list.text, self.property_list.text
-        property = name_to_prop[property]
+        subtype = name_to_obj[self.subtypes_list.text]
+        property = name_to_prop[self.property_list.text]
         type = subtype_to_type[subtype]
         input = self.entry_search.text
         for obj in self.network.ftr(type, subtype):

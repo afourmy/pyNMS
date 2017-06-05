@@ -20,13 +20,13 @@ class MultipleNodes(CustomTopLevel):
         
         nb_nodes = Label(self)
         nb_nodes.text = 'Number of nodes'
-        self.entry_nodes = Entry(self, width=4)
+        self.entry_nodes = Entry(self, width=18)
         
         # List of node type
         node_type = Label(self)
         node_type.text = 'Type of node'
-        self.node_type_list = Combobox(self, width=7)
-        self.node_type_list['values'] = node_subtype
+        self.node_type_list = Combobox(self, width=15)
+        self.node_type_list['values'] = tuple(name_to_obj.keys())
         self.node_type_list.current(0)
     
         # confirmation button
@@ -44,7 +44,7 @@ class MultipleNodes(CustomTopLevel):
     def create_nodes(self):
         self.view.multiple_nodes(
                                int(self.entry_nodes.text), 
-                               self.node_type_list.text,
+                               name_to_obj[self.node_type_list.text],
                                self.x,
                                self.y
                                )

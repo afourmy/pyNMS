@@ -527,6 +527,8 @@ obj_to_name = {
 'optical interface': 'Optical interface'
 }
 
+name_to_obj = {v: k for k, v in obj_to_name.items()}
+
 # Properties <-> User-friendly names
 
 prop_to_name = {

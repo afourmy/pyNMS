@@ -45,17 +45,17 @@ class NetworkDimension(CustomTopLevel):
         if self.offset:
             k = Label(self)
             k.text = 'K'
-            self.entry_k = Entry(self, width=9)
+            self.entry_k = Entry(self, width=18)
             k.grid(1, 0, in_=lf_network_dimension)
             self.entry_k.grid(1, 1, in_=lf_network_dimension)
             
-        self.entry_dimension = Entry(self, width=9)
+        self.entry_dimension = Entry(self, width=18)
         
         # List of node type
         node_type = Label(self)
         node_type.text = 'Type of node'
-        self.node_type_list = Combobox(self, width=7)
-        self.node_type_list['values'] = node_subtype
+        self.node_type_list = Combobox(self, width=15)
+        self.node_type_list['values'] = tuple(name_to_obj.keys())
         self.node_type_list.current(0)
     
         # confirmation button
@@ -75,12 +75,12 @@ class NetworkDimension(CustomTopLevel):
             params = (
                       int(self.entry_dimension.text),
                       int(self.entry_k.get()),
-                      self.node_type_list.text
+                      name_to_obj[self.node_type_list.text]
                       )
         else:
             params = (
                       int(self.entry_dimension.get()),
-                      self.node_type_list.text
+                      name_to_obj[self.node_type_list.text]
                       )
 
         objects = set(self.dict_type_to_function[self.type](*params))
