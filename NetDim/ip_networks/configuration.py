@@ -300,24 +300,4 @@ class SwitchConfiguration(tk.Toplevel):
                         yield ' {name}(config-if)# switchport trunk allowed vlan add {all_ids}\n'\
                             .format(name=node.name, all_ids=",".join(VLAN_IDs))
                         
-                    
-            
-        for AS in node.AS:
-            
-            if AS.AS_type == 'RIP':
-                yield ' {name}(config)# router rip\n'\
-                                                .format(name=node.name)
-                
-                for _, adj_plink in self.network.graph[node.id]['plink']:
-                    interface = adj_plink('interface', node)
-                    if adj_plink in AS.pAS['link']:
-                        ip = interface.ipaddress
-                        
-                        yield ' {name}(config-router)# network {ip}\n'\
-                                                .format(name=node.name, ip=ip)
-                    else:
-                        if_name = interface.name
-                        yield ' {name}(config-router)# passive-interface {i}\n'\
-                                .format(name=node.name, i=if_name)
-                    
         yield ' {name}(config)# end\n'.format(name=node.name)
