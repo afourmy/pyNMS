@@ -121,20 +121,26 @@ class DisplayMenu(ScrolledFrame):
         self.type_to_button['splitter'].grid(1, 1, padx=2, in_=lf_object_display)
         self.type_to_button['antenna'].grid(1, 2, padx=2, in_=lf_object_display)
         self.type_to_button['cloud'].grid(1, 3, padx=2, in_=lf_object_display)
+        self.type_to_button['firewall'].grid(2, 0, padx=2, in_=lf_object_display)
+        self.type_to_button['load_balancer'].grid(2, 1, padx=2, in_=lf_object_display)
+        self.type_to_button['server'].grid(2, 2, padx=2, in_=lf_object_display)
+        self.type_to_button['site'].grid(2, 3, padx=2, in_=lf_object_display)
+        self.type_to_button['sdn_switch'].grid(3, 0, padx=2, in_=lf_object_display)
+        self.type_to_button['sdn_controller'].grid(3, 1, padx=2, in_=lf_object_display)
         
         sep = Separator(self.infr)
-        sep.grid(2, 0, 1, 4, in_=lf_object_display)
+        sep.grid(4, 0, 1, 4, in_=lf_object_display)
         
-        self.type_to_button['ethernet link'].grid(3, 0, 1, 2, in_=lf_object_display)
-        self.type_to_button['optical link'].grid(3, 2, 1, 2, in_=lf_object_display)
+        self.type_to_button['ethernet link'].grid(5, 0, 1, 2, in_=lf_object_display)
+        self.type_to_button['optical link'].grid(5, 2, 1, 2, in_=lf_object_display)
                                                 
-        self.type_to_button['optical channel'].grid(4, 0, 1, 2, in_=lf_object_display)
-        self.type_to_button['etherchannel'].grid(4, 2, 1, 2, in_=lf_object_display)
-        self.type_to_button['pseudowire'].grid(5, 0, 1, 2, in_=lf_object_display)
-        self.type_to_button['BGP peering'].grid(5, 2, 1, 2, in_=lf_object_display)
+        self.type_to_button['optical channel'].grid(6, 0, 1, 2, in_=lf_object_display)
+        self.type_to_button['etherchannel'].grid(6, 2, 1, 2, in_=lf_object_display)
+        self.type_to_button['pseudowire'].grid(7, 0, 1, 2, in_=lf_object_display)
+        self.type_to_button['BGP peering'].grid(7, 2, 1, 2, in_=lf_object_display)
         
-        self.type_to_button['routed traffic'].grid(6, 0, 1, 2, in_=lf_object_display)
-        self.type_to_button['static traffic'].grid(6, 2, 1, 2, in_=lf_object_display)
+        self.type_to_button['routed traffic'].grid(8, 0, 1, 2, in_=lf_object_display)
+        self.type_to_button['static traffic'].grid(8, 2, 1, 2, in_=lf_object_display)
         
     @update_paths
     def label_menu(self, event, subtype):
