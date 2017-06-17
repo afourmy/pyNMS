@@ -22,6 +22,7 @@ from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
 from .base_selection_rightclick_menu import BaseSelectionRightClickMenu
 from miscellaneous.decorators import *
+from subprocess import Popen
                                 
 class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
     
@@ -194,8 +195,10 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
     def connection(self, node):
         ssh_data = self.controller.ssh_management_window.get()
         ssh_data['IP'] = node.ipaddress
+        
         ssh_connection = '{path} -ssh {username}@{IP} -pw {password}'
-        os.system(ssh_connection.format(**ssh_data))
+        connect = Popen(ssh_connection.format(**ssh_data).split())
+        # os.system()
         
     @empty_selection_and_destroy_menu
     def ping(self, node):

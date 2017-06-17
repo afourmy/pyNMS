@@ -19,19 +19,21 @@ class SSHWindow(FocusTopLevel):
         username.text = 'Username :'
 
         self.entry_username = Entry(self, width=20)
+        self.entry_username.text = 'cisco'
 
         # label 'algorithm'
         password = Label(self) 
         password.text = 'Password :'
         
         self.entry_password = Entry(self, width=20)
+        self.entry_password.text = 'cisco'
                                                     
         path_to_putty = Button(self, width=20)
         path_to_putty.text = 'Path to PuTTY'
         path_to_putty.command = self.set_path
         
         self.path = Entry(self)
-        self.path.text = 'Path to PuTTY'
+        self.path.text = 'C:/Users/minto/Desktop/Apps/putty.exe'
                                         
         # grid placement
         lf_ssh.grid(1, 0, 1, 2)
