@@ -104,6 +104,8 @@ class DisplayMenu(ScrolledFrame):
                                 }[obj_type], compound='top', font=font)
                     button.config(image=self.dict_image[obj_type])
                     button.config(width=160, height=40)
+                elif 'interface' in obj_type:
+                    continue
                 else:
                     button.config(image=self.controller.dict_image['default'][obj_type])
                     button.config(width=75, height=75)

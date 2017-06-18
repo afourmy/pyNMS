@@ -291,6 +291,8 @@ object_properties = OrderedDict([
 ('routed traffic', traffic_common_properties + ('ipS', 'ipD')),
 ('static traffic', traffic_common_properties),
 
+('ethernet interface', ethernet_interface_properties),
+('optical interface', interface_common_properties)
 ])
 
 ## Common Import / Export properties per subtype

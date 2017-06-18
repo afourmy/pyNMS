@@ -74,9 +74,13 @@ class SDN_Menu(ScrolledFrame):
         button_X11_forwarding = Checkbutton(self.infr, variable=self.X11_bool)
         button_X11_forwarding.text = 'Enable X11 forwarding'
         
-        start_mininet_button = Button(self)
+        start_mininet_button = Button(self, width=35)
         start_mininet_button.text = 'Start Mininet'
         start_mininet_button.command = self.start_mininet
+        
+        start_wireshark_button = Button(self, width=35)
+        start_wireshark_button.text = 'Start Wireshark'
+        start_wireshark_button.command = self.start_wireshark
         
         label_mininet_IP.grid(0, 0, padx=20, in_=lf_VM_management)
         label_mininet_username.grid(1, 0, padx=20, in_=lf_VM_management)
@@ -86,6 +90,7 @@ class SDN_Menu(ScrolledFrame):
         self.entry_mininet_password.grid(2, 1, in_=lf_VM_management)
         button_X11_forwarding.grid(3, 0, 1, 2, sticky='ew', in_=lf_VM_management)
         start_mininet_button.grid(4, 0, 1, 2, sticky='ew', in_=lf_VM_management)
+        start_wireshark_button.grid(5, 0, 1, 2, sticky='ew', in_=lf_VM_management)
         
         self.pox_parameters = (
                         ' forwarding.l2_learning',
@@ -181,6 +186,24 @@ class SDN_Menu(ScrolledFrame):
                                 ]
         if self.X11_bool.get():
             start_shell_commands.insert(5, '-X')
+        p = Popen(start_shell_commands)
+        
+    def start_wireshark(self):
+        path_putty_file = join(self.controller.path_app, 'SDN', 'start_wireshark.txt')
+        start_shell_commands = [
+                                'putty',
+                                '-ssh',
+                                '{}@{}'.format(
+                                               self.entry_mininet_username.text,
+                                               self.entry_mininet_IP.text
+                                               ),
+                                '-pw',
+                                self.entry_mininet_password.text,
+                                '-X',
+                                '-m',
+                                path_putty_file,
+                                '-t',
+                                ]
         p = Popen(start_shell_commands)
         
     @update_paths
