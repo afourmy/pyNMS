@@ -1,4 +1,4 @@
-﻿# Introduction
+# Introduction
 
 NetDim is a network design and planning software.
 
@@ -17,6 +17,7 @@ xlrd, xlwt (desirable: used for saving projects)
 shapely, shapefile, pyproj (optional: used for shapefile import)
 numpy, cvxopt (optional: used for linear programming)
 Exscript (optional: used for network automation)
+Paramiko (optional: used for emulating SDN networks)
 ```
 
 In order to use NetDim, you need to run **main.py**.
@@ -26,16 +27,27 @@ python main.py
 
 # Features
 
-## Graph visualization
+## Network GIS visualization
 
-The first step to network modelization is graph visualization. One way to visualize a network is to locate all devices on a map. However, this can only be done if we have all GPS coordinates: it is rarely the case. Instead, NetDim relies on graph visualization algorithms to display the network.
+Maps can be displayed in NetDim to draw all network
+devices at their exact location (longitude and latitude),
+using the linear, mercator or spheric projections.
+This is done by importing shapefiles, a data format
+used in Geographic Information Systems (GIS) that contains geographical coordinates.
+
+![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/GIS_netdim.PNG)
+
+## Network algorithmic visualization
+
+GIS visualization this can only be done if we have all GPS coordinates: it is not always the case.
+Another to visualize a network is use graph drawing algorithms to display the network.
 Two spring-layout algorithms are implemented: 
 - Eades algorithm
 - Fructherman-Reingold algorithm
 
-On a 4-layer deep tree which nodes are initially drawn at a random position on the canvas, the algorithm converges within a few seconds to a visually pleasing tree shape.
+On a 4-layer deep tree which nodes are initially drawn at a random position on the canvas, the algorithm converges within a few milliseconds to a visually pleasing tree shape.
 
-![Graph visualization](https://github.com/mintoo/networks/raw/master/Readme/visualization.PNG)
+![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/visualization.PNG)
 
 ## Saving and import/export
 
