@@ -146,9 +146,9 @@ class GeographicalView(BaseView):
         
 class Map():
 
-    projections = {#('+proj=ortho +lat_0=47 +lon_0=28') 41.881832, -87.623177
+    projections = {
     'mercator': Proj(init="epsg:3395"),
-    'spherical': Proj('+proj=ortho +lat_0=42 +lon_0=-87')
+    'spherical': Proj('+proj=ortho +lat_0=47 +lon_0=28')
     }
     
     def __init__(self, view):
@@ -235,7 +235,7 @@ class Map():
                                                     tags = ('water',)
                                                     )
         if self.projection == 'spherical':
-            cx, cy = self.to_canvas_coordinates(-87, 42)
+            cx, cy = self.to_canvas_coordinates(28, 47)
             self.water_id = self.cvs.create_oval(
                                                 cx - 6378000,
                                                 cy - 6378000,

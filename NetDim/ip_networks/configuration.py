@@ -42,18 +42,18 @@ class RouterConfiguration(tk.Toplevel):
     def build_config(self, node):
 
         # initialization
-        yield ' {name}> enable\n'.format(name=node.name)  
+        # yield ' {name}> enable\n'.format(name=node.name)  
         yield ' {name}# configure terminal\n'.format(name=node.name)
         
         # configuration of the loopback interface
-        yield ' {name}(config)# interface Loopback0\n'.format(name=node.name)
-        yield ' {name}(config-if)# ip address {ip} 255.255.255.255\n'\
-                                        .format(
-                                                name = node.name, 
-                                                ip = node.ipaddress, 
-                                                )
-                
-        yield ' {name}(config-if)# exit\n'.format(name=node.name)
+        # yield ' {name}(config)# interface Loopback0\n'.format(name=node.name)
+        # yield ' {name}(config-if)# ip address {ip} 255.255.255.255\n'\
+        #                                 .format(
+        #                                         name = node.name, 
+        #                                         ip = node.ipaddress, 
+        #                                         )
+        #         
+        # yield ' {name}(config-if)# exit\n'.format(name=node.name)
         
         for _, sr in self.network.gftr(node, 'route', 'static route', False):
             sntw, mask = sr.dst_sntw.split('/')

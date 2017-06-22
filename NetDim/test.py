@@ -54,7 +54,7 @@ class TestExportImport(unittest.TestCase):
     def setUp(self):
         src = self.nk.nf(name='s')
         dest = self.nk.nf(name='d')
-        dest.x, src.x = 42, 24
+        dest.logical_x, src.logical_x = 42, 24
         plink = self.nk.lf(
                             name = 't', 
                             source = src, 
@@ -76,7 +76,7 @@ class TestExportImport(unittest.TestCase):
         
     def object_import(self, ext):
         self.pj.import_project(path_parent + '\\tests\\test_export.' + ext)
-        x_coord = set(map(lambda n: n.x, self.nk.pn['node'].values()))
+        x_coord = set(map(lambda n: n.logical_x, self.nk.pn['node'].values()))
         self.assertEqual(x_coord, {42, 24})
         plink ,= self.nk.pn['plink'].values()
         self.assertEqual(plink.distance, 666)
@@ -365,7 +365,7 @@ class TestHypercubeOSPF(unittest.TestCase):
     def test_HypercubeOSPF(self):
         dimension_window = NetworkDimension('hypercube', self.ct)
         dimension_window.entry_dimension.text = 4
-        dimension_window.node_type_list.text = 'router'
+        dimension_window.node_type_list.text = 'Router'
         dimension_window.create_graph()
         
         # we created a 4-dimensional hypercube: the network shoud have 16 nodes
@@ -415,7 +415,7 @@ class TestSquareTilingISIS(unittest.TestCase):
     def test_SquareTilingISIS(self):
         dimension_window = NetworkDimension('square-tiling', self.ct)
         dimension_window.entry_dimension.text = 8
-        dimension_window.node_type_list.text = 'router'
+        dimension_window.node_type_list.text = 'Router'
         dimension_window.create_graph()
         
         # we created a 4-dimensional hypercube: the network shoud have 16 nodes
@@ -465,7 +465,7 @@ class TestFullMeshRIP(unittest.TestCase):
     def test_FullMeshRIP(self):
         dimension_window = NetworkDimension('full-mesh', self.ct)
         dimension_window.entry_dimension.text = 5
-        dimension_window.node_type_list.text = 'router'
+        dimension_window.node_type_list.text = 'Router'
         dimension_window.create_graph()
         
         # we created a 4-dimensional hypercube: the network shoud have 16 nodes
@@ -516,7 +516,7 @@ class TestMultipleObjectGeneration(unittest.TestCase):
         # we created 10 nodes with the multiple nodes window
         multiple_nodes = MultipleNodes(0, 0, self.ct)
         multiple_nodes.entry_nodes.text = 10
-        multiple_nodes.node_type_list.text = 'switch'
+        multiple_nodes.node_type_list.text = 'Switch'
         multiple_nodes.create_nodes()
         
         self.assertEqual(len(self.nk.pn['node']), 10)

@@ -649,6 +649,23 @@ class NDobject(object):
         self.site_id = {}
         # sites is the set of sites the object belongs to
         self.sites = set()
+        
+    def update_properties(self, kwargs):
+        for k in kwargs:
+            setattr(self, k, kwargs[k])
+            # if the imported property is not an existing NetDim property,
+            # we make sure to add it everywhere it is needed, so that it's
+            # properly added to the model and displayed
+            # it is also automatically made exportable
+            if (k not in object_properties[self.subtype]
+                    and k is not 'id'):
+                for property_manager in (
+                                        object_properties,
+                                        object_ie,
+                                        box_properties,
+                                        ):
+                    property_manager[self.subtype] += (k,)
+                prop_to_name[k] = k
 
 ## Nodes
 class Node(NDobject):

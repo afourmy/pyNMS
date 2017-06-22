@@ -132,7 +132,6 @@ class Project():
             # if the sheet cannot be found, there's nothing to import
             except xlrd.biffh.XLRDError:
                 continue
-            print(name)
             # nodes and links import
             if name in all_subtypes:
                 properties = sheet.row_values(0)

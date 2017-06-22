@@ -126,7 +126,9 @@ class BaseNetwork(object):
         # creation link in the s-d direction if no link at all yet
         if not id:
             if name in self.name_to_id:
-                return self.pn[link_type][self.name_to_id[name]]
+                link = self.pn[link_type][self.name_to_id[name]]
+                link.update_properties(kwargs)
+                return link
             s, d = kwargs['source'], kwargs['destination']
             id = self.cpt_link
             if not name:
@@ -150,7 +152,9 @@ class BaseNetwork(object):
                 kwargs['name'] = name
             else:
                 if kwargs['name'] in self.name_to_id:
-                    return self.nodes[self.name_to_id[kwargs['name']]]
+                    node = self.nodes[self.name_to_id[kwargs['name']]]
+                    node.update_properties(kwargs)
+                    return node
             id = self.cpt_node
             kwargs['id'] = id
             self.nodes[id] = node_class[node_type](**kwargs)
