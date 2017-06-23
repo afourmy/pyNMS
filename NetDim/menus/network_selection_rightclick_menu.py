@@ -78,6 +78,9 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
         if self.no_shape and self.no_link:
             self.add_command(label='Send a script', 
                         command=lambda: self.send_script(self.all_so))
+            self.add_command(label='Push configuration', 
+                        command=lambda: self.push_configuration(self.all_so))  
+            
                         
             self.add_separator()
         
@@ -102,7 +105,7 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
             for obj in self.all_so:
                 self.common_sites &= obj.sites
             
-        # if at least one common AS: remove from AS or manage AS
+            # if at least one common AS: remove from AS or manage AS
             if self.common_AS:
                 self.add_command(label='Manage AS', 
                             command=lambda: self.change_AS('manage'))
@@ -128,7 +131,6 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
                 if self.common_sites:
                     self.add_command(label='Remove from site', 
                                                 command=self.remove_from_site)  
-                self.add_separator()
         
         # exactly one physical link: 
         if self.no_node and self.no_shape and self.one_link:
@@ -190,6 +192,10 @@ class NetworkSelectionRightClickMenu(BaseSelectionRightClickMenu):
     @empty_selection_and_destroy_menu
     def send_script(self, nodes):
         SendScript(self.view, nodes)
+        
+    @empty_selection_and_destroy_menu
+    def push_configuration(self, nodes):
+        self.network.push_configuration(*nodes)
         
     @empty_selection_and_destroy_menu
     def connection(self, node):

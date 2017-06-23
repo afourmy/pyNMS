@@ -65,7 +65,6 @@ class SendScript(CustomTopLevel):
     def send_script(self, nodes):
         script = self.view.project.controller.scripts[self.script_list.text]
         self.account = Account(self.entry_username.text, self.entry_password.text)
-        # self.account = Account('antoine', 'cisco')
         hosts = []
         
         for node in nodes:
@@ -88,5 +87,5 @@ class SendScript(CustomTopLevel):
         
         # send the script
         conn = SSH2()
-        start([self.account], hosts, self.execute_script)#, max_threads=2)
+        start([self.account], hosts, self.execute_script, max_threads=10)
         
