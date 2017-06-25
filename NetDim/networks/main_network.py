@@ -281,8 +281,8 @@ class MainNetwork(BaseNetwork):
             
         # allocate loopback address using the 192.168.0.0/16 private 
         # address space
-        # for idx, router in enumerate(self.ftr('node', 'router'), 1):
-        #     router.ipaddress = '192.168.{}.{}'.format(idx // 255, idx % 255)
+        for idx, router in enumerate(self.ftr('node', 'router'), 1):
+            router.ipaddress = '192.168.{}.{}'.format(idx // 255, idx % 255)
             
     def mac_allocation(self):
         # ranges of private MAC addresses
@@ -1941,14 +1941,9 @@ class MainNetwork(BaseNetwork):
         yield 'configure terminal'
         
         # configuration of the loopback interface
-        # yield ' {name}(config)# interface Loopback0\n'.format(name=node.name)
-        # yield ' {name}(config-if)# ip address {ip} 255.255.255.255\n'\
-        #                                 .format(
-        #                                         name = node.name, 
-        #                                         ip = node.ipaddress, 
-        #                                         )
-        #         
-        # yield ' {name}(config-if)# exit\n'.format(name=node.name)
+        yield 'interface Loopback0'
+        yield 'ip address {ip} 255.255.255.255'.format(ip=node.ipaddress) 
+        yield 'exit'
         
         for _, sr in self.gftr(node, 'route', 'static route', False):
             sntw, mask = sr.dst_sntw.split('/')
