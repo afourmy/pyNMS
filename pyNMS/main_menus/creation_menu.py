@@ -41,7 +41,6 @@ class CreationMenu(ScrolledFrame):
         self.dict_image = {}
         
         self.dict_size_image = {
-        'netdim': (125, 125), 
         'motion': (100, 100), 
         'multi-layer': (75, 75),
         'ethernet link': (100, 15),
@@ -68,7 +67,6 @@ class CreationMenu(ScrolledFrame):
         self.type_to_button = {}
         
         self.type_to_action = {
-        'netdim': self.refresh,
         'motion': lambda: self.switch_to('motion'),
         'multi-layer': self.switch_display_mode
         }
@@ -114,7 +112,6 @@ class CreationMenu(ScrolledFrame):
             self.type_to_button[button_type] = button
                 
         # netdim mode: motion or creation
-        self.type_to_button['netdim'].grid(0, 0, sticky='ew')
         self.type_to_button['motion'].grid(0, 0, 3, padx=20, in_=lf_selection)
         
         self.selection_mode = {}

@@ -41,7 +41,6 @@ class DisplayMenu(ScrolledFrame):
         self.dict_image = {}
         
         self.dict_size_image = {
-        'netdim': (75, 75), 
         'motion': (75, 75), 
         'multi-layer': (150, 150),
         'site': (50, 50),
