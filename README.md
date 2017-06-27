@@ -1,6 +1,6 @@
 # Introduction
 
-NetDim is a network design and planning software.
+pyNMS is a network design and planning software.
 
 [Visit our website](http://www.pynms.fr)
 
@@ -10,7 +10,7 @@ Watch a quick demo: on the [website](http://www.pynms.fr)
 
 # Getting started
 
-The following modules are used in NetDim:
+The following modules are used in pyNMS:
 ```
 PIL / Pillow (mandatory)
 xlrd, xlwt (desirable: used for saving projects)
@@ -20,7 +20,7 @@ Exscript (optional: used for network automation)
 Paramiko (optional: used for emulating SDN networks)
 ```
 
-In order to use NetDim, you need to run **main.py**.
+In order to use pyNMS, you need to run **main.py**.
 ```
 python main.py
 ```
@@ -29,13 +29,13 @@ python main.py
 
 ## Network GIS visualization
 
-Maps can be displayed in NetDim to draw all network
+Maps can be displayed in pyNMS to draw all network
 devices at their exact location (longitude and latitude),
 using the linear, mercator or spheric projections.
 This is done by importing shapefiles, a data format
 used in Geographic Information Systems (GIS) that contains geographical coordinates.
 
-![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/GIS_netdim.PNG)
+![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/GIS_pyNMS.PNG)
 
 ## Network algorithmic visualization
 
@@ -51,14 +51,9 @@ On a 4-layer deep tree which nodes are initially drawn at a random position on t
 
 ## Saving and import/export
 
-Projects can be imported from / exported to an excel or a csv file. This allows to import an existing network into NetDim.
+Projects can be imported from / exported to an excel or a csv file. This allows to import an existing network into pyNMS.
 
 ![Excel project](https://github.com/mintoo/networks/raw/master/Readme/xls_import.PNG)
-
-It is also possible to import graphml files from the [Topology Zoo] (http://www.topology-zoo.org/). The Topology Zoo gathers information about existing networks. All files are provided in the Workspace Folder.
-As an example, this is the topology of the RENATER network in France, in 2010:
-
-![Graphml Impport](https://github.com/mintoo/networks/raw/master/Readme/RENATER.PNG)
 
 ## AS Management
 
@@ -68,7 +63,7 @@ Nodes and trunks can be added to an AS by selecting them on the canvas, with the
 
 ## Automatic device configuration
 
-After an AS is created, NetDim shows all Cisco commands required to properly configure the protocol on the device. 
+After an AS is created, pyNMS shows all Cisco commands required to properly configure the protocol on the device. 
 This information can in turn be used along with network emulator like GNS3 to learn how to configure a network.
 
 ![Automatic configuration](https://github.com/mintoo/networks/raw/master/Readme/config.PNG)
@@ -88,14 +83,14 @@ However, a shortest path algorithm is not enough to find the path of a traffic f
   * In OSPF, intra-area routes are always favored over inter-area routes, even when inter-area routes happen to be the shortest. An ABR can advertize the wrong cost to other routers, which results in "area hijacking".
 
 The only way to properly route flows in a network is to bring the model as close to real-life routing as possible: 
-  1. First, NetDim automatically assigns IP addresses and interfaces to all routers.
+  1. First, pyNMS automatically assigns IP addresses and interfaces to all routers.
   2. For each device, a switching / routing table is created to associate a destination address to an exit interface.
 
 ![Routing table](https://github.com/mintoo/networks/raw/master/Readme/routing_table.png)
 
 ## Troubleshooting commands
 
-NetDim also provides an help with troubleshooting. You can right-click on a router and select the "Troubleshooting" entry to get a list of (Cisco) troubleshooting commands:
+pyNMS also provides an help with troubleshooting. You can right-click on a router and select the "Troubleshooting" entry to get a list of (Cisco) troubleshooting commands:
 
 - General troubleshooting commands
 - Per-AS type troubleshooting commands, depending on which AS the router belongs to
@@ -104,7 +99,7 @@ NetDim also provides an help with troubleshooting. You can right-click on a rout
 
 ## 3D display
 
-There are 3 layers in NetDim: the physical layer (Ethernet and WDM fiber trunks), the logical layer ("routes", i.e logical links), and the traffic layer (traffic links).
+There are 3 layers in pyNMS: the physical layer (Ethernet and WDM fiber trunks), the logical layer ("routes", i.e logical links), and the traffic layer (traffic links).
 In order to enhance network visualization, it is possible to have a per-layer view of the network.
 Nodes are drawn at all 3 layers, and connected with a dashed line to further improve the display.
 
@@ -174,4 +169,4 @@ Two methods were implemented to solve the wavelength assignment problem:
 - Linear programming with GLPK
 - "Largest degree first" heuristic
 
-Choose one of them in the list and click on "Run algorithm": NetDim will find out how many wavelengths are needed.
+Choose one of them in the list and click on "Run algorithm": pyNMS will find out how many wavelengths are needed.
