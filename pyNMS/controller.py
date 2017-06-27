@@ -48,9 +48,9 @@ class Controller(MainWindow):
         self.path_shapefiles = join(path_parent, 'Shapefiles')
             
         ## ----- Initialization : -----
-        self.title('NetDim')
-        netdim_icon = tk.PhotoImage(file=join(self.path_icon, 'netdim_icon.gif'))
-        self.tk.call('wm', 'iconphoto', self._w, netdim_icon)
+        self.title('pyNMS')
+        pyNMS_icon = tk.PhotoImage(file=join(self.path_icon, 'pynms_icon.gif'))
+        self.tk.call('wm', 'iconphoto', self._w, pyNMS_icon)
         
         # project notebook
         self.project_notebook = Notebook(self)
@@ -92,14 +92,14 @@ class Controller(MainWindow):
         
         ## ----- Menus : -----
         
-        netdim_menu = Menu(self)
+        pyNMS_menu = Menu(self)
         
         # general menu: 
         # - add / delete projects, 
         # - import / export projects, 
         # - exit the application
         
-        general_menu = Menu(netdim_menu)
+        general_menu = Menu(pyNMS_menu)
         
         add_project = MenuEntry(general_menu)
         add_project.text = 'Add project'
@@ -153,13 +153,13 @@ class Controller(MainWindow):
         exit.text = 'Exit'
         exit.command = self.destroy
 
-        main_cascade = MenuCascade(netdim_menu)
+        main_cascade = MenuCascade(pyNMS_menu)
         main_cascade.text = 'Main'
         main_cascade.inner_menu = general_menu
                 
         # advanced menu:
         
-        advanced_menu = Menu(netdim_menu)
+        advanced_menu = Menu(pyNMS_menu)
         
         advanced_graph_entry = MenuEntry(advanced_menu)
         advanced_graph_entry.text = 'Advanced graph'
@@ -185,7 +185,7 @@ class Controller(MainWindow):
         script_creation_entry.text = 'Script creation'
         script_creation_entry.command = self.script_creation_window.deiconify
         
-        main_cascade = MenuCascade(netdim_menu)
+        main_cascade = MenuCascade(pyNMS_menu)
         main_cascade.text = 'Network routing'
         main_cascade.inner_menu = advanced_menu
 
@@ -195,9 +195,9 @@ class Controller(MainWindow):
         # - a second menu contains all types of objects, each type unfolding
         # a sub-menu that contains all i/e properties common to a subtypes
         
-        per_type_label_menu = Menu(netdim_menu)
+        per_type_label_menu = Menu(pyNMS_menu)
         for obj_type, labels in type_labels.items():
-            menu_type = Menu(netdim_menu)
+            menu_type = Menu(pyNMS_menu)
             entry_name = '{type} label'.format(type=type_to_name[obj_type])
             per_type_label_menu.add_cascade(label=entry_name, menu=menu_type)
             for label in ('None',) + labels:
@@ -207,11 +207,11 @@ class Controller(MainWindow):
                 type_entry.text = prop_to_name[label]
                 type_entry.command = update_label
                     
-        per_type_cascade = MenuCascade(netdim_menu)
+        per_type_cascade = MenuCascade(pyNMS_menu)
         per_type_cascade.text = 'Per-type labels'
         per_type_cascade.inner_menu = per_type_label_menu
         
-        self.config(menu=netdim_menu)
+        self.config(menu=pyNMS_menu)
         
         ## Images
         

@@ -27,5 +27,5 @@ if path_app not in sys.path:
 import controller
 
 if str.__eq__(__name__, '__main__'):
-    netdim = controller.Controller(path_app)
-    netdim.mainloop()
+    pyNMS = controller.Controller(path_app)
+    pyNMS.mainloop()

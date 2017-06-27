@@ -39,7 +39,7 @@ from ip_networks.routing_table import RoutingTable
 from ip_networks.switching_table import SwitchingTable
 from ip_networks.troubleshooting import Troubleshooting
 
-def start_netdim(function):
+def start_pyNMS(function):
     def wrapper(self):
             self.ct = controller.Controller(path_app)
             self.pj = self.ct.current_project
@@ -48,11 +48,11 @@ def start_netdim(function):
             function(self)
     return wrapper
     
-# @start_netdim_and_import_project(name of the file to be imported)
+# @start_pyNMS_and_import_project(name of the file to be imported)
 # starting a project and importing a file: used for tests
-def start_netdim_and_import_project(filename):
+def start_pyNMS_and_import_project(filename):
     def inner_decorator(function):
-        @start_netdim
+        @start_pyNMS
         def wrapper(self):
             path_test = path_parent + '\\tests\\'
             self.pj.import_project(path_test + filename)
@@ -62,7 +62,7 @@ def start_netdim_and_import_project(filename):
 
 class TestExportImport(unittest.TestCase):
     
-    @start_netdim
+    @start_pyNMS
     def setUp(self):
         src = self.nk.nf(name='s')
         dest = self.nk.nf(name='d')
@@ -94,13 +94,13 @@ class TestExportImport(unittest.TestCase):
         self.assertEqual(plink.distance, 666)
         self.assertEqual(len(self.nk.pn['traffic'].values()), 1)
         
-    @start_netdim
+    @start_pyNMS
     def test_object_import_xls(self):
         self.object_import('xls')
 
 class TestFlow(unittest.TestCase):
  
-    @start_netdim_and_import_project('test_flow1.xls')
+    @start_pyNMS_and_import_project('test_flow1.xls')
     def setUp(self):
         self.source = self.nk.pn['node'][self.nk.name_to_id['s']]
         self.target = self.nk.pn['node'][self.nk.name_to_id['t']]
@@ -126,7 +126,7 @@ class TestFlow(unittest.TestCase):
         
 class TestMST(unittest.TestCase):
  
-    @start_netdim_and_import_project('test_mst.xls')
+    @start_pyNMS_and_import_project('test_mst.xls')
     def setUp(self):
         pass
  
@@ -146,7 +146,7 @@ class TestSP(unittest.TestCase):
     ['ethernet link1', 'ethernet link3']
     )
  
-    @start_netdim_and_import_project('test_SP.xls')
+    @start_pyNMS_and_import_project('test_SP.xls')
     def setUp(self):
         get_node = lambda node_name: self.nk.pn['node'][self.nk.name_to_id[node_name]]
         self.route9 = (get_node('node0'), get_node('node4'))
@@ -189,7 +189,7 @@ class TestMCF(unittest.TestCase):
     ('ethernet link5', 2)
     )
     
-    @start_netdim_and_import_project('test_mcf.xls')
+    @start_pyNMS_and_import_project('test_mcf.xls')
     def setUp(self):
         source = self.nk.pn['node'][self.nk.name_to_id['node1']]
         target = self.nk.pn['node'][self.nk.name_to_id['node4']]
@@ -232,7 +232,7 @@ class TestISIS(unittest.TestCase):
     'router6'
     }))
  
-    @start_netdim_and_import_project('test_ISIS.xls')
+    @start_pyNMS_and_import_project('test_ISIS.xls')
     def setUp(self):
         self.pj.refresh()
  
@@ -284,7 +284,7 @@ class TestOSPF(unittest.TestCase):
     'router0'
     }))
  
-    @start_netdim_and_import_project('test_ospf.xls')
+    @start_pyNMS_and_import_project('test_ospf.xls')
     def setUp(self):
         self.pj.refresh()
  
@@ -313,7 +313,7 @@ class TestCSPF(unittest.TestCase):
     []
     )
  
-    @start_netdim_and_import_project('test_cspf.xls')
+    @start_pyNMS_and_import_project('test_cspf.xls')
     def setUp(self):
         pass
  
@@ -352,7 +352,7 @@ class TestCSPF(unittest.TestCase):
         
 class TestRWA(unittest.TestCase):
      
-    @start_netdim_and_import_project('test_RWA.xls')
+    @start_pyNMS_and_import_project('test_RWA.xls')
     def setUp(self):
         pass
  
@@ -367,7 +367,7 @@ class TestRWA(unittest.TestCase):
 
 class TestHypercubeOSPF(unittest.TestCase):
      
-    @start_netdim
+    @start_pyNMS
     def setUp(self):
         pass
  
@@ -417,7 +417,7 @@ class TestHypercubeOSPF(unittest.TestCase):
         
 class TestSquareTilingISIS(unittest.TestCase):
      
-    @start_netdim
+    @start_pyNMS
     def setUp(self):
         pass
  
@@ -467,7 +467,7 @@ class TestSquareTilingISIS(unittest.TestCase):
         
 class TestFullMeshRIP(unittest.TestCase):
      
-    @start_netdim
+    @start_pyNMS
     def setUp(self):
         pass
  
@@ -517,7 +517,7 @@ class TestFullMeshRIP(unittest.TestCase):
         
 class TestMultipleObjectGeneration(unittest.TestCase):
      
-    @start_netdim
+    @start_pyNMS
     def setUp(self):
         pass
  

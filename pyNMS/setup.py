@@ -31,9 +31,9 @@ build_options = dict(
                      )
 
 setup(
-      name = 'NetDim',
+      name = 'pyNMS',
       version = '0.1',
-      description = 'Netdim - a multi-layer network planning software',
+      description = 'pyNMS - a carrier-grade Network Management System',
       options = dict(build_exe=build_options),
       executables = [Executable('main.py')],
       )
