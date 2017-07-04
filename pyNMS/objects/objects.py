@@ -1507,3 +1507,6 @@ type_to_subtype = {
 'interface': ('ethernet interface', 'optical interface')
 }
 
+# per-type name to object association
+node_name_to_obj = OrderedDict((obj_to_name[node], node) for node in node_subtype)
+link_name_to_obj = OrderedDict((obj_to_name[link], link) for link in link_subtype)

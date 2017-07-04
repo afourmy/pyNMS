@@ -67,7 +67,7 @@ class NetworkDimension(CustomTopLevel):
         node_type = Label(self)
         node_type.text = 'Type of node'
         self.node_type_list = Combobox(self, width=15)
-        self.node_type_list['values'] = tuple(name_to_obj.keys())
+        self.node_type_list['values'] = tuple(node_name_to_obj.keys())
         self.node_type_list.current(0)
     
         # confirmation button
