@@ -1953,9 +1953,9 @@ class MainNetwork(BaseNetwork):
         yield 'configure terminal'
         
         # configuration of the loopback interface
-        yield 'interface Loopback0'
-        yield 'ip address {ip} 255.255.255.255'.format(ip=node.ipaddress) 
-        yield 'exit'
+        # yield 'interface Loopback0'
+        # yield 'ip address {ip} 255.255.255.255'.format(ip=node.ipaddress) 
+        # yield 'exit'
         
         for _, sr in self.gftr(node, 'route', 'static route', False):
             sntw, mask = sr.dst_sntw.split('/')

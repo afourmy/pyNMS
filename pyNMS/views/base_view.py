@@ -96,7 +96,7 @@ class BaseView(CustomFrame):
         self.layers = [(0,), {1: 'plink', 2: 'l2link', 3: 'l3link', 4: 'traffic'}]
         # defines whether a layer should be display or not. By default,
         # IP and Ethernet virtual connections are not displayed.
-        self.display_layer = [0] + [True] * self.nbl
+        self.display_layer = [0] + [True, False, False, True]
         # difference between each layer in pixel
         self.diff_y = 0
         

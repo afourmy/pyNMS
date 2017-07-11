@@ -166,7 +166,7 @@ class Map():
     def __init__(self, view):
         self.cvs = view.cvs
         self.map_ids = set()
-        self.projection = 'mercator'
+        self.projection = 'spherical'
         # set containing all polygons 
         # used to redraw the map upon changing the projection
         self.land_coordinates = []
