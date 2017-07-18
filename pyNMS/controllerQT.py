@@ -14,16 +14,36 @@ from PyQt5.QtGui import (
 from PyQt5.QtWidgets import (
                              QFrame,
                              QPushButton, 
-                             QWidget, 
-                             QApplication, 
+                             QMainWindow, 
+                             QApplication,
+                             QHBoxLayout,
                              QLabel, 
                              QGraphicsPixmapItem,
                              QGroupBox,
+                             QWidget
                              )
 
-class Controller(QWidget):
+class Controller(QMainWindow):
     def __init__(self, path_app):
         super(Controller, self).__init__()
+        
+        # a QMainWindow needs a central widget for the layout
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
+        
+        exitAction = QtWidgets.QAction(QtGui.QIcon('exit24.png'), 'Exit', self)
+        exitAction.setShortcut('Ctrl+Q')
+        exitAction.setStatusTip('Exit application')
+        exitAction.triggered.connect(self.close)
+
+        self.statusBar()
+
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu('&File')
+        fileMenu.addAction(exitAction)
+
+        toolbar = self.addToolBar('Exit')
+        toolbar.addAction(exitAction)
 
         # initialize all paths
         self.path_app = path_app
@@ -32,6 +52,7 @@ class Controller(QWidget):
         self.path_workspace = join(path_parent, 'Workspace')
         self.path_shapefiles = join(path_parent, 'Shapefiles')
         
+        # create all pixmap images for node subtypes
         self.node_subtype_to_pixmap = defaultdict(OrderedDict)
         for color in ('default', 'red', 'purple'):
             for subtype in node_subtype:
@@ -47,20 +68,22 @@ class Controller(QWidget):
         self.node_creation_menu = node_creation_menuQT.NodeCreationMenu(self)
         
         self.viewer = base_viewQT.BaseView(self)
-        self.edit = QtWidgets.QLineEdit(self)
-        self.edit.setReadOnly(True)
-        self.button = QtWidgets.QToolButton(self)
-        self.button.setText('...')
-        self.button.clicked.connect(self.open_file)
-        layout = QtWidgets.QGridLayout(self)
-        layout.addWidget(self.viewer, 0, 1, 1, 2)
-        layout.addWidget(self.edit, 1, 1, 1, 1)
-        layout.addWidget(self.button, 1, 2, 1, 1)
-        layout.addWidget(self.node_creation_menu, 0, 0, 1, 1) 
+        # self.edit = QtWidgets.QLineEdit(self)
+        # self.edit.setReadOnly(True)
+        # self.button = QtWidgets.QToolButton(self)
+        # self.button.setText('...')
+        # self.button.clicked.connect(self.open_file)
 
-    def open_file(self):
-        path = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Choose Image', self.edit.text())
-        if path:
-            self.edit.setText(path)
-            self.viewer.setPhoto(QtGui.QPixmap(path))
+        layout = QHBoxLayout(central_widget)
+        layout.addWidget(self.node_creation_menu) 
+        layout.addWidget(self.viewer)
+        # layout.addWidget(self.edit, 1, 1, 1, 1)
+        # layout.addWidget(self.button, 1, 2, 1, 1)
+        
+
+    # def open_file(self):
+    #     path = QtWidgets.QFileDialog.getOpenFileName(
+    #         self, 'Choose Image', self.edit.text())
+    #     if path:
+    #         self.edit.setText(path)
+    #         self.viewer.setPhoto(QtGui.QPixmap(path))

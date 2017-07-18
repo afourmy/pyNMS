@@ -18,6 +18,8 @@ from PyQt5.QtWidgets import (
                              QWidget, 
                              QApplication, 
                              QLabel, 
+                             QGraphicsItem,
+                             QGraphicsLineItem,
                              QGraphicsPixmapItem,
                              QGroupBox,
                              )
@@ -34,6 +36,8 @@ class BaseView(QtWidgets.QGraphicsView):
         self.proj = 'mercator'
         self.ratio, self.offset = 1, (0, 0)
         self.scene = QtWidgets.QGraphicsScene(self)
+        self.temp_line = None
+        self.start_pos = None
         
         
         self.path_to_shapefile = 'C:/Users/minto/Desktop/pyGISS/shapefiles/World countries.shp'
@@ -103,64 +107,72 @@ class BaseView(QtWidgets.QGraphicsView):
             offset = QtCore.QPoint()
             dataStream >> pixmap >> offset
 
-            newIcon = DragLabel(self)
-            # newIcon.setPixmap(pixmap)
-            newIcon.move(event.pos() - offset)
-            # newIcon.show()
-            # newIcon.setAttribute(Qt.WA_DeleteOnClose)
+            newIcon = GraphicNode(pixmap, self)
+            newIcon.setPos(event.pos())
 
-            if event.source() == self:
-                event.setDropAction(Qt.MoveAction)
-                event.accept()
-            else:
-                event.acceptProposedAction()
-        else:
-            event.ignore()
+            # if event.source() == self:
+            #     event.setDropAction(Qt.MoveAction)
+            #     event.accept()
+            # else:
+            #     event.acceptProposedAction()
+        # else:
+        #     event.ignore()
 
-    def mousePressEvent(self, event):
-        
-        # retrieve the label 
-        child = self.childAt(event.pos())
-        if not child:
-            return
+    # def mousePressEvent(self, event):
+    #     pos = event.pos()
+    #     self.start = QtCore.QPointF(self.mapToScene(pos))
+    #     end = QtCore.QPointF(self.mapToScene(event.pos()))
+    #     self.temp_line = Link(QtCore.QLineF(self.start, end))
+    #     self.scene.addItem(self.temp_line)
+    #     
+    #     # retrieve the label 
+    #     child = self.childAt(event.pos())
+    #     if not child:
+    #         return
             
-class DragLabel(QLabel):
-    
-    def __init__(self, parent):
-        super().__init__(parent)
-        
-        pixmap = QPixmap('C:\\Users\minto\\Desktop\\pyGISS\\node.png')
-        pixmap = pixmap.scaled(65, 65, Qt.KeepAspectRatio)
-        self.setPixmap(pixmap)
-        self.setAttribute(Qt.WA_DeleteOnClose)
-        self.show()
+    # def mouseReleaseEvent(self, event):
 
-    def mousePressEvent(self, event):
-        self.__mousePressPos = None
-        self.__mouseMovePos = None
-        if event.button() == Qt.LeftButton:
-            self.__mousePressPos = event.globalPos()
-            self.__mouseMovePos = event.globalPos()
-
-        super(DragLabel, self).mousePressEvent(event)
-
+   ##       for point in (start, end):
+    #         text = self.scene.addSimpleText(
+    #             '(%d, %d)' % (point.x(), point.y()))
+    #         text.setBrush(QtCore.Qt.red)
+    #         text.setPos(point)
+            
     def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.LeftButton:
-            currPos = self.mapToGlobal(self.pos())
-            globalPos = event.globalPos()
-            diff = globalPos - self.__mouseMovePos
-            newPos = self.mapFromGlobal(currPos + diff)
-            self.move(newPos)
+        currPos = self.mapToScene(event.pos())
+        if event.buttons() == Qt.RightButton and self.temp_line:  
+            self.temp_line.setLine(QtCore.QLineF(self.start, currPos))
+            
+        super(BaseView, self).mouseMoveEvent(event)
 
-            self.__mouseMovePos = globalPos
+       ##   super(GraphicNode, self).mouseMoveEvent(event)
+            
+class Link(QtWidgets.QGraphicsLineItem):
+    def __init__(self, qline):
+        QtWidgets.QGraphicsLineItem.__init__(self, qline)
+            
+class GraphicNode(QtWidgets.QGraphicsPixmapItem):
+    
+    def __init__(self, pixmap, view):
+        super().__init__(pixmap)
+        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        self.setFlag(QGraphicsItem.ItemIsMovable, True)
+        
+        self.view = view
+        self.view.scene.addItem(self)
+        
+    def mousePressEvent(self, event):
+        if event.buttons() == Qt.RightButton:
+            self.view.start = pos = self.mapToScene(event.pos())
+            self.view.temp_line = QGraphicsLineItem(QtCore.QLineF(pos, pos))
+            self.view.scene.addItem(self.view.temp_line)
+        super(GraphicNode, self).mousePressEvent(event)
 
-        super(DragLabel, self).mouseMoveEvent(event)
-
-    def mouseReleaseEvent(self, event):
-        if self.__mousePressPos is not None:
-            moved = event.globalPos() - self.__mousePressPos 
-            if moved.manhattanLength() > 3:
-                event.ignore()
-                return
-
-        super(DragLabel, self).mouseReleaseEvent(event)
+        
+class GraphicLink(QGraphicsLineItem):
+    
+    def __init__(self, source, destination):
+        super(GraphicLink, self).__init__()
+        self.source = source
+        self.destination = destination
+        print(self.source)
