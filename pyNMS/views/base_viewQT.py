@@ -33,17 +33,17 @@ class BaseView(QtWidgets.QGraphicsView):
     
     def __init__(self, parent):
         super(BaseView, self).__init__(parent)
-        self.proj = 'mercator'
-        self.ratio, self.offset = 1, (0, 0)
+        self.proj = 'spherical'
+        self.ratio, self.offset = 1/10000, (0, 0)
         self.scene = QtWidgets.QGraphicsScene(self)
         self.temp_line = None
         self.start_pos = None
-        
+        self.setScene(self.scene)
         
         self.path_to_shapefile = 'C:/Users/minto/Desktop/pyGISS/shapefiles/World countries.shp'
         for polygon in self.create_polygon():
             self.scene.addItem(polygon)
-        self.setScene(self.scene)
+        
         self.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
         self.setRenderHint(QtGui.QPainter.Antialiasing)
         
@@ -74,17 +74,14 @@ class BaseView(QtWidgets.QGraphicsView):
                 coords = land.replace('(', '').replace(')', '').split(',')
                 for lon, lat in zip(coords[0::2], coords[1::2]):
                     px, py = self.to_canvas_coordinates(lon, lat)
-                    if px == 1e+30:
+                    if px == 1e+26:
                         continue
-                    qt_polygon.append(QtCore.QPointF(px/10000, py/10000))
+                    qt_polygon.append(QtCore.QPointF(px, py))
                 yield QtWidgets.QGraphicsPolygonItem(qt_polygon)
 
     def wheelEvent(self, event):
         factor = 1.25 if event.angleDelta().y() > 0 else 0.8
         self.scale(factor, factor)
-        self.ratio *= float(factor)
-        self.offset = (self.offset[0]*factor + event.x()*(1 - factor), 
-                       self.offset[1]*factor + event.y()*(1 - factor))
         
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat('application/x-dnditemdata'):
@@ -110,25 +107,10 @@ class BaseView(QtWidgets.QGraphicsView):
             newIcon = GraphicNode(pixmap, self)
             newIcon.setPos(event.pos())
 
-            # if event.source() == self:
-            #     event.setDropAction(Qt.MoveAction)
-            #     event.accept()
-            # else:
-            #     event.acceptProposedAction()
-        # else:
-        #     event.ignore()
-
-    # def mousePressEvent(self, event):
-    #     pos = event.pos()
-    #     self.start = QtCore.QPointF(self.mapToScene(pos))
-    #     end = QtCore.QPointF(self.mapToScene(event.pos()))
-    #     self.temp_line = Link(QtCore.QLineF(self.start, end))
-    #     self.scene.addItem(self.temp_line)
-    #     
-    #     # retrieve the label 
-    #     child = self.childAt(event.pos())
-    #     if not child:
-    #         return
+    def mousePressEvent(self, event):
+        pos = self.mapToScene(event.pos())
+        print(self.to_geographical_coordinates(pos.x(), pos.y()))
+        super(BaseView, self).mousePressEvent(event)
             
     # def mouseReleaseEvent(self, event):
 
