@@ -108,8 +108,8 @@ class BaseView(QtWidgets.QGraphicsView):
             newIcon.setPos(event.pos())
 
     def mousePressEvent(self, event):
-        pos = self.mapToScene(event.pos())
-        print(self.to_geographical_coordinates(pos.x(), pos.y()))
+        # pos = self.mapToScene(event.pos())
+        # print(self.to_geographical_coordinates(pos.x(), pos.y()))
         super(BaseView, self).mousePressEvent(event)
             
     # def mouseReleaseEvent(self, event):
@@ -121,10 +121,9 @@ class BaseView(QtWidgets.QGraphicsView):
     #         text.setPos(point)
             
     def mouseMoveEvent(self, event):
-        currPos = self.mapToScene(event.pos())
+        position = self.mapToScene(event.pos())
         if event.buttons() == Qt.RightButton and self.temp_line:  
-            self.temp_line.setLine(QtCore.QLineF(self.start, currPos))
-            
+            self.temp_line.setLine(QtCore.QLineF(self.start_position, position))
         super(BaseView, self).mouseMoveEvent(event)
 
        ##   super(GraphicNode, self).mouseMoveEvent(event)
@@ -139,17 +138,27 @@ class GraphicNode(QtWidgets.QGraphicsPixmapItem):
         super().__init__(pixmap)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
+        self.setZValue(2)
         
         self.view = view
         self.view.scene.addItem(self)
         
     def mousePressEvent(self, event):
+        #TODO no need for pos, take position of the node itself
         if event.buttons() == Qt.RightButton:
-            self.view.start = pos = self.mapToScene(event.pos())
+            self.view.start_node = self
+            self.view.start_position = pos = self.mapToScene(event.pos())
             self.view.temp_line = QGraphicsLineItem(QtCore.QLineF(pos, pos))
+            self.view.temp_line.setZValue(1)
             self.view.scene.addItem(self.view.temp_line)
         super(GraphicNode, self).mousePressEvent(event)
-
+        
+    def mouseReleaseEvent(self, event):
+        # print(event.buttons())
+        # if event.buttons() and self.view.temp_line:
+        #     print('test')
+        self.view.scene.removeItem(self.view.temp_line)
+        super(GraphicNode, self).mouseReleaseEvent(event)
         
 class GraphicLink(QGraphicsLineItem):
     
