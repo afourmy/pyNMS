@@ -14,38 +14,45 @@
 
 import os
 import warnings
+from views import base_view
 from views.network_view import NetworkView
-from views.site_view import SiteView
 from objects.objects import *
-from pythonic_tkinter.preconfigured_widgets import *
-from tkinter import filedialog
 try:
     import xlrd
     import xlwt
 except ImportError:
     warnings.warn('Excel libraries missing: excel import/export disabled')
+    
+from PyQt5.QtWidgets import QWidget, QHBoxLayout
 
-class Project():
+
+class Project(QWidget):
     
     def __init__(self, controller, name):
-        self.name = name
-        self.controller = controller
-        self.controller.current_project = self
-        
-        # global frame that contains network, site, and node views
-        self.gf = CustomFrame(width=1300, height=800)        
-        
+        super(Project, self).__init__(controller)
         self.network_view = NetworkView(
                                         '{} : network view'.format(name),
                                         controller
                                         )
-        self.site_view = SiteView(
-                                '{} : site view'.format(name),
-                                controller, 
-                                )
-        self.current_view = self.network_view
-        self.network = self.current_view.network
-        self.network_view.pack(fill='both', expand=True)
+        # self.site_view = SiteView(
+        #                         '{} : site view'.format(name),
+        #                         controller, 
+        #                         )
+        
+        layout = QHBoxLayout(self)
+        layout.addWidget(self.network_view) 
+
+        self.name = name
+        self.controller = controller
+        self.controller.current_project = self
+
+        # # global frame that contains network, site, and node views
+        # self.gf = CustomFrame(width=1300, height=800)        
+        # 
+
+        # self.current_view = self.network_view
+        # self.network = self.current_view.network
+        # self.network_view.pack(fill='both', expand=True)
         
     def objectizer(self, property, value):
         if value == 'None': 

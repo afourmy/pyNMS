@@ -2,6 +2,7 @@ from collections import defaultdict, OrderedDict
 from objects.objects import *
 from os.path import abspath, join, pardir
 from main_menus import node_creation_menu, link_creation_menu
+from project import Project
 from views import base_view
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
@@ -89,12 +90,19 @@ class Controller(QMainWindow):
                                                     '.gif'
                                                     )))
                 self.node_subtype_to_pixmap[color][subtype] = QPixmap(path)
+                
+        # associate a project name to a Project object
+        self.dict_project = {}
+        # project counter
+        self.cpt_project = 0
         
-        tab_menu = QTabWidget(self)
+        ## notebook containing all menus
+        notebook_menu = QTabWidget(self)
         
         # first tab: the creation menu
-        creation_menu = QWidget(tab_menu)
-        tab_menu.addTab(creation_menu, 'Creation menu')
+        creation_menu = QWidget(notebook_menu)
+        notebook_menu.addTab(creation_menu, 'Creation menu')
+        
         # node creation menu
         self.node_creation_menu = node_creation_menu.NodeCreationMenu(self)
         self.link_creation_menu = link_creation_menu.LinkCreationMenu(self)
@@ -104,12 +112,24 @@ class Controller(QMainWindow):
         creation_menu_layout.addWidget(self.node_creation_menu)
         creation_menu_layout.addWidget(self.link_creation_menu)
         
-        self.viewer = base_view.BaseView(self)
-
+        ## notebook containing all projects
+        self.notebook_project = QTabWidget(self)
+        
+        # first project
+        self.add_project()
 
         layout = QHBoxLayout(central_widget)
-        layout.addWidget(tab_menu) 
-        layout.addWidget(self.viewer)
+        layout.addWidget(notebook_menu) 
+        layout.addWidget(self.notebook_project)
+        
+    def add_project(self, name=None):
+        self.cpt_project += 1
+        if not name:
+            name = ' '.join(('project', str(self.cpt_project)))
+        new_project = Project(self, name)
+        self.notebook_project.addTab(new_project, name)
+        self.dict_project[name] = new_project
+        return new_project
 
     def close(self):
         pass
@@ -120,3 +140,4 @@ class Controller(QMainWindow):
                                            'Import project', 
                                            'Choose a project to import'
                                            )
+                                           
