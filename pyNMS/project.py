@@ -243,7 +243,7 @@ class Project():
                                     mode = 'w', 
                                     defaultextension = '.xls'
                                     )
-                                    
+            print(selected_file)
             if not selected_file: 
                 return 
             else:

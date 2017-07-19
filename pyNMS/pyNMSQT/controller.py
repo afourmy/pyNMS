@@ -50,7 +50,7 @@ class Controller(QMainWindow):
         
         export_project = QAction('Export project', self)
         export_project.setStatusTip('Export the current project')
-        export_project.triggered.connect(self.close)
+        export_project.triggered.connect(self.export_project)
         
         quit_pynms = QAction('Quit', self)
         quit_pynms.setShortcut('Ctrl+Q')
@@ -134,10 +134,8 @@ class Controller(QMainWindow):
     def close(self):
         pass
 
+    def export_project(self):
+        self.current_project.export_project()
+        
     def import_project(self):
-        path = QFileDialog.getOpenFileName(
-                                           self, 
-                                           'Import project', 
-                                           'Choose a project to import'
-                                           )
-                                           
+        pass

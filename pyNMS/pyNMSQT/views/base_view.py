@@ -107,7 +107,10 @@ class GraphicalNode(QGraphicsPixmapItem):
         super().__init__(pixmap)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
-        self.setOffset(QPointF(-self.boundingRect().width()/2, -self.boundingRect().height()/2))
+        self.setOffset(QPointF(
+                               -self.boundingRect().width()/2, 
+                               -self.boundingRect().height()/2
+                               ))
         self.setZValue(3)
         self.view = view
         self.node = self.view.network.nf()
@@ -128,7 +131,7 @@ class GraphicalLink(QGraphicsLineItem):
         # source and destination graphic nodes
         self.destination = view.end_node
         self.source = view.start_node
-        self.setZValue(5)
+        self.setZValue(2)
         self.update_position()
         view.scene.addItem(self)
 
