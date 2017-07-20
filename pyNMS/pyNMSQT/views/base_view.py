@@ -21,6 +21,7 @@ class BaseView(QGraphicsView):
         self.setScene(self.scene)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setRenderHint(QPainter.Antialiasing)
+        
         # call the selection function when the selection changes
         self.scene.selectionChanged.connect(self.change_selection)
         
@@ -52,24 +53,26 @@ class BaseView(QGraphicsView):
         # activate rubberband for selection
         # by default, the rubberband is active for both clicks, we have to
         # deactivate it explicitly for the right-click
-        if event.buttons() == Qt.LeftButton:
+        if event.buttons() == Qt.LeftButton and self.controller.mode == 'selection':
             self.setDragMode(QGraphicsView.RubberBandDrag)
-        if event.buttons() == Qt.RightButton:
+        else:
             self.setDragMode(QGraphicsView.NoDrag)
         item = self.itemAt(event.pos())
-        if type(item) == GraphicalNode and event.buttons() == Qt.RightButton:
-            self.start_node = item
-            self.start_position = pos = self.mapToScene(event.pos())
-            self.temp_line = QGraphicsLineItem(QLineF(pos, pos))
-            self.temp_line.setZValue(1)
-            self.scene.addItem(self.temp_line)
+        if self.controller.mode == 'creation':
+            if type(item) == GraphicalNode and event.buttons() == Qt.LeftButton:
+                self.start_node = item
+                self.start_position = pos = self.mapToScene(event.pos())
+                self.temp_line = QGraphicsLineItem(QLineF(pos, pos))
+                self.temp_line.setZValue(2)
+                self.scene.addItem(self.temp_line)
         super(BaseView, self).mousePressEvent(event)
             
     def mouseReleaseEvent(self, event):
         item = self.itemAt(event.pos())
-        if isinstance(item, GraphicalNode) and self.temp_line:
-            self.end_node = item
-            GraphicalLink(self)
+        if self.temp_line:
+            if isinstance(item, GraphicalNode):
+                self.end_node = item
+                GraphicalLink(self)
             self.scene.removeItem(self.temp_line)
             self.temp_line = None
         elif event.button() == Qt.RightButton:
@@ -80,6 +83,7 @@ class BaseView(QGraphicsView):
             exitAction.triggered.connect(lambda: _)
             menu.addAction(exitAction)
             menu.exec_(event.globalPos())
+        
 
         super(BaseView, self).mouseReleaseEvent(event)
 
@@ -96,7 +100,7 @@ class BaseView(QGraphicsView):
             
     def mouseMoveEvent(self, event):
         position = self.mapToScene(event.pos())
-        if event.buttons() == Qt.RightButton and self.temp_line:  
+        if event.buttons() == Qt.LeftButton and self.temp_line:  
             self.temp_line.setLine(QLineF(self.start_position, position))
 
         super(BaseView, self).mouseMoveEvent(event)
@@ -107,15 +111,24 @@ class GraphicalNode(QGraphicsPixmapItem):
         super().__init__(pixmap)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
-        self.setOffset(QPointF(
+        self.setOffset(
+                       QPointF(
                                -self.boundingRect().width()/2, 
                                -self.boundingRect().height()/2
-                               ))
+                               )
+                       )
         self.setZValue(3)
         self.view = view
-        self.node = self.view.network.nf()
+        self.controller = view.controller
+        self.node = self.view.network.nf(subtype=self.controller.creation_mode)
         self.view.scene.addItem(self)
         self.setCursor(QCursor(Qt.PointingHandCursor))
+        
+    def mousePressEvent(self, event):
+        selection_allowed = self.controller.mode == 'selection'
+        self.setFlag(QGraphicsItem.ItemIsSelectable, selection_allowed)
+        self.setFlag(QGraphicsItem.ItemIsMovable, selection_allowed)
+        super(GraphicalNode, self).mousePressEvent(event)
         
     def mouseMoveEvent(self, event):
         for item in self.view.scene.selectedItems():

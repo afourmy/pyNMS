@@ -23,6 +23,7 @@ class LinkCreationMenu(QGroupBox):
     
     def __init__(self, controller):
         super(LinkCreationMenu, self).__init__(controller)
+        self.controller = controller
         self.setTitle('Link creation')
                 
         # exit connection lost because of the following lines
@@ -31,16 +32,26 @@ class LinkCreationMenu(QGroupBox):
             if subtype in ('l2vc', 'l3vc'):
                 continue
             button = QPushButton(self)
+            # button.subtype = subtype
+            button.clicked.connect(lambda: self.create_link(subtype))
             image_path = join(controller.path_icon, subtype + '.png')
             icon = QtGui.QIcon(image_path)
             button.setIcon(icon)
             button.setIconSize(QtCore.QSize(120, 30))
             button.setStyleSheet("background-color: lavender");
             layout.addWidget(button, index // 2, index % 2, 1, 1)
+            
+    def create_link(self, subtype):
+        self.controller.mode = 'creation'
+        self.controller.creation_mode = subtype
 
-    def mousePressEvent(self, event):
-        
-        # retrieve the label 
-        child = self.childAt(event.pos())
-        if not child:
-            return
+    # def mousePressEvent(self, event):
+    #     
+    #     # retrieve the label 
+    #     child = self.childAt(event.pos())
+    #     if not child:
+    #         return
+    #     self.controller.mode = 'creation'
+    #     self.controller.creation_mode = child.subtype
+    #     # super(mousePressEvent, self).mousePressEvent(event)
+    #     print(self.controller.mode)

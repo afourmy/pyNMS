@@ -19,8 +19,10 @@ from PyQt5.QtWidgets import (
                              )
 
 class NodeCreationMenu(QGroupBox):
+    
     def __init__(self, controller):
         super(NodeCreationMenu, self).__init__(controller)
+        self.controller = controller
         self.setTitle('Node creation')
 
         self.setMinimumSize(300, 300)
@@ -28,13 +30,15 @@ class NodeCreationMenu(QGroupBox):
                 
         # exit connection lost because of the following lines
         layout = QtWidgets.QGridLayout(self)
-        for index, image in enumerate(controller.node_subtype_to_pixmap['default'].values()):
+        for index, (subtype, image) in enumerate(controller.node_subtype_to_pixmap['default'].items()):
             label = QLabel(self)
-            label.setPixmap(image.scaled(
-                                        label.size(), 
-                                        Qt.KeepAspectRatio,
-                                        Qt.SmoothTransformation
-                                        ))
+            label.subtype = subtype
+            pixmap = image.scaled(
+                                 label.size(), 
+                                 Qt.KeepAspectRatio,
+                                 Qt.SmoothTransformation
+                                 )
+            label.setPixmap(pixmap)
             label.show()
             label.setAttribute(Qt.WA_DeleteOnClose)
             layout.addWidget(label, index // 4, index % 4, 1, 1)
@@ -52,23 +56,24 @@ class NodeCreationMenu(QGroupBox):
     dragEnterEvent = dragMoveEvent
 
     def mousePressEvent(self, event):
-        
         # retrieve the label 
         child = self.childAt(event.pos())
         if not child:
             return
-
+        
+        # update the creation mode to the appropriate subtype
+        self.controller.creation_mode = child.subtype
+        
         pixmap = QPixmap(child.pixmap())
+        item_data = QtCore.QByteArray()
+        data_stream = QtCore.QDataStream(item_data, QtCore.QIODevice.WriteOnly)
+        data_stream << pixmap << QtCore.QPoint(event.pos() - child.pos())
 
-        itemData = QtCore.QByteArray()
-        dataStream = QtCore.QDataStream(itemData, QtCore.QIODevice.WriteOnly)
-        dataStream << pixmap << QtCore.QPoint(event.pos() - child.pos())
-
-        mimeData = QtCore.QMimeData()
-        mimeData.setData('application/x-dnditemdata', itemData)
+        mime_data = QtCore.QMimeData()
+        mime_data.setData('application/x-dnditemdata', item_data)
 
         drag = QtGui.QDrag(self)
-        drag.setMimeData(mimeData)
+        drag.setMimeData(mime_data)
         drag.setPixmap(pixmap)
         drag.setHotSpot(event.pos() - child.pos())
 

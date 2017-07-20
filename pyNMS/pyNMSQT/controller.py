@@ -8,6 +8,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import (
                          QColor, 
+                         QIcon,
                          QDrag, 
                          QPainter, 
                          QPixmap
@@ -31,6 +32,13 @@ from PyQt5.QtWidgets import (
 class Controller(QMainWindow):
     def __init__(self, path_app):
         super(Controller, self).__init__()
+        
+        # initialize all paths
+        self.path_app = path_app
+        path_parent = abspath(join(path_app, pardir))
+        self.path_icon = join(path_parent, 'Icons')
+        self.path_workspace = join(path_parent, 'Workspace')
+        self.path_shapefiles = join(path_parent, 'Shapefiles')
         
         # a QMainWindow needs a central widget for the layout
         central_widget = QWidget(self)
@@ -68,16 +76,15 @@ class Controller(QMainWindow):
         main_menu.addAction(quit_pynms)
 
         self.statusBar()
+        
+        selection_icon = QIcon(join(self.path_icon, 'motion.png'))
+        selection_mode = QAction(selection_icon, 'Selection mode', self)
+        selection_mode.setShortcut('Ctrl+S')
+        selection_mode.setStatusTip('Switch to selection mode')
+        selection_mode.triggered.connect(self.selection_mode)
 
-        toolbar = self.addToolBar('Exit')
-        toolbar.addAction(quit_pynms)
-
-        # initialize all paths
-        self.path_app = path_app
-        path_parent = abspath(join(path_app, pardir))
-        self.path_icon = join(path_parent, 'Icons')
-        self.path_workspace = join(path_parent, 'Workspace')
-        self.path_shapefiles = join(path_parent, 'Shapefiles')
+        toolbar = self.addToolBar('')
+        toolbar.addAction(selection_mode)
         
         # create all pixmap images for node subtypes
         self.node_subtype_to_pixmap = defaultdict(OrderedDict)
@@ -101,7 +108,7 @@ class Controller(QMainWindow):
         
         # first tab: the creation menu
         creation_menu = QWidget(notebook_menu)
-        notebook_menu.addTab(creation_menu, 'Creation menu')
+        notebook_menu.addTab(creation_menu, 'Creation')
         
         # node creation menu
         self.node_creation_menu = node_creation_menu.NodeCreationMenu(self)
@@ -122,6 +129,14 @@ class Controller(QMainWindow):
         layout.addWidget(notebook_menu) 
         layout.addWidget(self.notebook_project)
         
+        # mode (creation of links or selection of objects)
+        # since the drag & drop system for node creation does not interfere 
+        # with the selection process, nodes can be created in selection mode
+        # OTOH, creating links will automatically switch the mode to creation
+        self.mode = 'selection'
+        # creation mode (node subtype or link subtype)
+        self.creation_mode = 'router'
+        
     def add_project(self, name=None):
         self.cpt_project += 1
         if not name:
@@ -130,6 +145,9 @@ class Controller(QMainWindow):
         self.notebook_project.addTab(new_project, name)
         self.dict_project[name] = new_project
         return new_project
+        
+    def selection_mode(self):
+        self.mode = 'selection'
 
     def close(self):
         pass
