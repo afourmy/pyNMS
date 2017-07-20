@@ -81,10 +81,27 @@ class Controller(QMainWindow):
         selection_mode = QAction(selection_icon, 'Selection mode', self)
         selection_mode.setShortcut('Ctrl+S')
         selection_mode.setStatusTip('Switch to selection mode')
-        selection_mode.triggered.connect(self.selection_mode)
+        selection_mode.triggered.connect(self.switch_to_selection_mode)
+        
+        network_view_icon = QIcon(join(self.path_icon, 'network_view.png'))
+        network_view = QAction(network_view_icon, 'Network view', self)
+        network_view.setShortcut('Ctrl+N')
+        network_view.setStatusTip('Switch to network view')
+        network_view.triggered.connect(lambda: self.switch_view('network'))
+        
+        site_view_icon = QIcon(join(self.path_icon, 'site_view.png'))
+        site_view = QAction(site_view_icon, 'Site view', self)
+        site_view.setShortcut('Ctrl+N')
+        site_view.setStatusTip('Switch to site view')
+        site_view.triggered.connect(lambda: self.switch_view('site'))
 
         toolbar = self.addToolBar('')
+        toolbar.resize(1500, 1500)
+        toolbar.setIconSize(QtCore.QSize(70, 70))
         toolbar.addAction(selection_mode)
+        toolbar.addSeparator()
+        toolbar.addAction(network_view)
+        toolbar.addAction(site_view)
         
         # create all pixmap images for node subtypes
         self.node_subtype_to_pixmap = defaultdict(OrderedDict)
@@ -146,8 +163,11 @@ class Controller(QMainWindow):
         self.dict_project[name] = new_project
         return new_project
         
-    def selection_mode(self):
+    def switch_to_selection_mode(self):
         self.mode = 'selection'
+        
+    def switch_view(self, view_mode):
+        self.current_project.switch_view(view_mode)
 
     def close(self):
         pass

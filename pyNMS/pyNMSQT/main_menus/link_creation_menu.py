@@ -44,14 +44,3 @@ class LinkCreationMenu(QGroupBox):
     def create_link(self, subtype):
         self.controller.mode = 'creation'
         self.controller.creation_mode = subtype
-
-    # def mousePressEvent(self, event):
-    #     
-    #     # retrieve the label 
-    #     child = self.childAt(event.pos())
-    #     if not child:
-    #         return
-    #     self.controller.mode = 'creation'
-    #     self.controller.creation_mode = child.subtype
-    #     # super(mousePressEvent, self).mousePressEvent(event)
-    #     print(self.controller.mode)
