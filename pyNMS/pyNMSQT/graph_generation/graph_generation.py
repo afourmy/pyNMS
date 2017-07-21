@@ -63,9 +63,9 @@ class GraphGenerationWindow(QWidget):
             
 class GraphDimensionWindow(QWidget):
         
-    @update_paths
     def __init__(self, graph_type, controller):
         super().__init__()
+        self.controller = controller
         self.graph_type = graph_type
         self.setWindowTitle('Graph generation')
         
@@ -103,7 +103,8 @@ class GraphDimensionWindow(QWidget):
         layout.addWidget(cancel_button, 3, 1, 1, 1)
         self.setLayout(layout)
         
-    def confirm(self):
+    @update_paths(False)
+    def confirm(self, _):
         nodes = int(self.nodes_edit.text())
         subtype = node_name_to_obj[self.node_subtype_list.currentText()]
         if self.graph_type in ('kneser', 'petersen'):

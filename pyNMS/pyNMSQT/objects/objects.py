@@ -696,24 +696,12 @@ class Node(NDobject):
                     
     @initializer(ie_properties)
     def __init__(self):
-        # self id and id of the corresponding label on the canvas
-        self.oval = {layer: None for layer in range(1, 5)}
         # image of the node at all three layers: physical, logical and traffic
         self.image = {layer: None for layer in range(1, 5)}
         self.layer_line = {layer: None for layer in range(1, 5)}
         self.gnode = None
         self.lid = None
         self.size = 8
-        # site coordinates: coordinates of the node for each site it belongs to
-        # associate a site to a list of coordinates [x, y]
-        self.site_coords = {}
-        # site properties for site canvas
-        self.site_oval = {}
-        self.site_image = {}
-        self.site_layer_line = {}
-        self.site_lid = {}
-        self.site_lpos = {}
-        self.site_size = {}
         # velocity of a node for graph drawing algorithm
         self.vx = 0
         self.vy = 0

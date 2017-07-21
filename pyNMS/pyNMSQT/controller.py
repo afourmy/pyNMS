@@ -3,6 +3,7 @@ from objects.objects import *
 from os.path import abspath, join, pardir
 from main_menus import node_creation_menu, link_creation_menu
 from graph_generation.graph_generation import GraphGenerationWindow
+from miscellaneous.graph_drawing import GraphDrawingWindow
 from project import Project
 from views import base_view
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -47,6 +48,7 @@ class Controller(QMainWindow):
         
         # permanent windows
         self.graph_generation_window = GraphGenerationWindow(self)
+        self.graph_drawing_window = GraphDrawingWindow(self)
         
         new_project = QAction('Add project', self)
         new_project.setStatusTip('Create a new project')
@@ -104,6 +106,12 @@ class Controller(QMainWindow):
         graph_generation.setShortcut('Ctrl+G')
         graph_generation.setStatusTip('Generate a graph')
         graph_generation.triggered.connect(lambda: self.graph_generation_window.show())
+        
+        graph_drawing_icon = QIcon(join(self.path_icon, 'draw.png'))
+        graph_drawing = QAction(graph_drawing_icon, 'Graph drawing', self)
+        graph_drawing.setShortcut('Ctrl+D')
+        graph_drawing.setStatusTip('Use a graph drawing algorithm')
+        graph_drawing.triggered.connect(lambda: self.graph_drawing_window.show())
 
         toolbar = self.addToolBar('')
         toolbar.resize(1500, 1500)
@@ -114,6 +122,7 @@ class Controller(QMainWindow):
         toolbar.addAction(site_view)
         toolbar.addSeparator()
         toolbar.addAction(graph_generation)
+        toolbar.addAction(graph_drawing)
         
         # create all pixmap images for node subtypes
         self.node_subtype_to_pixmap = defaultdict(OrderedDict)
