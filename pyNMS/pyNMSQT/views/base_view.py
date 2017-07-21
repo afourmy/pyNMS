@@ -45,8 +45,7 @@ class BaseView(QGraphicsView):
             dataStream = QDataStream(item_data, QIODevice.ReadOnly)
             pixmap, offset = QPixmap(), QPoint()
             dataStream >> pixmap >> offset
-
-            new_node = GraphicalNode(pixmap, self)
+            new_node = GraphicalNode(self)
             new_node.setPos(pos - offset)
 
     def mousePressEvent(self, event):
@@ -83,9 +82,17 @@ class BaseView(QGraphicsView):
             exitAction.triggered.connect(lambda: _)
             menu.addAction(exitAction)
             menu.exec_(event.globalPos())
-        
-
         super(BaseView, self).mouseReleaseEvent(event)
+        
+    def draw_objects(self, objects):
+        for obj in objects:
+            if obj.class_type == 'node' and not obj.gnode:
+                print(obj, type(obj))
+                GraphicalNode(self, obj)
+            if obj.class_type == 'link' and not obj.glink:
+                    GraphicalLink(self, obj)
+            
+        
 
    ##       for point in (start, end):
     #         text = self.scene.addSimpleText(
@@ -107,8 +114,27 @@ class BaseView(QGraphicsView):
                                 
 class GraphicalNode(QGraphicsPixmapItem):
     
-    def __init__(self, pixmap, view):
+    def __init__(self, view, node=None):
+        self.view = view
+        self.controller = view.controller
+        # if node is not defined, it means the node is created with the 
+        # drag & drop system, which implies that: 
+        # - the subtype is the value of creation_mode
+        # the node object does not yet exist: it must be created
+        if not node:
+            subtype = self.controller.creation_mode
+            self.node = self.view.network.nf(subtype=subtype)
+        else:
+            self.node = node
+        # we retrieve the pixmap based on the subtype to initialize a QGPI
+        pixmap = view.controller.node_subtype_to_pixmap['default'][self.node.subtype]
+        pixmap = pixmap.scaled(
+                        QSize(100, 100), 
+                        Qt.KeepAspectRatio,
+                        Qt.SmoothTransformation
+                        )
         super().__init__(pixmap)
+        self.node.gnode = self
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
         self.setOffset(
@@ -118,11 +144,10 @@ class GraphicalNode(QGraphicsPixmapItem):
                                )
                        )
         self.setZValue(3)
-        self.view = view
-        self.controller = view.controller
-        self.node = self.view.network.nf(subtype=self.controller.creation_mode)
         self.view.scene.addItem(self)
         self.setCursor(QCursor(Qt.PointingHandCursor))
+        # if node:
+        #     self.setPos(QPoint(0, 0))
         
     def mousePressEvent(self, event):
         selection_allowed = self.controller.mode == 'selection'
@@ -139,23 +164,27 @@ class GraphicalNode(QGraphicsPixmapItem):
         
 class GraphicalLink(QGraphicsLineItem):
     
-    def __init__(self, view):
+    def __init__(self, view, link=None):
         super(GraphicalLink, self).__init__()
         # source and destination graphic nodes
-        self.destination = view.end_node
-        self.source = view.start_node
+        if link:
+            self.link = link
+            self.source = link.source.gnode
+            self.destination = link.destination.gnode
+        else:
+            self.destination = view.end_node
+            self.source = view.start_node
+            self.link = view.network.lf(
+                                        subtype = view.controller.creation_mode,
+                                        source = self.source.node, 
+                                        destination = self.destination.node
+                                        )
         self.setZValue(2)
         self.update_position()
         view.scene.addItem(self)
-
-        self.link = view.network.lf(
-                                    source = self.source.node, 
-                                    destination = self.destination.node
-                                    )
         self.link.glink = self
         
     def update_position(self):
-        # # start / end positions of the link
         start_position = self.source.pos()
         end_position = self.destination.pos()
         self.setLine(QLineF(start_position, end_position))

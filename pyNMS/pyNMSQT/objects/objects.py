@@ -701,6 +701,7 @@ class Node(NDobject):
         # image of the node at all three layers: physical, logical and traffic
         self.image = {layer: None for layer in range(1, 5)}
         self.layer_line = {layer: None for layer in range(1, 5)}
+        self.gnode = None
         self.lid = None
         self.size = 8
         # site coordinates: coordinates of the node for each site it belongs to
@@ -1053,6 +1054,7 @@ class Link(NDobject):
         # self id and id of the corresponding label on the canvas
         self.line = None
         self.lid = None
+        self.glink = None
         # self.iid is the id of the interface labels, used to display
         # interfaces specific properties (ip addresses, names, etc) as well
         # as physical link asymmetric (directional) properties (capacity, flow, etc)

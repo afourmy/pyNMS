@@ -33,8 +33,7 @@ def update_coordinates(function):
 # window, or a persistent frame (the 5 persistent menu for instance)
 def update_paths(function):
     def wrapper(self, *args, **kwargs):
-        if not hasattr(self, 'controller'):
-            self.controller = list(args).pop()
+        self.controller = list(args).pop()
         self.project = self.controller.current_project
         self.view = self.project.current_view
         self.network_view = self.project.network_view
@@ -43,6 +42,7 @@ def update_paths(function):
         self.main_network = self.network_view.network
         self.site_network = self.site_view.network
         function(self, *args, **kwargs)
+        
     return wrapper
             
 # @defaultizer(**default arguments)

@@ -701,6 +701,7 @@ class Node(NDobject):
         # image of the node at all three layers: physical, logical and traffic
         self.image = {layer: None for layer in range(1, 5)}
         self.layer_line = {layer: None for layer in range(1, 5)}
+        self.gnode = None
         self.lid = None
         self.size = 8
         # site coordinates: coordinates of the node for each site it belongs to

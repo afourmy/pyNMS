@@ -32,8 +32,7 @@ class LinkCreationMenu(QGroupBox):
             if subtype in ('l2vc', 'l3vc'):
                 continue
             button = QPushButton(self)
-            # button.subtype = subtype
-            button.clicked.connect(lambda: self.create_link(subtype))
+            button.clicked.connect(lambda _, s=subtype: self.create_link(s))
             image_path = join(controller.path_icon, subtype + '.png')
             icon = QtGui.QIcon(image_path)
             button.setIcon(icon)

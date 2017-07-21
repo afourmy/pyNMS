@@ -158,20 +158,19 @@ class BaseNetwork(object):
         
     # 'nf' is the node factory. Creates or retrieves any type of nodes
     def nf(self, node_type='router', id=None, **kwargs):
-        if not id:
-            if 'name' not in kwargs:
-                name = node_type + str(self.cpt_node)
-                kwargs['name'] = name
-            else:
-                if kwargs['name'] in self.name_to_id:
-                    node = self.nodes[self.name_to_id[kwargs['name']]]
-                    node.update_properties(kwargs)
-                    return node
-            id = self.cpt_node
-            kwargs['id'] = id
-            self.nodes[id] = node_class[node_type](**kwargs)
-            self.name_to_id[kwargs['name']] = id
-            self.cpt_node += 1
+        if 'name' not in kwargs:
+            name = node_type + str(self.cpt_node)
+            kwargs['name'] = name
+        else:
+            if kwargs['name'] in self.name_to_id:
+                node = self.nodes[self.name_to_id[kwargs['name']]]
+                node.update_properties(kwargs)
+                return node
+        id = self.cpt_node
+        kwargs['id'] = id
+        self.nodes[id] = node_class[node_type](**kwargs)
+        self.name_to_id[kwargs['name']] = id
+        self.cpt_node += 1
         return self.nodes[id]
         
     # 'of' is the object factory: returns a link or a node from its name

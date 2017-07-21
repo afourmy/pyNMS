@@ -2,6 +2,7 @@ from collections import defaultdict, OrderedDict
 from objects.objects import *
 from os.path import abspath, join, pardir
 from main_menus import node_creation_menu, link_creation_menu
+from graph_generation.graph_generation import GraphGenerationWindow
 from project import Project
 from views import base_view
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -43,6 +44,9 @@ class Controller(QMainWindow):
         # a QMainWindow needs a central widget for the layout
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
+        
+        # permanent windows
+        self.graph_generation_window = GraphGenerationWindow(self)
         
         new_project = QAction('Add project', self)
         new_project.setStatusTip('Create a new project')
@@ -94,6 +98,12 @@ class Controller(QMainWindow):
         site_view.setShortcut('Ctrl+N')
         site_view.setStatusTip('Switch to site view')
         site_view.triggered.connect(lambda: self.switch_view('site'))
+        
+        graph_generation_icon = QIcon(join(self.path_icon, 'ring.png'))
+        graph_generation = QAction(graph_generation_icon, 'Graph generation', self)
+        graph_generation.setShortcut('Ctrl+G')
+        graph_generation.setStatusTip('Generate a graph')
+        graph_generation.triggered.connect(lambda: self.graph_generation_window.show())
 
         toolbar = self.addToolBar('')
         toolbar.resize(1500, 1500)
@@ -102,6 +112,8 @@ class Controller(QMainWindow):
         toolbar.addSeparator()
         toolbar.addAction(network_view)
         toolbar.addAction(site_view)
+        toolbar.addSeparator()
+        toolbar.addAction(graph_generation)
         
         # create all pixmap images for node subtypes
         self.node_subtype_to_pixmap = defaultdict(OrderedDict)
@@ -168,6 +180,9 @@ class Controller(QMainWindow):
         
     def switch_view(self, view_mode):
         self.current_project.switch_view(view_mode)
+        
+    def generate_graph(self):
+        self.current_project.generate_graph()
 
     def close(self):
         pass
