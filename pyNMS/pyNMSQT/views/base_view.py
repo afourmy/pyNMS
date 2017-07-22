@@ -18,12 +18,15 @@ class BaseView(QGraphicsView):
         self.setScene(self.scene)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setRenderHint(QPainter.Antialiasing)
+        self.selected_items = set()
+    
         
-        # call the selection function when the selection changes
-        self.scene.selectionChanged.connect(self.change_selection)
+    ## Useful functions
+    def is_node(self, item):
+        return isinstance(item, GraphicalNode)
         
-    def change_selection(self):
-        pass
+    def is_link(self, item):
+        return isinstance(item, GraphicalLink)
         
     ## Zoom system
     
@@ -49,9 +52,27 @@ class BaseView(QGraphicsView):
             new_node = GraphicalNode(self)
             new_node.setPos(pos - offset)
             
+    ## Object deletion
+    
+    def remove_objects(self, *items):
+        for item in items:
+            obj = item.object
+            self.scene.removeItem(item)
+            # remove it from all AS it belongs to
+            if hasattr(obj, 'AS'):
+                for AS in list(obj.AS):
+                    AS.management.remove_from_AS(obj)
+            # remove it from the scene and the network model
+            if self.is_node(item):
+                for link in self.network.remove_node(obj):
+                    self.remove_objects(link.glink)
+            else:
+                self.network.remove_link(obj)
+            
     ## Mouse bindings
 
     def mousePressEvent(self, event):
+        item = self.itemAt(event.pos())
         # activate rubberband for selection
         # by default, the rubberband is active for both clicks, we have to
         # deactivate it explicitly for the right-click
@@ -61,7 +82,7 @@ class BaseView(QGraphicsView):
             self.setDragMode(QGraphicsView.NoDrag)
         item = self.itemAt(event.pos())
         if self.controller.mode == 'creation':
-            if item.Qtype == 'node' and event.buttons() == Qt.LeftButton:
+            if self.is_node(item) and event.buttons() == Qt.LeftButton:
                 self.start_node = item
                 self.start_position = pos = self.mapToScene(event.pos())
                 self.temp_line = QGraphicsLineItem(QLineF(pos, pos))
@@ -74,15 +95,15 @@ class BaseView(QGraphicsView):
     def mouseReleaseEvent(self, event):
         item = self.itemAt(event.pos())
         if self.temp_line:
-            if item.Qtype == 'node':
+            if self.is_node(item):
                 self.end_node = item
                 GraphicalLink(self)
             self.scene.removeItem(self.temp_line)
             self.temp_line = None
-        # elif event.button() == Qt.RightButton:
-        #     # here you do not call super hence the selection won't be cleared
-        #     menu = BaseSelectionRightClickMenu(self.controller)
-        #     menu.exec_(event.globalPos())
+        elif event.button() == Qt.RightButton:
+            # here you do not call super hence the selection won't be cleared
+            menu = BaseSelectionRightClickMenu(self.controller)
+            menu.exec_(event.globalPos())
         super(BaseView, self).mouseReleaseEvent(event)
         
     def mouseMoveEvent(self, event):
@@ -95,8 +116,8 @@ class BaseView(QGraphicsView):
             self.cursor_pos = event.pos()
             x_value = self.horizontalScrollBar().value() + offset.x()
             y_value = self.verticalScrollBar().value() + offset.y()
-            self.verticalScrollBar().setValue(x_value)
-            self.horizontalScrollBar().setValue(y_value)
+            self.horizontalScrollBar().setValue(x_value)
+            self.verticalScrollBar().setValue(y_value)
         super(BaseView, self).mouseMoveEvent(event)
         
     ## Drawing functions
@@ -111,8 +132,7 @@ class BaseView(QGraphicsView):
     def random_placement(self):
         for node in self.network.nodes.values():
             x, y = randint(0, 1000), randint(0, 1000)
-            node.gnode.update_position((x, y))
-            
+            node.gnode.setPos(x, y)            
 
    ##       for point in (start, end):
     #         text = self.scene.addSimpleText(
@@ -122,8 +142,6 @@ class BaseView(QGraphicsView):
 
                                 
 class GraphicalNode(QGraphicsPixmapItem):
-    
-    Qtype = 'node'
     
     def __init__(self, view, node=None):
         self.view = view
@@ -137,15 +155,23 @@ class GraphicalNode(QGraphicsPixmapItem):
             self.node = self.view.network.nf(subtype=subtype)
         else:
             self.node = node
+        self.object = self.node
         # we retrieve the pixmap based on the subtype to initialize a QGPI
         pixmap = view.controller.node_subtype_to_pixmap['default'][self.node.subtype]
-        pixmap = pixmap.scaled(
-                        QSize(100, 100), 
-                        Qt.KeepAspectRatio,
-                        Qt.SmoothTransformation
-                        )
-        super().__init__(pixmap)
+        selection_pixmap = self.controller.node_subtype_to_pixmap['red'][self.node.subtype]
+        self.pixmap = pixmap.scaled(
+                                    QSize(100, 100), 
+                                    Qt.KeepAspectRatio,
+                                    Qt.SmoothTransformation
+                                    )
+        self.selection_pixmap = selection_pixmap.scaled(
+                                                        QSize(100, 100), 
+                                                        Qt.KeepAspectRatio,
+                                                        Qt.SmoothTransformation
+                                                        )
+        super().__init__(self.pixmap)
         self.node.gnode = self
+        self.setFlag(QGraphicsItem.ItemSendsScenePositionChanges, True)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
         self.setOffset(
@@ -157,12 +183,17 @@ class GraphicalNode(QGraphicsPixmapItem):
         self.setZValue(3)
         self.view.scene.addItem(self)
         self.setCursor(QCursor(Qt.PointingHandCursor))
-                
-    def update_position(self, position=None):
-        if position:
-            self.setPos(*position)
-        for link in self.view.network.attached_links(self.node):
-            link.glink.update_position()
+        
+    def itemChange(self, change, value):
+        if change == self.ItemSelectedHasChanged:
+            if self.isSelected():
+                self.setPixmap(self.selection_pixmap)
+            else:
+                self.setPixmap(self.pixmap)
+        if change == self.ItemScenePositionHasChanged:
+            for link in self.view.network.attached_links(self.node):
+                link.glink.update_position()
+        return QGraphicsPixmapItem.itemChange(self, change, value)
         
     def mousePressEvent(self, event):
         selection_allowed = self.controller.mode == 'selection'
@@ -176,20 +207,13 @@ class GraphicalNode(QGraphicsPixmapItem):
             menu.exec_(QCursor.pos())
         super(GraphicalNode, self).mousePressEvent(event)
         
-    def mouseMoveEvent(self, event):
-        for item in self.view.scene.selectedItems():
-            if isinstance(item, GraphicalNode):
-                item.update_position()
-        super(GraphicalNode, self).mouseMoveEvent(event)
                 
 class GraphicalLink(QGraphicsLineItem):
-    
-    Qtype = 'link'
     
     def __init__(self, view, link=None):
         super(GraphicalLink, self).__init__()
         self.controller = view.controller
-        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        # self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         # source and destination graphic nodes
         if link:
             self.link = link
@@ -203,6 +227,7 @@ class GraphicalLink(QGraphicsLineItem):
                                         source = self.source.node, 
                                         destination = self.destination.node
                                         )
+        self.object = self.link
         self.setZValue(2)
         self.update_position()
         view.scene.addItem(self)

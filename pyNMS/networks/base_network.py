@@ -216,6 +216,12 @@ class BaseNetwork(object):
         for dict_of_objects in self.pn.values():
             dict_of_objects.clear()
             
+    def remove_object(self, obj):
+        if obj.class_type == 'node':
+            self.remove_node(obj)
+        else:
+            self.remove_link(obj)
+            
     def remove_node(self, node):
         self.nodes.pop(self.name_to_id.pop(node.name))
         # retrieve adj links to delete them 

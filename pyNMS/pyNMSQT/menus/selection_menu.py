@@ -40,13 +40,13 @@ class BaseSelectionRightClickMenu(QMenu):
         super().__init__()
         
         # set containing all selected objects
-        so = set(self.view.scene.selectedItems())
-        self.selected_nodes = set(filter(lambda o: o.Qtype == 'node', so))
-        self.selected_links = set(filter(lambda o: o.Qtype == 'link', so))
+        self.so = set(self.view.scene.selectedItems())
+        self.selected_nodes = set(filter(self.view.is_node, self.so))
+        self.selected_links = set(filter(self.view.is_link, self.so))
         self.no_node = not self.selected_nodes
         self.no_link = not self.selected_links
         self.no_shape = True
-        self.one_object = len(so) == 1
+        self.one_object = len(self.so) == 1
         self.one_node = len(self.selected_nodes) == 1
         self.one_link = len(self.selected_links) == 1
         self.one_subtype = False
@@ -60,10 +60,10 @@ class BaseSelectionRightClickMenu(QMenu):
         
         if self.no_shape:
             simulate_failure = QAction('&Simulate failure', self)        
-            simulate_failure.triggered.connect(lambda: self.simulate_failure(*so))
+            simulate_failure.triggered.connect(lambda: self.simulate_failure(*self.so))
             self.addAction(simulate_failure)
             remove_failure = QAction('&Remove failure', self)        
-            remove_failure.triggered.connect(lambda: self.remove_failure(*so))
+            remove_failure.triggered.connect(lambda: self.remove_failure(*self.so))
             self.addAction(remove_failure)
             self.addSeparator()
             
@@ -98,14 +98,7 @@ class BaseSelectionRightClickMenu(QMenu):
         delete_objects.triggered.connect(self.delete_objects)
         self.addAction(delete_objects)
         self.addSeparator()
-    
-    # def empty_selection_and_destroy_menu(function):
-    #     def wrapper(self, *others):
-    #         function(self, *others)
-    #         self.view.unhighlight_all()
-    #         self.destroy()
-    #     return wrapper
-    
+        
     def change_property(self):
         pass
         # objects = set(objects)
@@ -114,9 +107,8 @@ class BaseSelectionRightClickMenu(QMenu):
     def align(self):
         AlignmentMenu(self.view, self.selected_nodes)
         
-    @empty_selection_and_destroy_menu
-    def delete_objects(self):
-        self.view.remove_objects(*self.all_so)
+    def delete_objects(self, _):
+        self.view.remove_objects(*self.so)
                 
     @empty_selection_and_destroy_menu
     def simulate_failure(self, *objects):
