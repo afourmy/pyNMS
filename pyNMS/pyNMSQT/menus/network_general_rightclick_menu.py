@@ -12,58 +12,40 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import tkinter as tk
+from PyQt5.QtWidgets import QMenu, QAction
 from graph_generation.multiple_objects import MultipleNodes
 from miscellaneous.decorators import update_paths
-from pythonic_tkinter.preconfigured_widgets import Menu
 
-class NetworkGeneralRightClickMenu(Menu):
+class NetworkGeneralRightClickMenu(QMenu):
     
-    @update_paths
+    @update_paths(True)
     def __init__(self, event, controller):
         super().__init__()
-
-        x, y = self.view.cvs.canvasx(event.x), self.view.cvs.canvasy(event.y)
-        
-        # change geographical projection
-        projection_menu = tk.Menu(self, tearoff=0)
-
-        projection_menu.add_command(
-                label = 'Linear projection', 
-                command= lambda: self.view.change_projection('linear')
-                )
-        projection_menu.add_command(
-                label = 'Mercator projection', 
-                command= lambda: self.view.change_projection('mercator')
-                )
-        projection_menu.add_command(
-                label = 'Spherical projection', 
-                command= lambda: self.view.change_projection('spherical')
-                )
-
-        self.add_cascade(label='Geographical projection', menu=projection_menu)
+        self.controller = controller
         
         # multiple nodes creation
-        self.add_command(label='Create multiple nodes', 
-                command=lambda: MultipleNodes(x, y, self.controller))
+        multiple_nodes = QAction('&Multiple nodes', self)        
+        multiple_nodes.triggered.connect(lambda: self.multiple_nodes(event))
+        self.addAction(multiple_nodes)
                 
         # remove all failures if there is at least one
         if self.network.failed_obj:
-            self.add_command(label='Remove all failures',
-                    command=lambda: self.remove_all_failures())
-            self.add_separator()
+            remove_failures = QAction('&Remove all failures', self)        
+            remove_failures.triggered.connect(self.remove_all_failures)
+            self.addAction(remove_failures)
+            self.addSeparator()
                    
         # find networks
-        self.add_command(label='Refresh', 
-                command=lambda: self.refresh())
-                
-        # make the menu appear    
-        self.tk_popup(event.x_root, event.y_root)
+        refresh = QAction('&Refresh', self)        
+        refresh.triggered.connect(self.refresh)
+        self.addAction(refresh)
+        
+    def multiple_nodes(self, event):
+        self.window = MultipleNodes(event.globalPos().x(), event.globalPos().y(), self.controller)
+        self.window.show()
 
     def remove_all_failures(self):
         self.view.remove_failures()
-        self.destroy()
         
     def refresh(self):
         self.project.refresh()
-        self.destroy()

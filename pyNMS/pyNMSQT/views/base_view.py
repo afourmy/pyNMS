@@ -1,5 +1,7 @@
 from random import randint
 from menus.selection_menu import BaseSelectionRightClickMenu
+from menus.network_general_rightclick_menu import NetworkGeneralRightClickMenu
+
 from miscellaneous.decorators import *
 from objects.objects import *
 from PyQt5.QtCore import *
@@ -18,8 +20,6 @@ class BaseView(QGraphicsView):
         self.setScene(self.scene)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setRenderHint(QPainter.Antialiasing)
-        self.selected_items = set()
-    
         
     ## Useful functions
     def is_node(self, item):
@@ -98,12 +98,16 @@ class BaseView(QGraphicsView):
             if self.is_node(item):
                 self.end_node = item
                 GraphicalLink(self)
+                # we made the start node unselectable and unmovable to enable
+                # the creation of links: we revert this change at link creation
+                self.start_node.setFlag(QGraphicsItem.ItemIsSelectable, True)
+                self.start_node.setFlag(QGraphicsItem.ItemIsMovable, True)
             self.scene.removeItem(self.temp_line)
             self.temp_line = None
-        elif event.button() == Qt.RightButton:
-            # here you do not call super hence the selection won't be cleared
-            menu = BaseSelectionRightClickMenu(self.controller)
-            menu.exec_(event.globalPos())
+        if event.button() == Qt.RightButton:
+            if not self.is_node(item) and not self.is_link(item): 
+                menu = NetworkGeneralRightClickMenu(event, self.controller)
+                menu.exec_(event.globalPos())
         super(BaseView, self).mouseReleaseEvent(event)
         
     def mouseMoveEvent(self, event):
