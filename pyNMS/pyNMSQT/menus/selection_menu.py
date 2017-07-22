@@ -38,100 +38,84 @@ class BaseSelectionRightClickMenu(QMenu):
     @update_paths(True)
     def __init__(self, controller):
         super().__init__()
-        so = set(self.view.scene.selectedItems())
-        exitAction = QAction('&Exit', self)        
-        exitAction.setShortcut('Ctrl+Q')
-        exitAction.triggered.connect(lambda: _)
-        self.addAction(exitAction)
         
+        # set containing all selected objects
+        so = set(self.view.scene.selectedItems())
         self.selected_nodes = set(filter(lambda o: o.Qtype == 'node', so))
         self.selected_links = set(filter(lambda o: o.Qtype == 'link', so))
         self.no_node = not self.selected_nodes
         self.no_link = not self.selected_links
+        self.no_shape = True
+        self.one_object = len(so) == 1
+        self.one_node = len(self.selected_nodes) == 1
+        self.one_link = len(self.selected_links) == 1
+        self.one_subtype = False
+               
+        # exactly one object: property window 
+        if self.no_shape and self.one_object == 1:
+            properties = QAction('&Properties', self)        
+            properties.triggered.connect(lambda: lambda: self.show_object_properties())
+            self.addAction(properties)
+            self.addSeparator()
+        
+        if self.no_shape:
+            simulate_failure = QAction('&Simulate failure', self)        
+            simulate_failure.triggered.connect(lambda: self.simulate_failure(*so))
+            self.addAction(simulate_failure)
+            remove_failure = QAction('&Remove failure', self)        
+            remove_failure.triggered.connect(lambda: self.remove_failure(*so))
+            self.addAction(remove_failure)
+            self.addSeparator()
+            
+        # only nodes: 
+        if self.no_shape and self.no_link:
+            
+            # alignment submenu
+            align_nodes = QAction('&Align nodes', self)        
+            align_nodes.triggered.connect(self.align)
+            self.addAction(align_nodes)
+            self.addSeparator()
+            
+            # map submenu
+            # map_menu = QAction('&Map menu', self)        
+            # map_menu.triggered.connect(MapMenu(self.view, self.selected_nodes))
+            # self.addAction(map_menu)
+            # self.addSeparator()
+            
+            # multiple links creation menu
+            multiple_links = QAction('&Create multiple links', self)        
+            multiple_links.triggered.connect(lambda: self.multiple_links(self.view))
+            self.addAction(multiple_links)
+            self.addSeparator()
 
-        print(self.selected_nodes, self.selected_links, self.no_node)
-        # 
-        # # useful booleans
-        # self.no_node = not self.view.so['node']
-        # self.no_link = not self.view.so['link']
-        # self.no_shape = not self.view.so['shape']
-        # self.one_node = len(self.view.so['node']) == 1
-        # self.one_link = len(self.view.so['link']) == 1
-        #                     
-        # # exactly one object: property window 
-        # if self.no_shape and len(self.all_so) == 1:
-        #     self.add_command(label='Properties', 
-        #                 command=lambda: self.show_object_properties())
-        #     self.add_separator()
-        # 
-        # if self.no_shape:
-        #     self.add_command(label='Simulate failure', 
-        #                     command=lambda: self.simulate_failure(*self.all_so))
-        #     self.add_command(label='Remove failure', 
-        #                     command=lambda: self.remove_failure(*self.all_so))
-        #     
-        #     self.add_separator()
-        #     
-        # # only nodes: 
-        # if self.no_shape and self.no_link:
-        #     
-        #     # alignment submenu
-        #     self.add_cascade(label='Align nodes', 
-        #                     menu=AlignmentMenu(self.view, self.view.so['node']))
-        #     self.add_separator()
-        #     
-        #     # map submenu
-        #     self.add_cascade(label='Map menu', 
-        #                     menu=MapMenu(self.view, self.view.so['node']))
-        #     self.add_separator()
-        #     
-        #     # multiple links creation menu
-        #     self.add_command(label='Create multiple links', 
-        #                         command=lambda: self.multiple_links(self.view))
-        #     self.add_separator()
-        #     
-        #     # only one subtype of nodes
-        #     if self.view.so['node']:
-        #         for subtype in node_subtype:
-        #             ftr = lambda o, st=subtype: o.subtype == st
-        #             if self.view.so['node'] == set(filter(ftr, self.view.so['node'])):
-        #                 self.add_cascade(label='Change property', 
-        #                             command= lambda: self.change_property(
-        #                                                     self.view.so['node'],
-        #                                                     subtype
-        #                                                     )
-        #                                 )
-        #                 self.add_separator()
-        #     
-        # # only one subtype of link: property changer
-        # if self.no_node and self.no_shape:
-        #     for subtype in link_subtype:
-        #         ftr = lambda o, st=subtype: o.subtype == st
-        #         if self.view.so['link'] == set(filter(ftr, self.view.so['link'])):
-        #             self.add_cascade(label='Change property', 
-        #                         command= lambda: self.change_property(
-        #                                                 self.view.so['link'],
-        #                                                 subtype
-        #                                                 )
-        #                             )
-        #             self.add_separator()
-        # 
-        # # we allow to delete if the menu was generated from the view
-        # # (and not the treeview which view cannot be easily updated)
-        # if from_view:
-        #     # at least one object: deletion or create AS
-        #     self.add_command(label='Delete', 
-        #                         command=lambda: self.remove_objects())
+        change_property = QAction('&Change property', self)        
+        change_property.triggered.connect(self.change_property)
+        self.addAction(change_property)
+        self.addSeparator()
+        
+        # at least one object: deletion and property changer
+        delete_objects = QAction('&Delete', self)        
+        delete_objects.triggered.connect(self.delete_objects)
+        self.addAction(delete_objects)
+        self.addSeparator()
     
-    def empty_selection_and_destroy_menu(function):
-        def wrapper(self, *others):
-            function(self, *others)
-            self.view.unhighlight_all()
-            self.destroy()
-        return wrapper
+    # def empty_selection_and_destroy_menu(function):
+    #     def wrapper(self, *others):
+    #         function(self, *others)
+    #         self.view.unhighlight_all()
+    #         self.destroy()
+    #     return wrapper
+    
+    def change_property(self):
+        pass
+        # objects = set(objects)
+        # PropertyChanger(objects, subtype, self.controller)
+        
+    def align(self):
+        AlignmentMenu(self.view, self.selected_nodes)
         
     @empty_selection_and_destroy_menu
-    def remove_objects(self):
+    def delete_objects(self):
         self.view.remove_objects(*self.all_so)
                 
     @empty_selection_and_destroy_menu
@@ -146,11 +130,6 @@ class BaseSelectionRightClickMenu(QMenu):
     def show_object_properties(self):
         so ,= self.all_so
         ObjectManagementWindow(so, self.controller)
-        
-    @empty_selection_and_destroy_menu
-    def change_property(self, objects, subtype):
-        objects = set(objects)
-        PropertyChanger(objects, subtype, self.controller)
         
     @empty_selection_and_destroy_menu
     def multiple_links(self, view):

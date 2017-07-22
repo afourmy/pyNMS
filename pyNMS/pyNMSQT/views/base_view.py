@@ -25,10 +25,14 @@ class BaseView(QGraphicsView):
     def change_selection(self):
         pass
         
+    ## Zoom system
+    
     def wheelEvent(self, event):
         factor = 1.25 if event.angleDelta().y() > 0 else 0.8
         self.scale(factor, factor)
         
+    ## Drag & Drop system
+    
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat('application/x-dnditemdata'):
             event.acceptProposedAction()
@@ -44,6 +48,8 @@ class BaseView(QGraphicsView):
             dataStream >> pixmap >> offset
             new_node = GraphicalNode(self)
             new_node.setPos(pos - offset)
+            
+    ## Mouse bindings
 
     def mousePressEvent(self, event):
         # activate rubberband for selection
@@ -55,18 +61,20 @@ class BaseView(QGraphicsView):
             self.setDragMode(QGraphicsView.NoDrag)
         item = self.itemAt(event.pos())
         if self.controller.mode == 'creation':
-            if isinstance(item, GraphicalNode) and event.buttons() == Qt.LeftButton:
+            if item.Qtype == 'node' and event.buttons() == Qt.LeftButton:
                 self.start_node = item
                 self.start_position = pos = self.mapToScene(event.pos())
                 self.temp_line = QGraphicsLineItem(QLineF(pos, pos))
                 self.temp_line.setZValue(2)
                 self.scene.addItem(self.temp_line)
+        if event.button() == Qt.RightButton:
+            self.cursor_pos = event.pos()
         super(BaseView, self).mousePressEvent(event)
             
     def mouseReleaseEvent(self, event):
         item = self.itemAt(event.pos())
         if self.temp_line:
-            if isinstance(item, GraphicalNode):
+            if item.Qtype == 'node':
                 self.end_node = item
                 GraphicalLink(self)
             self.scene.removeItem(self.temp_line)
@@ -76,6 +84,22 @@ class BaseView(QGraphicsView):
         #     menu = BaseSelectionRightClickMenu(self.controller)
         #     menu.exec_(event.globalPos())
         super(BaseView, self).mouseReleaseEvent(event)
+        
+    def mouseMoveEvent(self, event):
+        position = self.mapToScene(event.pos())
+        if event.buttons() == Qt.LeftButton and self.temp_line:  
+            self.temp_line.setLine(QLineF(self.start_position, position))
+        # sliding the scrollbar with the right-click button
+        if event.buttons() == Qt.RightButton:
+            offset = self.cursor_pos - event.pos()
+            self.cursor_pos = event.pos()
+            x_value = self.horizontalScrollBar().value() + offset.x()
+            y_value = self.verticalScrollBar().value() + offset.y()
+            self.verticalScrollBar().setValue(x_value)
+            self.horizontalScrollBar().setValue(y_value)
+        super(BaseView, self).mouseMoveEvent(event)
+        
+    ## Drawing functions
         
     def draw_objects(self, objects):
         for obj in objects:
@@ -95,17 +119,7 @@ class BaseView(QGraphicsView):
     #             '(%d, %d)' % (point.x(), point.y()))
     #         text.setBrush(Qt.red)
     #         text.setPos(point)
-    
 
-
-        #     self.setCursor(Qt.ArrowCursor)
-
-            
-    def mouseMoveEvent(self, event):
-        position = self.mapToScene(event.pos())
-        if event.buttons() == Qt.LeftButton and self.temp_line:  
-            self.temp_line.setLine(QLineF(self.start_position, position))
-        super(BaseView, self).mouseMoveEvent(event)
                                 
 class GraphicalNode(QGraphicsPixmapItem):
     
@@ -143,7 +157,7 @@ class GraphicalNode(QGraphicsPixmapItem):
         self.setZValue(3)
         self.view.scene.addItem(self)
         self.setCursor(QCursor(Qt.PointingHandCursor))
-        
+                
     def update_position(self, position=None):
         if position:
             self.setPos(*position)
@@ -167,12 +181,7 @@ class GraphicalNode(QGraphicsPixmapItem):
             if isinstance(item, GraphicalNode):
                 item.update_position()
         super(GraphicalNode, self).mouseMoveEvent(event)
-        
-    def mouseReleaseEvent(self, event):
-
-        super(GraphicalNode, self).mouseReleaseEvent(event)
-
-        
+                
 class GraphicalLink(QGraphicsLineItem):
     
     Qtype = 'link'
@@ -202,7 +211,6 @@ class GraphicalLink(QGraphicsLineItem):
     def mousePressEvent(self, event):
         selection_allowed = self.controller.mode == 'selection'
         self.setFlag(QGraphicsItem.ItemIsSelectable, selection_allowed)
-        self.setFlag(QGraphicsItem.ItemIsMovable, selection_allowed)
         # ideally, the menu should be triggered from the mouseReleaseEvent
         # binding, but for QT-related issues, the right-click filter does not
         # work in mouseReleaseEvent

@@ -50,6 +50,8 @@ class Controller(QMainWindow):
         self.graph_generation_window = GraphGenerationWindow(self)
         self.graph_drawing_window = GraphDrawingWindow(self)
         
+        ## Main menu
+        
         new_project = QAction('Add project', self)
         new_project.setStatusTip('Create a new project')
         new_project.triggered.connect(self.close)
@@ -81,6 +83,8 @@ class Controller(QMainWindow):
         main_menu.addSeparator()
         main_menu.addAction(quit_pynms)
 
+        ## Status bar
+        
         self.statusBar()
         
         selection_icon = QIcon(join(self.path_icon, 'motion.png'))
@@ -143,6 +147,7 @@ class Controller(QMainWindow):
         
         ## notebook containing all menus
         notebook_menu = QTabWidget(self)
+        notebook_menu.setFixedSize(350, 800)
         
         # first tab: the creation menu
         creation_menu = QWidget(notebook_menu)

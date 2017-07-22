@@ -86,7 +86,7 @@ class Map():
     def __init__(self, view):
         self.view = view
         self.proj = 'spherical'
-        self.ratio, self.offset = 1/10000, (0, 0)
+        self.ratio, self.offset = 1/1000, (0, 0)
         
         # brush for water and lands
         water_brush = QBrush(QColor(64, 164, 223))
@@ -131,7 +131,7 @@ class Map():
                 coords = land.replace('(', '').replace(')', '').split(',')
                 for lon, lat in zip(coords[0::2], coords[1::2]):
                     px, py = self.to_canvas_coordinates(lon, lat)
-                    if px == 1e+26:
+                    if px > 1e+10:
                         continue
                     qt_polygon.append(QtCore.QPointF(px, py))
                 yield QtWidgets.QGraphicsPolygonItem(qt_polygon)
