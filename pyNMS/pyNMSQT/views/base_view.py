@@ -19,6 +19,8 @@ class BaseView(QGraphicsView):
         self.setScene(self.scene)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setRenderHint(QPainter.Antialiasing)
+        # temporary line displayed at link creation
+        self.temp_line = None
         
     ## Useful functions
     def is_node(self, item):
@@ -172,8 +174,7 @@ class BaseView(QGraphicsView):
             neighbors = set(map(lambda n: n.gnode, self.network.neighbors(nodeA.node, 'plink')))
             for nodeB in nodes | neighbors:
                 if nodeA != nodeB:
-                    xB, yB = nodeB.pos().x(), nodeB.pos().y()
-                    xA, yA = nodeA.pos().x(), nodeA.pos().y()
+                    xB, yB, xA, yA = nodeB.get_pos(), nodeA.get_pos()
                     dx, dy = xB - xA, yB - yA
                     distance = self.distance(dx, dy)
                     F_hooke = (0,)*2
@@ -186,7 +187,8 @@ class BaseView(QGraphicsView):
             nodeA.vy = max(-100, min(100, 0.5 * nodeA.vy + 0.2 * Fy))
     
         for node in nodes:
-            node.setPos(node.pos().x() + node.vx*sf, node.pos().y() + node.vy*sf)
+            x, y = node.get_pos()
+            node.setPos(x + node.vx*sf, y + node.vy*sf)
             
     ## 2) Fruchterman-Reingold algorithms
     
@@ -199,42 +201,52 @@ class BaseView(QGraphicsView):
     def fruchterman_reingold_layout(self, nodes, limit, opd=0):
         t = 1
         if not opd:
-            opd = sqrt(1200*700/len(self.network.plinks))
-        opd /= 3
-        for nA in nodes:
-            nA.vx, nA.vy = 0, 0
-            for nB in nodes:
-                if nA != nB:
-                    deltax = nA.x - nB.x
-                    deltay = nA.y - nB.y
-                    dist = self.distance(deltax, deltay)
-                    if dist:
-                        nA.vx += deltax * opd**2 / dist**2
-                        nA.vy += deltay * opd**2 / dist**2
+            opd = sqrt(500*500/len(self.network.nodes))
+        for nodeA in nodes:
+            nodeA.vx, nodeA.vy = 0, 0
+            for nodeB in nodes:
+                if nodeA != nodeB:
+                    xA, yA = nodeA.get_pos()
+                    xB, yB = nodeB.get_pos()
+                    dx, dy = xA - xB, yA - yB
+                    distance = self.distance(dx, dy)
+                    if distance:
+                        nodeA.vx += (dx*opd**2)/distance**2
+                        nodeA.vy += (dy*opd**2)/distance**2
                     
-        for l in self.network.plinks.values():
-            deltax = l.source.x - l.destination.x
-            deltay = l.source.y - l.destination.y
-            dist = self.distance(deltax, deltay)
-            if dist:
-                l.source.vx -= dist * deltax / opd
-                l.source.vy -= dist * deltay / opd
-                l.destination.vx += dist * deltax / opd
-                l.destination.vy += dist * deltay / opd
+        for link in self.network.plinks.values():
+            s_x, s_y = link.source.gnode.get_pos()
+            d_x, d_y = link.destination.gnode.get_pos()
+            dx, dy = s_x - d_x, s_y - d_y
+            distance = self.distance(dx, dy)
+            if distance:
+                link.source.gnode.vx -= distance*dx/opd
+                link.source.gnode.vy -= distance*dy/opd
+                link.destination.gnode.vx += distance*dx/opd
+                link.destination.gnode.vy += distance*dy/opd
             
-        for n in nodes:
-            d = self.distance(n.vx, n.vy)
-            n.x += n.vx / sqrt(d)
-            n.y += n.vy / sqrt(d)
-            if limit:
-                n.x = min(800, max(0, n.x))
-                n.y = min(800, max(0, n.y))
+        for node in nodes:
+            distance = self.distance(node.vx, node.vy)
+            x, y = node.get_pos()
+            node.setPos(x + node.vx/sqrt(distance), y + node.vy/sqrt(distance))
+            # if limit:
+            #     node.x = min(800, max(0, node.x))
+            #     node.y = min(800, max(0, node.y))
             
-        t *= 0.95     
+        t *= 0.95
+        
+    def igraph_test(self):
+        pass
+        # import igraph
+        # g = igraph.Graph.Tree(127, 2)
+        # b = igraph.BoundingBox(0, 0, 1000, 1000)
+        # layout = g.layout("kamada_kawai")
+        # for row in layout:
+        #     print(row)
         
     def timerEvent(self, event):
         parameters = self.controller.spring_layout_parameters_window.get_values()
-        self.spring_layout(self.selected_nodes, *parameters)
+        self.fruchterman_reingold_layout(self.selected_nodes, False)
         # itemsMoved = False
 
         # if not itemsMoved:
@@ -292,6 +304,9 @@ class GraphicalNode(QGraphicsPixmapItem):
         self.setCursor(QCursor(Qt.PointingHandCursor))
         # node speed for graph drawing algorithms
         self.vx = self.vy = 0
+        
+    def get_pos(self):
+        return self.pos().x(), self.pos().y()
         
     def itemChange(self, change, value):
         if change == self.ItemSelectedHasChanged:
