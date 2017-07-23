@@ -1,7 +1,8 @@
 from random import randint
+from math import sqrt
 from menus.selection_menu import BaseSelectionRightClickMenu
 from menus.network_general_rightclick_menu import NetworkGeneralRightClickMenu
-
+from miscellaneous.graph_drawing import SpringLayoutParametersWindow
 from miscellaneous.decorators import *
 from objects.objects import *
 from PyQt5.QtCore import *
@@ -15,8 +16,6 @@ class BaseView(QGraphicsView):
         self.name = name
         self.controller = controller
         self.scene = QGraphicsScene(self)
-        self.temp_line = None
-        self.start_pos = None
         self.setScene(self.scene)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setRenderHint(QPainter.Antialiasing)
@@ -155,6 +154,9 @@ class BaseView(QGraphicsView):
     # - cf is the Coulomb factor (repulsive force factor)
     # - sf is the speed factor
     
+    def distance(self, p, q): 
+        return sqrt(p*p + q*q)
+    
     def coulomb_force(self, dx, dy, dist, cf):
         c = dist and cf/dist**3
         return (-c*dx, -c*dy)
@@ -167,22 +169,24 @@ class BaseView(QGraphicsView):
         nodes = set(nodes)
         for nodeA in nodes:
             Fx = Fy = 0
-            for nodeB in nodes | v_nodes | set(self.network.neighbors(nodeA, 'plink')):
+            neighbors = set(map(lambda n: n.gnode, self.network.neighbors(nodeA.node, 'plink')))
+            for nodeB in nodes | neighbors:
                 if nodeA != nodeB:
-                    dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
-                    dist = self.distance(dx, dy)
+                    xB, yB = nodeB.pos().x(), nodeB.pos().y()
+                    xA, yA = nodeA.pos().x(), nodeA.pos().y()
+                    dx, dy = xB - xA, yB - yA
+                    distance = self.distance(dx, dy)
                     F_hooke = (0,)*2
-                    if self.network.is_connected(nodeA, nodeB, 'plink'):
-                        F_hooke = self.hooke_force(dx, dy, dist, L0, k)
-                    F_coulomb = self.coulomb_force(dx, dy, dist, cf)
-                    Fx += F_hooke[0] + F_coulomb[0] * nodeB.virtual_factor
-                    Fy += F_hooke[1] + F_coulomb[1] * nodeB.virtual_factor
+                    if self.network.is_connected(nodeA.node, nodeB.node, 'plink'):
+                        F_hooke = self.hooke_force(dx, dy, distance, L0, k)
+                    F_coulomb = self.coulomb_force(dx, dy, distance, cf)
+                    Fx += F_hooke[0] + F_coulomb[0]
+                    Fy += F_hooke[1] + F_coulomb[1]
             nodeA.vx = max(-100, min(100, 0.5 * nodeA.vx + 0.2 * Fx))
             nodeA.vy = max(-100, min(100, 0.5 * nodeA.vy + 0.2 * Fy))
     
         for node in nodes:
-            node.x += round(node.vx * sf)
-            node.y += round(node.vy * sf)
+            node.setPos(node.pos().x() + node.vx*sf, node.pos().y() + node.vy*sf)
             
     ## 2) Fruchterman-Reingold algorithms
     
@@ -229,13 +233,13 @@ class BaseView(QGraphicsView):
         t *= 0.95     
         
     def timerEvent(self, event):
-        print('test')
+        parameters = self.controller.spring_layout_parameters_window.get_values()
+        self.spring_layout(self.selected_nodes, *parameters)
+        # itemsMoved = False
 
-        itemsMoved = False
-
-        if not itemsMoved:
-            self.killTimer(self.timerId)
-            self.timerId = 0    
+        # if not itemsMoved:
+        #     self.killTimer(self.timerId)
+        #     self.timerId = 0    
 
    ##       for point in (start, end):
     #         text = self.scene.addSimpleText(
@@ -286,6 +290,8 @@ class GraphicalNode(QGraphicsPixmapItem):
         self.setZValue(3)
         self.view.scene.addItem(self)
         self.setCursor(QCursor(Qt.PointingHandCursor))
+        # node speed for graph drawing algorithms
+        self.vx = self.vy = 0
         
     def itemChange(self, change, value):
         if change == self.ItemSelectedHasChanged:

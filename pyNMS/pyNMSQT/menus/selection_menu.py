@@ -105,7 +105,9 @@ class BaseSelectionRightClickMenu(QMenu):
         self.addSeparator()
         
     def timer(self):
-        self.timerId = self.view.startTimer(1000 / 25)
+        self.view.random_placement()
+        self.view.selected_nodes = self.selected_nodes
+        self.timerId = self.view.startTimer(1000/25)
         
     def change_property(self):
         pass

@@ -75,6 +75,20 @@ class GeographicalView(BaseView):
         for node in nodes:
             node.x, node.y = node.logical_x, node.logical_y
         self.move_nodes(nodes)
+        
+    def haversine_distance(self, s, d):
+        ''' Earth distance between two nodes '''
+        coord = (s.longitude, s.latitude, d.longitude, d.latitude)
+        # decimal degrees to radians conversion
+        lon_s, lat_s, lon_d, lat_d = map(radians, coord)
+    
+        delta_lon = lon_d - lon_s 
+        delta_lat = lat_d - lat_s 
+        a = sin(delta_lat/2)**2 + cos(lat_s)*cos(lat_d)*sin(delta_lon/2)**2
+        c = 2*asin(sqrt(a)) 
+        # radius of earth (km)
+        r = 6371 
+        return c*r
                 
 class Map():
 

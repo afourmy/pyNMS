@@ -3,7 +3,7 @@ from objects.objects import *
 from os.path import abspath, join, pardir
 from main_menus import node_creation_menu, link_creation_menu
 from graph_generation.graph_generation import GraphGenerationWindow
-from miscellaneous.graph_drawing import GraphDrawingWindow
+from miscellaneous.graph_drawing import *
 from project import Project
 from views import base_view
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -49,8 +49,10 @@ class Controller(QMainWindow):
         # permanent windows
         self.graph_generation_window = GraphGenerationWindow(self)
         self.graph_drawing_window = GraphDrawingWindow(self)
+        self.spring_layout_parameters_window = SpringLayoutParametersWindow(self)
         
-        ## Main menu
+        ## Menu bar
+        menu_bar = self.menuBar()
         
         new_project = QAction('Add project', self)
         new_project.setStatusTip('Create a new project')
@@ -73,7 +75,6 @@ class Controller(QMainWindow):
         quit_pynms.setStatusTip('Close pyNMS')
         quit_pynms.triggered.connect(self.close)
 
-        menu_bar = self.menuBar()
         main_menu = menu_bar.addMenu('File')
         main_menu.addAction(new_project)
         main_menu.addAction(delete_project)
@@ -82,6 +83,13 @@ class Controller(QMainWindow):
         main_menu.addAction(export_project)
         main_menu.addSeparator()
         main_menu.addAction(quit_pynms)
+        
+        spring_parameters = QAction('Spring layout parameters', self)
+        spring_parameters.setStatusTip('Spring layout parameters')
+        spring_parameters.triggered.connect(lambda: self.spring_layout_parameters_window.show())
+        
+        drawing_menu = menu_bar.addMenu('Drawing parameters')
+        drawing_menu.addAction(spring_parameters)
 
         ## Status bar
         

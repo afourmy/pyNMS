@@ -14,49 +14,38 @@ from PyQt5.QtGui import (
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox)
 
-# class GraphGenerationWindow(QWidget):
-#     
-#     def __init__(self, controller):
-#         super(GraphGenerationWindow, self).__init__()
-#         self.controller = controller
-#         
-#         grid = QGridLayout()
-#         grid.addWidget(self.classic_graph_generation(), 0, 0)
-#         grid.addWidget(self.complex_graph_generation(), 1, 0)
-#         self.setLayout(grid)
-# 
-#         self.setWindowTitle('Graph generation')
-#         self.resize(480, 320)
-# 
-#     def classic_graph_generation(self):
-#         classic_graph_groupbox = QGroupBox('Classic graph generation')
-#         layout = QGridLayout(classic_graph_groupbox)
-#         for index, graph_type in enumerate(self.classic_graph):
-#             button = QPushButton(self)
-#             button.clicked.connect(lambda _, g=graph_type: self.graph_dimension(g))
-#             image_path = join(self.controller.path_icon, graph_type + '.png')
-#             icon = QIcon(image_path)
-#             button.setIcon(icon)
-#             button.setIconSize(QSize(50, 50))
-#             layout.addWidget(button, index // 2, index % 2, 1, 1)
-#         return classic_graph_groupbox
-# 
-#     def complex_graph_generation(self):
-#         complex_graph_groupbox = QGroupBox('Complex graph generation')
-#         layout = QGridLayout(complex_graph_groupbox)
-#         for index, graph_type in enumerate(self.complex_graph):
-#             button = QPushButton(self)
-#             button.clicked.connect(lambda _, g=graph_type: self.graph_dimension(g))
-#             image_path = join(self.controller.path_icon, graph_type + '.png')
-#             icon = QIcon(image_path)
-#             button.setIcon(icon)
-#             button.setIconSize(QSize(50, 50))
-#             layout.addWidget(button, index // 2, index % 2, 1, 1)
-#         return complex_graph_groupbox
-#             
-#     def graph_dimension(self, graph_type):
-#         self.window = GraphDimensionWindow(graph_type, self.controller)
-#         self.window.show()
+class SpringLayoutParametersWindow(QWidget):
+    
+    spring_parameters = OrderedDict([
+    ('Coulomb factor', 10000),
+    ('Spring stiffness', 0.5),
+    ('Speed factor', 3),
+    ('Equilibrium length', 8)
+    ])
+    
+    def __init__(self, controller):
+        super().__init__()
+        self.controller = controller
+        self.setWindowTitle('Spring layout parameters')
+        self.resize(480, 320)
+        
+        grid = QGridLayout()
+        spring_groupbox = QGroupBox('Spring layout parameters')
+        layout = QGridLayout(spring_groupbox)
+        self.line_edits = []
+        for index, (parameter, value) in enumerate(self.spring_parameters.items()):
+            label = QLabel(parameter)
+            line_edit = QLineEdit()
+            line_edit.setText(str(value))
+            line_edit.setMaximumWidth(120)
+            self.line_edits.append(line_edit)
+            layout.addWidget(label, index, 0, 1, 1)
+            layout.addWidget(line_edit, index, 1, 1, 1)
+        grid.addWidget(spring_groupbox, 0, 0, 1, 1)
+        self.setLayout(grid)
+        
+    def get_values(self):
+        return (float(line_edit.text()) for line_edit in self.line_edits)
             
 class GraphDrawingWindow(QWidget):
         
@@ -79,7 +68,6 @@ class GraphDrawingWindow(QWidget):
         cancel_button.setText('Cancel')
         
         layout.addWidget(self.drawing_algorithm_list, 0, 0, 1, 2)
-            
         layout.addWidget(confirmation_button, 3, 0, 1, 1)
         layout.addWidget(cancel_button, 3, 1, 1, 1)
         self.setLayout(layout)
