@@ -98,14 +98,13 @@ class Map():
         earth = QtWidgets.QGraphicsEllipseItem(cx - R, cy - R, 2*R, 2*R)
         earth.setZValue(0)
         earth.setBrush(water_brush)
+        self.view.scene.addItem(earth)
         
         self.path_to_shapefile = 'C:/Users/minto/Desktop/pyGISS/shapefiles/World countries.shp'
         for polygon in self.create_polygon():
             polygon.setBrush(land_brush)
             polygon.setZValue(1)
             self.view.scene.addItem(polygon)
-            
-        self.view.scene.addItem(earth)
         
     def to_geographical_coordinates(self, x, y):
         px, py = (x - self.offset[0])/self.ratio, (self.offset[1] - y)/self.ratio

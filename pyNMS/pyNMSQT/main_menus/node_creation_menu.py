@@ -24,7 +24,6 @@ class NodeCreationMenu(QGroupBox):
         super(NodeCreationMenu, self).__init__(controller)
         self.controller = controller
         self.setTitle('Node creation')
-
         self.setMinimumSize(300, 300)
         self.setAcceptDrops(True)
                 

@@ -24,10 +24,9 @@ import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
 import ip_networks.bgp_table as ip_bgpt
 import graph_generation.multiple_objects as mobj
-from pythonic_tkinter.preconfigured_widgets import Menu
 from miscellaneous import site_operations
-from .alignment_menu import AlignmentMenu
-from .map_menu import MapMenu
+# from .alignment_menu import AlignmentMenu
+# from .map_menu import MapMenu
 from objects.object_management_window import ObjectManagementWindow, PropertyChanger
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
@@ -54,7 +53,7 @@ class BaseSelectionRightClickMenu(QMenu):
         # exactly one object: property window 
         if self.no_shape and self.one_object == 1:
             properties = QAction('&Properties', self)        
-            properties.triggered.connect(lambda: lambda: self.show_object_properties())
+            properties.triggered.connect(lambda: self.show_object_properties())
             self.addAction(properties)
             self.addSeparator()
         
@@ -99,6 +98,15 @@ class BaseSelectionRightClickMenu(QMenu):
         self.addAction(delete_objects)
         self.addSeparator()
         
+        # at least one object: deletion and property changer
+        timer = QAction('&Timer', self)        
+        timer.triggered.connect(self.timer)
+        self.addAction(timer)
+        self.addSeparator()
+        
+    def timer(self):
+        self.timerId = self.view.startTimer(1000 / 25)
+        
     def change_property(self):
         pass
         # objects = set(objects)
@@ -110,20 +118,17 @@ class BaseSelectionRightClickMenu(QMenu):
     def delete_objects(self, _):
         self.view.remove_objects(*self.so)
                 
-    @empty_selection_and_destroy_menu
     def simulate_failure(self, *objects):
         self.view.simulate_failure(*objects)
         
-    @empty_selection_and_destroy_menu
     def remove_failure(self, *objects):
         self.view.remove_failure(*objects)
             
-    @empty_selection_and_destroy_menu
     def show_object_properties(self):
-        so ,= self.all_so
-        ObjectManagementWindow(so, self.controller)
+        obj ,= self.so
+        self.omw = ObjectManagementWindow(obj.object, self.controller)
+        self.omw.show()
         
-    @empty_selection_and_destroy_menu
     def multiple_links(self, view):
         mobj.MultipleLinks(set(self.view.so['node']), self.controller)
                 

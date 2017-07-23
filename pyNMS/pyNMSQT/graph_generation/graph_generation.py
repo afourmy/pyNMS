@@ -35,7 +35,7 @@ class GraphGenerationWindow(QWidget):
         classic_graph_groupbox = QGroupBox('Classic graph generation')
         layout = QGridLayout(classic_graph_groupbox)
         for index, graph_type in enumerate(self.classic_graph):
-            button = QPushButton(self)
+            button = QPushButton()
             button.clicked.connect(lambda _, g=graph_type: self.graph_dimension(g))
             image_path = join(self.controller.path_icon, graph_type + '.png')
             icon = QIcon(image_path)
@@ -48,7 +48,7 @@ class GraphGenerationWindow(QWidget):
         complex_graph_groupbox = QGroupBox('Complex graph generation')
         layout = QGridLayout(complex_graph_groupbox)
         for index, graph_type in enumerate(self.complex_graph):
-            button = QPushButton(self)
+            button = QPushButton()
             button.clicked.connect(lambda _, g=graph_type: self.graph_dimension(g))
             image_path = join(self.controller.path_icon, graph_type + '.png')
             icon = QIcon(image_path)
@@ -71,7 +71,7 @@ class GraphDimensionWindow(QWidget):
         
         layout = QGridLayout()
         self.node_subtype_list = QComboBox(self)
-        self.node_subtype_list.addItems(map(obj_to_name.get, node_subtype))
+        self.node_subtype_list.addItems(node_name_to_obj)
         
         number_of_nodes = QLabel('Nodes')
         self.nodes_edit = QLineEdit()
@@ -88,7 +88,7 @@ class GraphDimensionWindow(QWidget):
         confirmation_button.clicked.connect(self.confirm)
         
         # cancel button
-        cancel_button = QPushButton(self)
+        cancel_button = QPushButton()
         cancel_button.setText('Cancel')
         
         layout.addWidget(self.node_subtype_list, 0, 0, 1, 2)
@@ -123,9 +123,5 @@ class GraphDimensionWindow(QWidget):
             'square-tiling': self.network.square_tiling,
             'hypercube': self.network.hypercube,
             }[self.graph_type]
-            print(self.graph_type, nodes)
             self.view.draw_objects(function(nodes, subtype))
-            print('ok')
-
-        
-
+        self.close()

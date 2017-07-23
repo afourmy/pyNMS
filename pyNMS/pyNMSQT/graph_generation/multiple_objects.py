@@ -19,11 +19,10 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
 
 class MultipleNodes(QWidget):  
 
-    @update_paths(True)
     def __init__(self, x, y, controller):
         super().__init__()
-        self.x = x
-        self.y = y
+        self.controller = controller
+        self.x, self.y = x, y
         self.setWindowTitle('Multiple nodes')
         
         nb_nodes = QLabel('Number of nodes')
@@ -32,16 +31,16 @@ class MultipleNodes(QWidget):
         
         # list of node type
         node_type = QLabel('Type of node')
-        self.node_subtype_list = QComboBox(self)
+        self.node_subtype_list = QComboBox()
         self.node_subtype_list.addItems(node_name_to_obj)
     
         # confirmation button
-        confirmation_button = QPushButton(self)
+        confirmation_button = QPushButton()
         confirmation_button.setText('OK')
         confirmation_button.clicked.connect(self.create_nodes)
         
         # cancel button
-        cancel_button = QPushButton(self)
+        cancel_button = QPushButton()
         cancel_button.setText('Cancel')
         
         # position in the grid
@@ -54,13 +53,9 @@ class MultipleNodes(QWidget):
         layout.addWidget(cancel_button, 2, 1, 1, 1)
         self.setLayout(layout)
         
-    def create_nodes(self):
-        pass
-        # self.view.multiple_nodes(
-        #                        int(self.entry_nodes.text), 
-        #                        name_to_obj[self.node_type_list.text],
-        #                        self.x,
-        #                        self.y
-        #                        )
-        # self.view.draw_all(random=False)
-        # self.destroy()
+    @update_paths(False)
+    def create_nodes(self, _):
+        nb_nodes = int(self.nb_nodes_edit.text())
+        subtype = node_name_to_obj[self.node_subtype_list.currentText()]
+        self.view.draw_objects(self.network.multiple_nodes(nb_nodes, subtype))
+        self.close()

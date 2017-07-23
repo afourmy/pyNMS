@@ -41,7 +41,7 @@ class NetworkGeneralRightClickMenu(QMenu):
         self.addAction(refresh)
         
     def multiple_nodes(self, event):
-        self.window = MultipleNodes(event.globalPos().x(), event.globalPos().y(), self.controller)
+        self.window = MultipleNodes(event.x(), event.y(), self.controller)
         self.window.show()
 
     def remove_all_failures(self):

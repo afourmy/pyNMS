@@ -14,7 +14,7 @@
 
 from .geographical_view import GeographicalView
 from networks import main_network
-from menus.network_selection_rightclick_menu import NetworkSelectionRightClickMenu
+# from menus.network_selection_rightclick_menu import NetworkSelectionRightClickMenu
 from menus.network_general_rightclick_menu import NetworkGeneralRightClickMenu
 
 class NetworkView(GeographicalView):
