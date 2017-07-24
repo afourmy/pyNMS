@@ -119,11 +119,10 @@ class Controller(QMainWindow):
         graph_generation.setStatusTip('Generate a graph')
         graph_generation.triggered.connect(lambda: self.graph_generation_window.show())
         
-        graph_drawing_icon = QIcon(join(self.path_icon, 'draw.png'))
-        graph_drawing = QAction(graph_drawing_icon, 'Graph drawing', self)
-        graph_drawing.setShortcut('Ctrl+D')
-        graph_drawing.setStatusTip('Use a graph drawing algorithm')
-        graph_drawing.triggered.connect(lambda: self.graph_drawing_window.show())
+        stop_drawing_icon = QIcon(join(self.path_icon, 'stop.png'))
+        stop_drawing = QAction(stop_drawing_icon, 'Stop drawing', self)
+        stop_drawing.setStatusTip('Stop the graph drawing algorithm')
+        stop_drawing.triggered.connect(lambda: self.stop_drawing())
 
         toolbar = self.addToolBar('')
         toolbar.resize(1500, 1500)
@@ -135,6 +134,8 @@ class Controller(QMainWindow):
         toolbar.addSeparator()
         toolbar.addAction(graph_generation)
         toolbar.addAction(graph_drawing)
+        toolbar.addAction(stop_drawing)
+        toolbar.addSeparator()
         
         # create all pixmap images for node subtypes
         self.node_subtype_to_pixmap = defaultdict(OrderedDict)
@@ -196,6 +197,9 @@ class Controller(QMainWindow):
         self.notebook_project.addTab(new_project, name)
         self.dict_project[name] = new_project
         return new_project
+        
+    def stop_drawing(self):
+        self.current_project.current_view.stop_timer()
         
     def switch_to_selection_mode(self):
         self.mode = 'selection'

@@ -23,11 +23,15 @@ class BaseView(QGraphicsView):
         self.temp_line = None
         
     ## Useful functions
+    
     def is_node(self, item):
         return isinstance(item, GraphicalNode)
         
     def is_link(self, item):
         return isinstance(item, GraphicalLink)
+        
+    def all_gnodes(self):
+        return map(lambda n: n.gnode, self.network.nodes.values())
         
     ## Zoom system
     
@@ -142,11 +146,18 @@ class BaseView(QGraphicsView):
                 GraphicalLink(self, obj)
                 
     def random_placement(self):
-        for node in self.network.nodes.values():
+        if self.scene.selectedItems():
+            selection = filter(self.is_node, self.scene.selectedItems())
+        else: 
+            selection = self.all_gnodes()
+        for gnode in selection:
             x, y = randint(0, 1000), randint(0, 1000)
-            node.gnode.setPos(x, y)   
+            gnode.setPos(x, y)   
             
     ## Force-directed layout algorithms
+    
+    def distance(self, p, q): 
+        return sqrt(p*p + q*q)
     
     ## 1) Eades algorithm 
     
@@ -156,15 +167,12 @@ class BaseView(QGraphicsView):
     # - cf is the Coulomb factor (repulsive force factor)
     # - sf is the speed factor
     
-    def distance(self, p, q): 
-        return sqrt(p*p + q*q)
-    
-    def coulomb_force(self, dx, dy, dist, cf):
-        c = dist and cf/dist**3
+    def coulomb_force(self, dx, dy, dististance, cf):
+        c = distance and cf/distance**3
         return (-c*dx, -c*dy)
         
-    def hooke_force(self, dx, dy, dist, L0, k):
-        const = dist and k*(dist - L0)/dist
+    def hooke_force(self, dx, dy, distance, L0, k):
+        const = distance and k*(distance - L0)/distance
         return (const*dx, const*dy)
             
     def spring_layout(self, nodes, cf, k, sf, L0, v_nodes=set()):
@@ -177,7 +185,7 @@ class BaseView(QGraphicsView):
                     xB, yB, xA, yA = nodeB.get_pos(), nodeA.get_pos()
                     dx, dy = xB - xA, yB - yA
                     distance = self.distance(dx, dy)
-                    F_hooke = (0,)*2
+                    # F_hooke = (0,)*2
                     if self.network.is_connected(nodeA.node, nodeB.node, 'plink'):
                         F_hooke = self.hooke_force(dx, dy, distance, L0, k)
                     F_coulomb = self.coulomb_force(dx, dy, distance, cf)
@@ -201,7 +209,10 @@ class BaseView(QGraphicsView):
     def fruchterman_reingold_layout(self, nodes, limit, opd=0):
         t = 1
         if not opd:
-            opd = sqrt(500*500/len(self.network.nodes))
+            try:
+                opd = sqrt(500*500/len(self.network.nodes))
+            except ZeroDivisionError:
+                return
         for nodeA in nodes:
             nodeA.vx, nodeA.vy = 0, 0
             for nodeB in nodes:
@@ -237,6 +248,7 @@ class BaseView(QGraphicsView):
         
     def igraph_test(self):
         pass
+        #TODO later: networkx + igraph drawing algorithms
         # import igraph
         # g = igraph.Graph.Tree(127, 2)
         # b = igraph.BoundingBox(0, 0, 1000, 1000)
@@ -247,11 +259,9 @@ class BaseView(QGraphicsView):
     def timerEvent(self, event):
         parameters = self.controller.spring_layout_parameters_window.get_values()
         self.fruchterman_reingold_layout(self.selected_nodes, False)
-        # itemsMoved = False
 
-        # if not itemsMoved:
-        #     self.killTimer(self.timerId)
-        #     self.timerId = 0    
+    def stop_timer(self):
+        self.killTimer(self.timer) 
 
    ##       for point in (start, end):
     #         text = self.scene.addSimpleText(
