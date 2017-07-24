@@ -55,6 +55,7 @@ class GraphDrawingWindow(QWidget):
         self.setWindowTitle('Graph drawing algorithms')
         
         layout = QGridLayout()
+        
         self.drawing_algorithm_list = QComboBox(self)
         self.drawing_algorithm_list.addItem('Random drawing')
         

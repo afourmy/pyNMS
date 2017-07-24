@@ -33,6 +33,12 @@ class BaseView(QGraphicsView):
     def all_gnodes(self):
         return map(lambda n: n.gnode, self.network.nodes.values())
         
+    def selected_nodes(self):
+        return filter(self.is_node, self.scene.selectedItems())
+        
+    def selected_links(self):
+        return filter(self.is_link, self.scene.selectedItems())
+        
     ## Zoom system
     
     def wheelEvent(self, event):
@@ -145,12 +151,8 @@ class BaseView(QGraphicsView):
             if obj.class_type == 'link' and not obj.glink:
                 GraphicalLink(self, obj)
                 
-    def random_placement(self):
-        if self.scene.selectedItems():
-            selection = filter(self.is_node, self.scene.selectedItems())
-        else: 
-            selection = self.all_gnodes()
-        for gnode in selection:
+    def random_layout(self):
+        for gnode in self.node_selection:
             x, y = randint(0, 1000), randint(0, 1000)
             gnode.setPos(x, y)   
             
@@ -206,16 +208,16 @@ class BaseView(QGraphicsView):
     def fr(self, d, k):
         return -(k**2)/d
         
-    def fruchterman_reingold_layout(self, nodes, limit, opd=0):
+    def fruchterman_reingold_layout(self, limit=False, opd=0):
         t = 1
         if not opd:
             try:
-                opd = sqrt(500*500/len(self.network.nodes))
+                opd = sqrt(500*500/len(self.node_selection))
             except ZeroDivisionError:
                 return
-        for nodeA in nodes:
+        for nodeA in self.node_selection:
             nodeA.vx, nodeA.vy = 0, 0
-            for nodeB in nodes:
+            for nodeB in self.node_selection:
                 if nodeA != nodeB:
                     xA, yA = nodeA.get_pos()
                     xB, yB = nodeB.get_pos()
@@ -236,7 +238,7 @@ class BaseView(QGraphicsView):
                 link.destination.gnode.vx += distance*dx/opd
                 link.destination.gnode.vy += distance*dy/opd
             
-        for node in nodes:
+        for node in self.node_selection:
             distance = self.distance(node.vx, node.vy)
             x, y = node.get_pos()
             node.setPos(x + node.vx/sqrt(distance), y + node.vy/sqrt(distance))
@@ -257,8 +259,14 @@ class BaseView(QGraphicsView):
         #     print(row)
         
     def timerEvent(self, event):
+        print(self.drawing_algorithm)
         parameters = self.controller.spring_layout_parameters_window.get_values()
-        self.fruchterman_reingold_layout(self.selected_nodes, False)
+        {
+        'Random drawing': self.random_layout,
+        'Spring-based layout': self.spring_layout,
+        'Fruchterman-Reingold layout': self.fruchterman_reingold_layout
+        }[self.drawing_algorithm]()
+        # self.fruchterman_reingold_layout(False)
 
     def stop_timer(self):
         self.killTimer(self.timer) 

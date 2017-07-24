@@ -38,10 +38,11 @@ class BaseSelectionRightClickMenu(QMenu):
     def __init__(self, controller):
         super().__init__()
         
-        # set containing all selected objects
+        # set containing all selected objects: we convert generators into sets
+        # because to know if they are empty or not to build the menu
         self.so = set(self.view.scene.selectedItems())
-        self.selected_nodes = set(filter(self.view.is_node, self.so))
-        self.selected_links = set(filter(self.view.is_link, self.so))
+        self.selected_nodes = set(self.view.selected_nodes())
+        self.selected_links = set(self.view.selected_links())
         self.no_node = not self.selected_nodes
         self.no_link = not self.selected_links
         self.no_shape = True
@@ -98,16 +99,25 @@ class BaseSelectionRightClickMenu(QMenu):
         self.addAction(delete_objects)
         self.addSeparator()
         
-        # at least one object: deletion and property changer
-        timer = QAction('&Timer', self)        
-        timer.triggered.connect(self.timer)
-        self.addAction(timer)
-        self.addSeparator()
+        drawing_action = self.addAction("Graph drawing algorithms")
         
-    def timer(self):
-        self.view.random_placement()
-        self.view.selected_nodes = self.selected_nodes
-        self.view.timer = self.view.startTimer(1)
+        drawing_submenu = QMenu("Graph drawing", self)
+        for drawing in (
+                        'Random drawing', 
+                        'Spring-based layout', 
+                        'Fruchterman-Reingold layout'
+                        ): 
+            action = QAction(drawing, self)        
+            action.triggered.connect(lambda _, d=drawing: self.graph_drawing(d))
+            drawing_submenu.addAction(action)
+        drawing_action.setMenu(drawing_submenu)
+        
+    def graph_drawing(self, drawing):
+        self.view.node_selection = self.selected_nodes
+        self.view.random_layout()
+        if drawing != 'Random drawing':
+            self.view.drawing_algorithm = drawing
+            self.view.timer = self.view.startTimer(1)
         
     def change_property(self):
         pass

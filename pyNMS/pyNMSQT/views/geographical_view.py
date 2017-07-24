@@ -93,32 +93,26 @@ class GeographicalView(BaseView):
 class Map():
 
     projections = {
-    'mercator': Proj(init="epsg:3395"),
-    'spherical': Proj('+proj=ortho +lat_0=47 +lon_0=28')
+    'mercator': Proj(init='epsg:3395'),
+    'spherical': Proj('+proj=ortho +lat_0=47 +lon_0=28'),
+    'wgs84': Proj(init='epsg:3857'),
+    '3035': Proj("+init=EPSG:3035"),
+    '3947': Proj("+init=EPSG:3947"),
     }
     
     def __init__(self, view):
         self.view = view
         self.proj = 'spherical'
         self.ratio, self.offset = 1/1000, (0, 0)
+        self.shapefile = join(self.view.controller.path_shapefiles, 'World countries.shp')
+        self.polygons = []
         
         # brush for water and lands
-        water_brush = QBrush(QColor(64, 164, 223))
-        land_brush = QBrush(QColor(52, 165, 111))
+        self.water_brush = QBrush(QColor(64, 164, 223))
+        self.land_brush = QBrush(QColor(52, 165, 111))
         
-        # draw the planet
-        cx, cy = self.to_canvas_coordinates(28, 47)
-        R = 6371000*self.ratio
-        earth = QtWidgets.QGraphicsEllipseItem(cx - R, cy - R, 2*R, 2*R)
-        earth.setZValue(0)
-        earth.setBrush(water_brush)
-        self.view.scene.addItem(earth)
-        
-        self.path_to_shapefile = 'C:/Users/minto/Desktop/pyGISS/shapefiles/World countries.shp'
-        for polygon in self.create_polygon():
-            polygon.setBrush(land_brush)
-            polygon.setZValue(1)
-            self.view.scene.addItem(polygon)
+        # draw the map 
+        self.draw_map()
         
     def to_geographical_coordinates(self, x, y):
         px, py = (x - self.offset[0])/self.ratio, (self.offset[1] - y)/self.ratio
@@ -127,9 +121,22 @@ class Map():
     def to_canvas_coordinates(self, longitude, latitude):
         px, py = self.projections[self.proj](longitude, latitude)
         return px*self.ratio + self.offset[0], -py*self.ratio + self.offset[1]
-
-    def create_polygon(self):
-        sf = shapefile.Reader(self.path_to_shapefile)       
+                
+    def draw_water(self):
+        if self.proj == 'spherical':
+            # draw the planet
+            cx, cy = self.to_canvas_coordinates(28, 47)
+            R = 6371000*self.ratio
+            earth_water = QtWidgets.QGraphicsEllipseItem(cx - R, cy - R, 2*R, 2*R)
+            earth_water.setZValue(0)
+            earth_water.setBrush(self.water_brush)
+            self.polygons.append(earth_water)
+            self.view.scene.addItem(earth_water)
+        else:
+            pass
+            
+    def draw_polygons(self):
+        sf = shapefile.Reader(self.shapefile)       
         polygons = sf.shapes() 
         for polygon in polygons:
             # convert shapefile geometries into shapely geometries
@@ -148,3 +155,21 @@ class Map():
                         continue
                     qt_polygon.append(QtCore.QPointF(px, py))
                 yield QtWidgets.QGraphicsPolygonItem(qt_polygon)
+                
+    def hide_map(self):
+        for polygon in self.polygons:
+            self.view.scene.removeItem(polygon)
+        
+    def delete_map(self):
+        self.hide_map()
+        self.polygons.clear()
+            
+    def draw_map(self):
+        self.delete_map()
+        self.draw_water()
+        for polygon in self.draw_polygons():
+            polygon.setBrush(self.land_brush)
+            polygon.setZValue(1)
+            self.polygons.append(polygon)
+            self.view.scene.addItem(polygon)
+            

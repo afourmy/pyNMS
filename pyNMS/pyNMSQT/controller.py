@@ -3,6 +3,7 @@ from objects.objects import *
 from os.path import abspath, join, pardir
 from main_menus import node_creation_menu, link_creation_menu
 from graph_generation.graph_generation import GraphGenerationWindow
+from gis.gis_parameter import GISParameterWindow
 from miscellaneous.graph_drawing import *
 from project import Project
 from views import base_view
@@ -50,6 +51,7 @@ class Controller(QMainWindow):
         self.graph_generation_window = GraphGenerationWindow(self)
         self.graph_drawing_window = GraphDrawingWindow(self)
         self.spring_layout_parameters_window = SpringLayoutParametersWindow(self)
+        self.gis_parameter_window = GISParameterWindow(self)
         
         ## Menu bar
         menu_bar = self.menuBar()
@@ -90,6 +92,23 @@ class Controller(QMainWindow):
         
         drawing_menu = menu_bar.addMenu('Drawing parameters')
         drawing_menu.addAction(spring_parameters)
+        
+        show_hide_map = QAction('Show / Hide', self)
+        show_hide_map.setStatusTip('Show / Hide map')
+        show_hide_map.triggered.connect(self.show_hide_map)
+        
+        delete_map = QAction('Delete the map', self)
+        delete_map.setStatusTip('Delete the map')
+        delete_map.triggered.connect(self.show_hide_map)
+        
+        GIS_parameters = QAction('GIS parameters', self)
+        GIS_parameters.setStatusTip('GIS parameters')
+        GIS_parameters.triggered.connect(lambda: self.gis_parameter_window.show())
+        
+        gis_menu = menu_bar.addMenu('GIS')
+        gis_menu.addAction(show_hide_map)
+        gis_menu.addAction(delete_map)
+        gis_menu.addAction(GIS_parameters)
 
         ## Status bar
         
@@ -123,6 +142,11 @@ class Controller(QMainWindow):
         stop_drawing = QAction(stop_drawing_icon, 'Stop drawing', self)
         stop_drawing.setStatusTip('Stop the graph drawing algorithm')
         stop_drawing.triggered.connect(lambda: self.stop_drawing())
+        
+        gis_parameter_icon = QIcon(join(self.path_icon, 'gis.png'))
+        gis_parameter = QAction(gis_parameter_icon, 'GIS parameters', self)
+        gis_parameter.setStatusTip('GIS parameters')
+        gis_parameter.triggered.connect(lambda: self.stop_drawing())
 
         toolbar = self.addToolBar('')
         toolbar.resize(1500, 1500)
@@ -133,7 +157,6 @@ class Controller(QMainWindow):
         toolbar.addAction(site_view)
         toolbar.addSeparator()
         toolbar.addAction(graph_generation)
-        toolbar.addAction(graph_drawing)
         toolbar.addAction(stop_drawing)
         toolbar.addSeparator()
         
@@ -218,3 +241,6 @@ class Controller(QMainWindow):
         
     def import_project(self):
         pass
+        
+    def show_hide_map(self):
+        self.current_project.current_view.world_map.hide_map()
