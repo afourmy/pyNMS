@@ -27,7 +27,7 @@ class GISParameterWindow(QWidget):
         layout = QGridLayout()
         
         # choose the projection and change it
-        choose_projection = QLabel('Choose a projection')
+        choose_projection = QLabel('Projection')
         self.projection_list = QComboBox(self)
         self.projection_list.addItems(Map.projections)
         
@@ -43,16 +43,17 @@ class GISParameterWindow(QWidget):
         draw_map_button.clicked.connect(self.redraw_map)
         
         # position in the grid
-        layout.addWidget(choose_projection, 0, 1, 1, 1)
-        layout.addWidget(self.projection_list, 0, 0, 1, 1)
+        layout.addWidget(choose_projection, 0, 0, 1, 1)
+        layout.addWidget(self.projection_list, 0, 1, 1, 1)
         layout.addWidget(ratio, 1, 0, 1, 1)
         layout.addWidget(self.ratio_edit, 1, 1, 1, 1)
-        layout.addWidget(draw_map_button, 2, 1, 1, 2)
+        layout.addWidget(draw_map_button, 2, 0, 1, 2)
         self.setLayout(layout)
         
     @update_paths(False)
     def redraw_map(self, _):
+        self.view.world_map.ratio = float(self.ratio_edit.text())
         self.view.world_map.proj = self.projection_list.currentText()
-        self.view.world_map.draw_map()
+        self.view.world_map.redraw_map()
     
         

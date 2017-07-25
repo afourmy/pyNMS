@@ -259,7 +259,6 @@ class BaseView(QGraphicsView):
         #     print(row)
         
     def timerEvent(self, event):
-        print(self.drawing_algorithm)
         parameters = self.controller.spring_layout_parameters_window.get_values()
         {
         'Random drawing': self.random_layout,

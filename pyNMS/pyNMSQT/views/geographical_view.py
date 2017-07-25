@@ -13,8 +13,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import warnings
+from collections import OrderedDict
 from os.path import join
-from tkinter import filedialog
 from .base_view import BaseView
 from math import *
 from miscellaneous.decorators import update_coordinates, overrider
@@ -92,27 +92,28 @@ class GeographicalView(BaseView):
                 
 class Map():
 
-    projections = {
-    'mercator': Proj(init='epsg:3395'),
-    'spherical': Proj('+proj=ortho +lat_0=47 +lon_0=28'),
-    'wgs84': Proj(init='epsg:3857'),
-    '3035': Proj("+init=EPSG:3035"),
-    '3947': Proj("+init=EPSG:3947"),
-    }
+    projections = OrderedDict([
+    ('mercator', Proj(init='epsg:3395')),
+    ('spherical', Proj('+proj=ortho +lat_0=47 +lon_0=28')),
+    ('wgs84', Proj(init='epsg:3857')),
+    ('3035', Proj("+init=EPSG:3035")),
+    ('3947', Proj("+init=EPSG:3947"))
+    ])
     
     def __init__(self, view):
         self.view = view
         self.proj = 'spherical'
         self.ratio, self.offset = 1/1000, (0, 0)
         self.shapefile = join(self.view.controller.path_shapefiles, 'World countries.shp')
-        self.polygons = []
+        self.display = True
         
         # brush for water and lands
         self.water_brush = QBrush(QColor(64, 164, 223))
         self.land_brush = QBrush(QColor(52, 165, 111))
         
         # draw the map 
-        self.draw_map()
+        self.polygons = self.view.scene.createItemGroup(self.draw_polygons())
+        self.draw_water()
         
     def to_geographical_coordinates(self, x, y):
         px, py = (x - self.offset[0])/self.ratio, (self.offset[1] - y)/self.ratio
@@ -130,8 +131,8 @@ class Map():
             earth_water = QtWidgets.QGraphicsEllipseItem(cx - R, cy - R, 2*R, 2*R)
             earth_water.setZValue(0)
             earth_water.setBrush(self.water_brush)
-            self.polygons.append(earth_water)
-            self.view.scene.addItem(earth_water)
+            self.polygons.addToGroup(earth_water)
+            # self.view.scene.addToGroup(earth_water)
         else:
             pass
             
@@ -154,22 +155,19 @@ class Map():
                     if px > 1e+10:
                         continue
                     qt_polygon.append(QtCore.QPointF(px, py))
-                yield QtWidgets.QGraphicsPolygonItem(qt_polygon)
+                polygon_item = QtWidgets.QGraphicsPolygonItem(qt_polygon)
+                polygon_item.setBrush(self.land_brush)
+                polygon_item.setZValue(1)
+                yield polygon_item
                 
-    def hide_map(self):
-        for polygon in self.polygons:
-            self.view.scene.removeItem(polygon)
+    def show_hide_map(self):
+        self.display = not self.display
+        self.polygons.show() if self.display else self.polygons.hide()
         
     def delete_map(self):
-        self.hide_map()
-        self.polygons.clear()
+        self.view.scene.removeItem(self.polygons)
             
-    def draw_map(self):
+    def redraw_map(self):
         self.delete_map()
+        self.polygons = self.view.scene.createItemGroup(self.draw_polygons())
         self.draw_water()
-        for polygon in self.draw_polygons():
-            polygon.setBrush(self.land_brush)
-            polygon.setZValue(1)
-            self.polygons.append(polygon)
-            self.view.scene.addItem(polygon)
-            

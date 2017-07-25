@@ -99,7 +99,7 @@ class Controller(QMainWindow):
         
         delete_map = QAction('Delete the map', self)
         delete_map.setStatusTip('Delete the map')
-        delete_map.triggered.connect(self.show_hide_map)
+        delete_map.triggered.connect(self.delete_map)
         
         GIS_parameters = QAction('GIS parameters', self)
         GIS_parameters.setStatusTip('GIS parameters')
@@ -243,4 +243,7 @@ class Controller(QMainWindow):
         pass
         
     def show_hide_map(self):
-        self.current_project.current_view.world_map.hide_map()
+        self.current_project.current_view.world_map.show_hide_map()
+        
+    def delete_map(self):
+        self.current_project.current_view.world_map.delete_map()
