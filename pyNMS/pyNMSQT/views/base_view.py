@@ -123,7 +123,7 @@ class BaseView(QGraphicsView):
             self.temp_line = None
         if event.button() == Qt.RightButton and self.trigger_menu:
             if not self.is_node(item) and not self.is_link(item): 
-                menu = NetworkGeneralMenu(self.controller)
+                menu = NetworkGeneralMenu(event, self.controller)
                 menu.exec_(event.globalPos())
         super(BaseView, self).mouseReleaseEvent(event)
         
@@ -154,7 +154,26 @@ class BaseView(QGraphicsView):
     def random_layout(self):
         for gnode in self.node_selection:
             x, y = randint(0, 1000), randint(0, 1000)
-            gnode.setPos(x, y)   
+            gnode.setPos(x, y)  
+            
+    ## Alignment and distribution functions
+    
+    def align(self, nodes, horizontal=True):
+        # alignment can be either horizontal (h is True) or vertical
+        minimum = min(node.y if horizontal else node.x for node in nodes)
+        for node in nodes:
+            setattr(node, 'y'*horizontal or 'x', minimum)
+            
+    def distribute(self, nodes, horizontal=True):
+        # uniformly distribute the nodes between the minimum and
+        # the maximum lontitude/latitude of the selection
+        minimum = min(node.x if horizontal else node.y for node in nodes)
+        maximum = max(node.x if horizontal else node.y for node in nodes)
+        # we'll use a sorted list to keep the same order after distribution
+        nodes = sorted(nodes, key=lambda n: getattr(n, 'x'*horizontal or 'y'))
+        offset = (maximum - minimum)/(len(nodes) - 1)
+        for idx, node in enumerate(nodes):
+            setattr(node, 'x'*horizontal or 'y', minimum + idx*offset)
             
     ## Force-directed layout algorithms
     
@@ -322,8 +341,21 @@ class GraphicalNode(QGraphicsPixmapItem):
         # node speed for graph drawing algorithms
         self.vx = self.vy = 0
         
-    def get_pos(self):
-        return self.pos().x(), self.pos().y()
+    @property
+    def x(self):
+        return super().x()
+        
+    @property
+    def y(self):
+        return super().y()
+        
+    @x.setter
+    def x(self, x):
+        self.setPos(x, self.y)
+        
+    @y.setter
+    def y(self, y):
+        self.setPos(self.x, y)
         
     def itemChange(self, change, value):
         if change == self.ItemSelectedHasChanged:

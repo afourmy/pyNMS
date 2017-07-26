@@ -18,12 +18,13 @@ from graph_generation.multiple_objects import MultipleNodes
                                 
 class GeneralMenu(BaseMenu):
     
-    def __init__(self, controller):
+    def __init__(self, event, controller):
         super().__init__(controller)
+        self.event = event
     
         # multiple nodes creation
         multiple_nodes = QAction('&Multiple nodes', self)        
-        multiple_nodes.triggered.connect(lambda: self.multiple_nodes(event))
+        multiple_nodes.triggered.connect(self.multiple_nodes)
         self.addAction(multiple_nodes)
         
         # remove all failures if there is at least one
@@ -34,6 +35,6 @@ class GeneralMenu(BaseMenu):
             self.addSeparator()
     
     def multiple_nodes(self, event):
-        self.window = MultipleNodes(event.x(), event.y(), self.controller)
+        self.window = MultipleNodes(self.event.x(), self.event.y(), self.controller)
         self.window.show()
                         

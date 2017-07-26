@@ -26,8 +26,6 @@ import ip_networks.routing_table as ip_rt
 import ip_networks.bgp_table as ip_bgpt
 import graph_generation.multiple_objects as mobj
 from miscellaneous import site_operations
-# from .alignment_menu import AlignmentMenu
-# from .map_menu import MapMenu
 from objects.object_management_window import ObjectManagementWindow, PropertyChanger
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
@@ -46,6 +44,7 @@ class NetworkSelectionMenu(SelectionMenu):
             self.addAction(remove_failure)
             self.addSeparator()
 
+        self.addAction(self.align_action)
         self.addAction(self.drawing_action)
                 
     def simulate_failure(self, *objects):

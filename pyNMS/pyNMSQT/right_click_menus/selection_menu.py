@@ -42,18 +42,18 @@ class SelectionMenu(BaseMenu):
         
         # only nodes: 
         if self.no_shape and self.no_link:
-            
-            # alignment submenu
-            align_nodes = QAction('&Align nodes', self)        
-            align_nodes.triggered.connect(self.align)
-            self.addAction(align_nodes)
-            self.addSeparator()
-            
-            # map submenu
-            # map_menu = QAction('&Map menu', self)        
-            # map_menu.triggered.connect(MapMenu(self.view, self.selected_nodes))
-            # self.addAction(map_menu)
-            # self.addSeparator()
+                        
+            self.align_action = QAction("Alignment", self)
+            align_submenu = QMenu("Alignment", self)
+            for method in ('Horizontal alignment', 'Vertical alignment'):
+                action = QAction(method, self) 
+                action.triggered.connect(lambda _, m=method: self.align(m))
+                align_submenu.addAction(action)
+            for method in ('Horizontal distribution', 'Vertical distribution'):
+                action = QAction(method, self) 
+                action.triggered.connect(lambda _, m=method: self.distribute(m))
+                align_submenu.addAction(action)
+            self.align_action.setMenu(align_submenu)
             
             # multiple links creation menu
             multiple_links = QAction('&Create multiple links', self)        
@@ -85,14 +85,19 @@ class SelectionMenu(BaseMenu):
         pass
         # objects = set(objects)
         # PropertyChanger(objects, subtype, self.controller)
-        
-    def align(self):
-        AlignmentMenu(self.view, self.selected_nodes)
-        
+                
     def delete_objects(self, _):
         self.view.remove_objects(*self.so)
         
-    def multiple_links(self, view):
-        mobj.MultipleLinks(set(self.view.so['node']), self.controller)
+    def multiple_links(self):
+        mobj.MultipleLinks(set(self.so['node']), self.controller)
+        
+    def align(self, method):
+        horizontal = method == 'Horizontal alignment'
+        self.view.align(self.selected_nodes, horizontal)
+        
+    def distribute(self, method):
+        horizontal = method == 'Horizontal distribution'
+        self.view.distribute(self.selected_nodes, horizontal)
                 
                         

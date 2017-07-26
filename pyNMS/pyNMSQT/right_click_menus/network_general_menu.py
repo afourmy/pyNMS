@@ -17,9 +17,8 @@ from .general_menu import GeneralMenu
 
 class NetworkGeneralMenu(GeneralMenu):
     
-    def __init__(self, controller):
-        super().__init__(controller)
-        self.controller = controller
+    def __init__(self, event, controller):
+        super().__init__(event, controller)
                    
         # find networks
         refresh = QAction('&Refresh', self)        
