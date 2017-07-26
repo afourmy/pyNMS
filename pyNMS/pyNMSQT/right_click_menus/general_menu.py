@@ -12,40 +12,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from .base_menu import BaseMenu
 from PyQt5.QtWidgets import QMenu, QAction
 from graph_generation.multiple_objects import MultipleNodes
-from miscellaneous.decorators import update_paths
-
-class NetworkGeneralRightClickMenu(QMenu):
+                                
+class GeneralMenu(BaseMenu):
     
-    @update_paths(True)
-    def __init__(self, event, controller):
-        super().__init__()
-        self.controller = controller
-        
+    def __init__(self, controller):
+        super().__init__(controller)
+    
         # multiple nodes creation
         multiple_nodes = QAction('&Multiple nodes', self)        
         multiple_nodes.triggered.connect(lambda: self.multiple_nodes(event))
         self.addAction(multiple_nodes)
-                
+        
         # remove all failures if there is at least one
         if self.network.failed_obj:
             remove_failures = QAction('&Remove all failures', self)        
             remove_failures.triggered.connect(self.remove_all_failures)
             self.addAction(remove_failures)
             self.addSeparator()
-                   
-        # find networks
-        refresh = QAction('&Refresh', self)        
-        refresh.triggered.connect(self.refresh)
-        self.addAction(refresh)
-        
+    
     def multiple_nodes(self, event):
         self.window = MultipleNodes(event.x(), event.y(), self.controller)
         self.window.show()
-
-    def remove_all_failures(self):
-        self.view.remove_failures()
-        
-    def refresh(self):
-        self.project.refresh()
+                        

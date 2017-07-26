@@ -1,7 +1,7 @@
 from random import randint
 from math import sqrt
-from menus.selection_menu import BaseSelectionRightClickMenu
-from menus.network_general_rightclick_menu import NetworkGeneralRightClickMenu
+from right_click_menus.network_selection_menu import NetworkSelectionMenu
+from right_click_menus.network_general_menu import NetworkGeneralMenu
 from miscellaneous.graph_drawing import SpringLayoutParametersWindow
 from miscellaneous.decorators import *
 from objects.objects import *
@@ -123,7 +123,7 @@ class BaseView(QGraphicsView):
             self.temp_line = None
         if event.button() == Qt.RightButton and self.trigger_menu:
             if not self.is_node(item) and not self.is_link(item): 
-                menu = NetworkGeneralRightClickMenu(event, self.controller)
+                menu = NetworkGeneralMenu(self.controller)
                 menu.exec_(event.globalPos())
         super(BaseView, self).mouseReleaseEvent(event)
         
@@ -344,7 +344,7 @@ class GraphicalNode(QGraphicsPixmapItem):
         # binding, but for QT-related issues, the right-click filter does not
         # work in mouseReleaseEvent
         if event.buttons() == Qt.RightButton:
-            menu = BaseSelectionRightClickMenu(self.controller)
+            menu = NetworkSelectionMenu(self.controller)
             menu.exec_(QCursor.pos())
         super(GraphicalNode, self).mousePressEvent(event)
         

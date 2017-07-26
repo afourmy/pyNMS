@@ -12,31 +12,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
+from .base_menu import BaseMenu
 from PyQt5.QtWidgets import QMenu, QAction
-from autonomous_system import AS
-from objects.objects import *
-import ip_networks.configuration as conf
-import ip_networks.troubleshooting as ip_ts
-import ip_networks.ping as ip_ping
-import ip_networks.switching_table as switching_table
-import ip_networks.arp_table as arp_table
-import ip_networks.routing_table as ip_rt
-import ip_networks.bgp_table as ip_bgpt
-import graph_generation.multiple_objects as mobj
-from miscellaneous import site_operations
-# from .alignment_menu import AlignmentMenu
-# from .map_menu import MapMenu
-from objects.object_management_window import ObjectManagementWindow, PropertyChanger
-from collections import OrderedDict
-from objects.interface_window import InterfaceWindow
-from miscellaneous.decorators import *
                                 
-class BaseSelectionRightClickMenu(QMenu):
+class SelectionMenu(BaseMenu):
     
-    @update_paths(True)
     def __init__(self, controller):
-        super().__init__()
+        super().__init__(controller)
         
         # set containing all selected objects: we convert generators into sets
         # because to know if they are empty or not to build the menu
@@ -50,7 +32,7 @@ class BaseSelectionRightClickMenu(QMenu):
         self.one_node = len(self.selected_nodes) == 1
         self.one_link = len(self.selected_links) == 1
         self.one_subtype = False
-               
+        
         # exactly one object: property window 
         if self.no_shape and self.one_object == 1:
             properties = QAction('&Properties', self)        
@@ -58,15 +40,6 @@ class BaseSelectionRightClickMenu(QMenu):
             self.addAction(properties)
             self.addSeparator()
         
-        if self.no_shape:
-            simulate_failure = QAction('&Simulate failure', self)        
-            simulate_failure.triggered.connect(lambda: self.simulate_failure(*self.so))
-            self.addAction(simulate_failure)
-            remove_failure = QAction('&Remove failure', self)        
-            remove_failure.triggered.connect(lambda: self.remove_failure(*self.so))
-            self.addAction(remove_failure)
-            self.addSeparator()
-            
         # only nodes: 
         if self.no_shape and self.no_link:
             
@@ -87,7 +60,7 @@ class BaseSelectionRightClickMenu(QMenu):
             multiple_links.triggered.connect(lambda: self.multiple_links(self.view))
             self.addAction(multiple_links)
             self.addSeparator()
-
+            
         change_property = QAction('&Change property', self)        
         change_property.triggered.connect(self.change_property)
         self.addAction(change_property)
@@ -99,26 +72,15 @@ class BaseSelectionRightClickMenu(QMenu):
         self.addAction(delete_objects)
         self.addSeparator()
         
-        drawing_action = self.addAction("Graph drawing algorithms")
-        
-        drawing_submenu = QMenu("Graph drawing", self)
-        for drawing in (
-                        'Random drawing', 
-                        'Spring-based layout', 
-                        'Fruchterman-Reingold layout'
-                        ): 
-            action = QAction(drawing, self)        
-            action.triggered.connect(lambda _, d=drawing: self.graph_drawing(d))
-            drawing_submenu.addAction(action)
-        drawing_action.setMenu(drawing_submenu)
-        
     def graph_drawing(self, drawing):
         self.view.node_selection = self.selected_nodes
-        self.view.random_layout()
-        if drawing != 'Random drawing':
-            self.view.drawing_algorithm = drawing
-            self.view.timer = self.view.startTimer(1)
+        super().graph_drawing(drawing)
         
+    def show_object_properties(self):
+        obj ,= self.so
+        self.omw = ObjectManagementWindow(obj.object, self.controller)
+        self.omw.show()
+            
     def change_property(self):
         pass
         # objects = set(objects)
@@ -129,18 +91,8 @@ class BaseSelectionRightClickMenu(QMenu):
         
     def delete_objects(self, _):
         self.view.remove_objects(*self.so)
-                
-    def simulate_failure(self, *objects):
-        self.view.simulate_failure(*objects)
-        
-    def remove_failure(self, *objects):
-        self.view.remove_failure(*objects)
-            
-    def show_object_properties(self):
-        obj ,= self.so
-        self.omw = ObjectManagementWindow(obj.object, self.controller)
-        self.omw.show()
         
     def multiple_links(self, view):
         mobj.MultipleLinks(set(self.view.so['node']), self.controller)
                 
+                        
