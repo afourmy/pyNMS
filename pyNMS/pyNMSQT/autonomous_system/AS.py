@@ -534,7 +534,7 @@ class OSPF_AS(ASWithArea, IP_AS):
         self.ref_bw = 10**8
 
         # management window of the AS
-        self.management = AS_management.ASManagement(self, is_imported)
+        self.management = AS_management.OSPF_Management(self, is_imported)
         
         # contains all ABRs
         self.border_routers = set()
