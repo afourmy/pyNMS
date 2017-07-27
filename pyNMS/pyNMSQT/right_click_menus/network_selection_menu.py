@@ -24,9 +24,7 @@ import ip_networks.switching_table as switching_table
 import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
 import ip_networks.bgp_table as ip_bgpt
-import graph_generation.multiple_objects as mobj
 from miscellaneous import site_operations
-from objects.object_management_window import ObjectManagementWindow, PropertyChanger
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
                                 

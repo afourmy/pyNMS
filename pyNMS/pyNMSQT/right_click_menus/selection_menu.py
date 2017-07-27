@@ -13,6 +13,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .base_menu import BaseMenu
+from graph_generation.multiple_objects import MultipleLinks
+from objects.object_management_window import ObjectManagementWindow, PropertyChanger
 from PyQt5.QtWidgets import QMenu, QAction
                                 
 class SelectionMenu(BaseMenu):
@@ -57,7 +59,7 @@ class SelectionMenu(BaseMenu):
             
             # multiple links creation menu
             multiple_links = QAction('&Create multiple links', self)        
-            multiple_links.triggered.connect(lambda: self.multiple_links(self.view))
+            multiple_links.triggered.connect(self.multiple_links)
             self.addAction(multiple_links)
             self.addSeparator()
             
@@ -78,8 +80,8 @@ class SelectionMenu(BaseMenu):
         
     def show_object_properties(self):
         obj ,= self.so
-        self.omw = ObjectManagementWindow(obj.object, self.controller)
-        self.omw.show()
+        self.properties = ObjectManagementWindow(obj.object, self.controller)
+        self.properties.show()
             
     def change_property(self):
         pass
@@ -90,7 +92,8 @@ class SelectionMenu(BaseMenu):
         self.view.remove_objects(*self.so)
         
     def multiple_links(self):
-        mobj.MultipleLinks(set(self.so['node']), self.controller)
+        self.multiple_links = MultipleLinks(self.selected_nodes, self.controller)
+        self.multiple_links.show()
         
     def align(self, method):
         horizontal = method == 'Horizontal alignment'

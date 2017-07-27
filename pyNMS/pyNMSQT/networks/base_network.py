@@ -191,6 +191,10 @@ class BaseNetwork(object):
     # convert a link name to a node
     def convert_link(self, link_name, subtype='ethernet link'):
         return self.lf(name=link_name, subtype=subtype)
+        
+    # convert an iterable of strings representing nodes, to a generator of nodes
+    def convert_nodes(self, nodes):
+        return map(self.convert_node, nodes)
     
     # convert a string representing a set of nodes, to an actual set of nodes
     def convert_node_set(self, node_set):
@@ -199,6 +203,10 @@ class BaseNetwork(object):
     # convert a string representing a list of nodes, to an actual list of nodes
     def convert_node_list(self, node_list):
         return list(map(self.convert_node, eval(node_list)))
+        
+    # convert an iterable of strings representing links, to a generator of links
+    def convert_links(self, links):
+        return map(self.convert_link, links)
     
     # convert a string representing a set of links, to an actual set of links
     def convert_link_set(self, link_set, subtype='ethernet link'):

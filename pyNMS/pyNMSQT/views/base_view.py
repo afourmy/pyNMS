@@ -33,6 +33,9 @@ class BaseView(QGraphicsView):
     def all_gnodes(self):
         return map(lambda n: n.gnode, self.network.nodes.values())
         
+    def get_obj(self, graphical_objects):
+        return map(lambda gobject: gobject.object, graphical_objects)
+        
     def selected_nodes(self):
         return filter(self.is_node, self.scene.selectedItems())
         
@@ -413,7 +416,7 @@ class GraphicalLink(QGraphicsLineItem):
         # binding, but for QT-related issues, the right-click filter does not
         # work in mouseReleaseEvent
         if event.buttons() == Qt.RightButton:
-            menu = BaseSelectionRightClickMenu(self.controller)
+            menu = NetworkSelectionMenu(self.controller)
             menu.exec_(QCursor.pos())
         
     def update_position(self):
