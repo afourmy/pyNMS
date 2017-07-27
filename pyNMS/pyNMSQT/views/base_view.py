@@ -191,7 +191,7 @@ class BaseView(QGraphicsView):
     # - cf is the Coulomb factor (repulsive force factor)
     # - sf is the speed factor
     
-    def coulomb_force(self, dx, dy, dististance, cf):
+    def coulomb_force(self, dx, dy, distance, cf):
         c = distance and cf/distance**3
         return (-c*dx, -c*dy)
         
@@ -199,17 +199,15 @@ class BaseView(QGraphicsView):
         const = distance and k*(distance - L0)/distance
         return (const*dx, const*dy)
             
-    def spring_layout(self, nodes, cf, k, sf, L0, v_nodes=set()):
-        nodes = set(nodes)
-        for nodeA in nodes:
+    def spring_layout(self, cf, k, sf, L0):
+        for nodeA in self.node_selection:
             Fx = Fy = 0
             neighbors = set(map(lambda n: n.gnode, self.network.neighbors(nodeA.node, 'plink')))
-            for nodeB in nodes | neighbors:
+            for nodeB in self.node_selection | neighbors:
                 if nodeA != nodeB:
-                    xB, yB, xA, yA = nodeB.get_pos(), nodeA.get_pos()
-                    dx, dy = xB - xA, yB - yA
+                    dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
                     distance = self.distance(dx, dy)
-                    # F_hooke = (0,)*2
+                    F_hooke = (0,)*2
                     if self.network.is_connected(nodeA.node, nodeB.node, 'plink'):
                         F_hooke = self.hooke_force(dx, dy, distance, L0, k)
                     F_coulomb = self.coulomb_force(dx, dy, distance, cf)
@@ -218,9 +216,8 @@ class BaseView(QGraphicsView):
             nodeA.vx = max(-100, min(100, 0.5 * nodeA.vx + 0.2 * Fx))
             nodeA.vy = max(-100, min(100, 0.5 * nodeA.vy + 0.2 * Fy))
     
-        for node in nodes:
-            x, y = node.get_pos()
-            node.setPos(x + node.vx*sf, y + node.vy*sf)
+        for node in self.node_selection:
+            node.x, node.y = node.x + node.vx*sf, node.y + node.vy*sf
             
     ## 2) Fruchterman-Reingold algorithms
     
@@ -241,18 +238,15 @@ class BaseView(QGraphicsView):
             nodeA.vx, nodeA.vy = 0, 0
             for nodeB in self.node_selection:
                 if nodeA != nodeB:
-                    xA, yA = nodeA.get_pos()
-                    xB, yB = nodeB.get_pos()
-                    dx, dy = xA - xB, yA - yB
+                    dx, dy = nodeA.x - nodeB.x, nodeA.y - nodeB.y
                     distance = self.distance(dx, dy)
                     if distance:
                         nodeA.vx += (dx*opd**2)/distance**2
                         nodeA.vy += (dy*opd**2)/distance**2
                     
         for link in self.network.plinks.values():
-            s_x, s_y = link.source.gnode.get_pos()
-            d_x, d_y = link.destination.gnode.get_pos()
-            dx, dy = s_x - d_x, s_y - d_y
+            source, destination = link.source.gnode, link.destination.gnode
+            dx, dy = source.x - destination.x, source.y - destination.y
             distance = self.distance(dx, dy)
             if distance:
                 link.source.gnode.vx -= distance*dx/opd
@@ -262,11 +256,8 @@ class BaseView(QGraphicsView):
             
         for node in self.node_selection:
             distance = self.distance(node.vx, node.vy)
-            x, y = node.get_pos()
-            node.setPos(x + node.vx/sqrt(distance), y + node.vy/sqrt(distance))
-            # if limit:
-            #     node.x = min(800, max(0, node.x))
-            #     node.y = min(800, max(0, node.y))
+            node.x += node.vx/sqrt(distance)
+            node.y += node.vy/sqrt(distance)
             
         t *= 0.95
         
@@ -281,13 +272,11 @@ class BaseView(QGraphicsView):
         #     print(row)
         
     def timerEvent(self, event):
-        parameters = self.controller.spring_layout_parameters_window.get_values()
-        {
-        'Random drawing': self.random_layout,
-        'Spring-based layout': self.spring_layout,
-        'Fruchterman-Reingold layout': self.fruchterman_reingold_layout
-        }[self.drawing_algorithm]()
-        # self.fruchterman_reingold_layout(False)
+        if self.drawing_algorithm =='Spring-based layout':
+            parameters = self.controller.spring_layout_parameters_window.get_values()
+            self.spring_layout(*parameters)
+        else:
+            self.fruchterman_reingold_layout()
 
     def stop_timer(self):
         self.killTimer(self.timer) 
@@ -310,6 +299,7 @@ class GraphicalNode(QGraphicsPixmapItem):
         # the node object does not yet exist: it must be created
         if not node:
             subtype = self.controller.creation_mode
+            print(subtype)
             self.node = self.view.network.nf(subtype=subtype)
         else:
             self.node = node

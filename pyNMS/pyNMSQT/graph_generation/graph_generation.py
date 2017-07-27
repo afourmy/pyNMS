@@ -125,3 +125,6 @@ class GraphDimensionWindow(QWidget):
             }[self.graph_type]
             self.view.draw_objects(function(nodes, subtype))
         self.close()
+        # we close the graph generation window as well, as we usually don't 
+        # need to create two graph in a row
+        self.controller.graph_generation_window.hide()

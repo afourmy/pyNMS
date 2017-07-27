@@ -167,6 +167,7 @@ class ObjectManagementWindow(QWidget):
             
     def update(self):
         for property, property_widget in self.dict_global_properties.items():
+            print(property)
             obj_prop = getattr(self.current_obj, property)
             if property == 'default_route':
                 # in practice, the default route can also be set as an outgoing
@@ -210,6 +211,8 @@ class ObjectManagementWindow(QWidget):
                                     self.network.attached_ips(dest)))
                 property_widget.addItems(attached_ips)
                 # property_widget.text = obj_prop
+            elif property in self.property_list:
+                property_widget.setCurrentIndex(1)
             elif property == 'AS':
                 property_widget.setText(','.join(map(str, obj_prop.keys())))
             elif type(obj_prop) in (list, set):

@@ -157,9 +157,9 @@ class BaseNetwork(object):
         return self.pn[link_type][id]
         
     # 'nf' is the node factory. Creates or retrieves any type of nodes
-    def nf(self, node_type='router', id=None, **kwargs):
+    def nf(self, subtype='router', id=None, **kwargs):
         if 'name' not in kwargs:
-            name = node_type + str(self.cpt_node)
+            name = subtype + str(self.cpt_node)
             kwargs['name'] = name
         else:
             if kwargs['name'] in self.name_to_id:
@@ -168,7 +168,7 @@ class BaseNetwork(object):
                 return node
         id = self.cpt_node
         kwargs['id'] = id
-        self.nodes[id] = node_class[node_type](**kwargs)
+        self.nodes[id] = node_class[subtype](**kwargs)
         self.name_to_id[kwargs['name']] = id
         self.cpt_node += 1
         return self.nodes[id]

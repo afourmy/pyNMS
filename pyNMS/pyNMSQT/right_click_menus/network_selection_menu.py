@@ -42,7 +42,9 @@ class NetworkSelectionMenu(SelectionMenu):
             self.addAction(remove_failure)
             self.addSeparator()
 
-        self.addAction(self.align_action)
+        if self.no_link and self.no_shape:
+            self.addAction(self.align_action)
+            
         self.addAction(self.drawing_action)
                 
     def simulate_failure(self, *objects):
