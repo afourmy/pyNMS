@@ -13,70 +13,77 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .AS import AS_subtypes
-from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous.decorators import update_paths
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
+        QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView)
 
-class AreaOperation(CustomTopLevel):
-    
-    # Add objects to an area, or remove objects from an area
-    
-    @update_paths
-    # controller is initialized to None, because it must be the last argument
-    # of args for the sake of updating all paths with @update_paths
-    def __init__(self, mode, obj, AS=set(), controller=None):
+class ASCreation(QWidget):  
+
+    @update_paths(True)
+    def __init__(self, nodes, links, controller):
         super().__init__()
+        self.controller = controller
+        self.nodes = nodes
+        self.links = links
+        self.setWindowTitle('Create AS')
         
-        title = 'Add to area' if mode == 'add' else 'Remove from area'
+        # AS type
+        AS_type = QLabel('Type')
+        self.AS_type_list = QComboBox()
+        self.AS_type_list.addItems(AS_subtypes)
         
-        # main label frame
-        lf_area_operation = Labelframe(self)
-        lf_area_operation.text = title
-        lf_area_operation.grid(0, 0)
+        # AS name
+        AS_name = QLabel('Name')
+        self.name_edit = QLineEdit()
+        self.name_edit.setMaximumWidth(120)
         
-        self.title(title)
-
-        values = tuple(map(str, AS))
+        # AS ID
+        AS_id = QLabel('ID')
+        self.id_edit = QLineEdit()
+        self.id_edit.setMaximumWidth(120)
         
-        # List of existing AS
-        self.AS_list = Combobox(self, width=15)
-        self.AS_list['values'] = values
-        self.AS_list.current(0)
-        self.AS_list.bind('<<ComboboxSelected>>', lambda e: self.update_value())
+        # confirmation button
+        button_create_AS = QPushButton()
+        button_create_AS.setText('Create AS')
+        button_create_AS.clicked.connect(self.create_AS)
         
-        self.area_list = Combobox(self, width=15)
-        self.update_value()
-        self.area_list.current(0)
-
-        button_area_operation = Button(self)
-        button_area_operation.text = 'OK'
-        button_area_operation.command = lambda: self.area_operation(mode, *obj)
+        # cancel button
+        cancel_button = QPushButton()
+        cancel_button.setText('Cancel')
         
-        self.AS_list.grid(0, 0, in_=lf_area_operation)
-        self.area_list.grid(1, 0, in_=lf_area_operation)
-        button_area_operation.grid(2, 0, in_=lf_area_operation)
+        # position in the grid
+        layout = QGridLayout()
+        layout.addWidget(AS_type, 0, 0, 1, 1)
+        layout.addWidget(self.AS_type_list, 0, 1, 1, 1)
+        layout.addWidget(AS_name, 1, 0, 1, 1)
+        layout.addWidget(self.name_edit, 1, 1, 1, 1)
+        layout.addWidget(AS_id, 2, 0, 1, 1)
+        layout.addWidget(self.id_edit, 2, 1, 1, 1)
+        layout.addWidget(button_create_AS, 3, 0, 1, 1)
+        layout.addWidget(cancel_button, 3, 1, 1, 1)
+        self.setLayout(layout)
         
-    def update_value(self):
-        selected_AS = self.network.AS_factory(name=self.AS_list.get())
-        self.area_list['values'] = tuple(map(str, selected_AS.areas))
+    def create_AS(self):
+        # automatic initialization of the AS id in case it is empty
+        id = int(self.id_edit.text()) 
+        if not id:
+            id = len(self.network.pnAS) + 1
+        new_AS = self.network.AS_factory(
+                                         self.AS_type_list.currentText(), 
+                                         self.name_edit.text(), 
+                                         id,
+                                         self.links, 
+                                         self.nodes
+                                         )
+        self.close()
         
-    def area_operation(self, mode, *objects):
-        selected_AS = self.network.AS_factory(name=self.AS_list.get())
-        selected_area = self.area_list.get()
-
-        if mode == 'add':
-            selected_AS.management.add_to_area(selected_area, *objects)
-        else:
-            selected_AS.management.remove_from_area(selected_area, *objects)
-            
-        self.destroy()
-        
-class ASOperation(CustomTopLevel):
+class ASOperation(QWidget):
     
-    # Add objects to an AS, or remove objects from an AS
+    # - add objects to an AS
+    # - remove objects from an AS
+    # - enter the AS management window
     
-    @update_paths
-    # controller is initialized to None, because it must be the last argument
-    # of args for the sake of updating all paths with @update_paths
+    @update_paths(True)
     def __init__(self, mode, obj, AS=set(), controller=None):
         super().__init__()
         
@@ -86,100 +93,100 @@ class ASOperation(CustomTopLevel):
         'manage': 'Manage AS'
         }[mode]
         
-        # main label frame
-        lf_AS_operation = Labelframe(self)
-        lf_AS_operation.text = title
-        lf_AS_operation.grid(0, 0)
-        
-        self.title(title)
+        self.setWindowTitle(title)
         
         if mode == 'add':
-            # All AS are proposed 
+            # all AS are proposed 
             values = tuple(map(str, self.network.pnAS))
         else:
-            # Only the common AS among all selected objects
+            # only the common AS among all selected objects
             values = tuple(map(str, AS))
         
-        # List of existing AS
-        self.AS_list = Combobox(self, width=15)
-        self.AS_list['values'] = values
-        self.AS_list.current(0)
-
-        button_AS_operation = Button(self)
-        button_AS_operation.text = 'OK'
-        button_AS_operation.command = lambda: self.as_operation(mode, *obj)
+        # list of existing AS
+        self.AS_list = QComboBox()
+        self.AS_list.addItems(values)
         
-        self.AS_list.grid(0, 0, 1, 2, in_=lf_AS_operation)
-        button_AS_operation.grid(1, 0, 1, 2, in_=lf_AS_operation)
+        # confirmation button
+        button_AS_operation = QPushButton()
+        button_AS_operation.setText('OK')
+        button_AS_operation.clicked.connect(lambda: self.as_operation(mode, *obj))
+        
+        # cancel button
+        cancel_button = QPushButton()
+        cancel_button.setText('Cancel')
+        
+        # position in the grid
+        layout = QGridLayout()
+        layout.addWidget(AS_list, 0, 0, 1, 2)
+        layout.addWidget(button_AS_operation, 1, 0, 1, 1)
+        layout.addWidget(cancel_button, 1, 1, 1, 1)
+        self.setLayout(layout)
         
     def as_operation(self, mode, *objects):
-        selected_AS = self.network.AS_factory(name=self.AS_list.get())
+        selected_AS = self.network.AS_factory(name=self.AS_list.currentText())
 
         if mode == 'add':
             selected_AS.management.add_to_AS(*objects)
         elif mode == 'remove':
             selected_AS.management.remove_from_AS(*objects)
         else:
-            selected_AS.management.deiconify()
+            selected_AS.management.show()
             
-        self.destroy()
+        self.close()
         
-class ASCreation(CustomTopLevel):
+class AreaOperation(QWidget):
     
-    @update_paths
-    def __init__(self, nodes, links, controller):
+    # - add objects to an area
+    # - remove objects from an area
+    
+    @update_paths(True)
+    def __init__(self, mode, obj, AS=set(), controller=None):
         super().__init__()
-        self.nodes = nodes
-        self.links = links
-        self.title('Create AS')
         
-        # main label frame
-        lf_create_AS = Labelframe(self)
-        lf_create_AS.text = 'Create AS'
-        lf_create_AS.grid(0, 0)
-        
-        # List of AS type
-        self.AS_type_list = Combobox(self, width=10)
-        self.AS_type_list['values'] = AS_subtypes
-        self.AS_type_list.current(0)
+        title = 'Add to area' if mode == 'add' else 'Remove from area'
+        self.setWindowTitle(title)
 
-        # retrieve and save node data
-        button_create_AS = Button(self)
-        button_create_AS.text = 'Create AS'
-        button_create_AS.command = self.create_AS
-                        
-        # Label for the name/type of the AS
-        label_name = Label(self)
-        label_name.text = 'Name'
+        values = tuple(map(str, AS))
         
-        label_type = Label(self)
-        label_type.text = 'Type'
+        # list of existing AS
+        self.AS_list = QComboBox()
+        self.AS_list.addItems(values)
+        self.AS_list.activated.connect(self.update_value)
         
-        label_id = Label(self)
-        label_id.text = 'ID'
+        # list of areas
+        self.area_list = QComboBox()
+        self.update_value()
         
-        # Entry box for the name of the AS
-        self.entry_name  = Entry(self, width=13)
-        self.entry_id  = Entry(self, width=13)
+        # confirmation button
+        button_area_operation = QPushButton()
+        button_area_operation.setText('OK')
+        button_area_operation.clicked.connect(lambda: self.area_operation(mode, *obj))
         
-        label_name.grid(0, 0, in_=lf_create_AS)
-        label_id.grid(1, 0, in_=lf_create_AS)
-        self.entry_name.grid(0, 1, in_=lf_create_AS)
-        self.entry_id.grid(1, 1, in_=lf_create_AS)
-        label_type.grid(2, 0, in_=lf_create_AS)
-        self.AS_type_list.grid(2, 1, in_=lf_create_AS)
-        button_create_AS.grid(3, 0, 1, 2, in_=lf_create_AS)
+        # cancel button
+        cancel_button = QPushButton()
+        cancel_button.setText('Cancel')
+        
+        # position in the grid
+        layout = QGridLayout()
+        layout.addWidget(self.AS_list, 0, 0, 1, 2)
+        layout.addWidget(self.area_list, 1, 0, 1, 2)
+        layout.addWidget(button_area_operation, 2, 0, 1, 1)
+        layout.addWidget(cancel_button, 2, 1, 1, 1)
+        self.setLayout(layout)
+        
+    def update_value(self, index):
+        self.area_list.clear()
+        selected_AS = self.network.AS_factory(name=self.AS_list.get())
+        self.area_list.addItems(tuple(map(str, selected_AS.areas)))
+        
+    def area_operation(self, mode, *objects):
+        selected_AS = self.network.AS_factory(name=self.AS_list.currentText())
+        selected_area = self.area_list.currentText()
 
-    def create_AS(self):
-        # automatic initialization of the AS id in case it is empty
-        id = int(self.entry_id.get()) if self.entry_id.get() else len(self.network.pnAS) + 1
-        
-        new_AS = self.network.AS_factory(
-                                         self.AS_type_list.get(), 
-                                         self.entry_name.get(), 
-                                         id,
-                                         self.links, 
-                                         self.nodes
-                                         )
-        self.destroy()
+        if mode == 'add':
+            selected_AS.management.add_to_area(selected_area, *objects)
+        else:
+            selected_AS.management.remove_from_area(selected_area, *objects)
             
+        self.close()
+    

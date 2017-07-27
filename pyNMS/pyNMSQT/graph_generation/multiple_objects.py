@@ -14,7 +14,6 @@
 
 from miscellaneous.decorators import update_paths
 from objects.objects import *
-# from PyQt5.QtGui import QAbstractItemView
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView)
 

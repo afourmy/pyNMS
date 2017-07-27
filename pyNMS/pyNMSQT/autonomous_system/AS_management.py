@@ -14,111 +14,95 @@
 
 from . import area
 from pythonic_tkinter.preconfigured_widgets import *
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
+        QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget)
 
-class ASManagement(CustomTopLevel):
+class ASManagement(QWidget):
     
     def __init__(self, AS, is_imported):
         super().__init__()
         self.AS = AS
         self.network = self.AS.view.network
         self.dict_listbox = {}
-        self.title('Manage AS')
+        self.setWindowTitle('Manage AS')
         
-        # A ttk notebook made of two frames
-        self.frame_notebook = ttk.Notebook(self)
-        common_frame = CustomFrame(self.frame_notebook)
-        self.frame_notebook.add(common_frame, text=' Common management ')
-        self.frame_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+        self.frame_notebook = QTabWidget(self)
         
-        # label frame for properties
-        lf_management = Labelframe(common_frame)
-        lf_management.text = 'AS management'
+        # first tab: the common management window
+        common_frame = QWidget(self.frame_notebook)
+        self.frame_notebook.addTab(common_frame, ' Common management ')
+
+        # group box for properties
+        AS_management = QGroupBox()
+        AS_management.setTitle('AS management')
         
-        obj_types = ('link', 'node') 
-        
-        label_name = Label(common_frame)
-        label_name.text = 'AS name'
-        label_id = Label(common_frame)
-        label_id.text = 'AS ID'
-        label_type = Label(common_frame)
-        label_type.text = 'AS Type'
-        
-        entry_name  = Entry(common_frame, width=10)
-        entry_name.text = AS.name
-        entry_id  = Entry(common_frame, width=10)
-        entry_id.text = AS.id
+        label_name = QLabel('AS name')
+        label_id = QLabel('AS ID')
+        label_type = QLabel('AS type')
+        name_edit = QLineEdit()
+        name_edit.setMaximumWidth(120)
+        id_edit = QLineEdit()
+        id_edit.setMaximumWidth(120)
+        AS_type = QLabel(AS.AS_type)
         
         # delete the AS
-        button_delete_AS = Button(common_frame) 
-        button_delete_AS.text='Delete AS'
-        button_delete_AS.command = lambda: self.AS.delete_AS()
+        button_delete_AS = QPushButton()
+        button_delete_AS.setText('Delete AS')
+        button_delete_AS.clicked.connect(self.AS.delete_AS)
         
         # automatic cost allocation
-        button_automatic_cost_allocation = Button(common_frame) 
-        button_automatic_cost_allocation.text='Automatic cost allocation'
-        button_automatic_cost_allocation.command = lambda: self.network.WSP_TS(AS)
+        button_cost_allocation = QPushButton()
+        button_cost_allocation.setText('Automatic cost allocation')
+        button_cost_allocation.clicked.connect(lambda: self.network.WSP_TS(AS))
         
-        # the type of a domain cannot change after domain creation.
-        AS_type = Label(common_frame) 
-        AS_type.text = AS.AS_type
+        AS_management_layout = QGridLayout()
+        AS_management_layout.addWidget(label_name, 0, 0)
+        AS_management_layout.addWidget(label_id, 1, 0)
+        AS_management_layout.addWidget(label_type, 2, 0)
+        AS_management_layout.addWidget(name_edit, 0, 1)
+        AS_management_layout.addWidget(id_edit, 1, 1)
+        AS_management_layout.addWidget(AS_type, 2, 1)
+        AS_management_layout.addWidget(button_delete_AS, 0, 2)
+        AS_management_layout.addWidget(button_cost_allocation, 1, 2)
+        AS_management.setLayout(AS_management_layout)
         
-        lf_management.grid(0, 0)
-        label_name.grid(0, 0, in_=lf_management)
-        label_id.grid(1, 0, in_=lf_management)
-        label_type.grid(2, 0, in_=lf_management)
-        entry_name.grid(0, 1, in_=lf_management)
-        entry_id.grid(1, 1, in_=lf_management)
-        AS_type.grid(2, 1, in_=lf_management)
-        button_delete_AS.grid(0, 2, in_=lf_management)
-        button_automatic_cost_allocation.grid(1, 2, in_=lf_management)
+        # group box for links and nodes
+        object_management = QGroupBox()
+        object_management.setTitle('AS objects')
         
-        # label frame for links and nodes
-        lf_objects = Labelframe(common_frame)
-        lf_objects.text = 'AS objects'
-        lf_objects.grid(1, 0)
+        nodes = QLabel('AS nodes')
+        self.node_list = QListWidget()
+        self.node_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.dict_listbox['node'] = self.node_list
         
-        # listbox of all AS objects
-        for index, type in enumerate(obj_types):
-            label = Label(common_frame)
-            label.text = 'AS ' + type + 's'
-    
-            listbox = ObjectListbox(common_frame, width=15, height=10)
-                                            
-            self.dict_listbox[type] = listbox
-            yscroll = Scrollbar(common_frame)
-            yscroll.command = self.dict_listbox[type].yview
-                    
-            listbox.configure(yscrollcommand=yscroll.set)
-            listbox.bind('<<ListboxSelect>>', 
-                            lambda e, type=type: self.highlight_object(e, type))
-                            
-            label.grid(0, 2*index, in_=lf_objects)
-            listbox.grid(1, 2*index, in_=lf_objects)
-            yscroll.grid(1, 1 + 2*index, in_=lf_objects)
+        links = QLabel('AS links')
+        self.link_list = QListWidget()
+        self.link_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.dict_listbox['link'] = self.link_list
+            
+        # add all physical links between nodes of the AS
+        button_find_links = QPushButton()
+        button_find_links.setText('Find links')
+        button_find_links.clicked.connect(self.find_links)
         
         # find domain physical links: the physical links between nodes of the AS
-        button_find_links = Button(common_frame) 
-        button_find_links.text = 'Find links'
-        button_find_links.command=lambda: self.find_links()
+        button_remove_nodes = QPushButton()
+        button_remove_nodes.setText('Remove nodes')
+        button_remove_nodes.clicked.connect(lambda: self.remove_selected('node'))
         
-        # operation on nodes
-        button_remove_node_from_AS = Button(common_frame) 
-        button_remove_node_from_AS.text='Remove node'
-        button_remove_node_from_AS.command = lambda: self.remove_selected('node')
+        object_layout = QGridLayout()
+        object_layout.addWidget(nodes, 0, 0)
+        object_layout.addWidget(self.node_list, 0, 1)
+        object_layout.addWidget(links, 0, 1)
+        object_layout.addWidget(self.link_list, 1, 1)
+        object_layout.addWidget(button_find_links, 2, 0)
+        object_layout.addWidget(button_remove_nodes, 2, 1)
+        object_management.setLayout(object_layout)
         
-        # buttons under the physical links column
-        button_find_links.grid(2, 0, in_=lf_objects)
-        
-        # button under the nodes column
-        button_remove_node_from_AS.grid(2, 2, in_=lf_objects)
-        
-        self.wm_attributes('-topmost', True) 
-        # hide the window when closed
-        self.protocol('WM_DELETE_WINDOW', self.withdraw)
-        
-        # if the AS is created from an import, close the management window
-        if is_imported: 
-            self.withdraw()
+        # layout of the creation menu
+        common_frame_layout = QVBoxLayout(common_frame)
+        common_frame_layout.addWidget(AS_management)
+        common_frame_layout.addWidget(object_management)
             
     ## Functions used directly from the AS Management window
         

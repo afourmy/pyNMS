@@ -43,10 +43,7 @@ class AutonomousSystem(object):
 
         # pAS as in 'pool AS': same as pool network
         self.pAS = {'link': self.links, 'node': self.nodes}
-        
-        # unselect everything
-        view.unhighlight_all()
-        
+                
     def __repr__(self):
         return self.name
         
@@ -537,7 +534,7 @@ class OSPF_AS(ASWithArea, IP_AS):
         self.ref_bw = 10**8
 
         # management window of the AS
-        self.management = AS_management.OSPF_Management(self, is_imported)
+        self.management = AS_management.ASManagement(self, is_imported)
         
         # contains all ABRs
         self.border_routers = set()
