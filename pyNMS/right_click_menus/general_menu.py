@@ -23,13 +23,13 @@ class GeneralMenu(BaseMenu):
         self.event = event
     
         # multiple nodes creation
-        multiple_nodes = QAction('&Multiple nodes', self)        
+        multiple_nodes = QAction('Multiple nodes', self)        
         multiple_nodes.triggered.connect(self.multiple_nodes)
         self.addAction(multiple_nodes)
         
         # remove all failures if there is at least one
         if self.network.failed_obj:
-            remove_failures = QAction('&Remove all failures', self)        
+            remove_failures = QAction('Remove all failures', self)        
             remove_failures.triggered.connect(self.remove_all_failures)
             self.addAction(remove_failures)
             self.addSeparator()

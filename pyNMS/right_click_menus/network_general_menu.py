@@ -21,7 +21,7 @@ class NetworkGeneralMenu(GeneralMenu):
         super().__init__(event, controller)
                    
         # find networks
-        refresh = QAction('&Refresh', self)        
+        refresh = QAction('Refresh', self)        
         refresh.triggered.connect(self.refresh)
         self.addAction(refresh)
         self.addSeparator()

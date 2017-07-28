@@ -37,7 +37,7 @@ class SelectionMenu(BaseMenu):
         
         # exactly one object: property window 
         if self.no_shape and self.one_object == 1:
-            properties = QAction('&Properties', self)        
+            properties = QAction('Properties', self)        
             properties.triggered.connect(lambda: self.show_object_properties())
             self.addAction(properties)
             self.addSeparator()
@@ -58,18 +58,18 @@ class SelectionMenu(BaseMenu):
             self.align_action.setMenu(align_submenu)
             
             # multiple links creation menu
-            multiple_links = QAction('&Create multiple links', self)        
+            multiple_links = QAction('Create multiple links', self)        
             multiple_links.triggered.connect(self.multiple_links)
             self.addAction(multiple_links)
             self.addSeparator()
             
-        change_property = QAction('&Change property', self)        
+        change_property = QAction('Change property', self)        
         change_property.triggered.connect(self.change_property)
         self.addAction(change_property)
         self.addSeparator()
         
         # at least one object: deletion and property changer
-        delete_objects = QAction('&Delete', self)        
+        delete_objects = QAction('Delete', self)        
         delete_objects.triggered.connect(self.delete_objects)
         self.addAction(delete_objects)
         self.addSeparator()

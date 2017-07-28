@@ -74,15 +74,12 @@ class Project(QWidget):
                     self.current_view.network.interface_configuration,
                     self.current_view.network.switching_table_creation,
                     self.current_view.network.routing_table_creation,
-                    self.current_view.network.bgp_table_creation,
-                    self.current_view.network.redistribution,
                     self.current_view.network.path_finder,
-                    lambda: self.current_view.draw_all(False),
                     self.current_view.refresh_display
                     )
         
-        for idx, boolean in enumerate(self.controller.routing_menu.action_booleans):
-            if boolean.get():
+        for idx, boolean in enumerate(self.controller.routing_panel.checkboxes):
+            if boolean.isChecked():
                 commands[idx]()
         
     def import_project(self, filepath=None):

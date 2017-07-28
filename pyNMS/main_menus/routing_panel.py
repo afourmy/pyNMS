@@ -34,7 +34,6 @@ class RoutingPanel(QGroupBox):
                         'Creation of all ARP / MAC tables',
                         'Creation of all routing tables',
                         'Path finding procedure',
-                        'Redraw the graph',
                         'Refresh the display'
                         )
                         
@@ -47,8 +46,6 @@ class RoutingPanel(QGroupBox):
             self.checkboxes.append(checkbox)
             layout.addWidget(checkbox, index, 1, 1, 1)
         self.setLayout(layout)
-            
-        
         
     def selection(self):
         select_all = not all(map(QCheckBox.isChecked, self.checkboxes))

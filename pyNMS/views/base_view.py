@@ -183,7 +183,7 @@ class BaseView(QGraphicsView):
     def distance(self, p, q): 
         return sqrt(p*p + q*q)
     
-    ## 1) Eades algorithm 
+    ## 1) Eades algorithm (spring layout)
     
     # We use the following constants:
     # - k is the spring constant (stiffness of the spring)
@@ -219,7 +219,7 @@ class BaseView(QGraphicsView):
         for node in self.node_selection:
             node.x, node.y = node.x + node.vx*sf, node.y + node.vy*sf
             
-    ## 2) Fruchterman-Reingold algorithms
+    ## 2) Fruchterman-Reingold algorithm
     
     def fa(self, d, k):
         return (d**2)/k
@@ -279,7 +279,12 @@ class BaseView(QGraphicsView):
             self.fruchterman_reingold_layout()
 
     def stop_timer(self):
-        self.killTimer(self.timer) 
+        self.killTimer(self.timer)
+        
+    ## Display
+    
+    def refresh_display(self):
+        pass
 
    ##       for point in (start, end):
     #         text = self.scene.addSimpleText(

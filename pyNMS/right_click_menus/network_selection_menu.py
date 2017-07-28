@@ -25,22 +25,64 @@ import ip_networks.ping as ip_ping
 import ip_networks.switching_table as switching_table
 import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
-import ip_networks.bgp_table as ip_bgpt
 from miscellaneous import site_operations
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
+from subprocess import Popen
                                 
 class NetworkSelectionMenu(SelectionMenu):
     
     def __init__(self, controller):
         super().__init__(controller)
         
+        # exactly one node
+        if self.no_link and self.no_shape and self.one_node:
+            
+            # we retrieve the node
+            gnode ,= self.so
+            self.node = gnode.node
+            
+            # configuration + troubleshooting windows
+            configuration = QAction('Configuration', self)        
+            configuration.triggered.connect(self.configure)
+            self.addAction(configuration)
+            
+            troubleshooting = QAction('Troubleshooting', self)        
+            troubleshooting.triggered.connect(self.troubleshoot)
+            self.addAction(troubleshooting)
+            
+            # SSH connection using PuTTY
+            ssh_connection = QAction('SSH connection', self)        
+            ssh_connection.triggered.connect(self.ssh_connection)
+            self.addAction(ssh_connection)
+            
+            tables = QAction("L2/L3 tables", self)
+            tables_submenu = QMenu('L2/L3 tables', self)
+            
+            if self.node.subtype == 'router':
+                routing_table = QAction('Routing table', self)        
+                routing_table.triggered.connect(self.routing_table)
+                tables_submenu.addAction(routing_table)
+                
+                arp_table = QAction('ARP table', self)        
+                arp_table.triggered.connect(self.arp_table)
+                tables_submenu.addAction(arp_table)
+                
+            if self.node.subtype == 'switch':
+                switching_table = QAction('Switching table', self)        
+                switching_table.triggered.connect(self.switching_table)
+                tables_submenu.addAction(switching_table)
+                
+            tables.setMenu(tables_submenu)
+            self.addAction(tables)
+            self.addSeparator()
+        
         if self.no_shape:
-            simulate_failure = QAction('&Simulate failure', self)        
+            simulate_failure = QAction('Simulate failure', self)        
             simulate_failure.triggered.connect(lambda: self.simulate_failure(*self.so))
             self.addAction(simulate_failure)
             
-            remove_failure = QAction('&Remove failure', self)        
+            remove_failure = QAction('Remove failure', self)        
             remove_failure.triggered.connect(lambda: self.remove_failure(*self.so))
             self.addAction(remove_failure)
             self.addSeparator()
@@ -94,6 +136,30 @@ class NetworkSelectionMenu(SelectionMenu):
             self.addAction(self.align_action)
             
         self.addAction(self.drawing_action)
+        
+    def configure(self):
+        if node.subtype == 'router':
+            conf.RouterConfiguration(self.node, self.controller)
+        if node.subtype == 'switch':
+            conf.SwitchConfiguration(self.node, self.controller)
+        
+    def troubleshoot(self):
+        ip_ts.Troubleshooting(self.node, self.controller)
+        
+    def ssh_connection(self):
+        ssh_data = self.controller.ssh_management_window.get()
+        ssh_data['IP'] = self.node.ipaddress
+        ssh_connection = '{path} -ssh {username}@{IP} -pw {password}'
+        connect = Popen(ssh_connection.format(**ssh_data).split())
+        
+    def routing_table(self):
+        ip_rt.RoutingTable(self.node, self.controller)
+        
+    def switching_table(self):
+        switching_table.SwitchingTable(self.node, self.controller)
+        
+    def arp_table(self):
+        arp_table.ARPTable(self.node, self.controller)
         
     ## AS operations: 
     # - add or remove from an AS

@@ -147,10 +147,10 @@ class Controller(QMainWindow):
         stop_drawing.setStatusTip('Stop the graph drawing algorithm')
         stop_drawing.triggered.connect(lambda: self.stop_drawing())
         
-        gis_parameter_icon = QIcon(join(self.path_icon, 'gis.png'))
-        gis_parameter = QAction(gis_parameter_icon, 'GIS parameters', self)
-        gis_parameter.setStatusTip('GIS parameters')
-        gis_parameter.triggered.connect(lambda: self.stop_drawing())
+        refresh_icon = QIcon(join(self.path_icon, 'refresh.png'))
+        refresh = QAction(refresh_icon, 'Calculate all', self)
+        refresh.setStatusTip('Calculate all (routing options + refresh display)')
+        refresh.triggered.connect(self.refresh)
 
         toolbar = self.addToolBar('')
         toolbar.resize(1500, 1500)
@@ -163,6 +163,7 @@ class Controller(QMainWindow):
         toolbar.addAction(graph_generation)
         toolbar.addAction(stop_drawing)
         toolbar.addSeparator()
+        toolbar.addAction(refresh)
         
         # create all pixmap images for node subtypes
         self.node_subtype_to_pixmap = defaultdict(OrderedDict)
@@ -262,3 +263,6 @@ class Controller(QMainWindow):
         
     def delete_map(self):
         self.current_project.current_view.world_map.delete_map()
+        
+    def refresh(self):
+        self.current_project.refresh()
