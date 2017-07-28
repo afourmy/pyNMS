@@ -546,6 +546,7 @@ class OSPF_AS(ASWithArea, IP_AS):
         self.add_to_AS(*(self.nodes | self.links))
         
         if not is_imported:
+            print('test')
             self.area_factory(
                               'Backbone', 
                               id = 0, 

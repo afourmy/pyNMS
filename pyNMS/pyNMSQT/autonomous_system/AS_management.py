@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import area
+from . import area, area_operations
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget)
@@ -130,11 +130,13 @@ class ASManagement(QTabWidget):
     # remove the object selected in 'obj_type' listbox from the AS
     def remove_selected(self, obj_type):
         # remove and retrieve the selected object in the listbox
-        for selected_obj in self.dict_listbox[obj_type].selectedItems():
-            self.dict_listbox[obj_type].removeItem(selected_item)
+        for selected_item in self.dict_listbox[obj_type].selectedItems():
+            # self.dict_listbox[obj_type].removeItem(selected_item)
             # remove it from the AS as well
             so = self.network.of(name=selected_item.text(), _type=obj_type)
             self.AS.remove_from_AS(so)
+            row = self.dict_listbox[obj_type].row(selected_item)
+            self.dict_listbox[obj_type].takeItem(row)
         
     def add_to_AS(self, *objects):
         self.AS.add_to_AS(*objects)
@@ -149,13 +151,6 @@ class ASManagement(QTabWidget):
             for neighbor, adj_link in self.network.graph[node.id]['plink']:
                 if neighbor in self.AS.pAS['node']:
                     links_between_domain_nodes |= {adj_link}
-            # #TODO refactor this
-            # for neighbor, vc in self.network.gftr(node, 'l2link', 'l2vc'):
-            #     if neighbor in self.AS.pAS['node']:
-            #         links_between_domain_nodes |= {vc.linkS, vc.linkD}
-            # for neighbor, vc in self.network.gftr(node, 'l3link', 'l3vc'):
-            #     if neighbor in self.AS.pAS['node']:
-            #         links_between_domain_nodes |= {vc.linkS, vc.linkD}
         self.add_to_AS(*links_between_domain_nodes)
             
     ## Functions used to modify AS from the right-click menu
@@ -188,7 +183,8 @@ class ASManagementWithArea(ASManagement):
         area_names = QLabel('List of all {}'.format(mode.lower()))
         self.area_list = QListWidget()
         self.area_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        # self.area_names.bind('<<ListboxSelect>>', lambda e: self.display_area(e))
+        self.area_list.setSortingEnabled(True)
+        self.area_list.itemSelectionChanged.connect(self.display_area)
         
         area_management_layout = QGridLayout()
         area_management_layout.addWidget(area_names, 0, 0)
@@ -202,19 +198,21 @@ class ASManagementWithArea(ASManagement):
         # list of area nodes
         area_nodes = QLabel('{} nodes'.format(mode))
         self.area_nodes_list = QListWidget()
-        self.area_nodes_list.setSelectionMode(QAbstractItemView.ExtendedSelection)  
-        # self.area_nodes.bind('<<ListboxSelect>>', lambda e: self.display_area(e))  
+        self.area_nodes_list.setSelectionMode(QAbstractItemView.ExtendedSelection) 
+        self.area_nodes_list.setSortingEnabled(True)
+        self.area_nodes_list.itemSelectionChanged.connect(lambda: self.highlight_area_object('node'))
         
         # list of area links
         area_links = QLabel('{} links'.format(mode))
         self.area_links_list = QListWidget()
-        self.area_links_list.setSelectionMode(QAbstractItemView.ExtendedSelection)  
-        # self.area_links.bind('<<ListboxSelect>>', lambda e: self.display_area(e))
+        self.area_links_list.setSelectionMode(QAbstractItemView.ExtendedSelection) 
+        self.area_links_list.setSortingEnabled(True)
+        self.area_links_list.itemSelectionChanged.connect(lambda: self.highlight_area_object('link'))
         
         # create an area
         button_create_area = QPushButton()
         button_create_area.setText('Create {}'.format(mode.lower()))
-        button_create_area.clicked.connect(lambda: area.CreateArea(self))
+        button_create_area.clicked.connect(lambda: area_operations.CreateArea(self))
         
         # delete an area
         button_delete_area = QPushButton()
@@ -234,41 +232,39 @@ class ASManagementWithArea(ASManagement):
         area_frame_layout = QVBoxLayout(area_frame)
         area_frame_layout.addWidget(area_management)
         area_frame_layout.addWidget(area_objects)
-        
-        # at first, the backbone is the only area: we insert it in the listbox
-        self.default_area = 'Default VLAN' if mode == 'VLAN' else 'Backbone'
-        # self.area_list.addItem(self.default_area)
             
     # function to highlight the selected object on the canvas
-    def highlight_area_object(self, event, obj_type):        
-        self.AS.view.unhighlight_all()
-        lb = self.area_nodes if obj_type == 'node' else self.area_links
-        for selected_object in lb.selected():
-            so = self.network.of(name=selected_object, _type=obj_type)
-            self.AS.view.highlight_objects(so)
+    def highlight_area_object(self, obj_type):        
+        self.AS.view.scene.clearSelection()
+        lb = self.area_nodes_list if obj_type == 'node' else self.area_links_list
+        for selected_item in lb.selectedItems():
+            selected_object = self.network.of(name=selected_item.text(), _type=obj_type)
+            selected_object.gobject.setSelected(True)
         
     ## Functions used directly from the AS Management window
 
     def create_area(self, name, id):
         self.AS.area_factory(name, id)
-        # self.area_list.addItem(name)
+        self.area_list.addItem(name)
 
     def delete_area(self):
-        for area_name in self.area_names.pop_selected():
-            selected_area = self.AS.area_factory(name=area_name)
+        for area_item in self.area_list.selectedItems():
+            selected_area = self.AS.area_factory(name=area_item.text())
             self.AS.delete_area(selected_area)
+            row = self.area_list.row(self.area_list.takeItem(area_item))
                 
-    def display_area(self, event):
-        for area in self.area_names.selected():
-            area = self.AS.area_factory(area)
-            self.AS.view.unhighlight_all()
-            self.AS.view.highlight_objects(*(area.pa['node'] | area.pa['link']))
-            self.area_nodes.clear()
-            self.area_links.clear()
+    def display_area(self):
+        self.area_nodes_list.clear()
+        self.area_links_list.clear()
+        self.AS.view.scene.clearSelection()
+        for area in self.area_list.selectedItems():
+            area = self.AS.area_factory(area.text())
+            for obj in area.pa['node'] | area.pa['link']:
+                obj.gobject.setSelected(True)
             for node in area.pa['node']:
-                self.area_nodes.insert(node)
+                self.area_nodes_list.addItem(str(node))
             for link in area.pa['link']:
-                self.area_links.insert(link)
+                self.area_links_list.addItem(str(link))
                 
     ## Functions used to modify AS from the right-click menu
     
@@ -285,24 +281,6 @@ class IPManagement(ASManagement):
     
     def __init__(self, *args):
         super().__init__(*args)
-                    
-        # self.ip_frame = CustomFrame(self.frame_notebook)
-        # self.frame_notebook.add(self.ip_frame, text=' IP management ')
-        # 
-        # # label frame for area properties
-        # lf_redistribution = Labelframe(self.ip_frame)
-        # lf_redistribution.text = 'Redistribution'
-        # lf_redistribution.grid(0, 0)
-        # 
-        # default_route_label = Label(self.ip_frame)
-        # default_route_label.text = 'Propagate default route :'
-        # 
-        # self.choose_router = Combobox(self.ip_frame, width=15, height=7)
-        # self.choose_router['values'] = tuple(self.AS.nodes)
-        # self.choose_router.current(0)
-        # 
-        # default_route_label.grid(0, 0, in_=lf_redistribution)
-        # self.choose_router.grid(0, 1, in_=lf_redistribution)
                 
 class RIP_Management(ASManagement):
     

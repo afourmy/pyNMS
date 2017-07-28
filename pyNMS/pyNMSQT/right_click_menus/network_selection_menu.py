@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import QMenu, QAction
 from .selection_menu import SelectionMenu
 from autonomous_system import AS
 from autonomous_system import AS_operations
+from autonomous_system import area_operations
 from objects.objects import *
 import ip_networks.configuration as conf
 import ip_networks.troubleshooting as ip_ts
@@ -105,7 +106,8 @@ class NetworkSelectionMenu(SelectionMenu):
         self.change_AS.show()
         
     def change_area(self, mode):
-        self.change_area = AS_operations.AreaOperation(mode, self.so, self.common_AS, self.controller)
+        objects = set(self.view.get_obj(self.so))
+        self.change_area = area_operations.AreaOperation(mode, self.so, self.common_AS, self.controller)
         self.change_area.show()
         
     def create_AS(self):
