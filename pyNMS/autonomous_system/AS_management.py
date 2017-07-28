@@ -12,113 +12,103 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from . import area
-from pythonic_tkinter.preconfigured_widgets import *
+from . import area, area_operations
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
+        QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget)
 
-class ASManagement(CustomTopLevel):
+class ASManagement(QTabWidget):
     
     def __init__(self, AS, is_imported):
         super().__init__()
         self.AS = AS
         self.network = self.AS.view.network
+        self.setMinimumSize(300, 300)
         self.dict_listbox = {}
-        self.title('Manage AS')
+        self.setWindowTitle('Manage AS')
         
-        # A ttk notebook made of two frames
-        self.frame_notebook = ttk.Notebook(self)
-        common_frame = CustomFrame(self.frame_notebook)
-        self.frame_notebook.add(common_frame, text=' Common management ')
-        self.frame_notebook.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
+        # self.frame_notebook = QTabWidget(self)
         
-        # label frame for properties
-        lf_management = Labelframe(common_frame)
-        lf_management.text = 'AS management'
+        # first tab: the common management window
+        common_frame = QWidget(self)
+        self.addTab(common_frame, 'Common management')
+
+        # group box for properties
+        AS_management = QGroupBox()
+        AS_management.setTitle('AS management')
         
-        obj_types = ('link', 'node') 
-        
-        label_name = Label(common_frame)
-        label_name.text = 'AS name'
-        label_id = Label(common_frame)
-        label_id.text = 'AS ID'
-        label_type = Label(common_frame)
-        label_type.text = 'AS Type'
-        
-        entry_name  = Entry(common_frame, width=10)
-        entry_name.text = AS.name
-        entry_id  = Entry(common_frame, width=10)
-        entry_id.text = AS.id
+        label_name = QLabel('AS name')
+        label_id = QLabel('AS ID')
+        label_type = QLabel('AS type')
+        name_edit = QLineEdit()
+        name_edit.setMaximumWidth(120)
+        id_edit = QLineEdit()
+        id_edit.setMaximumWidth(120)
+        AS_type = QLabel(AS.AS_type)
         
         # delete the AS
-        button_delete_AS = Button(common_frame) 
-        button_delete_AS.text='Delete AS'
-        button_delete_AS.command = lambda: self.AS.delete_AS()
+        button_delete_AS = QPushButton()
+        button_delete_AS.setText('Delete AS')
+        button_delete_AS.clicked.connect(self.AS.delete_AS)
         
         # automatic cost allocation
-        button_automatic_cost_allocation = Button(common_frame) 
-        button_automatic_cost_allocation.text='Automatic cost allocation'
-        button_automatic_cost_allocation.command = lambda: self.network.WSP_TS(AS)
+        button_cost_allocation = QPushButton()
+        button_cost_allocation.setText('Automatic cost allocation')
+        button_cost_allocation.clicked.connect(lambda: self.network.WSP_TS(AS))
         
-        # the type of a domain cannot change after domain creation.
-        AS_type = Label(common_frame) 
-        AS_type.text = AS.AS_type
+        AS_management_layout = QGridLayout()
+        AS_management_layout.addWidget(label_name, 0, 0)
+        AS_management_layout.addWidget(label_id, 1, 0)
+        AS_management_layout.addWidget(label_type, 2, 0)
+        AS_management_layout.addWidget(name_edit, 0, 1)
+        AS_management_layout.addWidget(id_edit, 1, 1)
+        AS_management_layout.addWidget(AS_type, 2, 1)
+        AS_management_layout.addWidget(button_delete_AS, 0, 2)
+        AS_management_layout.addWidget(button_cost_allocation, 1, 2)
+        AS_management.setLayout(AS_management_layout)
         
-        lf_management.grid(0, 0)
-        label_name.grid(0, 0, in_=lf_management)
-        label_id.grid(1, 0, in_=lf_management)
-        label_type.grid(2, 0, in_=lf_management)
-        entry_name.grid(0, 1, in_=lf_management)
-        entry_id.grid(1, 1, in_=lf_management)
-        AS_type.grid(2, 1, in_=lf_management)
-        button_delete_AS.grid(0, 2, in_=lf_management)
-        button_automatic_cost_allocation.grid(1, 2, in_=lf_management)
+        # group box for links and nodes
+        object_management = QGroupBox()
+        object_management.setTitle('AS objects')
         
-        # label frame for links and nodes
-        lf_objects = Labelframe(common_frame)
-        lf_objects.text = 'AS objects'
-        lf_objects.grid(1, 0)
+        nodes = QLabel('AS nodes')
+        self.node_list = QListWidget()
+        self.node_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.node_list.setSortingEnabled(True)
+        self.node_list.itemSelectionChanged.connect(lambda: self.highlight_object('node'))
+        self.dict_listbox['node'] = self.node_list
         
-        # listbox of all AS objects
-        for index, type in enumerate(obj_types):
-            label = Label(common_frame)
-            label.text = 'AS ' + type + 's'
-    
-            listbox = ObjectListbox(common_frame, width=15, height=10)
-                                            
-            self.dict_listbox[type] = listbox
-            yscroll = Scrollbar(common_frame)
-            yscroll.command = self.dict_listbox[type].yview
-                    
-            listbox.configure(yscrollcommand=yscroll.set)
-            listbox.bind('<<ListboxSelect>>', 
-                            lambda e, type=type: self.highlight_object(e, type))
-                            
-            label.grid(0, 2*index, in_=lf_objects)
-            listbox.grid(1, 2*index, in_=lf_objects)
-            yscroll.grid(1, 1 + 2*index, in_=lf_objects)
+        links = QLabel('AS links')
+        self.link_list = QListWidget()
+        self.link_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.link_list.setSortingEnabled(True)
+        self.dict_listbox['link'] = self.link_list
+            
+        # add all physical links between nodes of the AS
+        button_find_links = QPushButton()
+        button_find_links.setText('Find links')
+        button_find_links.clicked.connect(self.find_links)
         
         # find domain physical links: the physical links between nodes of the AS
-        button_find_links = Button(common_frame) 
-        button_find_links.text = 'Find links'
-        button_find_links.command=lambda: self.find_links()
+        button_remove_nodes = QPushButton()
+        button_remove_nodes.setText('Remove nodes')
+        button_remove_nodes.clicked.connect(lambda: self.remove_selected('node'))
         
-        # operation on nodes
-        button_remove_node_from_AS = Button(common_frame) 
-        button_remove_node_from_AS.text='Remove node'
-        button_remove_node_from_AS.command = lambda: self.remove_selected('node')
+        object_layout = QGridLayout()
+        object_layout.addWidget(nodes, 0, 0)
+        object_layout.addWidget(self.node_list, 0, 1)
+        object_layout.addWidget(links, 1, 0)
+        object_layout.addWidget(self.link_list, 1, 1)
+        object_layout.addWidget(button_find_links, 2, 0)
+        object_layout.addWidget(button_remove_nodes, 2, 1)
+        object_management.setLayout(object_layout)
         
-        # buttons under the physical links column
-        button_find_links.grid(2, 0, in_=lf_objects)
+        # layout for the group box
+        common_frame_layout = QVBoxLayout(common_frame)
+        common_frame_layout.addWidget(AS_management)
+        common_frame_layout.addWidget(object_management)
         
-        # button under the nodes column
-        button_remove_node_from_AS.grid(2, 2, in_=lf_objects)
-        
-        self.wm_attributes('-topmost', True) 
-        # hide the window when closed
-        self.protocol('WM_DELETE_WINDOW', self.withdraw)
-        
-        # if the AS is created from an import, close the management window
-        if is_imported: 
-            self.withdraw()
+        self.show()
             
     ## Functions used directly from the AS Management window
         
@@ -128,27 +118,32 @@ class ASManagement(CustomTopLevel):
         for obj_type in ('link', 'node'):
             self.dict_listbox[obj_type].clear()
             for obj in self.AS.pAS[obj_type]:
-                self.dict_listbox[obj_type].insert(obj)
+                self.dict_listbox[obj_type].addItem(str(obj))
         
     # function to highlight the selected object on the canvas
-    def highlight_object(self, event, obj_type):        
-        self.AS.view.unhighlight_all()
-        for selected_object in self.dict_listbox[obj_type].selected():
-            so = self.network.of(name=selected_object, _type=obj_type)
-            self.AS.view.highlight_objects(so)
-            
+    def highlight_object(self, obj_type):
+        self.AS.view.scene.clearSelection() 
+        for selected_item in self.dict_listbox[obj_type].selectedItems():
+            obj = self.network.of(name=selected_item.text(), _type=obj_type)
+            obj.gobject.setSelected(True)
+                        
     # remove the object selected in 'obj_type' listbox from the AS
     def remove_selected(self, obj_type):
         # remove and retrieve the selected object in the listbox
-        for selected_obj in self.dict_listbox[obj_type].pop_selected():
+        for selected_item in self.dict_listbox[obj_type].selectedItems():
+            # self.dict_listbox[obj_type].removeItem(selected_item)
             # remove it from the AS as well
-            so = self.network.of(name=selected_obj, _type=obj_type)
+            so = self.network.of(name=selected_item.text(), _type=obj_type)
             self.AS.remove_from_AS(so)
+            row = self.dict_listbox[obj_type].row(selected_item)
+            self.dict_listbox[obj_type].takeItem(row)
         
     def add_to_AS(self, *objects):
         self.AS.add_to_AS(*objects)
         for obj in objects:
-            self.dict_listbox[obj.class_type].insert(obj)
+            if self.dict_listbox[obj.class_type].findItems(str(obj), Qt.MatchExactly):
+                continue
+            self.dict_listbox[obj.class_type].addItem(str(obj))
             
     def find_links(self):
         links_between_domain_nodes = set()
@@ -156,14 +151,6 @@ class ASManagement(CustomTopLevel):
             for neighbor, adj_link in self.network.graph[node.id]['plink']:
                 if neighbor in self.AS.pAS['node']:
                     links_between_domain_nodes |= {adj_link}
-            #TODO refactor this
-            for neighbor, vc in self.network.gftr(node, 'l2link', 'l2vc'):
-                if neighbor in self.AS.pAS['node']:
-                    links_between_domain_nodes |= {vc.linkS, vc.linkD}
-            for neighbor, vc in self.network.gftr(node, 'l3link', 'l3vc'):
-                if neighbor in self.AS.pAS['node']:
-                    links_between_domain_nodes |= {vc.linkS, vc.linkD}
-            
         self.add_to_AS(*links_between_domain_nodes)
             
     ## Functions used to modify AS from the right-click menu
@@ -171,11 +158,9 @@ class ASManagement(CustomTopLevel):
     def remove_from_AS(self, *objects):
         self.AS.remove_from_AS(*objects)
         for obj in objects:
-            if obj.type == 'node':
-                # remove the node from nodes listbox
-                self.dict_listbox['node'].pop(obj)
-            elif obj.class_type == 'link':
-                self.dict_listbox['link'].pop(obj)
+            item ,= self.dict_listbox[obj.class_type].findItems(str(obj), Qt.MatchExactly)
+            row = self.dict_listbox[obj.class_type].row(item)
+            self.dict_listbox[obj.class_type].takeItem(row)
             
 class ASManagementWithArea(ASManagement):
     
@@ -186,113 +171,104 @@ class ASManagementWithArea(ASManagement):
             mode = 'VLAN'
         else:
             mode = 'Area'
-        
-        self.area_frame = CustomFrame(self.frame_notebook)
-        self.frame_notebook.add(self.area_frame, text=' Area management ')
-        self.area_listbox = ('name', 'link', 'node')
-        self.dict_area_listbox = {}
-        
-        # label frame for area properties
-        lf_area_main = Labelframe(self.area_frame)
-        lf_area_main.text = 'Area properties'
-        lf_area_main.grid(0, 0)
-        
-        area_names_label = Label(self.area_frame)
-        area_names_label.text = 'List of all ' + mode
-        
-        self.area_names = ObjectListbox(self.area_frame, width=15, height=7)
-        yscroll_names = Scrollbar(self.area_frame)
-        yscroll_names.command = self.area_names.yview
-        self.area_names.configure(yscrollcommand=yscroll_names.set)
-        self.area_names.bind('<<ListboxSelect>>', lambda e: self.display_area(e))
-        
-        #TODO add entry / label for all area properties
-        
-        area_names_label.grid(0, 0, in_=lf_area_main)
-        self.area_names.grid(1, 0, in_=lf_area_main)
-        yscroll_names.grid(1, 1, in_=lf_area_main)
-        
-        # label frame for area objects
-        lf_area_objects = Labelframe(self.area_frame)
-        lf_area_objects.text = 'Area objects'
-        lf_area_objects.grid(1, 0)
-                    
-        # listbox for area nodes
-        area_nodes_label = Label(self.area_frame)
-        area_nodes_label.text = mode + ' nodes'
-        
-        self.area_nodes = ObjectListbox(self.area_frame, width=15, height=7)
-        yscroll_nodes = Scrollbar(self.area_frame)
-        yscroll_nodes.command = self.area_nodes.yview
-        self.area_nodes.configure(yscrollcommand=yscroll_nodes.set)
-        self.area_nodes.bind('<<ListboxSelect>>', lambda e: self.display_area(e))
-        
-        area_nodes_label.grid(0, 0, in_=lf_area_objects)
-        self.area_nodes.grid(1, 0, in_=lf_area_objects)
-        yscroll_nodes.grid(1, 1, in_=lf_area_objects)
-        
-        # listbox for area physical links
-        area_links_label = Label(self.area_frame)
-        area_links_label.text = mode + ' physical links'
-        
-        self.area_links = ObjectListbox(self.area_frame, width=15, height=7)
-        yscroll_links = Scrollbar(self.area_frame)
-        yscroll_links.command = self.area_links.yview
-        self.area_links.configure(yscrollcommand=yscroll_links.set)
-        self.area_links.bind('<<ListboxSelect>>', lambda e: self.display_area(e))
-        
-        area_links_label.grid(0, 2, in_=lf_area_objects)
-        self.area_links.grid(1, 2, in_=lf_area_objects)
-        yscroll_links.grid(1, 3, in_=lf_area_objects)
-                                                          
-        # button to create an area
-        button_create_area = Button(self.area_frame) 
-        button_create_area.text = 'Create ' + mode
-        button_create_area.command = lambda: area.CreateArea(self)
-                                
-        # button to delete an area
-        button_delete_area = Button(self.area_frame)
-        button_delete_area.text = 'Delete area'
-        button_delete_area.command = lambda: self.delete_area()
             
-        # button under the area column
-        button_create_area.grid(2, 0, in_=lf_area_objects)
-        button_delete_area.grid(2, 2, in_=lf_area_objects)
+        # first tab: the area management window
+        area_frame = QWidget(self)
+        self.addTab(area_frame, '{} management'.format(mode))
         
-        # at first, the backbone is the only area: we insert it in the listbox
-        self.default_area = 'Default VLAN' if mode == 'VLAN' else 'Backbone'
-        self.area_names.insert(self.default_area)
+        # group box for area management
+        area_management = QGroupBox()
+        area_management.setTitle('Area properties')
+        
+        area_names = QLabel('List of all {}'.format(mode.lower()))
+        self.area_list = QListWidget()
+        self.area_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.area_list.setSortingEnabled(True)
+        self.area_list.itemSelectionChanged.connect(self.display_area)
+        
+        area_management_layout = QGridLayout()
+        area_management_layout.addWidget(area_names, 0, 0)
+        area_management_layout.addWidget(self.area_list, 1, 0)
+        area_management.setLayout(area_management_layout)
+        
+        # group box for area objects
+        area_objects = QGroupBox()
+        area_objects.setTitle('Area objects')
+        
+        # list of area nodes
+        area_nodes = QLabel('{} nodes'.format(mode))
+        self.area_nodes_list = QListWidget()
+        self.area_nodes_list.setSelectionMode(QAbstractItemView.ExtendedSelection) 
+        self.area_nodes_list.setSortingEnabled(True)
+        self.area_nodes_list.itemSelectionChanged.connect(lambda: self.highlight_area_object('node'))
+        
+        # list of area links
+        area_links = QLabel('{} links'.format(mode))
+        self.area_links_list = QListWidget()
+        self.area_links_list.setSelectionMode(QAbstractItemView.ExtendedSelection) 
+        self.area_links_list.setSortingEnabled(True)
+        self.area_links_list.itemSelectionChanged.connect(lambda: self.highlight_area_object('link'))
+        
+        # create an area
+        button_create_area = QPushButton()
+        button_create_area.setText('Create {}'.format(mode.lower()))
+        button_create_area.clicked.connect(self.create_area)
+        
+        # delete an area
+        button_delete_area = QPushButton()
+        button_delete_area.setText('Delete {}'.format(mode.lower()))
+        button_delete_area.clicked.connect(self.delete_area)
+                                                          
+        area_objects_layout = QGridLayout()
+        area_objects_layout.addWidget(area_nodes, 0, 0)
+        area_objects_layout.addWidget(self.area_nodes_list, 1, 0)
+        area_objects_layout.addWidget(area_links, 0, 1)
+        area_objects_layout.addWidget(self.area_links_list, 1, 1)
+        area_objects_layout.addWidget(button_create_area, 2, 0)
+        area_objects_layout.addWidget(button_delete_area, 2, 1)
+        area_objects.setLayout(area_objects_layout)
+        
+        # layout for the group box
+        area_frame_layout = QVBoxLayout(area_frame)
+        area_frame_layout.addWidget(area_management)
+        area_frame_layout.addWidget(area_objects)
             
     # function to highlight the selected object on the canvas
-    def highlight_area_object(self, event, obj_type):        
-        self.AS.view.unhighlight_all()
-        lb = self.area_nodes if obj_type == 'node' else self.area_links
-        for selected_object in lb.selected():
-            so = self.network.of(name=selected_object, _type=obj_type)
-            self.AS.view.highlight_objects(so)
+    def highlight_area_object(self, obj_type):        
+        self.AS.view.scene.clearSelection()
+        lb = self.area_nodes_list if obj_type == 'node' else self.area_links_list
+        for selected_item in lb.selectedItems():
+            selected_object = self.network.of(name=selected_item.text(), _type=obj_type)
+            selected_object.gobject.setSelected(True)
         
     ## Functions used directly from the AS Management window
+        
+    def create_area(self):
+        self.create_area_window = area_operations.CreateArea(self)
+        self.create_area_window.show()
 
-    def create_area(self, name, id):
+    def add_area(self, name, id):
         self.AS.area_factory(name, id)
-        self.area_names.insert(name)
+        self.area_list.addItem(name)
 
     def delete_area(self):
-        for area_name in self.area_names.pop_selected():
-            selected_area = self.AS.area_factory(name=area_name)
+        for area_item in self.area_list.selectedItems():
+            selected_area = self.AS.area_factory(name=area_item.text())
             self.AS.delete_area(selected_area)
+            self.area_list.takeItem(self.area_list.row(area_item))
                 
-    def display_area(self, event):
-        for area in self.area_names.selected():
-            area = self.AS.area_factory(area)
-            self.AS.view.unhighlight_all()
-            self.AS.view.highlight_objects(*(area.pa['node'] | area.pa['link']))
-            self.area_nodes.clear()
-            self.area_links.clear()
+    def display_area(self):
+        self.area_nodes_list.clear()
+        self.area_links_list.clear()
+        self.AS.view.scene.clearSelection()
+        for area in self.area_list.selectedItems():
+            area = self.AS.area_factory(area.text())
+            for obj in area.pa['node'] | area.pa['link']:
+                obj.gobject.setSelected(True)
             for node in area.pa['node']:
-                self.area_nodes.insert(node)
+                self.area_nodes_list.addItem(str(node))
             for link in area.pa['link']:
-                self.area_links.insert(link)
+                self.area_links_list.addItem(str(link))
                 
     ## Functions used to modify AS from the right-click menu
     
@@ -309,24 +285,6 @@ class IPManagement(ASManagement):
     
     def __init__(self, *args):
         super().__init__(*args)
-                    
-        self.ip_frame = CustomFrame(self.frame_notebook)
-        self.frame_notebook.add(self.ip_frame, text=' IP management ')
-        
-        # label frame for area properties
-        lf_redistribution = Labelframe(self.ip_frame)
-        lf_redistribution.text = 'Redistribution'
-        lf_redistribution.grid(0, 0)
-        
-        default_route_label = Label(self.ip_frame)
-        default_route_label.text = 'Propagate default route :'
-        
-        self.choose_router = Combobox(self.ip_frame, width=15, height=7)
-        self.choose_router['values'] = tuple(self.AS.nodes)
-        self.choose_router.current(0)
-        
-        default_route_label.grid(0, 0, in_=lf_redistribution)
-        self.choose_router.grid(0, 1, in_=lf_redistribution)
                 
 class RIP_Management(ASManagement):
     
@@ -422,20 +380,9 @@ class OSPF_Management(ASManagementWithArea, IPManagement):
         '100GE':10**10
         }
         
-        # combobox to choose the exit ASBR
-        self.exit_asbr = tk.StringVar()
-        self.router_list = ttk.Combobox(self, 
-                                    textvariable=self.exit_asbr, width=10)
-        self.router_list['values'] = (None,) + tuple(
-                                        self.dict_listbox['node'].yield_all())
-        self.exit_asbr.set(None)
-        
-        # hide the window when closed
-        self.protocol('WM_DELETE_WINDOW', self.save_parameters)
-        
     def add_to_AS(self, *objects):
         super(OSPF_Management, self).add_to_AS(*objects)  
-        self.add_to_area(self.default_area, *objects)
+        self.add_to_area('Backbone', *objects)
                 
     def update_cost(self):
         for link in self.AS.pAS['link']:

@@ -23,9 +23,13 @@ path_app = dirname(abspath(stack()[0][1]))
 
 if path_app not in sys.path:
     sys.path.append(path_app)
-
+    
 import controller
+from PyQt5.QtWidgets import QApplication
 
 if str.__eq__(__name__, '__main__'):
-    pyNMS = controller.Controller(path_app)
-    pyNMS.mainloop()
+    app = QApplication(sys.argv)
+    controller = controller.Controller(path_app)
+    controller.setGeometry(100, 100, 1500, 800)
+    controller.show()
+    sys.exit(app.exec_())

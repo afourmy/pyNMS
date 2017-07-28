@@ -157,21 +157,20 @@ class BaseNetwork(object):
         return self.pn[link_type][id]
         
     # 'nf' is the node factory. Creates or retrieves any type of nodes
-    def nf(self, node_type='router', id=None, **kwargs):
-        if not id:
-            if 'name' not in kwargs:
-                name = node_type + str(self.cpt_node)
-                kwargs['name'] = name
-            else:
-                if kwargs['name'] in self.name_to_id:
-                    node = self.nodes[self.name_to_id[kwargs['name']]]
-                    node.update_properties(kwargs)
-                    return node
-            id = self.cpt_node
-            kwargs['id'] = id
-            self.nodes[id] = node_class[node_type](**kwargs)
-            self.name_to_id[kwargs['name']] = id
-            self.cpt_node += 1
+    def nf(self, subtype='router', id=None, **kwargs):
+        if 'name' not in kwargs:
+            name = subtype + str(self.cpt_node)
+            kwargs['name'] = name
+        else:
+            if kwargs['name'] in self.name_to_id:
+                node = self.nodes[self.name_to_id[kwargs['name']]]
+                node.update_properties(kwargs)
+                return node
+        id = self.cpt_node
+        kwargs['id'] = id
+        self.nodes[id] = node_class[subtype](**kwargs)
+        self.name_to_id[kwargs['name']] = id
+        self.cpt_node += 1
         return self.nodes[id]
         
     # 'of' is the object factory: returns a link or a node from its name
@@ -192,6 +191,10 @@ class BaseNetwork(object):
     # convert a link name to a node
     def convert_link(self, link_name, subtype='ethernet link'):
         return self.lf(name=link_name, subtype=subtype)
+        
+    # convert an iterable of strings representing nodes, to a generator of nodes
+    def convert_nodes(self, nodes):
+        return map(self.convert_node, nodes)
     
     # convert a string representing a set of nodes, to an actual set of nodes
     def convert_node_set(self, node_set):
@@ -200,6 +203,10 @@ class BaseNetwork(object):
     # convert a string representing a list of nodes, to an actual list of nodes
     def convert_node_list(self, node_list):
         return list(map(self.convert_node, eval(node_list)))
+        
+    # convert an iterable of strings representing links, to a generator of links
+    def convert_links(self, links):
+        return map(self.convert_link, links)
     
     # convert a string representing a set of links, to an actual set of links
     def convert_link_set(self, link_set, subtype='ethernet link'):
@@ -215,12 +222,6 @@ class BaseNetwork(object):
         self.graph.clear()
         for dict_of_objects in self.pn.values():
             dict_of_objects.clear()
-            
-    def remove_object(self, obj):
-        if obj.class_type == 'node':
-            self.remove_node(obj)
-        else:
-            self.remove_link(obj)
             
     def remove_node(self, node):
         self.nodes.pop(self.name_to_id.pop(node.name))

@@ -1,323 +1,264 @@
-# Copyright (C) 2017 Antoine Fourmy <antoine dot fourmy at gmail dot com>
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-import os
-import tkinter as tk
-from project import Project
-from collections import defaultdict
-from os.path import abspath, pardir, join
+from collections import defaultdict, OrderedDict
 from objects.objects import *
-from pythonic_tkinter.preconfigured_widgets import *
-from miscellaneous import search
-from miscellaneous import graph_algorithms
-from miscellaneous import network_tree_view as ntv
-from miscellaneous import debug
-from ip_networks import ssh_management
-from graph_generation import advanced_graph
-from optical_networks import rwa_window
-from automation import script_creation
+from os.path import abspath, join, pardir
 from main_menus import (
-                        creation_menu, 
-                        routing_menu,
-                        display_menu, 
-                        drawing_menu, 
-                        view_menu,
-                        sdn_menu
+                        node_creation_panel,
+                        link_creation_panel,
+                        routing_panel
                         )
-from PIL import ImageTk
+from graph_generation.graph_generation import GraphGenerationWindow
+from gis.gis_parameter import GISParameterWindow
+from miscellaneous.graph_drawing import *
+from project import Project
+from views import base_view
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import (
+                         QColor, 
+                         QIcon,
+                         QDrag, 
+                         QPainter, 
+                         QPixmap
+                         )
+from PyQt5.QtWidgets import (
+                             QAction,
+                             QFrame,
+                             QFileDialog,
+                             QPushButton, 
+                             QMainWindow, 
+                             QApplication,
+                             QHBoxLayout,
+                             QVBoxLayout,
+                             QLabel, 
+                             QGraphicsPixmapItem,
+                             QGroupBox,
+                             QTabWidget,
+                             QWidget
+                             )
 
-class Controller(MainWindow):
-    
+class Controller(QMainWindow):
     def __init__(self, path_app):
-        super().__init__()
+        super(Controller, self).__init__()
+        
+        # initialize all paths
         self.path_app = path_app
         path_parent = abspath(join(path_app, pardir))
         self.path_icon = join(path_parent, 'Icons')
         self.path_workspace = join(path_parent, 'Workspace')
         self.path_shapefiles = join(path_parent, 'Shapefiles')
-            
-        ## ----- Initialization : -----
-        self.title('pyNMS')
-        pyNMS_icon = tk.PhotoImage(file=join(self.path_icon, 'pynms_icon.gif'))
-        self.tk.call('wm', 'iconphoto', self._w, pyNMS_icon)
         
-        # project notebook
-        self.project_notebook = Notebook(self)
-        self.project_notebook.bind('<ButtonRelease-1>', self.change_current_project)
+        # a QMainWindow needs a central widget for the layout
+        central_widget = QWidget(self)
+        self.setCentralWidget(central_widget)
         
+        # permanent windows
+        self.graph_generation_window = GraphGenerationWindow(self)
+        self.graph_drawing_window = GraphDrawingWindow(self)
+        self.spring_layout_parameters_window = SpringLayoutParametersWindow(self)
+        self.gis_parameter_window = GISParameterWindow(self)
+        
+        ## Menu bar
+        menu_bar = self.menuBar()
+        
+        new_project = QAction('Add project', self)
+        new_project.setStatusTip('Create a new project')
+        new_project.triggered.connect(self.close)
+        
+        delete_project = QAction('Delete project', self)
+        delete_project.setStatusTip('Delete the current project')
+        delete_project.triggered.connect(self.close)
+        
+        import_project = QAction('Import project', self)
+        import_project.setStatusTip('Import a project')
+        import_project.triggered.connect(self.import_project)
+        
+        export_project = QAction('Export project', self)
+        export_project.setStatusTip('Export the current project')
+        export_project.triggered.connect(self.export_project)
+        
+        quit_pynms = QAction('Quit', self)
+        quit_pynms.setShortcut('Ctrl+Q')
+        quit_pynms.setStatusTip('Close pyNMS')
+        quit_pynms.triggered.connect(self.close)
+
+        main_menu = menu_bar.addMenu('File')
+        main_menu.addAction(new_project)
+        main_menu.addAction(delete_project)
+        main_menu.addSeparator()
+        main_menu.addAction(import_project)
+        main_menu.addAction(export_project)
+        main_menu.addSeparator()
+        main_menu.addAction(quit_pynms)
+        
+        spring_parameters = QAction('Spring layout parameters', self)
+        spring_parameters.setStatusTip('Spring layout parameters')
+        spring_parameters.triggered.connect(lambda: self.spring_layout_parameters_window.show())
+        
+        drawing_menu = menu_bar.addMenu('Drawing parameters')
+        drawing_menu.addAction(spring_parameters)
+        
+        show_hide_map = QAction('Show / Hide', self)
+        show_hide_map.setStatusTip('Show / Hide map')
+        show_hide_map.triggered.connect(self.show_hide_map)
+        
+        delete_map = QAction('Delete the map', self)
+        delete_map.setStatusTip('Delete the map')
+        delete_map.triggered.connect(self.delete_map)
+        
+        GIS_parameters = QAction('GIS parameters', self)
+        GIS_parameters.setStatusTip('GIS parameters')
+        GIS_parameters.triggered.connect(lambda: self.gis_parameter_window.show())
+        
+        gis_menu = menu_bar.addMenu('GIS')
+        gis_menu.addAction(show_hide_map)
+        gis_menu.addAction(delete_map)
+        gis_menu.addAction(GIS_parameters)
+
+        ## Status bar
+        
+        self.statusBar()
+        
+        selection_icon = QIcon(join(self.path_icon, 'motion.png'))
+        selection_mode = QAction(selection_icon, 'Selection mode', self)
+        selection_mode.setShortcut('Ctrl+S')
+        selection_mode.setStatusTip('Switch to selection mode')
+        selection_mode.triggered.connect(self.switch_to_selection_mode)
+        
+        network_view_icon = QIcon(join(self.path_icon, 'network_view.png'))
+        network_view = QAction(network_view_icon, 'Network view', self)
+        network_view.setShortcut('Ctrl+N')
+        network_view.setStatusTip('Switch to network view')
+        network_view.triggered.connect(lambda: self.switch_view('network'))
+        
+        site_view_icon = QIcon(join(self.path_icon, 'site_view.png'))
+        site_view = QAction(site_view_icon, 'Site view', self)
+        site_view.setShortcut('Ctrl+N')
+        site_view.setStatusTip('Switch to site view')
+        site_view.triggered.connect(lambda: self.switch_view('site'))
+        
+        graph_generation_icon = QIcon(join(self.path_icon, 'ring.png'))
+        graph_generation = QAction(graph_generation_icon, 'Graph generation', self)
+        graph_generation.setShortcut('Ctrl+G')
+        graph_generation.setStatusTip('Generate a graph')
+        graph_generation.triggered.connect(lambda: self.graph_generation_window.show())
+        
+        stop_drawing_icon = QIcon(join(self.path_icon, 'stop.png'))
+        stop_drawing = QAction(stop_drawing_icon, 'Stop drawing', self)
+        stop_drawing.setStatusTip('Stop the graph drawing algorithm')
+        stop_drawing.triggered.connect(lambda: self.stop_drawing())
+        
+        gis_parameter_icon = QIcon(join(self.path_icon, 'gis.png'))
+        gis_parameter = QAction(gis_parameter_icon, 'GIS parameters', self)
+        gis_parameter.setStatusTip('GIS parameters')
+        gis_parameter.triggered.connect(lambda: self.stop_drawing())
+
+        toolbar = self.addToolBar('')
+        toolbar.resize(1500, 1500)
+        toolbar.setIconSize(QtCore.QSize(70, 70))
+        toolbar.addAction(selection_mode)
+        toolbar.addSeparator()
+        toolbar.addAction(network_view)
+        toolbar.addAction(site_view)
+        toolbar.addSeparator()
+        toolbar.addAction(graph_generation)
+        toolbar.addAction(stop_drawing)
+        toolbar.addSeparator()
+        
+        # create all pixmap images for node subtypes
+        self.node_subtype_to_pixmap = defaultdict(OrderedDict)
+        for color in ('default', 'red', 'purple'):
+            for subtype in node_subtype:
+                path = join(self.path_icon, ''.join((
+                                                    color, 
+                                                    '_', 
+                                                    subtype, 
+                                                    '.gif'
+                                                    )))
+                self.node_subtype_to_pixmap[color][subtype] = QPixmap(path)
+                
         # associate a project name to a Project object
         self.dict_project = {}
         # project counter
         self.cpt_project = 0
         
-        # dict of script (script name -> Script object)
-        self.scripts = {}
+        ## notebook containing all menus
+        notebook_menu = QTabWidget(self)
+        notebook_menu.setFixedSize(350, 800)
         
-        ## ----- Persistent windows : -----
-                
-        # advanced graph options
-        self.advanced_graph_options = graph_algorithms.GraphAlgorithmWindow(self)
+        # first tab: the creation menu
+        creation_menu = QWidget(notebook_menu)
+        notebook_menu.addTab(creation_menu, 'Creation')
         
-        # routing and wavelength assignment window
-        self.rwa_window = rwa_window.RWAWindow(self)
+        # node creation menu
+        self.node_creation_menu = node_creation_panel.NodeCreationPanel(self)
+        self.link_creation_menu = link_creation_panel.LinkCreationPanel(self)
         
-        # graph generation window
-        self.advanced_graph = advanced_graph.AdvancedGraph(self)
+        # layout of the creation menu
+        creation_menu_layout = QVBoxLayout(creation_menu)
+        creation_menu_layout.addWidget(self.node_creation_menu)
+        creation_menu_layout.addWidget(self.link_creation_menu)
         
-        # debug window
-        self.debug_window = debug.Debug(self)
+        # second tab: the routing menu
+        routing_menu = QWidget(notebook_menu)
+        notebook_menu.addTab(routing_menu, 'Routing')
         
-        # SSH management window
-        self.ssh_management_window = ssh_management.SSHWindow(self)
+        # routing panel
+        self.routing_panel = routing_panel.RoutingPanel(self)
+        routing_menu_layout = QVBoxLayout(routing_menu)
+        routing_menu_layout.addWidget(self.routing_panel)
         
-        # Script creation window
-        self.script_creation_window = script_creation.ScriptCreation(self)
+        # routing 
         
-        # Search window
-        self.search_window = search.SearchWindow(self)
-
-        # add the first project
+        ## notebook containing all projects
+        self.notebook_project = QTabWidget(self)
+        
+        # first project
         self.add_project()
-        
-        ## ----- Menus : -----
-        
-        pyNMS_menu = Menu(self)
-        
-        # general menu: 
-        # - add / delete projects, 
-        # - import / export projects, 
-        # - exit the application
-        
-        general_menu = Menu(pyNMS_menu)
-        
-        add_project = MenuEntry(general_menu)
-        add_project.text = 'Add project'
-        add_project.command = self.add_project
-        
-        delete_project = MenuEntry(general_menu)
-        delete_project.text = 'Delete project'
-        delete_project.command = self.delete_project
-        
-        general_menu.separator()
-        
-        import_project = MenuEntry(general_menu)
-        import_project.text = 'Import project'
-        import_project.command = self.current_project.import_project
-        
-        export_project = MenuEntry(general_menu)
-        export_project.text = 'Export project'
-        export_project.command = self.current_project.export_project
-        
-        import_site = MenuEntry(general_menu)
-        import_site.text = 'Import sites'
-        import_site.command = self.current_project.import_site
 
-        general_menu.separator()
+        layout = QHBoxLayout(central_widget)
+        layout.addWidget(notebook_menu) 
+        layout.addWidget(self.notebook_project)
         
-        shapefiles_menu = Menu(general_menu)
-        for filename in os.listdir(self.path_shapefiles):
-            entry = MenuEntry(shapefiles_menu)
-            entry.text = filename
-            entry.command = lambda f=filename: self.import_shapefile(f)
-            
-        browse_entry = MenuEntry(shapefiles_menu)
-        browse_entry.text = 'Browse'
-        browse_entry.command = lambda: self.current_project.current_view.import_shapefile()
-        
-        shapefiles_cascade = MenuCascade(general_menu)
-        shapefiles_cascade.text = 'Shapefiles'
-        shapefiles_cascade.inner_menu = shapefiles_menu
-        
-        delete_map = MenuEntry(general_menu)
-        delete_map.text = 'Delete map'
-        delete_map.command = self.current_project.current_view.world_map.delete_map
-        
-        general_menu.separator()
-        
-        debug_entry = MenuEntry(general_menu)
-        debug_entry.text = 'Debug'
-        debug_entry.command = self.debug_window.deiconify
-        
-        exit = MenuEntry(general_menu)
-        exit.text = 'Exit'
-        exit.command = self.destroy
-
-        main_cascade = MenuCascade(pyNMS_menu)
-        main_cascade.text = 'Main'
-        main_cascade.inner_menu = general_menu
-                
-        # advanced menu:
-        
-        advanced_menu = Menu(pyNMS_menu)
-        
-        advanced_graph_entry = MenuEntry(advanced_menu)
-        advanced_graph_entry.text = 'Advanced graph'
-        advanced_graph_entry.command = self.advanced_graph.deiconify
-        
-        advanced_algorithms_entry = MenuEntry(advanced_menu)
-        advanced_algorithms_entry.text = 'Advanced algorithms'
-        advanced_algorithms_entry.command = self.advanced_graph_options.deiconify
-
-        network_tree_view_entry = MenuEntry(advanced_menu)
-        network_tree_view_entry.text = 'Network Tree View'
-        network_tree_view_entry.command = lambda: ntv.NetworkTreeView(self)
-        
-        wavelenght_assignment_entry = MenuEntry(advanced_menu)
-        wavelenght_assignment_entry.text = 'Wavelength assignment'
-        wavelenght_assignment_entry.command = self.rwa_window.deiconify
-        
-        ssh_management_entry = MenuEntry(advanced_menu)
-        ssh_management_entry.text = 'SSH connection management'
-        ssh_management_entry.command = self.ssh_management_window.deiconify
-        
-        script_creation_entry = MenuEntry(advanced_menu)
-        script_creation_entry.text = 'Script creation'
-        script_creation_entry.command = self.script_creation_window.deiconify
-        
-        main_cascade = MenuCascade(pyNMS_menu)
-        main_cascade.text = 'Network routing'
-        main_cascade.inner_menu = advanced_menu
-
-        # choose which label to display per type or subtype of object:
-        # - a first menu contains all types of objects, each type unfolding
-        # a sub-menu that contains all i/e properties common to a type
-        # - a second menu contains all types of objects, each type unfolding
-        # a sub-menu that contains all i/e properties common to a subtypes
-        
-        per_type_label_menu = Menu(pyNMS_menu)
-        for obj_type, labels in type_labels.items():
-            menu_type = Menu(pyNMS_menu)
-            entry_name = '{type} label'.format(type=type_to_name[obj_type])
-            per_type_label_menu.add_cascade(label=entry_name, menu=menu_type)
-            for label in ('None',) + labels:
-                def update_label(o=obj_type, l=label):
-                    self.current_project.current_view.refresh_type_labels(o, l)
-                type_entry = MenuEntry(menu_type)
-                type_entry.text = prop_to_name[label]
-                type_entry.command = update_label
-                    
-        per_type_cascade = MenuCascade(pyNMS_menu)
-        per_type_cascade.text = 'Per-type labels'
-        per_type_cascade.inner_menu = per_type_label_menu
-        
-        self.config(menu=pyNMS_menu)
-        
-        ## Images
-        
-        # dict of nodes image for node creation
-        self.dict_image = defaultdict(dict)
-        self.dict_pil = defaultdict(dict)
-                
-        for color in ('default', 'red', 'purple'):
-            for node_type in node_subtype:
-                obj_class = node_class[node_type]
-                x, y = obj_class.imagex, obj_class.imagey
-                img_path = join(self.path_icon, ''.join((
-                                                        color, 
-                                                        '_', 
-                                                        node_type, 
-                                                        '.gif'
-                                                        ))
-                                )
-                img_pil = ImageTk.Image.open(img_path).resize((x, y))
-                img = ImageTk.PhotoImage(img_pil)
-                self.dict_image[color][node_type] = img
-                self.dict_pil[color][node_type] = img_pil
-                
-        # image for a link failure
-        img_pil = ImageTk.Image.open(join(
-                                          self.path_icon, 
-                                          'failure.png'
-                                          )
-                                    ).resize((20, 20))
-        self.img_failure = ImageTk.PhotoImage(img_pil)
-        
-        self.menu_notebook = Notebook(self)
-        
-        # main menu for creation and selection of objects
-        self.creation_menu = creation_menu.CreationMenu(self.menu_notebook, self)
-        self.creation_menu.pack()
-    
-        # routing menu (addresss allocation + tables creation + routing)
-        self.routing_menu = routing_menu.RoutingMenu(self.menu_notebook, self)
-        self.routing_menu.pack()
-        
-        # drawing menu (force-based algorithm parameters + paint-like drawing)
-        self.drawing_menu = drawing_menu.DrawingMenu(self.menu_notebook, self)
-        self.drawing_menu.pack()
-        
-        # display menu to control the display
-        self.display_menu = display_menu.DisplayMenu(self.menu_notebook, self)
-        self.display_menu.pack()
-        
-        # display menu to control the display
-        self.view_menu = view_menu.ViewMenu(self.menu_notebook, self)
-        self.view_menu.pack()
-        
-        # SDN menu to interface with Mininet and SDN libraries
-        self.sdn_menu = sdn_menu.SDN_Menu(self.menu_notebook, self)
-        self.sdn_menu.pack()
-        
-        self.menu_notebook.add(self.creation_menu, text=' Creation ')
-        self.menu_notebook.add(self.routing_menu, text=' Routing ')
-        self.menu_notebook.add(self.drawing_menu, text=' Drawing ')
-        self.menu_notebook.add(self.display_menu, text=' Display ')
-        self.menu_notebook.add(self.view_menu, text=' View ')
-        self.menu_notebook.add(self.sdn_menu, text=' SDN ')
-        
-        self.menu_notebook.pack(side='left', fill='both')
-        
-        # notebooks of projects
-        self.project_notebook.pack(side='left', fill='both', expand=1)
-        
-        # drag and drop system
-        self.bind_all('<B1-Motion>', self.display_icon, add='+')
-        # if motion is called, the left-click button was released and we 
-        # can stop the drag and drop process
-        self.bind_all('<Motion>', self.stop_dnd)
-        self.dnd = False
-            
-    def stop_dnd(self, event):
-        self.dnd = False
-        
-    def display_icon(self, event):
-        # if the drag and drop process is on-going
-        if self.dnd:
-            # we display the appropriate icon
-            pass
-            
-    def import_shapefile(self, filename):
-        filepath = self.path_shapefiles + '//{}'.format(filename)
-        self.current_project.current_view.import_shapefile(filepath)
-            
-    def change_current_project(self, event=None):
-        # if there's an ongoing drawing process, kill it
-        self.current_project.current_view.cancel()
-        name = self.project_notebook.tab(self.project_notebook.select(), 'text')
-        self.current_project = self.dict_project[name]
+        # mode (creation of links or selection of objects)
+        # since the drag & drop system for node creation does not interfere 
+        # with the selection process, nodes can be created in selection mode
+        # OTOH, creating links will automatically switch the mode to creation
+        self.mode = 'selection'
+        # creation mode (node subtype or link subtype)
+        self.creation_mode = 'router'
         
     def add_project(self, name=None):
         self.cpt_project += 1
         if not name:
             name = ' '.join(('project', str(self.cpt_project)))
         new_project = Project(self, name)
-        self.project_notebook.add(new_project.gf, text=name, compound='top')
+        self.notebook_project.addTab(new_project, name)
         self.dict_project[name] = new_project
         return new_project
         
-    def delete_project(self):
-        del self.dict_project[self.current_project.name]
-        self.project_notebook.forget(self.current_project)
-        self.change_current_project()
-                            
+    def stop_drawing(self):
+        self.current_project.current_view.stop_timer()
+        
+    def switch_to_selection_mode(self):
+        self.mode = 'selection'
+        
+    def switch_view(self, view_mode):
+        self.current_project.switch_view(view_mode)
+        
+    def generate_graph(self):
+        self.current_project.generate_graph()
+
+    def close(self):
+        pass
+
+    def export_project(self):
+        self.current_project.export_project()
+        
+    def import_project(self):
+        pass
+        
+    def show_hide_map(self):
+        self.current_project.current_view.world_map.show_hide_map()
+        
+    def delete_map(self):
+        self.current_project.current_view.world_map.delete_map()

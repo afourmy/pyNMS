@@ -12,19 +12,39 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy as np
 import warnings
+from collections import OrderedDict
 from os.path import join
-from tkinter import filedialog
 from .base_view import BaseView
 from math import *
 from miscellaneous.decorators import update_coordinates, overrider
 try:
-    import shapefile as shp
-    import shapely.geometry as sgeo
+    import shapefile
+    import shapely.geometry
     from pyproj import Proj
 except ImportError:
     warnings.warn('SHP librairies missing: map import disabled')
+    
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import (
+                         QBrush,
+                         QColor, 
+                         QDrag, 
+                         QPainter, 
+                         QPixmap
+                         )
+from PyQt5.QtWidgets import (
+                             QFrame,
+                             QPushButton, 
+                             QWidget, 
+                             QApplication, 
+                             QLabel, 
+                             QGraphicsItem,
+                             QGraphicsLineItem,
+                             QGraphicsPixmapItem,
+                             QGroupBox,
+                             )
 
 class GeographicalView(BaseView):
 
@@ -33,47 +53,7 @@ class GeographicalView(BaseView):
         
         # initialize the map 
         self.world_map = Map(self)
-            
-    def switch_binding(self, mode): 
-        super(GeographicalView, self).switch_binding(self.mode)
-        
-    @update_coordinates
-    def move_sphere(self, event):
-        coords = self.world_map.from_points((event.x, event.y), dosphere=1)
-        if coords and self.world_map.is_spherical():
-            self.world_map.center = coords
-            self.world_map.change_projection(self.world_map.mode)
-                        
-    @update_coordinates
-    @overrider(BaseView)
-    def create_node_on_binding(self, event, subtype):
-        node = self.network.nf(node_type=subtype, x=event.x, y=event.y)
-        # update logical and geographical coordinates
-        lon, lat = self.world_map.to_geographical_coordinates(node.x, node.y)
-        node.longitude, node.latitude = lon, lat
-        node.logical_x, node.logical_y = node.x, node.y
-        self.create_node(node)
-      
-    @overrider(BaseView)
-    def create_node(self, node, layer=1):
-        super(GeographicalView, self).create_node(node, layer)
-        # if the node wasn't created from the binding (e.g import or graph
-        # generation), its canvas coordinates are initialized at (0, 0). 
-        # we draw the node in the middle of the canvas for the user to see them
-        if not node.x and not node.y:
-            node.x, node.y = self.canvas_center()
-
-    @overrider(BaseView)
-    def create_link(self, new_link):
-        # create the link
-        super(GeographicalView, self).create_link(new_link)
-        # the link is now at the bottom of the stack after calling tag_lower
-        # if the map is activated, we need to lower all map objects to be 
-        # able to see the link
-        self.world_map.lower_map()
-            
-    ## Map Menu
-    
+                            
     def update_geographical_coordinates(self, *nodes):
         for node in nodes:
             node.longitude, node.latitude = self.world_map.to_geographical_coordinates(node.x, node.y)
@@ -96,179 +76,98 @@ class GeographicalView(BaseView):
             node.x, node.y = node.logical_x, node.logical_y
         self.move_nodes(nodes)
         
-    def change_projection(self, projection):
-        self.world_map.change_projection(projection)
-        self.move_to_geographical_coordinates()
-        
-    ## Geographical projection menu
+    def haversine_distance(self, s, d):
+        ''' Earth distance between two nodes '''
+        coord = (s.longitude, s.latitude, d.longitude, d.latitude)
+        # decimal degrees to radians conversion
+        lon_s, lat_s, lon_d, lat_d = map(radians, coord)
     
-    @update_coordinates
-    @overrider(BaseView)
-    def zoomer(self, event):
-        ''' Zoom for window '''
-        self.cancel()
-        factor = 1.2 if event.delta > 0 else 0.8
-        self.diff_y *= factor
-        self.node_size *= factor
-        self.cvs.scale('all', event.x, event.y, factor, factor)
-        self.world_map.scale_map(factor, event)
-        self.update_nodes_coordinates(factor)
-        
-    @update_coordinates
-    @overrider(BaseView)
-    def zoomerP(self, event):
-        # zoom in (unix)
-        self.cancel()
-        self.diff_y *= 1.2
-        self.node_size *= 1.2
-        self.cvs.scale('all', event.x, event.y, 1.2, 1.2)
-        self.world_map.scale_map(1.2, event)
-        self.update_nodes_coordinates(1.2)
-        
-    @update_coordinates
-    @overrider(BaseView)
-    def zoomerM(self, event):
-        # zoom out (unix)
-        self.cancel()
-        self.diff_y *= 0.8
-        self.node_size *= 0.8
-        self.cvs.scale('all', event.x, event.y, 0.8, 0.8)
-        self.world_map.scale_map(0.8, event)
-        self.update_nodes_coordinates(0.8)
-        
-    ## Import of shapefile
-    
-    def import_shapefile(self, filepath=None):
-        if not filepath:
-            filepath = filedialog.askopenfilenames(
-                        initialdir = join(self.controller.path_workspace, 'map'),
-                        title = 'Import SHP map', 
-                        filetypes = (
-                        ('shp files', '*.shp'),
-                        ('all files', '*.*')
-                        ))
-            # no error when closing the window
-            if not filepath: 
-                return
-            else: 
-                self.world_map.shapefile ,= filepath
-        else:
-            self.world_map.shapefile = filepath
-        self.world_map.draw_map()
-        
+        delta_lon = lon_d - lon_s 
+        delta_lat = lat_d - lat_s 
+        a = sin(delta_lat/2)**2 + cos(lat_s)*cos(lat_d)*sin(delta_lon/2)**2
+        c = 2*asin(sqrt(a)) 
+        # radius of earth (km)
+        r = 6371 
+        return c*r
+                
 class Map():
 
-    projections = {
-    'mercator': Proj(init="epsg:3395"),
-    'spherical': Proj('+proj=ortho +lat_0=47 +lon_0=28')
-    }
+    projections = OrderedDict([
+    ('mercator', Proj(init='epsg:3395')),
+    ('spherical', Proj('+proj=ortho +lat_0=47 +lon_0=28')),
+    ('wgs84', Proj(init='epsg:3857')),
+    ('3035', Proj("+init=EPSG:3035")),
+    ('3947', Proj("+init=EPSG:3947"))
+    ])
     
     def __init__(self, view):
-        self.cvs = view.cvs
-        self.map_ids = set()
-        self.projection = 'spherical'
-        # set containing all polygons 
-        # used to redraw the map upon changing the projection
-        self.land_coordinates = []
-        self.scale = 1
-        self.offset = (0, 0)
-        self.active = False
+        self.view = view
+        self.proj = 'spherical'
+        self.ratio, self.offset = 1/1000, (0, 0)
+        self.shapefile = join(self.view.controller.path_shapefiles, 'World countries.shp')
+        self.display = True
         
-    def draw_map(self):
-        # first, delete the existing map objects
-        self.cvs.delete('land', 'water')
-        # draw the water
+        # brush for water and lands
+        self.water_brush = QBrush(QColor(64, 164, 223))
+        self.land_brush = QBrush(QColor(52, 165, 111))
+        
+        # draw the map 
+        self.polygons = self.view.scene.createItemGroup(self.draw_polygons())
         self.draw_water()
-        # loop over the polygons in the shapefile
-        for shape in self.yield_shapes():
-            str_shape = str(shape)[10:-2].replace(', ', ',').replace(' ', ',')
-            list_shape = str_shape.replace('(', '').replace(')', '').split(',')
-            self.draw_land(list_shape)
-        self.active = True
-        self.lower_map()
-                
-    def yield_shapes(self):        
-        # read the shapefile
-        sf = shp.Reader(self.shapefile)       
-        # retrieve the shapes it contains (polygons or multipolygons) 
-        shapes = sf.shapes() 
-        for shape in shapes:
-            # make it a shapely shape
-            shape = sgeo.shape(shape)
-            # if it is a multipolygon, yield the polygons it is composed of
-            if shape.geom_type == 'MultiPolygon':
-                yield from shape
-            # else yield the polygon itself
-            else:
-                yield shape
-                
-    def delete_map(self):
-        self.cvs.delete('land', 'water')
-
-    def scale_map(self, ratio, event):
-        self.scale *= float(ratio)
-        offset_x, offset_y = self.offset
-        self.offset = (
-                       offset_x*ratio + event.x*(1 - ratio), 
-                       offset_y*ratio + event.y*(1 - ratio)
-                       )
-
-    def change_projection(self, projection):
-        # reset the scale to 1 and the offset to 0
-        self.scale = 1
-        self.offset = (0, 0)
-        # update the projection
-        self.projection = projection
-        # draw the map
-        self.draw_map()
-        
-    def draw_land(self, land):
-        # create the polygon the canvas
-        coords = (self.to_canvas_coordinates(*c) for c in zip(land[0::2], land[1::2]))
-        obj_id = self.cvs.create_polygon(
-                                         sum(coords, tuple()), 
-                                         fill = 'green3', 
-                                         outline = 'black', 
-                                         tags = ('land',)
-                                         )
-        self.map_ids.add(obj_id)
-
-    def draw_water(self):
-        if self.projection == 'mercator':
-            x0, y0 = self.to_canvas_coordinates(-180, 84)
-            x1, y1 = self.to_canvas_coordinates(180, -84)
-            self.water_id = self.cvs.create_rectangle(
-                                                    x1,
-                                                    y1,
-                                                    x0, 
-                                                    y0,
-                                                    outline = 'black', 
-                                                    fill = 'deep sky blue', 
-                                                    tags = ('water',)
-                                                    )
-        if self.projection == 'spherical':
-            cx, cy = self.to_canvas_coordinates(28, 47)
-            self.water_id = self.cvs.create_oval(
-                                                cx - 6378000,
-                                                cy - 6378000,
-                                                cx + 6378000, 
-                                                cy + 6378000,
-                                                outline = 'black', 
-                                                fill = 'deep sky blue', 
-                                                tags = ('water',)
-                                                )
-            
-    # set the map object at the bottom of the stack
-    def lower_map(self):
-        if self.active:
-            for map_obj in self.map_ids:
-                self.cvs.tag_lower(map_obj)
-            self.cvs.tag_lower(self.water_id)
-        
-    def to_canvas_coordinates(self, longitude, latitude):
-        px, py = self.projections[self.projection](longitude, latitude)
-        return px*self.scale + self.offset[0], -py*self.scale + self.offset[1]
         
     def to_geographical_coordinates(self, x, y):
-        px, py = (x - self.offset[0])/self.scale, (self.offset[1] - y)/self.scale
-        return self.projections[self.projection](px, py, inverse=True)
+        px, py = (x - self.offset[0])/self.ratio, (self.offset[1] - y)/self.ratio
+        return self.projections[self.proj](px, py, inverse=True)
+        
+    def to_canvas_coordinates(self, longitude, latitude):
+        px, py = self.projections[self.proj](longitude, latitude)
+        return px*self.ratio + self.offset[0], -py*self.ratio + self.offset[1]
+                
+    def draw_water(self):
+        if self.proj == 'spherical':
+            # draw the planet
+            cx, cy = self.to_canvas_coordinates(28, 47)
+            R = 6371000*self.ratio
+            earth_water = QtWidgets.QGraphicsEllipseItem(cx - R, cy - R, 2*R, 2*R)
+            earth_water.setZValue(0)
+            earth_water.setBrush(self.water_brush)
+            self.polygons.addToGroup(earth_water)
+            # self.view.scene.addToGroup(earth_water)
+        else:
+            pass
+            
+    def draw_polygons(self):
+        sf = shapefile.Reader(self.shapefile)       
+        polygons = sf.shapes() 
+        for polygon in polygons:
+            # convert shapefile geometries into shapely geometries
+            # to extract the polygons of a multipolygon
+            polygon = shapely.geometry.shape(polygon)
+            # if it is a polygon, we use a list to make it iterable
+            if polygon.geom_type == 'Polygon':
+                polygon = [polygon]
+            for land in polygon:
+                qt_polygon = QtGui.QPolygonF() 
+                land = str(land)[10:-2].replace(', ', ',').replace(' ', ',')
+                coords = land.replace('(', '').replace(')', '').split(',')
+                for lon, lat in zip(coords[0::2], coords[1::2]):
+                    px, py = self.to_canvas_coordinates(lon, lat)
+                    if px > 1e+10:
+                        continue
+                    qt_polygon.append(QtCore.QPointF(px, py))
+                polygon_item = QtWidgets.QGraphicsPolygonItem(qt_polygon)
+                polygon_item.setBrush(self.land_brush)
+                polygon_item.setZValue(1)
+                yield polygon_item
+                
+    def show_hide_map(self):
+        self.display = not self.display
+        self.polygons.show() if self.display else self.polygons.hide()
+        
+    def delete_map(self):
+        self.view.scene.removeItem(self.polygons)
+            
+    def redraw_map(self):
+        self.delete_map()
+        self.polygons = self.view.scene.createItemGroup(self.draw_polygons())
+        self.draw_water()

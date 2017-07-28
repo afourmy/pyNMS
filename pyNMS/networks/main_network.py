@@ -1937,13 +1937,13 @@ class MainNetwork(BaseNetwork):
         for k in range(n):
             yield self.nf(name = str(k + nb_nodes), node_type = subtype)
             
-    def multiple_links(self, source_nodes, destination_node):
+    def multiple_links(self, source_nodes, destination_nodes):
         # create a link between the destination node and all source nodes
         for src_node in source_nodes:
-            # in the multiple link window, the source nodes are not excluded,
-            # so we check that both nodes are different before creating the link
-            if src_node != destination_node:
-                self.lf(source=src_node, destination=destination_node)
+            print(src_node)
+            for dest_node in destination_nodes:
+                if src_node != dest_node:
+                    yield self.lf(source=src_node, destination=dest_node)
                 
     ## Configuration
     

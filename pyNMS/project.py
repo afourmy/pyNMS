@@ -17,24 +17,19 @@ import warnings
 from views.network_view import NetworkView
 from views.site_view import SiteView
 from objects.objects import *
-from pythonic_tkinter.preconfigured_widgets import *
-from tkinter import filedialog
 try:
     import xlrd
     import xlwt
 except ImportError:
     warnings.warn('Excel libraries missing: excel import/export disabled')
+    
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QFileDialog
 
-class Project():
+
+class Project(QWidget):
     
     def __init__(self, controller, name):
-        self.name = name
-        self.controller = controller
-        self.controller.current_project = self
-        
-        # global frame that contains network, site, and node views
-        self.gf = CustomFrame(width=1300, height=800)        
-        
+        super(Project, self).__init__(controller)
         self.network_view = NetworkView(
                                         '{} : network view'.format(name),
                                         controller
@@ -43,10 +38,18 @@ class Project():
                                 '{} : site view'.format(name),
                                 controller, 
                                 )
+        
+        layout = QHBoxLayout(self)
+        layout.addWidget(self.network_view) 
+        layout.addWidget(self.site_view) 
+        self.site_view.hide()
+
+        self.name = name
+        self.controller = controller
+        self.controller.current_project = self
         self.current_view = self.network_view
         self.network = self.current_view.network
-        self.network_view.pack(fill='both', expand=True)
-        
+
     def objectizer(self, property, value):
         if value == 'None': 
             return None
@@ -83,22 +86,15 @@ class Project():
                 commands[idx]()
         
     def import_project(self, filepath=None):
-                
         # filepath is set for unittest
-        if not filepath:
-            filepath = filedialog.askopenfilenames(
-                            initialdir = self.controller.path_workspace, 
-                            title = 'Import graph', 
-                            filetypes = (
-                            ('all files','*.*'),
-                            ('xls files','*.xls'),
-                            ))
+        filepath = QFileDialog.getOpenFileName(
+                                           self, 
+                                           'Import project', 
+                                           'Choose a project to import'
+                                           )
             
-            # no error when closing the window
-            if not filepath: 
-                return
-            else: 
-                filepath ,= filepath
+        if not filepath:
+            return
                   
         book = xlrd.open_workbook(filepath)
         
@@ -237,20 +233,14 @@ class Project():
         
         # filepath is set for unittest
         if not filepath:
-            selected_file = filedialog.asksaveasfile(
-                                    initialdir = self.controller.path_workspace, 
-                                    title = 'Export graph', 
-                                    mode = 'w', 
-                                    defaultextension = '.xls'
-                                    )
-            print(selected_file)
-            if not selected_file: 
-                return 
-            else:
-                filename, file_format = os.path.splitext(selected_file.name)
-                
+            filepath = QFileDialog.getSaveFileName(
+                                                   self, 
+                                                   "Export project",
+                                                   self.name, 
+                                                   ".xls"
+                                                   )
+            selected_file = ''.join(filepath)
         else:
-            filename, file_format = os.path.splitext(filepath)
             selected_file = open(filepath, 'w')
             
         excel_workbook = xlwt.Workbook()
@@ -334,8 +324,8 @@ class Project():
                 site_sheet.write(cpt, 1, to_string(site.ps['node']))
                 site_sheet.write(cpt, 2, to_string(site.ps['link']))
                 
-        excel_workbook.save(selected_file.name)
-        selected_file.close()
+        excel_workbook.save(selected_file)
+        # selected_file.close()
         
     def import_site(self):
     

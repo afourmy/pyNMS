@@ -696,24 +696,12 @@ class Node(NDobject):
                     
     @initializer(ie_properties)
     def __init__(self):
-        # self id and id of the corresponding label on the canvas
-        self.oval = {layer: None for layer in range(1, 5)}
         # image of the node at all three layers: physical, logical and traffic
         self.image = {layer: None for layer in range(1, 5)}
         self.layer_line = {layer: None for layer in range(1, 5)}
         self.gnode = None
         self.lid = None
         self.size = 8
-        # site coordinates: coordinates of the node for each site it belongs to
-        # associate a site to a list of coordinates [x, y]
-        self.site_coords = {}
-        # site properties for site canvas
-        self.site_oval = {}
-        self.site_image = {}
-        self.site_layer_line = {}
-        self.site_lid = {}
-        self.site_lpos = {}
-        self.site_size = {}
         # velocity of a node for graph drawing algorithm
         self.vx = 0
         self.vy = 0
@@ -1054,6 +1042,7 @@ class Link(NDobject):
         # self id and id of the corresponding label on the canvas
         self.line = None
         self.lid = None
+        self.glink = None
         # self.iid is the id of the interface labels, used to display
         # interfaces specific properties (ip addresses, names, etc) as well
         # as physical link asymmetric (directional) properties (capacity, flow, etc)
@@ -1472,16 +1461,14 @@ plink_class = OrderedDict([
 
 # layer 2 (optical and ethernet)
 l2link_class = OrderedDict([
-('l2vc', L2VC),
 ('optical channel', OpticalChannel),
 ('etherchannel', EtherChannel)
 ])
 
 # layer 3 (IP and above)
 l3link_class = OrderedDict([
-('l3vc', L3VC),
 ('pseudowire', PseudoWire),
-('BGP peering', BGPPeering),
+('BGP peering', BGPPeering)
 ])
 
 # layer 4 (traffic flows)
@@ -1490,7 +1477,13 @@ traffic_class = OrderedDict([
 ('static traffic', StaticTraffic)
 ])
 
-link_class = {}
+# virtual container
+vc_class = OrderedDict([
+('l2vc', L2VC),
+('l3vc', L3VC),
+])
+
+link_class = OrderedDict()
 for dclass in (plink_class, l2link_class, l3link_class, traffic_class):
     link_class.update(dclass)
 
