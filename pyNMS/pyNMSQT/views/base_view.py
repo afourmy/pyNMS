@@ -299,7 +299,6 @@ class GraphicalNode(QGraphicsPixmapItem):
         # the node object does not yet exist: it must be created
         if not node:
             subtype = self.controller.creation_mode
-            print(subtype)
             self.node = self.view.network.nf(subtype=subtype)
         else:
             self.node = node
@@ -318,7 +317,7 @@ class GraphicalNode(QGraphicsPixmapItem):
                                                         Qt.SmoothTransformation
                                                         )
         super().__init__(self.pixmap)
-        self.node.gnode = self
+        self.node.gnode = self.node.gobject = self
         self.setFlag(QGraphicsItem.ItemSendsScenePositionChanges, True)
         self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         self.setFlag(QGraphicsItem.ItemIsMovable, True)
@@ -369,6 +368,7 @@ class GraphicalNode(QGraphicsPixmapItem):
         # binding, but for QT-related issues, the right-click filter does not
         # work in mouseReleaseEvent
         if event.buttons() == Qt.RightButton:
+            self.setSelected(True)
             menu = NetworkSelectionMenu(self.controller)
             menu.exec_(QCursor.pos())
         super(GraphicalNode, self).mousePressEvent(event)
@@ -397,7 +397,7 @@ class GraphicalLink(QGraphicsLineItem):
         self.setZValue(2)
         self.update_position()
         view.scene.addItem(self)
-        self.link.glink = self
+        self.link.glink = self.link.gobject = self
         
     def mousePressEvent(self, event):
         selection_allowed = self.controller.mode == 'selection'

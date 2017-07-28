@@ -58,13 +58,15 @@ class NetworkSelectionMenu(SelectionMenu):
         # we compute the set of common AS among all selected objects
         # providing that no shape were selected
         if self.no_shape:
+            
             self.common_AS = set(self.network.pnAS.values())  
-            cmd = lambda o: o.type in ('node', 'plink')
+            cmd = lambda o: o.object.type in ('node', 'plink')
             for obj in filter(cmd, self.so):
-                self.common_AS &= obj.AS.keys()
+                self.common_AS &= obj.object.AS.keys()
             
             # if at least one common AS: remove from AS or manage AS
             if self.common_AS:
+                
                 manage_AS = QAction('Manage AS', self)        
                 manage_AS.triggered.connect(lambda: self.change_AS('manage'))
                 self.addAction(manage_AS)
@@ -98,10 +100,13 @@ class NetworkSelectionMenu(SelectionMenu):
     # - create an AS
         
     def change_AS(self, mode):
-        AS_operations.ASOperation(mode, self.so, self.common_AS, self.controller)
+        objects = set(self.view.get_obj(self.so))
+        self.change_AS = AS_operations.ASOperation(mode, objects, self.common_AS, self.controller)
+        self.change_AS.show()
         
     def change_area(self, mode):
-        AS_operations.AreaOperation(mode, self.so, self.common_AS, self.controller)
+        self.change_area = AS_operations.AreaOperation(mode, self.so, self.common_AS, self.controller)
+        self.change_area.show()
         
     def create_AS(self):
         nodes = set(self.view.get_obj(self.selected_nodes))

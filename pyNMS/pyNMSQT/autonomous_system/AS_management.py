@@ -13,6 +13,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from . import area
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget)
 
@@ -73,11 +74,14 @@ class ASManagement(QTabWidget):
         nodes = QLabel('AS nodes')
         self.node_list = QListWidget()
         self.node_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.node_list.setSortingEnabled(True)
+        self.node_list.itemSelectionChanged.connect(lambda: self.highlight_object('node'))
         self.dict_listbox['node'] = self.node_list
         
         links = QLabel('AS links')
         self.link_list = QListWidget()
         self.link_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.link_list.setSortingEnabled(True)
         self.dict_listbox['link'] = self.link_list
             
         # add all physical links between nodes of the AS
@@ -117,24 +121,27 @@ class ASManagement(QTabWidget):
                 self.dict_listbox[obj_type].addItem(str(obj))
         
     # function to highlight the selected object on the canvas
-    def highlight_object(self, event, obj_type):        
-        self.AS.view.unhighlight_all()
-        for selected_object in self.dict_listbox[obj_type].selected():
-            so = self.network.of(name=selected_object, _type=obj_type)
-            self.AS.view.highlight_objects(so)
-            
+    def highlight_object(self, obj_type):
+        self.AS.view.scene.clearSelection() 
+        for selected_item in self.dict_listbox[obj_type].selectedItems():
+            obj = self.network.of(name=selected_item.text(), _type=obj_type)
+            obj.gobject.setSelected(True)
+                        
     # remove the object selected in 'obj_type' listbox from the AS
     def remove_selected(self, obj_type):
         # remove and retrieve the selected object in the listbox
-        for selected_obj in self.dict_listbox[obj_type].pop_selected():
+        for selected_obj in self.dict_listbox[obj_type].selectedItems():
+            self.dict_listbox[obj_type].removeItem(selected_item)
             # remove it from the AS as well
-            so = self.network.of(name=selected_obj, _type=obj_type)
+            so = self.network.of(name=selected_item.text(), _type=obj_type)
             self.AS.remove_from_AS(so)
         
     def add_to_AS(self, *objects):
         self.AS.add_to_AS(*objects)
         for obj in objects:
-            self.dict_listbox[obj.class_type].insert(obj)
+            if self.dict_listbox[obj.class_type].findItems(str(obj), Qt.MatchExactly):
+                continue
+            self.dict_listbox[obj.class_type].addItem(str(obj))
             
     def find_links(self):
         links_between_domain_nodes = set()
@@ -142,14 +149,13 @@ class ASManagement(QTabWidget):
             for neighbor, adj_link in self.network.graph[node.id]['plink']:
                 if neighbor in self.AS.pAS['node']:
                     links_between_domain_nodes |= {adj_link}
-            #TODO refactor this
-            for neighbor, vc in self.network.gftr(node, 'l2link', 'l2vc'):
-                if neighbor in self.AS.pAS['node']:
-                    links_between_domain_nodes |= {vc.linkS, vc.linkD}
-            for neighbor, vc in self.network.gftr(node, 'l3link', 'l3vc'):
-                if neighbor in self.AS.pAS['node']:
-                    links_between_domain_nodes |= {vc.linkS, vc.linkD}
-            
+            # #TODO refactor this
+            # for neighbor, vc in self.network.gftr(node, 'l2link', 'l2vc'):
+            #     if neighbor in self.AS.pAS['node']:
+            #         links_between_domain_nodes |= {vc.linkS, vc.linkD}
+            # for neighbor, vc in self.network.gftr(node, 'l3link', 'l3vc'):
+            #     if neighbor in self.AS.pAS['node']:
+            #         links_between_domain_nodes |= {vc.linkS, vc.linkD}
         self.add_to_AS(*links_between_domain_nodes)
             
     ## Functions used to modify AS from the right-click menu
@@ -157,11 +163,9 @@ class ASManagement(QTabWidget):
     def remove_from_AS(self, *objects):
         self.AS.remove_from_AS(*objects)
         for obj in objects:
-            if obj.type == 'node':
-                # remove the node from nodes listbox
-                self.dict_listbox['node'].pop(obj)
-            elif obj.class_type == 'link':
-                self.dict_listbox['link'].pop(obj)
+            item ,= self.dict_listbox[obj.class_type].findItems(str(obj), Qt.MatchExactly)
+            row = self.dict_listbox[obj.class_type].row(item)
+            self.dict_listbox[obj.class_type].takeItem(row)
             
 class ASManagementWithArea(ASManagement):
     

@@ -65,9 +65,8 @@ class ASCreation(QWidget):
         
     def create_AS(self):
         # automatic initialization of the AS id in case it is empty
-        id = int(self.id_edit.text()) 
-        if not id:
-            id = len(self.network.pnAS) + 1
+        id = self.id_edit.text()
+        id = int(id) if id else len(self.network.pnAS) + 1
         new_AS = self.network.AS_factory(
                                          self.AS_type_list.currentText(), 
                                          self.name_edit.text(), 
@@ -117,7 +116,7 @@ class ASOperation(QWidget):
         
         # position in the grid
         layout = QGridLayout()
-        layout.addWidget(AS_list, 0, 0, 1, 2)
+        layout.addWidget(self.AS_list, 0, 0, 1, 2)
         layout.addWidget(button_AS_operation, 1, 0, 1, 1)
         layout.addWidget(cancel_button, 1, 1, 1, 1)
         self.setLayout(layout)
