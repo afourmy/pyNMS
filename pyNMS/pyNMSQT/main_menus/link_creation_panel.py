@@ -19,10 +19,10 @@ from PyQt5.QtWidgets import (
                              QGroupBox,
                              )
 
-class LinkCreationMenu(QGroupBox):
+class LinkCreationPanel(QGroupBox):
     
     def __init__(self, controller):
-        super(LinkCreationMenu, self).__init__(controller)
+        super().__init__(controller)
         self.controller = controller
         self.setTitle('Link creation')
                 

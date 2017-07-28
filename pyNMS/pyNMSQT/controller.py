@@ -1,7 +1,11 @@
 from collections import defaultdict, OrderedDict
 from objects.objects import *
 from os.path import abspath, join, pardir
-from main_menus import node_creation_menu, link_creation_menu
+from main_menus import (
+                        node_creation_panel,
+                        link_creation_panel,
+                        routing_panel
+                        )
 from graph_generation.graph_generation import GraphGenerationWindow
 from gis.gis_parameter import GISParameterWindow
 from miscellaneous.graph_drawing import *
@@ -186,13 +190,24 @@ class Controller(QMainWindow):
         notebook_menu.addTab(creation_menu, 'Creation')
         
         # node creation menu
-        self.node_creation_menu = node_creation_menu.NodeCreationMenu(self)
-        self.link_creation_menu = link_creation_menu.LinkCreationMenu(self)
+        self.node_creation_menu = node_creation_panel.NodeCreationPanel(self)
+        self.link_creation_menu = link_creation_panel.LinkCreationPanel(self)
         
         # layout of the creation menu
         creation_menu_layout = QVBoxLayout(creation_menu)
         creation_menu_layout.addWidget(self.node_creation_menu)
         creation_menu_layout.addWidget(self.link_creation_menu)
+        
+        # second tab: the routing menu
+        routing_menu = QWidget(notebook_menu)
+        notebook_menu.addTab(routing_menu, 'Routing')
+        
+        # routing panel
+        self.routing_panel = routing_panel.RoutingPanel(self)
+        routing_menu_layout = QVBoxLayout(routing_menu)
+        routing_menu_layout.addWidget(self.routing_panel)
+        
+        # routing 
         
         ## notebook containing all projects
         self.notebook_project = QTabWidget(self)

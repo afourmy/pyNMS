@@ -18,10 +18,10 @@ from PyQt5.QtWidgets import (
                              QGroupBox,
                              )
 
-class NodeCreationMenu(QGroupBox):
+class NodeCreationPanel(QGroupBox):
     
     def __init__(self, controller):
-        super(NodeCreationMenu, self).__init__(controller)
+        super().__init__(controller)
         self.controller = controller
         self.setTitle('Node creation')
         self.setMinimumSize(300, 300)
