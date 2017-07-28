@@ -31,7 +31,7 @@ class ASManagement(QTabWidget):
         
         # first tab: the common management window
         common_frame = QWidget(self)
-        self.addTab(common_frame, ' Common management ')
+        self.addTab(common_frame, 'Common management')
 
         # group box for properties
         AS_management = QGroupBox()
@@ -174,7 +174,7 @@ class ASManagementWithArea(ASManagement):
             
         # first tab: the area management window
         area_frame = QWidget(self)
-        self.addTab(area_frame, ' {} management'.format(mode))
+        self.addTab(area_frame, '{} management'.format(mode))
         
         # group box for area management
         area_management = QGroupBox()
@@ -212,7 +212,7 @@ class ASManagementWithArea(ASManagement):
         # create an area
         button_create_area = QPushButton()
         button_create_area.setText('Create {}'.format(mode.lower()))
-        button_create_area.clicked.connect(lambda: area_operations.CreateArea(self))
+        button_create_area.clicked.connect(self.create_area)
         
         # delete an area
         button_delete_area = QPushButton()
@@ -242,8 +242,12 @@ class ASManagementWithArea(ASManagement):
             selected_object.gobject.setSelected(True)
         
     ## Functions used directly from the AS Management window
+        
+    def create_area(self):
+        self.create_area_window = area_operations.CreateArea(self)
+        self.create_area_window.show()
 
-    def create_area(self, name, id):
+    def add_area(self, name, id):
         self.AS.area_factory(name, id)
         self.area_list.addItem(name)
 
@@ -251,7 +255,7 @@ class ASManagementWithArea(ASManagement):
         for area_item in self.area_list.selectedItems():
             selected_area = self.AS.area_factory(name=area_item.text())
             self.AS.delete_area(selected_area)
-            row = self.area_list.row(self.area_list.takeItem(area_item))
+            self.area_list.takeItem(self.area_list.row(area_item))
                 
     def display_area(self):
         self.area_nodes_list.clear()
@@ -378,7 +382,7 @@ class OSPF_Management(ASManagementWithArea, IPManagement):
         
     def add_to_AS(self, *objects):
         super(OSPF_Management, self).add_to_AS(*objects)  
-        self.add_to_area(self.default_area, *objects)
+        self.add_to_area('Backbone', *objects)
                 
     def update_cost(self):
         for link in self.AS.pAS['link']:

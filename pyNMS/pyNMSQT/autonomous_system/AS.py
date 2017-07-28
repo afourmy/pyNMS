@@ -546,14 +546,12 @@ class OSPF_AS(ASWithArea, IP_AS):
         self.add_to_AS(*(self.nodes | self.links))
         
         if not is_imported:
-            print('test')
-            self.area_factory(
-                              'Backbone', 
-                              id = 0, 
-                              links = self.links, 
-                              nodes = self.nodes
-                              )
-                              
+            self.backbone = self.area_factory(
+                            'Backbone', 
+                            id = 0, 
+                            links = self.links, 
+                            nodes = self.nodes
+                            )
             self.add_to_area(self.areas['Backbone'], *(self.nodes | self.links))
             
         # update the AS management panel by filling all boxes

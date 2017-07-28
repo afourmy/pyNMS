@@ -31,7 +31,7 @@ class Area(object):
         # update the area dict of the AS with the new area
         self.AS.areas[name] = self
         # add the area to the AS management panel area listbox
-        self.AS.management.create_area(name, id)
+        self.AS.management.add_area(name, id)
         
     def __repr__(self):
         return self.name

@@ -37,7 +37,7 @@ class CreateArea(QWidget):
         self.setLayout(layout)
         
     def create_area(self, asm):
-        asm.create_area(self.entry_name.text(), self.entry_id.text())
+        asm.add_area(self.name_edit.text(), self.id_edit.text())
         self.close()
         
 class AreaOperation(QWidget):
