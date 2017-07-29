@@ -26,6 +26,7 @@ import ip_networks.switching_table as switching_table
 import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
 from miscellaneous import site_operations
+from NAPALM.device_information import DeviceInformation
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
 from subprocess import Popen
@@ -56,7 +57,7 @@ class NetworkSelectionMenu(SelectionMenu):
             ssh_connection.triggered.connect(self.ssh_connection)
             self.addAction(ssh_connection)
             
-            tables = QAction("L2/L3 tables", self)
+            tables = QAction('L2/L3 tables', self)
             tables_submenu = QMenu('L2/L3 tables', self)
             
             if self.node.subtype == 'router':
@@ -75,6 +76,18 @@ class NetworkSelectionMenu(SelectionMenu):
                 
             tables.setMenu(tables_submenu)
             self.addAction(tables)
+            self.addSeparator()
+        
+        if self.no_shape and self.no_link:
+            napalm = QAction('NAPALM', self)
+            napalm_submenu = QMenu('NAPALM', self)
+            
+            get_interfaces = QAction('Get information', self)        
+            get_interfaces.triggered.connect(self.napalm)
+            napalm_submenu.addAction(get_interfaces)
+            
+            napalm.setMenu(napalm_submenu)
+            self.addAction(napalm)
             self.addSeparator()
         
         if self.no_shape:
@@ -191,4 +204,11 @@ class NetworkSelectionMenu(SelectionMenu):
         
     def remove_failure(self, *objects):
         self.view.remove_failure(*objects)
+        
+    ## NAPALM operations:
+    
+    def napalm(self, action):
+        nodes = set(self.view.get_obj(self.selected_nodes))
+        self.napalm_interfaces = DeviceInformation(nodes, self.controller)
+        self.napalm_interfaces.show()
             
