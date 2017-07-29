@@ -1885,8 +1885,8 @@ class MainNetwork(BaseNetwork):
                                            )
                                    )
             i += 1
-        yield from graph_plinks
         yield from graph_nodes
+        yield from graph_plinks
                     
     ## 7) Generalized Kneser graph
     
