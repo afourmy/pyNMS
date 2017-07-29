@@ -13,29 +13,31 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from miscellaneous.decorators import update_paths
-from tkinter.scrolledtext import ScrolledText
 from operator import itemgetter
-import tkinter as tk
+from PyQt5.QtWidgets import QWidget, QTextEdit, QGridLayout
 
-class SwitchingTable(tk.Toplevel):
+class SwitchingTable(QWidget):
     
-    @update_paths
+    @update_paths(True)
     def __init__(self, node, controller):
-        super().__init__() 
+        super().__init__()
+        self.setWindowTitle('Switching table')
+        self.setMinimumSize(600, 800)
         
-        self.ST = ScrolledText(self, wrap='word', bg='beige')
-        self.wm_attributes('-topmost', True)
+        config_edit = QTextEdit()
 
         introduction = '''
                             Mac Address Table
 ----------------------------------------------------------------------------
                     Vlan    |    Mac Address    |    Type    |    Ports\n\n'''
         
-        self.ST.insert('insert', introduction)
+        config_edit.insertPlainText(introduction)
                 
         switching_table = sorted(node.st.items(), key=itemgetter(0))
         for mac_address, outgoing_interface in switching_table:
             line = ('All', mac_address, 'DYNAMIC', str(outgoing_interface), '\n')
-            self.ST.insert('insert', 16*" " + (8*" ").join(line))
-                                                                
-        self.ST.pack(fill=tk.BOTH, expand=tk.YES)
+            config_edit.insertPlainText(16*" " + (8*" ").join(line))
+            
+        layout = QGridLayout()
+        layout.addWidget(config_edit, 0, 0, 1, 1)
+        self.setLayout(layout)

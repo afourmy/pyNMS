@@ -146,7 +146,7 @@ class BaseNetwork(object):
             if not name:
                 name = subtype + str(self.cpt_link)
             kwargs.update({'id': id, 'name': name})
-            new_link = link_class[subtype](**kwargs)
+            new_link = link_class_with_vc[subtype](**kwargs)
             self.name_to_id[name] = id
             self.pn[link_type][id] = new_link
             self.graph[s.id][link_type].add((d, new_link))

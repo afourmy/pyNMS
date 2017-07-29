@@ -158,10 +158,12 @@ class NetworkSelectionMenu(SelectionMenu):
         self.routing_table.show()
         
     def switching_table(self):
-        switching_table.SwitchingTable(self.node, self.controller)
+        self.switching_table = switching_table.SwitchingTable(self.node, self.controller)
+        self.switching_table.show()
         
     def arp_table(self):
-        arp_table.ARPTable(self.node, self.controller)
+        self.arp_table = arp_table.ARPTable(self.node, self.controller)
+        self.arp_table.show()
         
     ## AS operations: 
     # - add or remove from an AS

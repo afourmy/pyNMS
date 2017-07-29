@@ -12,31 +12,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import tkinter as tk
 from miscellaneous.decorators import update_paths
-from pythonic_tkinter.preconfigured_widgets import *
 from operator import itemgetter
+from PyQt5.QtWidgets import QWidget, QTextEdit, QGridLayout
 
-class ARPTable(tk.Toplevel):
+class ARPTable(QWidget):
     
-    @update_paths
+    @update_paths(True)
     def __init__(self, node, controller):
-        super().__init__() 
+        super().__init__()
+        self.setWindowTitle('ARP table')
+        self.setMinimumSize(600, 800)
         
-        self.ST = ScrolledText(self, wrap='word', bg='beige')
-        self.wm_attributes('-topmost', True)
+        config_edit = QTextEdit()
 
         introduction = '''
                     Address Resolution Protocol Table
 ----------------------------------------------------------------------------
          Address     |     Hardware Addr     |     Type     |     Interface\n\n'''
         
-        self.ST.insert('insert', introduction)
-                
+        config_edit.insertPlainText(introduction)
+
         arp_table = sorted(node.arpt.items(), key=itemgetter(0))
         for oip, (mac_addr, outgoing_interface) in arp_table:
             line = (oip.ip_addr, mac_addr, 'ARPA', str(outgoing_interface), '\n')
-            self.ST.insert('insert', 8*" " + (9*" ").join(line))
-                                                                
-        self.ST.pack(fill='both', expand='yes')
-
+            config_edit.insertPlainText(8*" " + (9*" ").join(line))
+            
+        layout = QGridLayout()
+        layout.addWidget(config_edit, 0, 0, 1, 1)
+        self.setLayout(layout)

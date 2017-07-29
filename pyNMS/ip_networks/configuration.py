@@ -21,7 +21,7 @@ class RouterConfiguration(QWidget):
     def __init__(self, node, controller):
         super().__init__()
         self.setWindowTitle('Router configuration')
-        self.setMinimumSize(500, 600)
+        self.setMinimumSize(600, 800)
         
         config_edit = QTextEdit()
             

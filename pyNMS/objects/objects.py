@@ -1486,6 +1486,11 @@ vc_class = OrderedDict([
 link_class = OrderedDict()
 for dclass in (plink_class, l2link_class, l3link_class, traffic_class):
     link_class.update(dclass)
+    
+# used in the link factory
+link_class_with_vc = OrderedDict()
+link_class_with_vc.update(vc_class)
+link_class_with_vc.update(link_class)
 
 link_type = ('plink', 'l2link', 'l3link', 'traffic')
 node_subtype = tuple(node_class.keys())

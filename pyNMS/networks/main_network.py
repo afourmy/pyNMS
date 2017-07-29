@@ -249,7 +249,7 @@ class MainNetwork(BaseNetwork):
                                      )
                         vc("link", node, source_plink)
                         vc("link", neighbor, destination_plink)
-                        self.view.create_link(vc)
+                        # self.view.create_link(vc)
                         
     def vc_creation(self):
         # clear all existing multi-access segments

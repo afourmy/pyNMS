@@ -13,10 +13,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from miscellaneous.decorators import update_paths
-from miscellaneous.network_functions import compute_network
-from tkinter.scrolledtext import ScrolledText
 from operator import itemgetter
-import tkinter as tk
+from PyQt5.QtWidgets import QWidget, QTextEdit, QGridLayout
 
 # protocol to Administrative Distances
 AD = {
@@ -26,14 +24,15 @@ AD = {
 'R': 120
 }
 
-class RoutingTable(tk.Toplevel):
+class RoutingTable(QWidget):
     
-    @update_paths
+    @update_paths(True)
     def __init__(self, node, controller):
-        super().__init__() 
+        super().__init__()
+        self.setWindowTitle('Switching table')
+        self.setMinimumSize(600, 800)
         
-        self.ST = ScrolledText(self, wrap='word', bg='beige')
-        self.wm_attributes('-topmost', True)
+        config_edit = QTextEdit()
 
         codes = '''
 Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
@@ -44,14 +43,14 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
         ia - IS-IS inter area, * - candidate default, U - per-user static route
         o - ODR, P - periodic downloaded static route\n\n'''
         
-        self.ST.insert('insert', codes)
+        config_edit.insertPlainText(codes)
         
         if node.default_route:
             gateway = 'Gateway of last resort is {gw} to network 0.0.0.0\n\n'\
                                         .format(gw=node.default_route)
         else:
             gateway = 'Gateway of last resort is not set\n\n'
-        self.ST.insert('insert', gateway)
+        config_edit.insertPlainText(gateway)
                 
         list_RT = sorted(node.rt.items(), key=itemgetter(1))
         for sntw, routes in list_RT:
@@ -79,7 +78,7 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
                                                             ex_ip = ex_ip.ip_addr,
                                                             ex_int = ex_int
                                                             )
-                    self.ST.insert('insert', line)
+                    config_edit.insertPlainText(line)
                         
             else:
                 route ,= routes
@@ -107,7 +106,9 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
                 else:
                     route = '{rtype}{sntw} is directly connected, {ex_int}\n'\
                         .format(rtype=rtype, sntw=sntw, ex_int=ex_int)
-                self.ST.insert('insert', route)
+                config_edit.insertPlainText(route)
                                         
-        self.ST.pack(fill=tk.BOTH, expand=tk.YES)
+        layout = QGridLayout()
+        layout.addWidget(config_edit, 0, 0, 1, 1)
+        self.setLayout(layout)
                                             
