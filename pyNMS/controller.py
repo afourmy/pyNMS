@@ -54,7 +54,6 @@ class Controller(QMainWindow):
         
         # permanent windows
         self.graph_generation_window = GraphGenerationWindow(self)
-        self.graph_drawing_window = GraphDrawingWindow(self)
         self.spring_layout_parameters_window = SpringLayoutParametersWindow(self)
         self.gis_parameter_window = GISParameterWindow(self)
         self.ssh_management_window = SSHManagementWindow(self)

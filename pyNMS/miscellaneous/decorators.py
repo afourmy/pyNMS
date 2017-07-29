@@ -21,13 +21,6 @@ def overrider(interface_class):
         return method
     return overrider
 
-# @update_coordinates
-def update_coordinates(function):
-    def wrapper(self, event, *others):
-        event.x, event.y = self.cvs.canvasx(event.x), self.cvs.canvasy(event.y)
-        function(self, event, *others)
-    return wrapper
-
 # @update_paths
 # used to update all paths for a function in the class of a persistent
 # window, or a persistent frame (the 5 persistent menu for instance)
@@ -58,14 +51,4 @@ def defaultizer(**default_kwargs_values):
             init(self, *args, **kwargs)
         return wrapper
     return inner_decorator
-    
-# @empty_selection_and_destroy_menu
-# used to clear the selection after clicking on an entry of the right-click
-# menu, unselect everything and destroy the instance of the menu
-def empty_selection_and_destroy_menu(function):
-    def wrapper(self, *others):
-        function(self, *others)
-        self.view.unhighlight_all()
-        self.destroy()
-    return wrapper
     
