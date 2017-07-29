@@ -12,87 +12,53 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-class SSHWindow(FocusTopLevel):
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
+        QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QFileDialog)
+
+class SSHManagementWindow(QWidget):
     
     def __init__(self, controller):
-        super().__init__()   
-
+        super().__init__()
         self.controller = controller
-        self.title('SSH connection management')
-                        
-        # label frame
-        lf_ssh = Labelframe(self)
-        lf_ssh.text = 'SSH connection management'
-                                                               
-        username = Label(self)
-        username.text = 'Username :'
+        self.setWindowTitle('SSH connection management')
+        
+        username = QLabel('Username')
+        self.username_edit = QLineEdit()
+        # self.username_edit.setMaximumWidth(120)
+        self.username_edit.setText('cisco')
+        
+        password = QLabel('Password')
+        self.password_edit = QLineEdit()
+        # self.password_edit.setMaximumWidth(120)
+        self.password_edit.setText('cisco')
+    
+        path_to_putty = QPushButton()
+        path_to_putty.setText('Path to PuTTY')
+        path_to_putty.clicked.connect(self.choose_path)
+        
+        self.path_edit = QLineEdit()
+        # self.path_edit.setMaximumWidth(120)
+        self.path_edit.setText('C:/Users/minto/Desktop/Apps/putty.exe')
+        
+        layout = QGridLayout()
+        layout.addWidget(username, 0, 0, 1, 1)
+        layout.addWidget(self.username_edit, 0, 1, 1, 1)
+        layout.addWidget(password, 1, 0, 1, 2)
+        layout.addWidget(self.password_edit, 1, 1, 1, 1)
+        layout.addWidget(path_to_putty, 2, 0, 1, 2)
+        layout.addWidget(self.path_edit, 3, 0, 1, 2)
+        self.setLayout(layout)
 
-        self.entry_username = Entry(self, width=20)
-        self.entry_username.text = 'cisco'
-
-        # label 'algorithm'
-        password = Label(self) 
-        password.text = 'Password :'
-        
-        self.entry_password = Entry(self, width=20)
-        self.entry_password.text = 'cisco'
-                                                    
-        path_to_putty = Button(self, width=20)
-        path_to_putty.text = 'Path to PuTTY'
-        path_to_putty.command = self.set_path
-        
-        self.path = Entry(self)
-        self.path.text = 'C:/Users/minto/Desktop/Apps/putty.exe'
-                                        
-        # grid placement
-        lf_ssh.grid(1, 0, 1, 2)
-        username.grid(0, 0, in_=lf_ssh)
-        self.entry_username.grid(0, 1, sticky='e', in_=lf_ssh)
-        password.grid(1, 0, in_=lf_ssh)
-        self.entry_password.grid(1, 1, in_=lf_ssh)
-        path_to_putty.grid(2, 0, 1, 2, in_=lf_ssh)
-        self.path.grid(3, 0, 1, 2, in_=lf_ssh)
-        
-        # hide the window when closed
-        self.protocol('WM_DELETE_WINDOW', self.withdraw)
-        # hide at creation
-        self.withdraw()
-
-    def set_path(self):
-        # hidden top-level instance: 
-        # - no decorations
-        # - size: 0 
-        # - top left corner
-        fake_window = tk.Tk()
-        fake_window.withdraw()
-        fake_window.overrideredirect(True)
-        fake_window.geometry('0x0+0+0')
-        fake_window.deiconify()
-        fake_window.lift()
-        fake_window.focus_force()
-        
-        filepath = filedialog.askopenfilenames(
-                                        parent = fake_window,
-                                        initialdir = self.controller.path_workspace, 
-                                        title = 'Import graph', 
-                                        filetypes = (
-                                        ('all files','*.*'),
-                                        ('xls files','*.xls'),
-                                        ))
-        
-        # no error when closing the window
-        if not filepath: 
-            return
-        else: 
-            filepath ,= filepath
-            self.path.text = filepath
-            
-        fake_window.destroy()
+    def choose_path(self):
+        path = 'Path to PuTTY'
+        filepath = ''.join(QFileDialog.getOpenFileName(self, path, path))
+        self.path_edit.setText(filepath)
+        self.path = filepath
         
     def get(self):
         return {
-                'username': self.entry_username.text,
-                'password': self.entry_password.text,
-                'path': self.path.text
+                'username': self.username_edit.text(),
+                'password': self.password_edit.text(),
+                'path': self.path_edit.text()
                 }
         

@@ -12,60 +12,40 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import tkinter as tk
-from tkinter import ttk
-import re
 from miscellaneous.decorators import update_paths
-from pythonic_tkinter.preconfigured_widgets import *
-from miscellaneous.network_functions import tomask
+from PyQt5.QtWidgets import QWidget, QTextEdit, QGridLayout
 
-class RouterConfiguration(tk.Toplevel):
+class RouterConfiguration(QWidget):
     
-    @update_paths
+    @update_paths(True)
     def __init__(self, node, controller):
-        super().__init__() 
+        super().__init__()
+        self.setWindowTitle('Router configuration')
+        self.setMinimumSize(500, 600)
         
-        notebook = ttk.Notebook(self)
-        pastable_config_frame = ttk.Frame(notebook)
-        st_pastable_config = CustomScrolledText(pastable_config_frame)
-        notebook.add(pastable_config_frame, text='Pastable configuration ')
-        
-        self.wm_attributes('-topmost', True)
-        
-        for conf in self.network.build_router_configuration(node):
-            st_pastable_config.insert('insert', conf + '\n')
+        config_edit = QTextEdit()
             
-        # disable the scrolledtext so that it cannot be edited
-        st_pastable_config.config(state=tk.DISABLED)
+        for conf in self.network.build_router_configuration(node):
+            config_edit.insertPlainText(conf + '\n')
+            
+        layout = QGridLayout()
+        layout.addWidget(config_edit, 0, 0, 1, 1)
+        self.setLayout(layout)
         
-        # pack the scrolledtexts in the frames
-        st_pastable_config.pack(fill=tk.BOTH, expand=tk.YES)
-        
-        # and the notebook in the window
-        notebook.pack(fill=tk.BOTH, expand=tk.YES)
-        
-class SwitchConfiguration(tk.Toplevel):
+class SwitchConfiguration(QWidget):
     
-    @update_paths
+    @update_paths(True)
     def __init__(self, node, controller):
-        super().__init__() 
+        super().__init__()
+        self.setWindowTitle('Switch configuration')
+        self.setMinimumSize(500, 600)
         
-        notebook = ttk.Notebook(self)
-        pastable_config_frame = ttk.Frame(notebook)
-        st_pastable_config = CustomScrolledText(pastable_config_frame)
-        notebook.add(pastable_config_frame, text='Configuration ')
-        
-        self.wm_attributes('-topmost', True)
+        config_edit = QTextEdit()
         
         for conf in self.network.build_switch_configuration(node):
-            st_config.insert('insert', conf + '\n')
+            config_edit.insertPlainText(conf + '\n')
             
-        # disable the scrolledtext so that it cannot be edited
-        st_pastable_config.config(state=tk.DISABLED)
-        
-        # pack the scrolledtexts in the frames
-        st_pastable_config.pack(fill=tk.BOTH, expand=tk.YES)
-        
-        # and the notebook in the window
-        notebook.pack(fill=tk.BOTH, expand=tk.YES)
+        layout = QGridLayout()
+        layout.addWidget(config_edit, 0, 0, 1, 1)
+        self.setLayout(layout)
         

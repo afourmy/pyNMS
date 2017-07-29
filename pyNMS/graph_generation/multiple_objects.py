@@ -79,16 +79,13 @@ class MultipleLinks(QWidget):
         self.destination_list.addItems(map(str, self.network.nodes.values()))
         self.destination_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
         
-        # confirmation button
         confirmation_button = QPushButton()
         confirmation_button.setText('OK')
         confirmation_button.clicked.connect(self.create_links)
         
-        # cancel button
         cancel_button = QPushButton()
         cancel_button.setText('Cancel')
         
-        # position in the grid
         layout = QGridLayout()
         layout.addWidget(link_type, 0, 0, 1, 2)
         layout.addWidget(self.link_subtype_list, 1, 0, 1, 2)

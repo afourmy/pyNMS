@@ -10,6 +10,7 @@ from graph_generation.graph_generation import GraphGenerationWindow
 from gis.gis_parameter import GISParameterWindow
 from miscellaneous.graph_drawing import *
 from project import Project
+from ip_networks.ssh_management import SSHManagementWindow
 from views import base_view
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
@@ -56,6 +57,7 @@ class Controller(QMainWindow):
         self.graph_drawing_window = GraphDrawingWindow(self)
         self.spring_layout_parameters_window = SpringLayoutParametersWindow(self)
         self.gis_parameter_window = GISParameterWindow(self)
+        self.ssh_management_window = SSHManagementWindow(self)
         
         ## Menu bar
         menu_bar = self.menuBar()

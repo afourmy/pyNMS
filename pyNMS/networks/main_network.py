@@ -2115,7 +2115,7 @@ class MainNetwork(BaseNetwork):
                     yield 'name ' + VLAN.name
                     yield 'exit'
         
-        for _, adj_plink in self.network.graph[node.id]['plink']:
+        for _, adj_plink in self.graph[node.id]['plink']:
             interface = adj_plink('interface', node)
             yield 'interface ' + interface
                                     

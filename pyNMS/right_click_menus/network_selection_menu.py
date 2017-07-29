@@ -138,10 +138,11 @@ class NetworkSelectionMenu(SelectionMenu):
         self.addAction(self.drawing_action)
         
     def configure(self):
-        if node.subtype == 'router':
-            conf.RouterConfiguration(self.node, self.controller)
-        if node.subtype == 'switch':
-            conf.SwitchConfiguration(self.node, self.controller)
+        if self.node.subtype == 'router':
+            self.config = conf.RouterConfiguration(self.node, self.controller)
+        if self.node.subtype == 'switch':
+            self.config = conf.SwitchConfiguration(self.node, self.controller)
+        self.config.show()
         
     def troubleshoot(self):
         ip_ts.Troubleshooting(self.node, self.controller)
@@ -153,7 +154,8 @@ class NetworkSelectionMenu(SelectionMenu):
         connect = Popen(ssh_connection.format(**ssh_data).split())
         
     def routing_table(self):
-        ip_rt.RoutingTable(self.node, self.controller)
+        self.routing_table = ip_rt.RoutingTable(self.node, self.controller)
+        self.routing_table.show()
         
     def switching_table(self):
         switching_table.SwitchingTable(self.node, self.controller)
