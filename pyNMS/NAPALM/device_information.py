@@ -12,12 +12,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from miscellaneous.decorators import update_paths
 from napalm_base import get_network_driver
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
-        QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget)
+        QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget, QTextEdit)
 from threading import Thread
 
 class DeviceInformation(QTabWidget):
@@ -30,29 +30,23 @@ class DeviceInformation(QTabWidget):
     def __init__(self, nodes, controller):
         super().__init__()
         # driver = get_network_driver('ios')
-        self.setMinimumSize(300, 300)
+        self.setMinimumSize(500, 500)
         self.setWindowTitle('NAPALM: device information')
-        
-        from napalm_base import get_network_driver
-        driver = get_network_driver('ios')
-        device = driver(hostname='192.168.1.88', username='cisco', password='cisco', optional_args= {'secret': 'cisco'})
-        device.open()
-        
-        interfaces = device.get_interfaces()
-        # print(next (iter (interfaces.values())))
-        print(interfaces)
-        device.close()
-        
-        # open all devices with napalm
-        # self.napalm_devices = {}
-        # for node in nodes:
-        #     device = driver(
-        #                     hostname = node.ipaddress, 
-        #                     username = 'cisco', 
-        #                     password = 'cisco', 
-        #                     optional_args= {'secret': 'cisco'}
-        #                     )
-        #     self.napalm_devices[node.name] = device
+                
+        # open all devices with napalm and store napalm data
+        self.napalm_data = defaultdict(dict)
+        for node in nodes:
+            driver = get_network_driver('ios')
+            device = driver(
+                            hostname = node.ipaddress, 
+                            username = 'cisco', 
+                            password = 'cisco', 
+                            optional_args= {'secret': 'cisco'}
+                            )
+            device.open()
+            for action, function in self.napalm_actions.items():
+                self.napalm_data[node.name][action] = getattr(device, function)()
+            device.close()
                 
         # first tab: the common management window
         common_frame = QWidget(self)
@@ -67,12 +61,12 @@ class DeviceInformation(QTabWidget):
 
         self.device_list = QListWidget()
         self.device_list.setSortingEnabled(True)
-        # self.device_list.itemSelectionChanged.connect(self.update_display)
+        self.device_list.itemSelectionChanged.connect(self.properties_update)
         self.device_list.addItems(map(str, nodes))
         
         self.action_list = QListWidget()
         self.action_list.setSortingEnabled(True)
-        self.action_list.itemSelectionChanged.connect(self.update_display)
+        self.action_list.itemSelectionChanged.connect(self.properties_update)
         self.action_list.addItems(self.napalm_actions)
 
         napalm_management_layout = QGridLayout()
@@ -86,15 +80,15 @@ class DeviceInformation(QTabWidget):
         property_management = QGroupBox()
         property_management.setTitle('Properties')
         
-        interface = QLabel('Action')
-        
         self.object_list = QListWidget()
         self.object_list.setSortingEnabled(True)
-        self.object_list.itemSelectionChanged.connect(self.update_properties)
+        self.object_list.itemSelectionChanged.connect(self.object_update)
+        
+        self.properties_edit = QTextEdit()
         
         self.property_management_layout = QGridLayout()
-        self.property_management_layout.addWidget(interface, 0, 0)
-        self.property_management_layout.addWidget(self.object_list, 1, 0)
+        self.property_management_layout.addWidget(self.object_list, 0, 0)
+        self.property_management_layout.addWidget(self.properties_edit, 0, 1)
         property_management.setLayout(self.property_management_layout)
         
         # layout for the group box
@@ -102,38 +96,21 @@ class DeviceInformation(QTabWidget):
         common_frame_layout.addWidget(napalm_management)
         common_frame_layout.addWidget(property_management)
             
-    def update_display(self):
+    def properties_update(self):
         device = self.device_list.currentItem()
         action = self.action_list.currentItem()
         if device and action:
-            # from napalm_base import get_network_driver
-            # driver = get_network_driver('ios')
-            # device = driver(hostname='192.168.1.88', username='cisco', password='cisco', optional_args= {'secret': 'cisco'})
-            # device.open()
-            # 
-            # interfaces = device.get_interfaces()
-            # # print(next (iter (interfaces.values())))
-            # print(interfaces)
-            # device.close()
-            # self.napalm_device = self.napalm_devices[device.text()]
-            # napalm_action = self.napalm_actions[action.text()]
-            # self.device_action = getattr(self.napalm_device, napalm_action)
-            # self.napalm = Thread(target=self.get_napalm_properties)
-            # self.napalm.start()
-            # self.napalm.join()
-
-            print('test')
-            # self.object_list.clear()
-            # self.object_list.addItems(tuple(self.action_result.keys()))
+            self.object_list.clear()
+            self.object_list.addItems(self.napalm_data[device.text()][action.text()])
             
-    def get_napalm_properties(self):
-        self.napalm_device.open()
-        action_result = self.device_action()
-        print(action_result)
-        # self.napalm_device.close()
-        
-    def update_properties(self):
-        pass
+    def object_update(self):
+        device = self.device_list.currentItem().text()
+        action = self.action_list.currentItem().text()
+        object = self.object_list.currentItem().text()
+        self.properties_edit.clear()
+        for property, value in self.napalm_data[device][action][object].items():
+            write = '{} : {}\n'.format(property, value)
+            self.properties_edit.insertPlainText(write)
         
     # refresh display
     def refresh_display(self):
