@@ -9,6 +9,7 @@ from main_menus import (
 from graph_generation.graph_generation import GraphGenerationWindow
 from gis.gis_parameter import GISParameterWindow
 from miscellaneous.graph_drawing import *
+from miscellaneous.search import SearchWindow
 from project import Project
 from ip_networks.ssh_management import SSHManagementWindow
 from views import base_view
@@ -57,6 +58,7 @@ class Controller(QMainWindow):
         self.spring_layout_parameters_window = SpringLayoutParametersWindow(self)
         self.gis_parameter_window = GISParameterWindow(self)
         self.ssh_management_window = SSHManagementWindow(self)
+        self.search_window = SearchWindow(self)
         
         ## Menu bar
         menu_bar = self.menuBar()
@@ -127,13 +129,11 @@ class Controller(QMainWindow):
         
         network_view_icon = QIcon(join(self.path_icon, 'network_view.png'))
         network_view = QAction(network_view_icon, 'Network view', self)
-        network_view.setShortcut('Ctrl+N')
         network_view.setStatusTip('Switch to network view')
         network_view.triggered.connect(lambda: self.switch_view('network'))
         
         site_view_icon = QIcon(join(self.path_icon, 'site_view.png'))
         site_view = QAction(site_view_icon, 'Site view', self)
-        site_view.setShortcut('Ctrl+N')
         site_view.setStatusTip('Switch to site view')
         site_view.triggered.connect(lambda: self.switch_view('site'))
         
@@ -152,6 +152,12 @@ class Controller(QMainWindow):
         refresh = QAction(refresh_icon, 'Calculate all', self)
         refresh.setStatusTip('Calculate all (routing options + refresh display)')
         refresh.triggered.connect(self.refresh)
+        
+        search_icon = QIcon(join(self.path_icon, 'search.png'))
+        search = QAction(search_icon, 'Search', self)
+        search.setShortcut('Ctrl+F')
+        search.setStatusTip('Search objects per property value')
+        search.triggered.connect(lambda: self.search_window.show())
 
         toolbar = self.addToolBar('')
         toolbar.resize(1500, 1500)
@@ -165,6 +171,8 @@ class Controller(QMainWindow):
         toolbar.addAction(stop_drawing)
         toolbar.addSeparator()
         toolbar.addAction(refresh)
+        toolbar.addSeparator()
+        toolbar.addAction(search)
         
         # create all pixmap images for node subtypes
         self.node_subtype_to_pixmap = defaultdict(OrderedDict)

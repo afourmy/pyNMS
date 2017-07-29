@@ -17,7 +17,7 @@ from .geographical_view import GeographicalView
 from networks import site_network
 # from menus.site_selection_rightclick_menu import SiteSelectionRightClickMenu
 # from menus.site_general_rightclick_menu import SiteGeneralRightClickMenu
-from miscellaneous.decorators import update_coordinates, overrider
+from miscellaneous.decorators import overrider
 
 class SiteView(GeographicalView):
 

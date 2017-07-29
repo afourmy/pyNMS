@@ -17,7 +17,7 @@ from collections import OrderedDict
 from os.path import join
 from .base_view import BaseView
 from math import *
-from miscellaneous.decorators import update_coordinates, overrider
+from miscellaneous.decorators import overrider
 try:
     import shapefile
     import shapely.geometry

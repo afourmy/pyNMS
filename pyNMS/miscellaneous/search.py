@@ -13,76 +13,81 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-from .decorators import update_paths
 from objects.objects import *
-from pythonic_tkinter.preconfigured_widgets import *
+from miscellaneous.decorators import update_paths
+from PyQt5.QtWidgets import (
+                             QCheckBox, 
+                             QComboBox,
+                             QGridLayout, 
+                             QGroupBox,
+                             QPushButton,
+                             QWidget, 
+                             QLineEdit
+                             )
 
-class SearchWindow(CustomTopLevel):
+class SearchWindow(QWidget):
+    
+    # Find all objects which property fits a given value
+    # -------------
+    # ComboBox: list of all subtypes of objects
+    # ComboBox: list of all properties of the subtype
+    # CheckBox: whether the search is regex-based or not
+    # LineEdit: value 
+    # PushButton: confirmation
+    # -------------
     
     def __init__(self, controller):
         super().__init__()
         self.controller = controller
+        self.setWindowTitle('Search window')
+        self.setMinimumSize(300, 200)
         
-        # label frame for area properties
-        lf_search = Labelframe(self)
-        lf_search.text = 'Search'
-        lf_search.grid(0, 0)
+        self.subtypes_list = QComboBox()
+        self.subtypes_list.addItems(name_to_obj)
+        self.subtypes_list.activated.connect(self.update_properties)
         
-        # list of types
-        self.subtypes_list = Combobox(self, width=20)
-        self.subtypes_list['values'] = tuple(name_to_obj.keys())
-        self.subtypes_list.current(0)
-        self.subtypes_list.bind('<<ComboboxSelected>>', self.update_properties)
+        self.property_list = QComboBox()
+        self.checkbox_regex = QCheckBox('Regex search')
+        self.entry_search = QLineEdit()
         
-        # list of properties
-        self.property_list = Combobox(self, width=20)
+        button_OK = QPushButton()
+        button_OK.setText('OK')
+        button_OK.clicked.connect(self.search)
         
-        # combobox for regex-based search
-        self.is_regex = tk.BooleanVar()
-        button_regex = Checkbutton(self, variable=self.is_regex)
-        button_regex.text = 'Regex search'
-                            
-        self.entry_search = Entry(self, width=20)
-        
-        button_OK = Button(self)
-        button_OK.text = 'OK'
-        button_OK.command = self.search
-        
-        self.subtypes_list.grid(0, 1, in_=lf_search)
-        self.property_list.grid(1, 1, in_=lf_search)
-        button_regex.grid(2, 1, in_=lf_search)
-        self.entry_search.grid(3, 1, in_=lf_search)
-        button_OK.grid(4, 1, in_=lf_search)
+        # position in the grid
+        layout = QGridLayout()
+        layout.addWidget(self.subtypes_list, 0, 0, 1, 2)
+        layout.addWidget(self.property_list, 1, 0, 1, 2)
+        layout.addWidget(self.checkbox_regex, 2, 0, 1, 1)
+        layout.addWidget(self.entry_search, 3, 0, 1, 1)
+        layout.addWidget(button_OK, 4, 0, 1, 1)
+        self.setLayout(layout)
         
         # update property with first value of the list
         self.update_properties()
-
-        # hide the window when closed
-        self.protocol('WM_DELETE_WINDOW', self.withdraw)
-        self.withdraw()
         
-    def update_properties(self, *_):
-        subtype = self.subtypes_list.text
+    def update_properties(self):
+        subtype = self.subtypes_list.currentText()
         properties = object_properties[name_to_obj[subtype]]
         properties = tuple(prop_to_name[p] for p in properties)
-        self.property_list['values'] = properties
-        self.property_list.current(0)
+        self.property_list.clear()
+        self.property_list.addItems(properties)
         
-    @update_paths
-    def search(self):
-        self.view.unhighlight_all()
-        subtype = name_to_obj[self.subtypes_list.text]
-        property = name_to_prop[self.property_list.text]
+    @update_paths(False)
+    def search(self, _):
+        self.view.scene.clearSelection()
+        subtype = name_to_obj[self.subtypes_list.currentText()]
+        property = name_to_prop[self.property_list.currentText()]
         type = subtype_to_type[subtype]
-        input = self.entry_search.text
+        input = self.entry_search.text()
         for obj in self.network.ftr(type, subtype):
             value = getattr(obj, property)
-            if not self.is_regex.get():
+            if not self.checkbox_regex.isChecked():
                 converted_input = self.project.objectizer(property, input)
                 if value == converted_input:
-                    self.view.highlight_objects(obj)
+                    obj.gobject.setSelected(True)
             else:
                 if re.search(str(input), str(value)):
-                    self.view.highlight_objects(obj)
+                    obj.gobject.setSelected(True)
                 
         

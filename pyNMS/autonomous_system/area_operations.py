@@ -82,7 +82,7 @@ class AreaOperation(QWidget):
         
     def update_value(self, index):
         self.area_list.clear()
-        selected_AS = self.network.AS_factory(name=self.AS_list.get())
+        selected_AS = self.network.AS_factory(name=self.AS_list.currentText())
         self.area_list.addItems(tuple(map(str, selected_AS.areas)))
         
     def area_operation(self, mode, *objects):
