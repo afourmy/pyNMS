@@ -15,6 +15,7 @@
 from collections import OrderedDict, defaultdict
 from miscellaneous.decorators import update_paths
 from napalm_base import get_network_driver
+from pprint import pformat
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget, QTextEdit)
@@ -23,6 +24,9 @@ from threading import Thread
 class DeviceInformation(QTabWidget):
     
     napalm_actions = OrderedDict([
+    ('Facts', 'get_facts'),
+    ('Environment', 'get_environment'),
+    ('Configuration', 'get_config'),
     ('Interfaces', 'get_interfaces')
     ])
     
@@ -108,10 +112,9 @@ class DeviceInformation(QTabWidget):
         action = self.action_list.currentItem().text()
         object = self.object_list.currentItem().text()
         self.properties_edit.clear()
-        for property, value in self.napalm_data[device][action][object].items():
-            write = '{} : {}\n'.format(property, value)
-            self.properties_edit.insertPlainText(write)
-        
+        value = self.napalm_data[device][action][object]
+        self.properties_edit.insertPlainText(pformat(value, width=1))
+
     # refresh display
     def refresh_display(self):
         # populate the listbox with all AS objects

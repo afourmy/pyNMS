@@ -1,15 +1,15 @@
 from collections import defaultdict, OrderedDict
 from objects.objects import *
 from os.path import abspath, join, pardir
+from graph_generation.graph_generation import GraphGenerationWindow
+from gis.gis_parameter import GISParameterWindow
+from miscellaneous.graph_drawing import *
+from miscellaneous.search import SearchWindow
 from main_menus import (
                         node_creation_panel,
                         link_creation_panel,
                         routing_panel
                         )
-from graph_generation.graph_generation import GraphGenerationWindow
-from gis.gis_parameter import GISParameterWindow
-from miscellaneous.graph_drawing import *
-from miscellaneous.search import SearchWindow
 from project import Project
 from ip_networks.ssh_management import SSHManagementWindow
 from views import base_view

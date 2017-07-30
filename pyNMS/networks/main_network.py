@@ -176,13 +176,7 @@ class MainNetwork(BaseNetwork):
     def remove_from_site(self, site, *objects):
         for obj in objects:
             site.ps[obj.class_type].remove(obj)
-            
-    # all nodes except sites
-    def network_nodes(self):
-        for node in self.nodes.values():
-            if node.subtype != 'site':
-                yield node
-        
+            s        
     def update_AS_topology(self):
         for AS in self.ASftr('subtype', 'ISIS', 'OSPF', 'BGP'):
             # for all OSPF, IS-IS and BGP AS, fill the ABR/L1L2/nodes/links 
@@ -474,8 +468,6 @@ class MainNetwork(BaseNetwork):
                     warnings.warn('Path not found for {}'.format(traffic))
                     break
                 # we count the number of physical links in failure
-                #TODO vraiment utile ? si on recompute, failed_trunk devrait
-                # être égal à 0 normalement
                 failed_plinks = sum(r[-1] in self.failed_obj for r in routes)
                 # and remove them from share so that they are ignored for 
                 # physical link dimensioning
@@ -592,34 +584,9 @@ class MainNetwork(BaseNetwork):
         for router in self.ftr('node', 'router', 'host'):
             self.static_RFT_builder(router)
             
-    def bgp_table_creation(self):
-        # populate the BGP table with the routes sourced by the node,
-        # with a default weight of 32768
-        for router in self.ftr('node', 'router'):
-            router.bgpt.clear()
-            for ip, routes in router.rt.items():
-                for route in routes:
-                    _, nh, *_ = route
-                    router.bgpt[ip] |= {(0, nh, router, ())}
-        for AS in self.ASftr('subtype', 'BGP'):
-            AS.build_RFT()
-            
     def route(self):
         self.routing_table_creation()
         self.path_finder()
-            
-    def redistribution(self):
-        pass
-    #     # once all tables have been created have been created (IGP + BGP), 
-    #     # we can redistribute the routes
-    #     # first, propagate a default route within an IGP
-    #     for AS in self.ASftr('subtype', 'RIP', 'ISIS', 'OSPF'):
-    #         origin = self.convert_node(AS.management.choose_router.text)
-    #         # if the origin has a default route:
-    #         if '0.0.0.0' in origin.rt:
-    #             for node in AS.nodes - {origin}:
-    #                 node.rt['0.0.0.0'] = origin.rt['0.0.0.0']
-                                                
       
     ## Shortest path(s) algorithms
     
@@ -1682,7 +1649,6 @@ class MainNetwork(BaseNetwork):
             oxc_color[largest_degree] = min_index
             
         number_lambda = max(oxc_color.values()) + 1
-        print(number_lambda)
         return number_lambda
         
     def LP_RWA_formulation(self, K=10):
@@ -1961,20 +1927,6 @@ class MainNetwork(BaseNetwork):
             sntw, mask = sr.dst_sntw.split('/')
             mask = tomask(int(mask))
             yield ' '.join(('ip route ', sntw, mask, sr.nh_ip))
-            
-        # if node.bgp_AS:
-        #     AS = self.pnAS[node.bgp_AS]
-        #     yield ' {name}(config)# router bgp {AS_id}\n'\
-        #                                 .format(name=node.name, AS_id=AS.id)
-        #     
-        # for bgp_nb, bgp_pr in self.gftr(node, 'route', 'BGP peering'):
-        #     nb_AS = self.pnAS[bgp_nb.bgp_AS]
-        #     yield ' {name}(config-router)# neighbor {ip} remote-as {AS}\n'\
-        #                             .format(
-        #                                     name = node.name, 
-        #                                     ip = bgp_pr('ip', bgp_nb),
-        #                                     AS = nb_AS.id
-        #                                     )
         
         for neighbor, adj_plink in self.graph[node.id]['plink']:
             interface = adj_plink('interface', node)
