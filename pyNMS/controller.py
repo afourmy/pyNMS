@@ -1,10 +1,25 @@
+# Copyright (C) 2017 Antoine Fourmy <antoine dot fourmy at gmail dot com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from collections import defaultdict, OrderedDict
 from objects.objects import *
 from os.path import abspath, join, pardir
 from graph_generation.graph_generation import GraphGenerationWindow
 from gis.gis_parameter import GISParameterWindow
 from miscellaneous.graph_drawing import *
-from miscellaneous.search import SearchWindow
+from miscellaneous.search_window import SearchWindow
+from miscellaneous.style_window import StyleWindow
 from main_menus import (
                         node_creation_panel,
                         link_creation_panel,
@@ -59,6 +74,7 @@ class Controller(QMainWindow):
         self.gis_parameter_window = GISParameterWindow(self)
         self.ssh_management_window = SSHManagementWindow(self)
         self.search_window = SearchWindow(self)
+        self.style_window = StyleWindow()
         
         ## Menu bar
         menu_bar = self.menuBar()
@@ -92,6 +108,13 @@ class Controller(QMainWindow):
         main_menu.addAction(export_project)
         main_menu.addSeparator()
         main_menu.addAction(quit_pynms)
+        
+        edit_style = QAction('Styles', self)
+        edit_style.setStatusTip('Choose a style for the GUI')
+        edit_style.triggered.connect(lambda: self.style_window.show())
+        
+        main_menu = menu_bar.addMenu('Edit')
+        main_menu.addAction(edit_style)
         
         spring_parameters = QAction('Spring layout parameters', self)
         spring_parameters.setStatusTip('Spring layout parameters')
