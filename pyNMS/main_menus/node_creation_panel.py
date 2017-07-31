@@ -29,7 +29,8 @@ class NodeCreationPanel(QGroupBox):
                 
         # exit connection lost because of the following lines
         layout = QtWidgets.QGridLayout(self)
-        for index, (subtype, image) in enumerate(controller.node_subtype_to_pixmap['default'].items()):
+        for index, item in enumerate(controller.pixmaps['default'].items()):
+            subtype, image = item
             label = QLabel(self)
             label.subtype = subtype
             pixmap = image.scaled(

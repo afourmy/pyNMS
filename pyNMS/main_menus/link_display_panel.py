@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import (
                              QGroupBox,
                              )
 
-class LinkCreationPanel(QGroupBox):
+class LinkDisplayPanel(QGroupBox):
     
     def __init__(self, controller):
         super().__init__(controller)

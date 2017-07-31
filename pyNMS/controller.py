@@ -23,6 +23,8 @@ from miscellaneous.style_window import StyleWindow
 from main_menus import (
                         node_creation_panel,
                         link_creation_panel,
+                        node_display_panel,
+                        link_display_panel,
                         routing_panel
                         )
 from project import Project
@@ -236,7 +238,7 @@ class Controller(QMainWindow):
         toolbar.addAction(ellipse)
         
         # create all pixmap images for node subtypes
-        self.node_subtype_to_pixmap = defaultdict(OrderedDict)
+        self.pixmaps = defaultdict(OrderedDict)
         for color in ('default', 'red', 'purple'):
             for subtype in node_subtype:
                 path = join(self.path_icon, ''.join((
@@ -245,7 +247,7 @@ class Controller(QMainWindow):
                                                     subtype, 
                                                     '.gif'
                                                     )))
-                self.node_subtype_to_pixmap[color][subtype] = QPixmap(path)
+                self.pixmaps[color][subtype] = QPixmap(path)
                 
         # associate a project name to a Project object
         self.dict_project = {}
@@ -260,7 +262,7 @@ class Controller(QMainWindow):
         creation_menu = QWidget(notebook_menu)
         notebook_menu.addTab(creation_menu, 'Creation')
         
-        # node creation menu
+        # creation menus
         self.node_creation_menu = node_creation_panel.NodeCreationPanel(self)
         self.link_creation_menu = link_creation_panel.LinkCreationPanel(self)
         
@@ -278,7 +280,17 @@ class Controller(QMainWindow):
         routing_menu_layout = QVBoxLayout(routing_menu)
         routing_menu_layout.addWidget(self.routing_panel)
         
-        # routing 
+        # third tab: the display menu
+        display_menu = QWidget(notebook_menu)
+        notebook_menu.addTab(display_menu, 'Display')
+        
+        # display menus
+        self.node_display_menu = node_display_panel.NodeDisplayPanel(self)
+        self.link_display_menu = link_display_panel.LinkDisplayPanel(self)
+        
+        display_menu_layout = QVBoxLayout(display_menu)
+        display_menu_layout.addWidget(self.node_display_menu)
+        display_menu_layout.addWidget(self.link_display_menu)
         
         ## notebook containing all projects
         self.notebook_project = QTabWidget(self)

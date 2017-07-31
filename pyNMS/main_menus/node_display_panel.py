@@ -19,26 +19,23 @@ from PyQt5.QtWidgets import (
                              QGroupBox,
                              )
 
-class LinkCreationPanel(QGroupBox):
+class NodeDisplayPanel(QGroupBox):
     
     def __init__(self, controller):
         super().__init__(controller)
         self.controller = controller
-        self.setTitle('Link creation')
+        self.setTitle('Node display')
+        self.setMinimumSize(300, 300)
                 
         # exit connection lost because of the following lines
         layout = QtWidgets.QGridLayout(self)
-        for index, subtype in enumerate(link_subtype):
-            if subtype in ('l2vc', 'l3vc'):
-                continue
+        for index, subtype in enumerate(node_subtype):
             button = QPushButton(self)
-            button.clicked.connect(lambda _, s=subtype: self.create_link(s))
-            image_path = join(controller.path_icon, subtype + '.png')
+            print(subtype)
+            # button.clicked.connect(lambda _, s=subtype: self.create_link(s))
+            image_path = join(controller.path_icon, 'default_{}.gif'.format(subtype))
             icon = QtGui.QIcon(image_path)
             button.setIcon(icon)
-            button.setIconSize(QtCore.QSize(120, 30))
-            layout.addWidget(button, index // 2, index % 2, 1, 1)
+            button.setIconSize(QtCore.QSize(50, 50))
+            layout.addWidget(button, index // 4, index % 4, 1, 1)
             
-    def create_link(self, subtype):
-        self.controller.mode = 'creation'
-        self.controller.creation_mode = subtype
