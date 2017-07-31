@@ -33,11 +33,11 @@ class BaseView(QGraphicsView):
     def is_link(self, item):
         return isinstance(item, GraphicalLink)
         
-    def get_gobj(self, objects):
+    def get_items(self, objects):
         return map(lambda n: n.gobject, objects)
         
     def all_gnodes(self):
-        return self.get_gobj(self.network.nodes.values())
+        return self.get_items(self.network.nodes.values())
         
     def get_obj(self, graphical_objects):
         return map(lambda gobject: gobject.object, graphical_objects)
@@ -49,7 +49,7 @@ class BaseView(QGraphicsView):
         return filter(self.is_link, self.scene.selectedItems())
     
     def filter(self, type, *subtypes):
-        return self.get_gobj(self.network.ftr(type, *subtype))
+        return self.get_items(self.network.ftr(type, *subtypes))
         
     ## Zoom system
     
@@ -296,7 +296,13 @@ class BaseView(QGraphicsView):
     def stop_timer(self):
         self.killTimer(self.timer)
         
-    ## Display
+    ## Change display
+    
+    def per_subtype_display(self, subtype):
+        self.display[subtype] = not self.display[subtype]
+        type = subtype_to_type[subtype]
+        for item in self.filter(type, subtype):
+            item.show() if self.display[subtype] else item.hide()
     
     def refresh_display(self):
         pass

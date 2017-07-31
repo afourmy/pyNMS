@@ -1,4 +1,4 @@
-from collections import defaultdict, OrderedDict
+from miscellaneous.decorators import update_paths
 from objects.objects import *
 from os.path import join
 from PyQt5 import QtCore, QtGui, QtWidgets
@@ -30,14 +30,17 @@ class NodeDisplayPanel(QGroupBox):
                 
         # exit connection lost because of the following lines
         layout = QtWidgets.QGridLayout(self)
+        self.buttons = {}
         for index, subtype in enumerate(node_subtype):
             button = QPushButton(self)
             button.clicked.connect(lambda _, s=subtype: self.change_display(s))
             image_path = join(controller.path_icon, 'default_{}.gif'.format(subtype))
             button.setIcon(QIcon(image_path))
             button.setIconSize(QtCore.QSize(50, 50))
+            self.buttons[subtype] = button
             layout.addWidget(button, index // 4, index % 4, 1, 1)
             
-    def change_display(self):
-        pass
+    @update_paths(False)
+    def change_display(self, subtype):
+        self.view.per_subtype_display(subtype)        
             
