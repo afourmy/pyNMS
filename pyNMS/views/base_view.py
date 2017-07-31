@@ -1,3 +1,4 @@
+from collections import defaultdict
 from random import randint
 from math import sqrt
 from right_click_menus.network_selection_menu import NetworkSelectionMenu
@@ -21,6 +22,8 @@ class BaseView(QGraphicsView):
         self.setRenderHint(QPainter.Antialiasing)
         # temporary line displayed at link creation
         self.temp_line = None
+        # per-subtype display (True -> display, False -> don't display)
+        self.display = dict.fromkeys(all_subtypes, True)
         
     ## Useful functions
     
@@ -30,8 +33,11 @@ class BaseView(QGraphicsView):
     def is_link(self, item):
         return isinstance(item, GraphicalLink)
         
+    def get_gobj(self, objects):
+        return map(lambda n: n.gobject, objects)
+        
     def all_gnodes(self):
-        return map(lambda n: n.gnode, self.network.nodes.values())
+        return self.get_gobj(self.network.nodes.values())
         
     def get_obj(self, graphical_objects):
         return map(lambda gobject: gobject.object, graphical_objects)
@@ -41,12 +47,21 @@ class BaseView(QGraphicsView):
         
     def selected_links(self):
         return filter(self.is_link, self.scene.selectedItems())
+    
+    def filter(self, type, *subtypes):
+        return self.get_gobj(self.network.ftr(type, *subtype))
         
     ## Zoom system
     
+    #TODO add icon in the toolbar
+    def zoom_in(self):
+        self.scale(1.25, 1.25)
+        
+    def zoom_out(self):
+        self.scale(1/1.25, 1/1.25)
+        
     def wheelEvent(self, event):
-        factor = 1.25 if event.angleDelta().y() > 0 else 0.8
-        self.scale(factor, factor)
+        self.zoom_in() if event.angleDelta().y() > 0 else self.zoom_out()
         
     ## Drag & Drop system
     
@@ -309,8 +324,8 @@ class GraphicalNode(QGraphicsPixmapItem):
             self.node = node
         self.object = self.node
         # we retrieve the pixmap based on the subtype to initialize a QGPI
-        pixmap = view.controller.node_subtype_to_pixmap['default'][self.node.subtype]
-        selection_pixmap = self.controller.node_subtype_to_pixmap['red'][self.node.subtype]
+        pixmap = view.controller.pixmaps['default'][self.node.subtype]
+        selection_pixmap = self.controller.pixmaps['red'][self.node.subtype]
         self.pixmap = pixmap.scaled(
                                     QSize(100, 100), 
                                     Qt.KeepAspectRatio,
@@ -332,7 +347,7 @@ class GraphicalNode(QGraphicsPixmapItem):
                                -self.boundingRect().height()/2
                                )
                        )
-        self.setZValue(3)
+        self.setZValue(10)
         self.view.scene.addItem(self)
         self.setCursor(QCursor(Qt.PointingHandCursor))
         # node speed for graph drawing algorithms

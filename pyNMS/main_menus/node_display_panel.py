@@ -5,7 +5,8 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import (
                          QColor, 
-                         QDrag, 
+                         QDrag,
+                         QIcon, 
                          QPainter, 
                          QPixmap
                          )
@@ -31,11 +32,12 @@ class NodeDisplayPanel(QGroupBox):
         layout = QtWidgets.QGridLayout(self)
         for index, subtype in enumerate(node_subtype):
             button = QPushButton(self)
-            print(subtype)
-            # button.clicked.connect(lambda _, s=subtype: self.create_link(s))
+            button.clicked.connect(lambda _, s=subtype: self.change_display(s))
             image_path = join(controller.path_icon, 'default_{}.gif'.format(subtype))
-            icon = QtGui.QIcon(image_path)
-            button.setIcon(icon)
+            button.setIcon(QIcon(image_path))
             button.setIconSize(QtCore.QSize(50, 50))
             layout.addWidget(button, index // 4, index % 4, 1, 1)
+            
+    def change_display(self):
+        pass
             

@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import QWidget, QHBoxLayout, QFileDialog
 class Project(QWidget):
     
     def __init__(self, controller, name):
-        super(Project, self).__init__(controller)
+        super().__init__(controller)
         self.network_view = NetworkView(
                                         '{} : network view'.format(name),
                                         controller

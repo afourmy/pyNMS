@@ -132,7 +132,6 @@ class Map():
             earth_water.setZValue(0)
             earth_water.setBrush(self.water_brush)
             self.polygons.addToGroup(earth_water)
-            # self.view.scene.addToGroup(earth_water)
         else:
             pass
             
