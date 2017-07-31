@@ -11,6 +11,17 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
 class BaseView(QGraphicsView):
+    
+    link_color = {
+    'ethernet link': QPen(QColor(0, 0, 255), 3),
+    'optical link': QPen(QColor(207, 34, 138), 3),
+    'optical channel': QPen(QColor(93, 188, 210), 3),
+    'etherchannel': QPen(QColor(212, 34, 42), 3),
+    'pseudowire': QPen(QColor(144, 43, 236), 3),
+    'BGP peering': QPen(QColor(119, 235, 202), 3),
+    'routed traffic': QPen(QColor(3, 139, 132), 3),
+    'static traffic': QPen(QColor(0, 210, 0), 3)
+    }
         
     def __init__(self, name, controller):
         super(BaseView, self).__init__(controller)
@@ -20,6 +31,7 @@ class BaseView(QGraphicsView):
         self.setScene(self.scene)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setRenderHint(QPainter.Antialiasing)
+        
         # temporary line displayed at link creation
         self.temp_line = None
         # per-subtype display (True -> display, False -> don't display)
@@ -134,7 +146,8 @@ class BaseView(QGraphicsView):
                 self.end_node = item
                 GraphicalLink(self)
                 # we made the start node unselectable and unmovable to enable
-                # the creation of links: we revert this change at link creation
+                # the creation of links, in the press binding of GraphicalNode: 
+                # we revert this change at link creation
                 self.start_node.setFlag(QGraphicsItem.ItemIsSelectable, True)
                 self.start_node.setFlag(QGraphicsItem.ItemIsMovable, True)
             self.scene.removeItem(self.temp_line)
@@ -403,9 +416,9 @@ class GraphicalNode(QGraphicsPixmapItem):
 class GraphicalLink(QGraphicsLineItem):
     
     def __init__(self, view, link=None):
-        super(GraphicalLink, self).__init__()
+        super().__init__()
         self.controller = view.controller
-        # self.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         # source and destination graphic nodes
         if link:
             self.link = link
@@ -421,6 +434,7 @@ class GraphicalLink(QGraphicsLineItem):
                                         )
         self.object = self.link
         self.setZValue(2)
+        self.setPen(view.link_color[self.link.subtype])
         self.update_position()
         view.scene.addItem(self)
         self.link.glink = self.link.gobject = self
