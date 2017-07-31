@@ -121,9 +121,24 @@ class Controller(QMainWindow):
         
         self.statusBar()
         
+        new_project_icon = QIcon(join(self.path_icon, 'new_project.png'))
+        new_project = QAction(new_project_icon, 'New project', self)
+        new_project.setStatusTip('Create a new project')
+        new_project.triggered.connect(self.add_project)
+        
+        import_project_icon = QIcon(join(self.path_icon, 'import_project.png'))
+        import_project = QAction(import_project_icon, 'Import project', self)
+        import_project.setStatusTip('Import an existing project')
+        import_project.triggered.connect(self.add_project)
+        
+        save_project_icon = QIcon(join(self.path_icon, 'save_project.png'))
+        save_project = QAction(save_project_icon, 'Save project', self)
+        save_project.setShortcut('Ctrl+S')
+        save_project.setStatusTip('Save the project')
+        save_project.triggered.connect(self.add_project)
+        
         selection_icon = QIcon(join(self.path_icon, 'motion.png'))
         selection_mode = QAction(selection_icon, 'Selection mode', self)
-        selection_mode.setShortcut('Ctrl+S')
         selection_mode.setStatusTip('Switch to selection mode')
         selection_mode.triggered.connect(self.switch_to_selection_mode)
         
@@ -158,10 +173,29 @@ class Controller(QMainWindow):
         search.setShortcut('Ctrl+F')
         search.setStatusTip('Search objects per property value')
         search.triggered.connect(lambda: self.search_window.show())
+        
+        add_note_icon = QIcon(join(self.path_icon, 'add_note.png'))
+        add_note = QAction(add_note_icon, 'Add note', self)
+        add_note.setStatusTip('Add a note')
+        add_note.triggered.connect(self.add_note)
+        
+        rectangle_icon = QIcon(join(self.path_icon, 'rectangle.png'))
+        rectangle = QAction(rectangle_icon, 'Draw a rectangle', self)
+        rectangle.setStatusTip('Draw a rectangle')
+        rectangle.triggered.connect(self.rectangle)
+        
+        ellipse_icon = QIcon(join(self.path_icon, 'ellipse.png'))
+        ellipse = QAction(ellipse_icon, 'Draw an ellipse', self)
+        ellipse.setStatusTip('Draw an ellipse')
+        ellipse.triggered.connect(self.ellipse)
 
         toolbar = self.addToolBar('')
         toolbar.resize(1500, 1500)
         toolbar.setIconSize(QtCore.QSize(70, 70))
+        toolbar.addAction(new_project)
+        toolbar.addAction(import_project)
+        toolbar.addAction(save_project)
+        toolbar.addSeparator()
         toolbar.addAction(selection_mode)
         toolbar.addSeparator()
         toolbar.addAction(network_view)
@@ -173,6 +207,10 @@ class Controller(QMainWindow):
         toolbar.addAction(refresh)
         toolbar.addSeparator()
         toolbar.addAction(search)
+        toolbar.addSeparator()
+        toolbar.addAction(add_note)
+        toolbar.addAction(rectangle)
+        toolbar.addAction(ellipse)
         
         # create all pixmap images for node subtypes
         self.node_subtype_to_pixmap = defaultdict(OrderedDict)
@@ -275,3 +313,12 @@ class Controller(QMainWindow):
         
     def refresh(self):
         self.current_project.refresh()
+        
+    def add_note(self):
+        pass
+        
+    def rectangle(self):
+        pass
+        
+    def ellipse(self):
+        pass
