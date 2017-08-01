@@ -14,7 +14,7 @@
 
 from miscellaneous.decorators import update_paths
 from PyQt5.QtWidgets import (
-                             QComboBox
+                             QComboBox,
                              QGridLayout, 
                              QLabel, 
                              QLineEdit, 
