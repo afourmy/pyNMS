@@ -19,6 +19,7 @@ from graph_algorithms.shortest_path_window import ShortestPathWindow
 from graph_algorithms.maximum_flow_window import MaximumFlowWindow
 from graph_algorithms.disjoint_sp_window import DisjointSPWindow
 from graph_algorithms.minimum_cost_flow_window import MCFlowWindow
+from graph_algorithms.rwa_window import RWAWindow
 from graph_generation.graph_generation import GraphGenerationWindow
 from gis.gis_parameter import GISParameterWindow
 from miscellaneous.graph_drawing import *
@@ -88,6 +89,7 @@ class Controller(QMainWindow):
         self.maximum_flow_window = MaximumFlowWindow(self)
         self.disjoint_sp_window = DisjointSPWindow(self)
         self.mcf_window = MCFlowWindow(self)
+        self.rwa_window = RWAWindow(self)
         
         ## Menu bar
         menu_bar = self.menuBar()
@@ -169,11 +171,16 @@ class Controller(QMainWindow):
         MCF_window.setStatusTip('Minimum-cost flow')
         MCF_window.triggered.connect(lambda: self.mcf_window.show())
         
+        RWA_window = QAction('Routing and wavelength assignment', self)
+        RWA_window.setStatusTip('Routing and wavelength assignment')
+        RWA_window.triggered.connect(lambda: self.rwa_window.show())
+        
         algorithm_menu = menu_bar.addMenu('Advanced algorithms')
         algorithm_menu.addAction(SP_window)
         algorithm_menu.addAction(MF_window)
         algorithm_menu.addAction(DSP_window)
         algorithm_menu.addAction(MCF_window)
+        algorithm_menu.addAction(RWA_window)
 
         ## Status bar
         

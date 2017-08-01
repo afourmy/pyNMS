@@ -1,6 +1,26 @@
+# Copyright (C) 2017 Antoine Fourmy <antoine dot fourmy at gmail dot com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from miscellaneous.decorators import update_paths
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
-        QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView)
+from PyQt5.QtWidgets import (
+                             QComboBox
+                             QGridLayout, 
+                             QLabel, 
+                             QLineEdit, 
+                             QPushButton, 
+                             QWidget, 
+                             )
 
 class MaximumFlowWindow(QWidget):
     
@@ -43,7 +63,7 @@ class MaximumFlowWindow(QWidget):
         self.setLayout(layout)
         
     @update_paths(False)
-    def compute_flow(self):
+    def compute_flow(self, _):
         source = self.network.nf(name=self.source_edit.text())
         destination = self.network.nf(name=self.destination_edit.text())
         algorithm = {
