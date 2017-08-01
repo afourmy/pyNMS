@@ -15,6 +15,10 @@
 from collections import defaultdict, OrderedDict
 from objects.objects import *
 from os.path import abspath, join, pardir
+from graph_algorithms.shortest_path_window import ShortestPathWindow
+from graph_algorithms.maximum_flow_window import MaximumFlowWindow
+from graph_algorithms.disjoint_sp_window import DisjointSPWindow
+from graph_algorithms.minimum_cost_flow_window import MCFlowWindow
 from graph_generation.graph_generation import GraphGenerationWindow
 from gis.gis_parameter import GISParameterWindow
 from miscellaneous.graph_drawing import *
@@ -70,13 +74,20 @@ class Controller(QMainWindow):
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
         
-        # permanent windows
+        ## permanent windows
+        
         self.graph_generation_window = GraphGenerationWindow(self)
         self.spring_layout_parameters_window = SpringLayoutParametersWindow(self)
         self.gis_parameter_window = GISParameterWindow(self)
         self.ssh_management_window = SSHManagementWindow(self)
         self.search_window = SearchWindow(self)
         self.style_window = StyleWindow()
+        
+        # Graph algorithm windows
+        self.shortest_path_window = ShortestPathWindow(self)   
+        self.maximum_flow_window = MaximumFlowWindow(self)
+        self.disjoint_sp_window = DisjointSPWindow(self)
+        self.mcf_window = MCFlowWindow(self)
         
         ## Menu bar
         menu_bar = self.menuBar()
@@ -141,6 +152,28 @@ class Controller(QMainWindow):
         gis_menu.addAction(show_hide_map)
         gis_menu.addAction(delete_map)
         gis_menu.addAction(GIS_parameters)
+        
+        SP_window = QAction('Shortest path', self)
+        SP_window.setStatusTip('Shortest path')
+        SP_window.triggered.connect(lambda: self.shortest_path_window.show())
+        
+        MF_window = QAction('Maximum flow', self)
+        MF_window.setStatusTip('Maximum flow')
+        MF_window.triggered.connect(lambda: self.maximum_flow_window.show())
+        
+        DSP_window = QAction('Disjoint shortest paths', self)
+        DSP_window.setStatusTip('Disjoint shortest paths')
+        DSP_window.triggered.connect(lambda: self.disjoint_sp_window.show())
+        
+        MCF_window = QAction('Minimum-cost flow', self)
+        MCF_window.setStatusTip('Minimum-cost flow')
+        MCF_window.triggered.connect(lambda: self.mcf_window.show())
+        
+        algorithm_menu = menu_bar.addMenu('Advanced algorithms')
+        algorithm_menu.addAction(SP_window)
+        algorithm_menu.addAction(MF_window)
+        algorithm_menu.addAction(DSP_window)
+        algorithm_menu.addAction(MCF_window)
 
         ## Status bar
         
@@ -162,10 +195,25 @@ class Controller(QMainWindow):
         save_project.setStatusTip('Save the project')
         save_project.triggered.connect(self.add_project)
         
-        selection_icon = QIcon(join(self.path_icon, 'motion.png'))
+        selection_icon = QIcon(join(self.path_icon, 'selection.png'))
         selection_mode = QAction(selection_icon, 'Selection mode', self)
         selection_mode.setStatusTip('Switch to selection mode')
         selection_mode.triggered.connect(self.switch_to_selection_mode)
+        
+        rectangle_icon = QIcon(join(self.path_icon, 'rectangle.png'))
+        rectangle = QAction(rectangle_icon, 'Draw a rectangle', self)
+        rectangle.setStatusTip('Draw a rectangle')
+        rectangle.triggered.connect(self.rectangle)
+        
+        ellipse_icon = QIcon(join(self.path_icon, 'ellipse.png'))
+        ellipse = QAction(ellipse_icon, 'Draw an ellipse', self)
+        ellipse.setStatusTip('Draw an ellipse')
+        ellipse.triggered.connect(self.ellipse)
+        
+        add_note_icon = QIcon(join(self.path_icon, 'add_note.png'))
+        add_note = QAction(add_note_icon, 'Add note', self)
+        add_note.setStatusTip('Add a note')
+        add_note.triggered.connect(self.add_note)
         
         network_view_icon = QIcon(join(self.path_icon, 'network_view.png'))
         network_view = QAction(network_view_icon, 'Network view', self)
@@ -199,21 +247,16 @@ class Controller(QMainWindow):
         search.setStatusTip('Search objects per property value')
         search.triggered.connect(lambda: self.search_window.show())
         
-        add_note_icon = QIcon(join(self.path_icon, 'add_note.png'))
-        add_note = QAction(add_note_icon, 'Add note', self)
-        add_note.setStatusTip('Add a note')
-        add_note.triggered.connect(self.add_note)
+        zoom_in_icon = QIcon(join(self.path_icon, 'zoom_in.png'))
+        zoom_in = QAction(zoom_in_icon, 'Zoom in', self)
+        zoom_in.setStatusTip('Zoom in')
+        zoom_in.triggered.connect(self.zoom_in)
         
-        rectangle_icon = QIcon(join(self.path_icon, 'rectangle.png'))
-        rectangle = QAction(rectangle_icon, 'Draw a rectangle', self)
-        rectangle.setStatusTip('Draw a rectangle')
-        rectangle.triggered.connect(self.rectangle)
+        zoom_out_icon = QIcon(join(self.path_icon, 'zoom_out.png'))
+        zoom_out = QAction(zoom_out_icon, 'Zoom out', self)
+        zoom_out.setStatusTip('Zoom out')
+        zoom_out.triggered.connect(self.zoom_out)
         
-        ellipse_icon = QIcon(join(self.path_icon, 'ellipse.png'))
-        ellipse = QAction(ellipse_icon, 'Draw an ellipse', self)
-        ellipse.setStatusTip('Draw an ellipse')
-        ellipse.triggered.connect(self.ellipse)
-
         toolbar = self.addToolBar('')
         toolbar.resize(1500, 1500)
         toolbar.setIconSize(QtCore.QSize(70, 70))
@@ -222,6 +265,9 @@ class Controller(QMainWindow):
         toolbar.addAction(save_project)
         toolbar.addSeparator()
         toolbar.addAction(selection_mode)
+        toolbar.addAction(rectangle)
+        toolbar.addAction(ellipse)
+        toolbar.addAction(add_note)
         toolbar.addSeparator()
         toolbar.addAction(network_view)
         toolbar.addAction(site_view)
@@ -233,9 +279,8 @@ class Controller(QMainWindow):
         toolbar.addSeparator()
         toolbar.addAction(search)
         toolbar.addSeparator()
-        toolbar.addAction(add_note)
-        toolbar.addAction(rectangle)
-        toolbar.addAction(ellipse)
+        toolbar.addAction(zoom_in)
+        toolbar.addAction(zoom_out)
         
         # create all pixmap images for node subtypes
         self.pixmaps = defaultdict(OrderedDict)
@@ -357,3 +402,9 @@ class Controller(QMainWindow):
         
     def ellipse(self):
         pass
+        
+    def zoom_in(self):
+        self.current_project.current_view.zoom_in()
+        
+    def zoom_out(self):
+        self.current_project.current_view.zoom_out()

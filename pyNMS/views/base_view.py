@@ -3,7 +3,6 @@ from random import randint
 from math import sqrt
 from right_click_menus.network_selection_menu import NetworkSelectionMenu
 from right_click_menus.network_general_menu import NetworkGeneralMenu
-from miscellaneous.graph_drawing import SpringLayoutParametersWindow
 from miscellaneous.decorators import *
 from objects.objects import *
 from PyQt5.QtCore import *
@@ -64,8 +63,7 @@ class BaseView(QGraphicsView):
         return self.get_items(self.network.ftr(type, *subtypes))
         
     ## Zoom system
-    
-    #TODO add icon in the toolbar
+
     def zoom_in(self):
         self.scale(1.25, 1.25)
         
@@ -184,8 +182,8 @@ class BaseView(QGraphicsView):
                 
     def random_layout(self):
         for gnode in self.node_selection:
-            x, y = randint(0, 1000), randint(0, 1000)
-            gnode.setPos(x, y)  
+            gnode.x = randint(gnode.x - 500, gnode.x + 500)
+            gnode.y = randint(gnode.y - 500, gnode.y + 500)
             
     ## Alignment and distribution functions
     
@@ -205,6 +203,12 @@ class BaseView(QGraphicsView):
         offset = (maximum - minimum)/(len(nodes) - 1)
         for idx, node in enumerate(nodes):
             setattr(node, 'x'*horizontal or 'y', minimum + idx*offset)
+            
+    ## Selection of objects
+    
+    def select(self, *objects):
+        for obj in objects:
+            obj.setSelected(True)
             
     ## Force-directed layout algorithms
     
