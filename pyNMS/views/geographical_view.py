@@ -48,36 +48,37 @@ from PyQt5.QtWidgets import (
 
 class GeographicalView(BaseView):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, controller):
+        super().__init__(controller)
         
         # initialize the map 
         self.world_map = Map(self)
                             
-    def update_geographical_coordinates(self, *nodes):
-        for node in nodes:
-            node.longitude, node.latitude = self.world_map.to_geographical_coordinates(node.x, node.y)
+    def update_geographical_coordinates(self, *gnodes):
+        for gnode in gnodes:
+            lon, lat = self.world_map.to_geographical_coordinates(gnode.x, gnode.y)
+            gnode.node.longitude, gnode.node.latitude = lon, lat
             
-    def update_logical_coordinates(self, *nodes):
-        for node in nodes:
-            node.logical_x, node.logical_y = node.x, node.y 
+    def update_logical_coordinates(self, *gnodes):
+        for gnode in gnodes:
+            gnode.node.logical_x, gnode.node.logical_y = gnode.x, gnode.y 
             
-    def move_to_geographical_coordinates(self, *nodes):
-        if not nodes:
-            nodes = self.network.pn['node'].values()
-        for node in nodes:
-            node.x, node.y = self.world_map.to_canvas_coordinates(node.longitude, node.latitude)
-        self.move_nodes(nodes)
+    def move_to_geographical_coordinates(self, *gnodes):
+        if not gnodes:
+            gnodes = self.all_gnodes()
+        for gnode in gnodes:
+            gnode.x, gnode.y = self.world_map.to_canvas_coordinates(
+                                    gnode.node.longitude, 
+                                    gnode.node.latitude
+                                    )
         
-    def move_to_logical_coordinates(self, *nodes):
-        if not nodes:
-            nodes = self.network.pn['node'].values()
-        for node in nodes:
-            node.x, node.y = node.logical_x, node.logical_y
-        self.move_nodes(nodes)
+    def move_to_logical_coordinates(self, *gnodes):
+        if not gnodes:
+            gnodes = self.all_gnodes()
+        for gnode in gnodes:
+            gnode.x, gnode.y = gnode.node.logical_x, gnode.node.logical_y
         
     def haversine_distance(self, s, d):
-        ''' Earth distance between two nodes '''
         coord = (s.longitude, s.latitude, d.longitude, d.latitude)
         # decimal degrees to radians conversion
         lon_s, lat_s, lon_d, lat_d = map(radians, coord)
@@ -86,8 +87,10 @@ class GeographicalView(BaseView):
         delta_lat = lat_d - lat_s 
         a = sin(delta_lat/2)**2 + cos(lat_s)*cos(lat_d)*sin(delta_lon/2)**2
         c = 2*asin(sqrt(a)) 
+        
         # radius of earth (km)
         r = 6371 
+        
         return c*r
                 
 class Map():

@@ -14,7 +14,7 @@
 
 import os
 from PyQt5.QtWidgets import QMenu, QAction
-from .selection_menu import SelectionMenu
+from .geographical_selection_menu import GeographicalSelectionMenu
 from autonomous_system import AS
 from autonomous_system import AS_operations
 from autonomous_system import area_operations
@@ -31,7 +31,7 @@ from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
 from subprocess import Popen
                                 
-class NetworkSelectionMenu(SelectionMenu):
+class NetworkSelectionMenu(GeographicalSelectionMenu):
     
     def __init__(self, controller):
         super().__init__(controller)
@@ -79,6 +79,7 @@ class NetworkSelectionMenu(SelectionMenu):
             self.addSeparator()
         
         if self.no_shape and self.no_link:
+            
             napalm = QAction('NAPALM', self)
             napalm_submenu = QMenu('NAPALM', self)
             
@@ -88,6 +89,9 @@ class NetworkSelectionMenu(SelectionMenu):
             
             napalm.setMenu(napalm_submenu)
             self.addAction(napalm)
+            self.addSeparator()
+            
+            self.addAction(self.map_action)
             self.addSeparator()
         
         if self.no_shape:

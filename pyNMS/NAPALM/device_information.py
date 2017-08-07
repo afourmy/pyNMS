@@ -27,7 +27,15 @@ class DeviceInformation(QTabWidget):
     ('Facts', 'get_facts'),
     ('Environment', 'get_environment'),
     ('Configuration', 'get_config'),
-    ('Interfaces', 'get_interfaces')
+    ('Interfaces', 'get_interfaces'),
+    ('Interface IP', 'get_interfaces_ip'),
+    ('LLDP neighbors', 'get_lldp_neighbors'),
+    ('MAC address', 'get_mac_address_table'),
+    ('ARP table', 'get_arp_table'),
+    ('Traceroute', 'traceroute'),
+    ('SNMP', 'get_snmp_information'),
+    # ('BGP neighbors', 'get_bgp_neighbors'),
+    # ('Routing table', 'get_route_to')
     ])
     
     @update_paths(True)
@@ -45,7 +53,7 @@ class DeviceInformation(QTabWidget):
                             hostname = node.ipaddress, 
                             username = 'cisco', 
                             password = 'cisco', 
-                            optional_args= {'secret': 'cisco'}
+                            optional_args = {'secret': 'cisco'}
                             )
             device.open()
             for action, function in self.napalm_actions.items():
@@ -113,7 +121,7 @@ class DeviceInformation(QTabWidget):
         object = self.object_list.currentItem().text()
         self.properties_edit.clear()
         value = self.napalm_data[device][action][object]
-        self.properties_edit.insertPlainText(pformat(value, width=1))
+        self.properties_edit.insertPlainText(pformat(value))
 
     # refresh display
     def refresh_display(self):

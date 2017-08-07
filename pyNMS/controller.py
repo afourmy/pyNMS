@@ -63,6 +63,9 @@ from PyQt5.QtWidgets import (
 class Controller(QMainWindow):
     def __init__(self, path_app):
         super(Controller, self).__init__()
+        palette = self.palette()
+        palette.setColor(self.backgroundRole(), QColor(212, 212, 212))
+        self.setPalette(palette)
         
         # initialize all paths
         self.path_app = path_app
@@ -194,13 +197,13 @@ class Controller(QMainWindow):
         import_project_icon = QIcon(join(self.path_icon, 'import_project.png'))
         import_project = QAction(import_project_icon, 'Import project', self)
         import_project.setStatusTip('Import an existing project')
-        import_project.triggered.connect(self.add_project)
+        import_project.triggered.connect(self.import_project)
         
         save_project_icon = QIcon(join(self.path_icon, 'save_project.png'))
-        save_project = QAction(save_project_icon, 'Save project', self)
+        save_project = QAction(save_project_icon, 'Export project', self)
         save_project.setShortcut('Ctrl+S')
-        save_project.setStatusTip('Save the project')
-        save_project.triggered.connect(self.add_project)
+        save_project.setStatusTip('Export the project')
+        save_project.triggered.connect(self.export_project)
         
         selection_icon = QIcon(join(self.path_icon, 'selection.png'))
         selection_mode = QAction(selection_icon, 'Selection mode', self)
@@ -371,6 +374,12 @@ class Controller(QMainWindow):
         self.dict_project[name] = new_project
         return new_project
         
+    def import_project(self):
+        self.current_project.import_project()
+        
+    def export_project(self):
+        self.current_project.export_project()
+        
     def stop_drawing(self):
         self.current_project.current_view.stop_timer()
         
@@ -386,11 +395,6 @@ class Controller(QMainWindow):
     def close(self):
         pass
 
-    def export_project(self):
-        self.current_project.export_project()
-        
-    def import_project(self):
-        pass
         
     def show_hide_map(self):
         self.current_project.current_view.world_map.show_hide_map()

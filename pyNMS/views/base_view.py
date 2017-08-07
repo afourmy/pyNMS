@@ -5,6 +5,7 @@ from right_click_menus.network_selection_menu import NetworkSelectionMenu
 from right_click_menus.network_general_menu import NetworkGeneralMenu
 from miscellaneous.decorators import *
 from objects.objects import *
+from os.path import join
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -22,17 +23,13 @@ class BaseView(QGraphicsView):
     'static traffic': QPen(QColor(0, 210, 0), 3)
     }
         
-    def __init__(self, name, controller):
-        super(BaseView, self).__init__(controller)
-        self.name = name
+    def __init__(self, controller):
+        super().__init__()
         self.controller = controller
         self.scene = QGraphicsScene(self)
         self.setScene(self.scene)
         self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse)
         self.setRenderHint(QPainter.Antialiasing)
-        
-        # temporary line displayed at link creation
-        self.temp_line = None
         # per-subtype display (True -> display, False -> don't display)
         self.display = dict.fromkeys(all_subtypes, True)
         
@@ -139,7 +136,7 @@ class BaseView(QGraphicsView):
             
     def mouseReleaseEvent(self, event):
         item = self.itemAt(event.pos())
-        if self.temp_line:
+        if hasattr(self, 'temp_line') and self.temp_line:
             if self.is_node(item):
                 self.end_node = item
                 GraphicalLink(self)
@@ -158,8 +155,9 @@ class BaseView(QGraphicsView):
         
     def mouseMoveEvent(self, event):
         position = self.mapToScene(event.pos())
-        if event.buttons() == Qt.LeftButton and self.temp_line:  
-            self.temp_line.setLine(QLineF(self.start_position, position))
+        if event.buttons() == Qt.LeftButton:
+            if hasattr(self, 'temp_line') and self.temp_line:  
+                self.temp_line.setLine(QLineF(self.start_position, position))
         # sliding the scrollbar with the right-click button
         if event.buttons() == Qt.RightButton:
             self.trigger_menu = False
@@ -182,8 +180,8 @@ class BaseView(QGraphicsView):
                 
     def random_layout(self):
         for gnode in self.node_selection:
-            gnode.x = randint(gnode.x - 500, gnode.x + 500)
-            gnode.y = randint(gnode.y - 500, gnode.y + 500)
+            gnode.x = randint(int(gnode.x) - 500, int(gnode.x) + 500)
+            gnode.y = randint(int(gnode.y) - 500, int(gnode.y) + 500)
             
     ## Alignment and distribution functions
     
@@ -422,7 +420,7 @@ class GraphicalLink(QGraphicsLineItem):
     def __init__(self, view, link=None):
         super().__init__()
         self.controller = view.controller
-        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
+        self.setFlag(QGraphicsItem.ItemIsSelectable, False)
         # source and destination graphic nodes
         if link:
             self.link = link

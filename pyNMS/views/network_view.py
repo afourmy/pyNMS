@@ -17,7 +17,13 @@ from networks import main_network
 
 class NetworkView(GeographicalView):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, controller):
         self.network = main_network.MainNetwork(self)
-        super().__init__(*args, **kwargs)
+        super().__init__(controller)
+        
+    def refresh_display(self):
+        print('test1')
+        # we draw everything except interface
+        for type in set(self.network.pn) - {'interface'}:
+            self.draw_objects(self.network.pn[type].values())
         

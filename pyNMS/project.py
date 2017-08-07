@@ -25,19 +25,14 @@ except ImportError:
     
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QFileDialog
 
-
 class Project(QWidget):
     
     def __init__(self, controller, name):
         super().__init__(controller)
-        self.network_view = NetworkView(
-                                        '{} : network view'.format(name),
-                                        controller
-                                        )
-        self.site_view = SiteView(
-                                '{} : site view'.format(name),
-                                controller, 
-                                )
+
+        print('ii')
+        self.network_view = NetworkView(controller)
+        self.site_view = SiteView(controller)
         
         layout = QHBoxLayout(self)
         layout.addWidget(self.network_view) 
@@ -93,7 +88,7 @@ class Project(QWidget):
         if not filepath:
             return
                   
-        book = xlrd.open_workbook(filepath)
+        book = xlrd.open_workbook(filepath[0])
         
         # the order in which objects are imported is extremely important:
         # - nodes must be imported first, before links
@@ -218,9 +213,8 @@ class Project(QWidget):
                         value = self.objectizer(property, args[idx])
                         interface(AS.name, property, value)   
                         
-        self.current_view.draw_all(False)
-        self.current_view.move_to_geographical_coordinates()
-        self.site_view.draw_all(False)
+        print('test')
+        self.network_view.refresh_display()
         
     def export_project(self, filepath=None):
         
