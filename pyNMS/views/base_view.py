@@ -1,5 +1,6 @@
 from collections import defaultdict
-from .graphical_items import *
+from graphical_objects.graphical_node import GraphicalNode
+from graphical_objects.graphical_link import GraphicalLink
 from right_click_menus.network_general_menu import NetworkGeneralMenu
 from miscellaneous.decorators import *
 from objects.objects import *
@@ -75,16 +76,6 @@ class BaseView(QGraphicsView):
             event.acceptProposedAction()
 
     dragMoveEvent = dragEnterEvent
-
-    def dropEvent(self, event):
-        pos = self.mapToScene(event.pos())
-        if event.mimeData().hasFormat('application/x-dnditemdata'):
-            item_data = event.mimeData().data('application/x-dnditemdata')
-            dataStream = QDataStream(item_data, QIODevice.ReadOnly)
-            pixmap, offset = QPixmap(), QPoint()
-            dataStream >> pixmap >> offset
-            new_node = GraphicalNode(self)
-            new_node.setPos(pos - offset)
             
     ## Object deletion
     
@@ -123,25 +114,6 @@ class BaseView(QGraphicsView):
             self.trigger_menu = True
             self.cursor_pos = event.pos()
         super(BaseView, self).mousePressEvent(event)
-            
-    def mouseReleaseEvent(self, event):
-        item = self.itemAt(event.pos())
-        if hasattr(self, 'temp_line') and self.temp_line:
-            if self.is_node(item):
-                self.end_node = item
-                GraphicalLink(self)
-                # we made the start node unselectable and unmovable to enable
-                # the creation of links, in the press binding of GraphicalNode: 
-                # we revert this change at link creation
-                self.start_node.setFlag(QGraphicsItem.ItemIsSelectable, True)
-                self.start_node.setFlag(QGraphicsItem.ItemIsMovable, True)
-            self.scene.removeItem(self.temp_line)
-            self.temp_line = None
-        if event.button() == Qt.RightButton and self.trigger_menu:
-            if not self.is_node(item) and not self.is_link(item): 
-                menu = NetworkGeneralMenu(event, self.controller)
-                menu.exec_(event.globalPos())
-        super(BaseView, self).mouseReleaseEvent(event)
         
     def mouseMoveEvent(self, event):
         position = self.mapToScene(event.pos())
@@ -158,15 +130,6 @@ class BaseView(QGraphicsView):
             self.horizontalScrollBar().setValue(x_value)
             self.verticalScrollBar().setValue(y_value)
         super(BaseView, self).mouseMoveEvent(event)
-        
-    ## Drawing functions
-        
-    def draw_objects(self, objects):
-        for obj in objects:
-            if obj.class_type == 'node' and not obj.gnode:
-                GraphicalNode(self, obj)
-            if obj.class_type == 'link' and not obj.glink:
-                GraphicalLink(self, obj)
             
     ## Alignment and distribution functions
     

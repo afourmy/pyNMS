@@ -14,9 +14,10 @@
 
 from .base_view import BaseView
 
-class InSiteView(BaseView):
+class InternalSiteView(BaseView):
 
-    def __init__(self, site, controller):
-        self.site = site
+    def __init__(self, gsite, controller):
+        self.gsite = gsite
+        self.site = self.gsite.node
         super().__init__(controller)
         

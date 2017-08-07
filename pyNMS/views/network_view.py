@@ -13,6 +13,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .geographical_view import GeographicalView
+from graphical_objects.graphical_node import GraphicalNode
+from graphical_objects.graphical_link import GraphicalLink
 from math import sqrt
 from miscellaneous.decorators import overrider
 from networks import main_network
@@ -27,14 +29,32 @@ class NetworkView(GeographicalView):
         self.network = main_network.MainNetwork(self)
         super().__init__(controller)
         
+    ## Drawing functions
+        
+    def draw_objects(self, objects):
+        for obj in objects:
+            if obj.class_type == 'node' and not obj.gnode:
+                GraphicalNode(self, obj)
+            if obj.class_type == 'link' and not obj.glink:
+                GraphicalLink(self, obj)
+        
     def refresh_display(self):
         # we draw everything except interface
         for type in set(self.network.pn) - {'interface'}:
             self.draw_objects(self.network.pn[type].values())
             
+    def dropEvent(self, event):
+        pos = self.mapToScene(event.pos())
+        if event.mimeData().hasFormat('application/x-dnditemdata'):
+            item_data = event.mimeData().data('application/x-dnditemdata')
+            dataStream = QDataStream(item_data, QIODevice.ReadOnly)
+            pixmap, offset = QPixmap(), QPoint()
+            dataStream >> pixmap >> offset
+            new_node = GraphicalNode(self)
+            new_node.setPos(pos - offset)
+            
     @overrider(GeographicalView)
     def mousePressEvent(self, event):
-        print('test')
         item = self.itemAt(event.pos())
         if self.controller.mode == 'creation':
             if self.is_node(item) and event.buttons() == Qt.LeftButton:
@@ -44,6 +64,25 @@ class NetworkView(GeographicalView):
                 self.temp_line.setZValue(2)
                 self.scene.addItem(self.temp_line)
         super(GeographicalView, self).mousePressEvent(event)
+        
+    def mouseReleaseEvent(self, event):
+        item = self.itemAt(event.pos())
+        if hasattr(self, 'temp_line') and self.temp_line:
+            if self.is_node(item):
+                self.end_node = item
+                GraphicalLink(self)
+                # we made the start node unselectable and unmovable to enable
+                # the creation of links, in the press binding of GraphicalNode: 
+                # we revert this change at link creation
+                self.start_node.setFlag(QGraphicsItem.ItemIsSelectable, True)
+                self.start_node.setFlag(QGraphicsItem.ItemIsMovable, True)
+            self.scene.removeItem(self.temp_line)
+            self.temp_line = None
+        if event.button() == Qt.RightButton and self.trigger_menu:
+            if not self.is_node(item) and not self.is_link(item): 
+                menu = NetworkGeneralMenu(event, self.controller)
+                menu.exec_(event.globalPos())
+        super(GeographicalView, self).mouseReleaseEvent(event)
         
     ## Force-directed layout algorithms
     
