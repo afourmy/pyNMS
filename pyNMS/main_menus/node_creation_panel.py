@@ -1,4 +1,5 @@
 from collections import defaultdict, OrderedDict
+from miscellaneous.decorators import update_paths
 from objects.objects import *
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
@@ -55,6 +56,7 @@ class NodeCreationPanel(QGroupBox):
 
     dragEnterEvent = dragMoveEvent
 
+    @update_paths(False)
     def mousePressEvent(self, event):
         # retrieve the label 
         child = self.childAt(event.pos())
@@ -63,6 +65,15 @@ class NodeCreationPanel(QGroupBox):
         
         # update the creation mode to the appropriate subtype
         self.controller.creation_mode = child.subtype
+        # we change the view if necessary:
+        # if it is a site, we switch the site view
+        # if it is anything else and we are in the site view, we switch 
+        # to the network view
+        if child.subtype == 'site':
+            self.project.show_site_view()
+        else:
+            if self.project.view_type == 'site':
+                self.project.show_network_view()
         
         pixmap = QPixmap(child.pixmap())
         item_data = QtCore.QByteArray()

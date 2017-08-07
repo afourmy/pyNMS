@@ -228,12 +228,12 @@ class Controller(QMainWindow):
         network_view_icon = QIcon(join(self.path_icon, 'network_view.png'))
         network_view = QAction(network_view_icon, 'Network view', self)
         network_view.setStatusTip('Switch to network view')
-        network_view.triggered.connect(lambda: self.switch_view('network'))
+        network_view.triggered.connect(self.show_network_view)
         
         site_view_icon = QIcon(join(self.path_icon, 'site_view.png'))
         site_view = QAction(site_view_icon, 'Site view', self)
         site_view.setStatusTip('Switch to site view')
-        site_view.triggered.connect(lambda: self.switch_view('site'))
+        site_view.triggered.connect(self.show_site_view)
         
         graph_generation_icon = QIcon(join(self.path_icon, 'ring.png'))
         graph_generation = QAction(graph_generation_icon, 'Graph generation', self)
@@ -386,15 +386,17 @@ class Controller(QMainWindow):
     def switch_to_selection_mode(self):
         self.mode = 'selection'
         
-    def switch_view(self, view_mode):
-        self.current_project.switch_view(view_mode)
+    def show_network_view(self):
+        self.current_project.show_network_view()
+        
+    def show_site_view(self):
+        self.current_project.show_site_view()
         
     def generate_graph(self):
         self.current_project.generate_graph()
 
     def close(self):
         pass
-
         
     def show_hide_map(self):
         self.current_project.current_view.world_map.show_hide_map()

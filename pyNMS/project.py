@@ -30,7 +30,6 @@ class Project(QWidget):
     def __init__(self, controller, name):
         super().__init__(controller)
 
-        print('ii')
         self.network_view = NetworkView(controller)
         self.site_view = SiteView(controller)
         
@@ -44,6 +43,17 @@ class Project(QWidget):
         self.controller.current_project = self
         self.current_view = self.network_view
         self.network = self.current_view.network
+        self.view_type = 'network'
+        
+    def show_network_view(self):
+        self.site_view.hide()
+        self.network_view.show()
+        self.view_type = 'network'
+        
+    def show_site_view(self):
+        self.network_view.hide()
+        self.site_view.show()
+        self.view_type = 'site'
 
     def objectizer(self, property, value):
         if value == 'None': 
