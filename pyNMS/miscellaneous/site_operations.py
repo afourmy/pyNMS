@@ -53,6 +53,6 @@ class SiteOperations(QWidget):
         if mode == 'add':
             selected_site.view.add_to_site(*objects)
         elif mode == 'remove': 
-            selected_site.remove_from_site(*objects)
+            selected_site.view.remove_from_site(*objects)
             
         self.close()

@@ -239,7 +239,7 @@ class BaseNetwork(object):
         # remove the link itself from the model
         self.graph[link.source.id][link.type].discard((link.destination, link))
         self.graph[link.destination.id][link.type].discard((link.source, link))
-        self.pn[link.type].pop(self.name_to_id.pop(link.name))
+        self.pn[link.type].pop(self.name_to_id.pop(link.name, None), None)
             
     def is_connected(self, nodeA, nodeB, link_type, subtype=None):
         if not subtype:

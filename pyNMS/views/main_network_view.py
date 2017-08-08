@@ -21,7 +21,7 @@ class MainNetworkView(GeographicalView, NetworkView):
     # given a graphical node, retrieves all attached graphical links    
     def attached_glinks(self, gnode):
         for link in self.network.attached_links(gnode.node):
-            yield link.glink
+            yield link.glink[self]
         
     def draw_objects(self, *objects):
         for obj in objects:

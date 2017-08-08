@@ -77,23 +77,6 @@ class BaseView(QGraphicsView):
 
     dragMoveEvent = dragEnterEvent
             
-    ## Object deletion
-    
-    def remove_objects(self, *items):
-        for item in items:
-            obj = item.object
-            self.scene.removeItem(item)
-            # remove it from all AS it belongs to
-            if hasattr(obj, 'AS'):
-                for AS in list(obj.AS):
-                    AS.management.remove_from_AS(obj)
-            # remove it from the scene and the network model
-            if self.is_node(item):
-                for link in self.network.remove_node(obj):
-                    self.remove_objects(link.glink)
-            else:
-                self.network.remove_link(obj)
-            
     ## Mouse bindings
 
     def mousePressEvent(self, event):

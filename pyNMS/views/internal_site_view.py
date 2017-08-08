@@ -42,34 +42,29 @@ class InternalSiteView(NetworkView):
     def attached_glinks(self, gnode):
         for link in self.network.attached_links(gnode.node):
             if link in self.site.ps['link']:
-                yield link.glink
-        
-    def draw_objects(self, *objects):
+                yield link.glink[self]
+                
+    def add_to_site(self, *objects):
         for obj in objects:
             if obj not in self.site.ps[obj.class_type]:
                 self.site.add_to_site(obj)
                 if obj.class_type == 'node':
                     self.gobj[obj] = GraphicalNetworkNode(self, obj)
                 elif obj.class_type == 'link':
-                    self.draw_objects(obj.source, obj.destination)
+                    self.add_to_site(obj.source, obj.destination)
                     self.gobj[obj] = GraphicalLink(self, obj)
-                    
-    def remove_objects(self, *objects):
-        for object in objects:
-            item = object.gobject[self]
+        
+    def remove_from_site(self, *objects):
+        for obj in objects:
+            if obj not in self.site.ps[obj.class_type]:
+                continue
+            item = self.gobj[obj]
+            self.site.remove_from_site(obj)
             self.scene.removeItem(item)
             # remove it from the scene and the network model
             if self.is_node(item):
                 for glink in self.attached_glinks(item):
-                    self.remove_objects(glink)
-            object.gobject.pop(self)
-        
-    def add_to_site(self, *objects):
-        self.draw_objects(*objects)
-        
-    def remove_from_site(self, *objects):
-        self.site.remove_from_site(*objects)
-        self.remove_objects(*objects)
+                    self.remove_from_site(glink.link)
         
     @update_paths(False)
     def dropEvent(self, event):

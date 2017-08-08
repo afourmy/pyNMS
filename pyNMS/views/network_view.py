@@ -65,6 +65,26 @@ class NetworkView(BaseView):
                 menu.exec_(event.globalPos())
         super(NetworkView, self).mouseReleaseEvent(event)
         
+    ## Object deletion
+    
+    def remove_objects(self, *items):
+        for item in items:
+            obj = item.object
+            self.scene.removeItem(item)
+            # remove it from all AS it belongs to
+            if hasattr(obj, 'AS'):
+                for AS in list(obj.AS):
+                    AS.management.remove_from_AS(obj)
+            # remove it from all sites it belongs to
+            for site in set(obj.sites):
+                site.view.remove_from_site(obj)
+            # remove it from the scene and the network model
+            if self.is_node(item):
+                for link in self.network.remove_node(obj):
+                    self.remove_objects(link.glink[self])
+            else:
+                self.network.remove_link(obj)
+        
     ## Force-directed layout algorithms
     
     def distance(self, p, q): 

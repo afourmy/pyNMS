@@ -13,6 +13,6 @@ class GraphicalNetworkNode(GraphicalNode):
     def itemChange(self, change, value):
         if change == self.ItemScenePositionHasChanged:
             for glink in self.view.attached_glinks(self):
-                glink[self.view].update_position()
+                glink.update_position()
         return super().itemChange(change, value)
         
