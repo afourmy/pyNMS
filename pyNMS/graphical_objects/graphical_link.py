@@ -7,12 +7,12 @@ class GraphicalLink(QGraphicsLineItem):
     def __init__(self, view, link=None):
         super().__init__()
         self.controller = view.controller
-        self.setFlag(QGraphicsItem.ItemIsSelectable, False)
+        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
         # source and destination graphic nodes
         if link:
             self.link = link
-            self.source = link.source.gnode
-            self.destination = link.destination.gnode
+            self.source = link.source.gnode[view]
+            self.destination = link.destination.gnode[view]
         else:
             self.destination = view.end_node
             self.source = view.start_node
@@ -26,7 +26,7 @@ class GraphicalLink(QGraphicsLineItem):
         self.setPen(view.link_color[self.link.subtype])
         self.update_position()
         view.scene.addItem(self)
-        self.link.glink = self.link.gobject = self
+        self.link.glink[view] = self.link.gobject[view] = self
         
     def mousePressEvent(self, event):
         selection_allowed = self.controller.mode == 'selection'

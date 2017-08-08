@@ -20,6 +20,8 @@ class BaseMenu(QMenu):
     @update_paths(True)
     def __init__(self, controller):
         super().__init__()
+        
+        self.all_sites = set(self.site_network.nodes.values())
                 
         self.drawing_action = QAction("Graph drawing algorithms", self)
         drawing_submenu = QMenu("Graph drawing", self)

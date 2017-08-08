@@ -18,7 +18,6 @@ from objects import objects
 import random
 import re
 import warnings
-import tkinter as tk
 from copy import copy
 from ip_networks.configuration import RouterConfiguration
 from objects.objects import *

@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .geographical_view import GeographicalView
+from .base_view import BaseView
 from graphical_objects.graphical_node import GraphicalNode
 from graphical_objects.graphical_link import GraphicalLink
 from math import sqrt
@@ -23,37 +23,19 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from random import randint
 
-class NetworkView(GeographicalView):
+class NetworkView(BaseView):
 
     def __init__(self, controller):
-        self.network = main_network.MainNetwork(self)
         super().__init__(controller)
         
     ## Drawing functions
-        
-    def draw_objects(self, objects):
-        for obj in objects:
-            if obj.class_type == 'node' and not obj.gnode:
-                GraphicalNode(self, obj)
-            if obj.class_type == 'link' and not obj.glink:
-                GraphicalLink(self, obj)
         
     def refresh_display(self):
         # we draw everything except interface
         for type in set(self.network.pn) - {'interface'}:
             self.draw_objects(self.network.pn[type].values())
             
-    def dropEvent(self, event):
-        pos = self.mapToScene(event.pos())
-        if event.mimeData().hasFormat('application/x-dnditemdata'):
-            item_data = event.mimeData().data('application/x-dnditemdata')
-            dataStream = QDataStream(item_data, QIODevice.ReadOnly)
-            pixmap, offset = QPixmap(), QPoint()
-            dataStream >> pixmap >> offset
-            new_node = GraphicalNode(self)
-            new_node.setPos(pos - offset)
-            
-    @overrider(GeographicalView)
+    @overrider(BaseView)
     def mousePressEvent(self, event):
         item = self.itemAt(event.pos())
         if self.controller.mode == 'creation':
@@ -63,7 +45,7 @@ class NetworkView(GeographicalView):
                 self.temp_line = QGraphicsLineItem(QLineF(pos, pos))
                 self.temp_line.setZValue(2)
                 self.scene.addItem(self.temp_line)
-        super(GeographicalView, self).mousePressEvent(event)
+        super(NetworkView, self).mousePressEvent(event)
         
     def mouseReleaseEvent(self, event):
         item = self.itemAt(event.pos())
@@ -82,7 +64,7 @@ class NetworkView(GeographicalView):
             if not self.is_node(item) and not self.is_link(item): 
                 menu = NetworkGeneralMenu(event, self.controller)
                 menu.exec_(event.globalPos())
-        super(GeographicalView, self).mouseReleaseEvent(event)
+        super(NetworkView, self).mouseReleaseEvent(event)
         
     ## Force-directed layout algorithms
     
@@ -108,8 +90,7 @@ class NetworkView(GeographicalView):
     def spring_layout(self, cf, k, sf, L0):
         for nodeA in self.node_selection:
             Fx = Fy = 0
-            neighbors = set(map(lambda n: n.gnode, self.network.neighbors(nodeA.node, 'plink')))
-            for nodeB in self.node_selection | neighbors:
+            for nodeB in self.node_selection:
                 if nodeA != nodeB:
                     dx, dy = nodeB.x - nodeA.x, nodeB.y - nodeA.y
                     distance = self.distance(dx, dy)
@@ -151,14 +132,14 @@ class NetworkView(GeographicalView):
                         nodeA.vy += (dy*opd**2)/distance**2
                     
         for link in self.network.plinks.values():
-            source, destination = link.source.gnode, link.destination.gnode
+            source, destination = link.source.gnode[self], link.destination.gnode[self]
             dx, dy = source.x - destination.x, source.y - destination.y
             distance = self.distance(dx, dy)
             if distance:
-                link.source.gnode.vx -= distance*dx/opd
-                link.source.gnode.vy -= distance*dy/opd
-                link.destination.gnode.vx += distance*dx/opd
-                link.destination.gnode.vy += distance*dy/opd
+                link.source.gnode[self].vx -= distance*dx/opd
+                link.source.gnode[self].vy -= distance*dy/opd
+                link.destination.gnode[self].vx += distance*dx/opd
+                link.destination.gnode[self].vy += distance*dy/opd
             
         for node in self.node_selection:
             distance = self.distance(node.vx, node.vy)

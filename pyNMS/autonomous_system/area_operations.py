@@ -68,10 +68,6 @@ class AreaOperation(QWidget):
         button_area_operation.setText('OK')
         button_area_operation.clicked.connect(lambda: self.area_operation(mode, *obj))
         
-        # cancel button
-        cancel_button = QPushButton()
-        cancel_button.setText('Cancel')
-        
         # position in the grid
         layout = QGridLayout()
         layout.addWidget(self.AS_list, 0, 0, 1, 2)

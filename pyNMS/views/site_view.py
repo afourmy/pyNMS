@@ -15,16 +15,17 @@
 from graphical_objects.graphical_site import GraphicalSite
 from .geographical_view import GeographicalView
 from miscellaneous.decorators import overrider
+from networks.site_network import SiteNetwork
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
-from networks import site_network
-
 class SiteView(GeographicalView):
+    
+    subtype = 'site'
 
     def __init__(self, *args, **kwargs):
-        self.network = site_network.SiteNetwork(self)
+        self.network = SiteNetwork(self)
         super().__init__(*args, **kwargs)
         
     def draw_objects(self, sites):

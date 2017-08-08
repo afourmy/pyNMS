@@ -24,6 +24,7 @@ class BaseNetwork(object):
         self.l2links = {}
         self.l3links = {}
         self.traffics = {}
+        self.interfaces = set()
         
         # pn for 'pool network'
         self.pn = {

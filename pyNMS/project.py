@@ -14,7 +14,7 @@
 
 import os
 import warnings
-from views.network_view import NetworkView
+from views.main_network_view import MainNetworkView
 from views.site_view import SiteView
 from objects.objects import *
 try:
@@ -30,12 +30,12 @@ class Project(QWidget):
     def __init__(self, controller, name):
         super().__init__(controller)
 
-        self.network_view = NetworkView(controller)
+        self.network_view = MainNetworkView(controller)
         self.site_view = SiteView(controller)
         
-        layout = QHBoxLayout(self)
-        layout.addWidget(self.network_view) 
-        layout.addWidget(self.site_view) 
+        self.hlayout = QHBoxLayout(self)
+        self.hlayout.addWidget(self.network_view) 
+        self.hlayout.addWidget(self.site_view) 
         self.site_view.hide()
 
         self.name = name
@@ -46,14 +46,22 @@ class Project(QWidget):
         self.view_type = 'network'
         
     def show_network_view(self):
-        self.site_view.hide()
+        self.current_view.hide()
         self.network_view.show()
+        self.current_view = self.network_view
         self.view_type = 'network'
         
     def show_site_view(self):
-        self.network_view.hide()
+        self.current_view.hide()
         self.site_view.show()
+        self.current_view = self.site_view
         self.view_type = 'site'
+        
+    def show_internal_site_view(self, site):
+        self.current_view.hide()
+        site.site_view.show()
+        self.current_view = site.site_view
+        self.view_type = 'insite'
 
     def objectizer(self, property, value):
         if value == 'None': 

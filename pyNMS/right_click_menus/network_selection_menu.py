@@ -25,7 +25,7 @@ import ip_networks.ping as ip_ping
 import ip_networks.switching_table as switching_table
 import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
-from miscellaneous import site_operations
+from miscellaneous.site_operations import SiteOperations
 from NAPALM.device_information import DeviceInformation
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
@@ -61,6 +61,7 @@ class NetworkSelectionMenu(GeographicalSelectionMenu):
             tables_submenu = QMenu('L2/L3 tables', self)
             
             if self.node.subtype == 'router':
+                
                 routing_table = QAction('Routing table', self)        
                 routing_table.triggered.connect(self.routing_table)
                 tables_submenu.addAction(routing_table)
@@ -70,6 +71,7 @@ class NetworkSelectionMenu(GeographicalSelectionMenu):
                 tables_submenu.addAction(arp_table)
                 
             if self.node.subtype == 'switch':
+                
                 switching_table = QAction('Switching table', self)        
                 switching_table.triggered.connect(self.switching_table)
                 tables_submenu.addAction(switching_table)
@@ -95,6 +97,7 @@ class NetworkSelectionMenu(GeographicalSelectionMenu):
             self.addSeparator()
         
         if self.no_shape:
+            
             simulate_failure = QAction('Simulate failure', self)        
             simulate_failure.triggered.connect(lambda: self.simulate_failure(*self.so))
             self.addAction(simulate_failure)
@@ -105,12 +108,14 @@ class NetworkSelectionMenu(GeographicalSelectionMenu):
             self.addSeparator()
             
         if self.no_shape:
+            
             create_AS = QAction('Create AS', self)        
             create_AS.triggered.connect(self.create_AS)
             self.addAction(create_AS)
 
         # at least one AS in the network: add to AS
         if self.network.pnAS and self.no_shape:
+            
             add_to_AS = QAction('Add to AS', self)        
             add_to_AS.triggered.connect(lambda: self.change_AS('add'))
             self.addAction(add_to_AS)
@@ -150,10 +155,27 @@ class NetworkSelectionMenu(GeographicalSelectionMenu):
                     self.addAction(remove_from_area)
 
         if self.no_link and self.no_shape:
+            
             self.addAction(self.align_action)
             
         self.addAction(self.drawing_action)
+        self.addSeparator()
         
+        if self.all_sites:
+            
+            self.common_sites = set(self.site_network.nodes.values())
+            for obj in self.so:
+                self.common_sites &= obj.object.sites
+            
+            add_to_site = QAction('Add to site', self)        
+            add_to_site.triggered.connect(self.add_to_site)
+            self.addAction(add_to_site)
+            
+            if self.common_sites:
+                remove_from_site = QAction('Remove from site', self)        
+                remove_from_site.triggered.connect(self.remove_from_site)
+                self.addAction(remove_from_site)
+            
     def configure(self):
         if self.node.subtype == 'router':
             self.config = conf.RouterConfiguration(self.node, self.controller)
@@ -215,4 +237,16 @@ class NetworkSelectionMenu(GeographicalSelectionMenu):
         nodes = set(self.view.get_obj(self.selected_nodes))
         self.napalm_interfaces = DeviceInformation(nodes, self.controller)
         self.napalm_interfaces.show()
+        
+    ## Site operations
+    
+    def add_to_site(self):
+        objects = set(self.view.get_obj(self.so))
+        self.add_window = SiteOperations('add', objects, self.all_sites, self.controller)
+        self.add_window.show()
+        
+    def remove_from_site(self):
+        objects = set(self.view.get_obj(self.so))
+        self.remove_window = SiteOperations('remove', objects, self.common_sites, self.controller)
+        self.remove_window.show()
             

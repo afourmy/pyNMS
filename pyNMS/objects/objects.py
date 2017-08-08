@@ -657,8 +657,7 @@ class NDobject(object):
                     
     @initializer(ie_properties)
     def __init__(self):
-        # per-site id
-        self.site_id = {}
+        self.gobject = {}
         # sites is the set of sites the object belongs to
         self.sites = set()
         
@@ -696,20 +695,13 @@ class Node(NDobject):
                     
     @initializer(ie_properties)
     def __init__(self):
-        # image of the node at all three layers: physical, logical and traffic
-        self.image = {layer: None for layer in range(1, 5)}
-        self.layer_line = {layer: None for layer in range(1, 5)}
-        self.gnode = None
-        self.lid = None
-        self.size = 8
-        # velocity of a node for graph drawing algorithm
-        self.vx = 0
-        self.vy = 0
+        # dictionnary that associates a graphical item to a view
+        self.gnode = {}
+
         # list of AS to which the node belongs. AS is actually a dictionnary
         # associating an AS to a set of area the node belongs to
         self.AS = defaultdict(set)
-        # virtual factor for BFS-clusterization drawing
-        self.virtual_factor = 1
+
         # AS_properties contains all per-AS properties: It is a dictionnary 
         # which AS name are the keys (it is easier to store AS names rather 
         # than AS itself: if we have the AS, AS.name is the name, while if we 
@@ -768,55 +760,15 @@ class Site(Node):
         self.site_type = 'Physical'
         super().__init__()
         
-    def get_obj(self):
-        yield from self.ps['node']
-        yield from self.ps['link']
-        
     def add_to_site(self, *objects):
         for obj in objects:
-            if obj in self.ps[obj.class_type]:
-                continue
             self.ps[obj.class_type].add(obj)
             obj.sites.add(self)
-            obj.site_id[self] = None
-            if obj.class_type == 'node':
-                # initialize all site properties
-                obj.site_coords[self] = [600, 300]
-                # site properties for site canvas
-                obj.site_oval[self] = {layer: None for layer in range(1, 5)}
-                obj.site_image[self] = {layer: None for layer in range(1, 5)}
-                obj.site_layer_line[self] = {layer: None for layer in range(1, 5)}
-                obj.site_lid[self] = None
-                obj.site_size[self] = 8
-                # draw the object in the insite view
-                self.view.create_node(obj)
-            else:
-                # it is a link
-                # add the edges first:
-                for edge in (obj.source, obj.destination):
-                    self.add_to_site(edge)
-                obj.site_line[self] = None
-                obj.site_lid[self] = None
-                obj.site_ilid[self] = [None]*2
-                obj.site_lpos[self] = [None]*2
-                # draw the object in the insite view
-                self.view.create_link(obj)
 
     def remove_from_site(self, *objects):
         for obj in objects:
             self.ps[obj.class_type].remove(obj)
             obj.sites.remove(self)
-            if obj.class_type == 'node':
-                obj.site_oval.pop(self)
-                obj.site_image.pop(self)
-                obj.site_layer_line.pop(self)
-                obj.site_lid.pop(self)
-                obj.site_size.pop(self)
-            else:
-                obj.site_line.pop(self)
-                obj.site_lid.pop(self)
-                obj.site_ilid.pop(self)
-                obj.site_lpos.pop(self)
         
 class Router(Node):
     
@@ -1039,20 +991,7 @@ class Link(NDobject):
     class_type = 'link'
     
     def __init__(self):
-        # self id and id of the corresponding label on the canvas
-        self.line = None
-        self.lid = None
-        self.glink = None
-        # self.iid is the id of the interface labels, used to display
-        # interfaces specific properties (ip addresses, names, etc) as well
-        # as physical link asymmetric (directional) properties (capacity, flow, etc)
-        self.ilid = [None]*2
-        self.lpos = [None]*2
-        # site properties for site canvas
-        self.site_line = {}
-        self.site_lid = {}
-        self.site_ilid = {}
-        self.site_lpos = {}
+        self.glink = {}
         super().__init__()
         
     def __repr__(self):
