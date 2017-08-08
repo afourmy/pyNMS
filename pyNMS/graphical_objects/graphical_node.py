@@ -1,12 +1,13 @@
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from right_click_menus.network_selection_menu import NetworkSelectionMenu
 from right_click_menus.internal_site_selection_menu import InternalSiteSelectionMenu
+from right_click_menus.main_network_selection_menu import MainNetworkSelectionMenu
+from right_click_menus.site_selection_menu import SiteSelectionMenu
 
 class GraphicalNode(QGraphicsPixmapItem):
     
-    def __init__(self, view, node=None):
+    def __init__(self, view, node):
         self.view = view
         self.controller = view.controller
         # if node is not defined, it means the node is created with the 
@@ -71,9 +72,6 @@ class GraphicalNode(QGraphicsPixmapItem):
                 self.setPixmap(self.selection_pixmap)
             else:
                 self.setPixmap(self.pixmap)
-        if change == self.ItemScenePositionHasChanged:
-            for link in self.view.network.attached_links(self.node):
-                link.glink[self.view].update_position()
         return QGraphicsPixmapItem.itemChange(self, change, value)
         
     def mousePressEvent(self, event):
@@ -85,9 +83,10 @@ class GraphicalNode(QGraphicsPixmapItem):
         # work in mouseReleaseEvent
         if event.buttons() == Qt.RightButton:
             self.setSelected(True)
-            if self.view.subtype == 'main':
-                menu = NetworkSelectionMenu(self.controller)
-            elif self.view.subtype == 'internal':
-                menu = InternalSiteSelectionMenu(self.controller)
+            menu = {
+                    'main': MainNetworkSelectionMenu,
+                    'internal': InternalSiteSelectionMenu,
+                    'site': SiteSelectionMenu
+                    }[self.view.subtype](self.controller)
             menu.exec_(QCursor.pos())
         super(GraphicalNode, self).mousePressEvent(event)

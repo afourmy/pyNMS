@@ -57,12 +57,6 @@ class SelectionMenu(BaseMenu):
                 align_submenu.addAction(action)
             self.align_action.setMenu(align_submenu)
             
-            # multiple links creation menu
-            multiple_links = QAction('Create multiple links', self)        
-            multiple_links.triggered.connect(self.multiple_links)
-            self.addAction(multiple_links)
-            self.addSeparator()
-            
         change_property = QAction('Change property', self)        
         change_property.triggered.connect(self.change_property)
         self.addAction(change_property)
@@ -90,10 +84,6 @@ class SelectionMenu(BaseMenu):
                 
     def delete_objects(self, _):
         self.view.remove_objects(*self.so)
-        
-    def multiple_links(self):
-        self.multiple_links = MultipleLinks(self.selected_nodes, self.controller)
-        self.multiple_links.show()
         
     def align(self, method):
         horizontal = method == 'Horizontal alignment'

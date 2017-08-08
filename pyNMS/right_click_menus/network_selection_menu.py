@@ -14,7 +14,7 @@
 
 import os
 from PyQt5.QtWidgets import QMenu, QAction
-from .geographical_selection_menu import GeographicalSelectionMenu
+from .selection_menu import SelectionMenu
 from autonomous_system import AS
 from autonomous_system import AS_operations
 from autonomous_system import area_operations
@@ -31,7 +31,7 @@ from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
 from subprocess import Popen
                                 
-class NetworkSelectionMenu(GeographicalSelectionMenu):
+class NetworkSelectionMenu(SelectionMenu):
     
     def __init__(self, controller):
         super().__init__(controller)
@@ -91,9 +91,13 @@ class NetworkSelectionMenu(GeographicalSelectionMenu):
             
             napalm.setMenu(napalm_submenu)
             self.addAction(napalm)
+            
             self.addSeparator()
             
-            self.addAction(self.map_action)
+            # multiple links creation menu
+            multiple_links = QAction('Create multiple links', self)        
+            multiple_links.triggered.connect(self.multiple_links)
+            self.addAction(multiple_links)
             self.addSeparator()
         
         if self.no_shape:
@@ -159,22 +163,15 @@ class NetworkSelectionMenu(GeographicalSelectionMenu):
             self.addAction(self.align_action)
             
         self.addAction(self.drawing_action)
-        self.addSeparator()
         
-        if self.all_sites:
+        self.addSeparator()
             
-            self.common_sites = set(self.site_network.nodes.values())
-            for obj in self.so:
-                self.common_sites &= obj.object.sites
-            
-            add_to_site = QAction('Add to site', self)        
-            add_to_site.triggered.connect(self.add_to_site)
-            self.addAction(add_to_site)
-            
-            if self.common_sites:
-                remove_from_site = QAction('Remove from site', self)        
-                remove_from_site.triggered.connect(self.remove_from_site)
-                self.addAction(remove_from_site)
+        self.common_sites = set(self.site_network.nodes.values())
+        for obj in self.so:
+            self.common_sites &= obj.object.sites
+        
+        self.remove_from_site_action = QAction('Remove from site', self)        
+        self.remove_from_site_action.triggered.connect(self.remove_from_site)
             
     def configure(self):
         if self.node.subtype == 'router':
@@ -245,8 +242,9 @@ class NetworkSelectionMenu(GeographicalSelectionMenu):
         self.add_window = SiteOperations('add', objects, self.all_sites, self.controller)
         self.add_window.show()
         
-    def remove_from_site(self):
-        objects = set(self.view.get_obj(self.so))
-        self.remove_window = SiteOperations('remove', objects, self.common_sites, self.controller)
-        self.remove_window.show()
+    ## Multiple links
+    
+    def multiple_links(self):
+        self.multiple_links = MultipleLinks(self.selected_nodes, self.controller)
+        self.multiple_links.show()
             

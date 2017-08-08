@@ -13,7 +13,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .base_view import BaseView
-from graphical_objects.graphical_node import GraphicalNode
 from graphical_objects.graphical_link import GraphicalLink
 from math import sqrt
 from miscellaneous.decorators import overrider

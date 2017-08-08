@@ -12,10 +12,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from graphical_objects.graphical_node import GraphicalNode
+from graphical_objects.graphical_network_node import GraphicalNetworkNode
 from graphical_objects.graphical_link import GraphicalLink
 from .network_view import NetworkView
-from miscellaneous.decorators import update_paths, overrider
+from miscellaneous.decorators import update_paths
 from networks.base_network import BaseNetwork
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -37,14 +37,19 @@ class InternalSiteView(NetworkView):
         # dictionnary that associates an object to its in-site graphical self
         self.gobj = {}
         
+    # given a graphical node, retrieves all attached graphical links   
+    # providing that they belong to the site 
+    def attached_glinks(self, gnode):
+        for link in self.network.attached_links(gnode.node):
+            if link in self.site.ps['link']:
+                yield link.glink
+        
     def draw_objects(self, *objects):
         for obj in objects:
-            print(obj)
             if obj not in self.site.ps[obj.class_type]:
                 self.site.add_to_site(obj)
-                print('après', obj)
                 if obj.class_type == 'node':
-                    self.gobj[obj] = GraphicalNode(self, obj)
+                    self.gobj[obj] = GraphicalNetworkNode(self, obj)
                 elif obj.class_type == 'link':
                     self.draw_objects(obj.source, obj.destination)
                     self.gobj[obj] = GraphicalLink(self, obj)
@@ -55,8 +60,9 @@ class InternalSiteView(NetworkView):
             self.scene.removeItem(item)
             # remove it from the scene and the network model
             if self.is_node(item):
-                for link in self.network.attached_links(object):
-                    self.remove_objects(link.glink)
+                for glink in self.attached_glinks(item):
+                    self.remove_objects(glink)
+            object.gobject.pop(self)
         
     def add_to_site(self, *objects):
         self.draw_objects(*objects)
@@ -73,8 +79,8 @@ class InternalSiteView(NetworkView):
             dataStream = QDataStream(item_data, QIODevice.ReadOnly)
             pixmap, offset = QPixmap(), QPoint()
             dataStream >> pixmap >> offset
-            network_gnode = GraphicalNode(self.network_view)
-            new_node = GraphicalNode(self, network_gnode.node)
+            network_gnode = GraphicalNetworkNode(self.network_view)
+            new_node = GraphicalNetworkNode(self, network_gnode.node)
             new_node.setPos(pos - offset)
             
     def mouseReleaseEvent(self, event):

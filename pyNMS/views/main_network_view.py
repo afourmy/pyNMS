@@ -1,6 +1,6 @@
 from .geographical_view import GeographicalView
 from .network_view import NetworkView
-from graphical_objects.graphical_node import GraphicalNode
+from graphical_objects.graphical_network_node import GraphicalNetworkNode
 from graphical_objects.graphical_link import GraphicalLink
 from math import sqrt
 from miscellaneous.decorators import overrider
@@ -18,10 +18,15 @@ class MainNetworkView(GeographicalView, NetworkView):
         self.network = main_network.MainNetwork(self)
         super().__init__(controller)
         
+    # given a graphical node, retrieves all attached graphical links    
+    def attached_glinks(self, gnode):
+        for link in self.network.attached_links(gnode.node):
+            yield link.glink
+        
     def draw_objects(self, *objects):
         for obj in objects:
             if obj.class_type == 'node' and not obj.gnode[self]:
-                GraphicalNode(self, obj)
+                GraphicalNetworkNode(self, obj)
             if obj.class_type == 'link' and not obj.glink[self]:
                 GraphicalLink(self, obj)
         
@@ -32,5 +37,5 @@ class MainNetworkView(GeographicalView, NetworkView):
             dataStream = QDataStream(item_data, QIODevice.ReadOnly)
             pixmap, offset = QPixmap(), QPoint()
             dataStream >> pixmap >> offset
-            new_node = GraphicalNode(self)
+            new_node = GraphicalNetworkNode(self)
             new_node.setPos(pos - offset)
