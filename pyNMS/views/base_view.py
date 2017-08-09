@@ -21,6 +21,8 @@ class BaseView(QGraphicsView):
     'routed traffic': QPen(QColor(3, 139, 132), 3),
     'static traffic': QPen(QColor(0, 210, 0), 3)
     }
+    
+    selection_pen = QPen(QColor(Qt.red), 3)
         
     def __init__(self, controller):
         super().__init__()
