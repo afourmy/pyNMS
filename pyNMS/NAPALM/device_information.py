@@ -15,6 +15,7 @@
 from napalm_base import get_network_driver
 from .napalm_interfaces import NapalmInterfaces
 from .napalm_configurations import NapalmConfigurations
+from .napalm_general import NapalmGeneral
 from pprint import pformat
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
@@ -27,11 +28,15 @@ class DeviceInformation(QTabWidget):
         super().__init__()
         self.setMinimumSize(600, 600)
         self.setWindowTitle('NAPALM: device information')
+        
+        # first tab: general information (facts + environment)
+        general_frame = NapalmGeneral(node, controller)
+        self.addTab(general_frame, 'General')
                                 
-        # first tab: the interfaces
+        # second tab: the interfaces
         interfaces_frame = NapalmInterfaces(node, controller)
         self.addTab(interfaces_frame, 'Interfaces')
         
-        # second tab: the configurations
+        # third tab: the configurations
         configurations_frame = NapalmConfigurations(node, controller)
         self.addTab(configurations_frame, 'Configurations')
