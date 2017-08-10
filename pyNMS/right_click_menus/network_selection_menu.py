@@ -86,9 +86,10 @@ class NetworkSelectionMenu(SelectionMenu):
             napalm_update.triggered.connect(self.napalm_update)
             self.addAction(napalm_update)
             
-            napalm_data = QAction('NAPALM data', self)        
-            napalm_data.triggered.connect(self.napalm_data)
-            self.addAction(napalm_data)
+            if self.one_node:
+                napalm_data = QAction('NAPALM data', self)        
+                napalm_data.triggered.connect(self.napalm_data)
+                self.addAction(napalm_data)
             
             self.addSeparator()
             
@@ -234,8 +235,8 @@ class NetworkSelectionMenu(SelectionMenu):
         napalm_update(*nodes)
     
     def napalm_data(self, action):
-        nodes = set(self.view.get_obj(self.selected_nodes))
-        self.napalm_interfaces = DeviceInformation(nodes, self.controller)
+        gnode ,= self.selected_nodes
+        self.napalm_interfaces = DeviceInformation(gnode.node, self.controller)
         self.napalm_interfaces.show()
         
     ## Site operations

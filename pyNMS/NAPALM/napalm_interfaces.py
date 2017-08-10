@@ -21,83 +21,60 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
 
 class NapalmInterfaces(QWidget):
     
-    napalm_actions = OrderedDict([
-    ('Interfaces', 'get_interfaces'),
-    ('Interface IP', 'get_interfaces_ip'),
-    ('Interfaces counters', 'get_interfaces_counters')
-    ])
+    napalm_actions = (
+    'Interfaces',
+    'Interface IP',
+    'Interfaces counters',
+    )
 
     @update_paths(True)
-    def __init__(self, nodes, controller):
+    def __init__(self, node, controller):
         super().__init__()
-        
-        # group box to choose an interface
-        napalm_management = QGroupBox()
-        napalm_management.setTitle('Choose a device and a NAPALM action')
-        
-        network_devices = QLabel('Network devices')
-        action = QLabel('Action')
+        self.node = node
 
-        self.device_list = QListWidget()
-        self.device_list.setSortingEnabled(True)
-        self.device_list.itemSelectionChanged.connect(self.properties_update)
-        self.device_list.addItems(map(str, nodes))
+        action_label = QLabel('Action')
+        object_label = QLabel('Object')
         
         self.action_list = QListWidget()
         self.action_list.setSortingEnabled(True)
-        self.action_list.itemSelectionChanged.connect(self.properties_update)
+        self.action_list.itemSelectionChanged.connect(self.text_update)
         self.action_list.addItems(self.napalm_actions)
-
-        napalm_management_layout = QGridLayout()
-        napalm_management_layout.addWidget(network_devices, 0, 0)
-        napalm_management_layout.addWidget(self.device_list, 1, 0)
-        napalm_management_layout.addWidget(action, 0, 1)
-        napalm_management_layout.addWidget(self.action_list, 1, 1)
-        napalm_management.setLayout(napalm_management_layout)
-        
-        # group box to display interface properties
-        property_management = QGroupBox()
-        property_management.setTitle('Properties')
         
         self.object_list = QListWidget()
         self.object_list.setSortingEnabled(True)
-        self.object_list.itemSelectionChanged.connect(self.object_update)
+        self.object_list.itemSelectionChanged.connect(self.text_update)
+        interfaces = node.napalm_data['Interfaces'] if node.napalm_data else ()
+        self.object_list.addItems(interfaces)
         
         self.properties_edit = QTextEdit()
-        
-        self.property_management_layout = QGridLayout()
-        self.property_management_layout.addWidget(self.object_list, 0, 0)
-        self.property_management_layout.addWidget(self.properties_edit, 0, 1)
-        property_management.setLayout(self.property_management_layout)
-        
-        # layout for the group boxes
-        main_layout = QVBoxLayout(self)
-        main_layout.addWidget(napalm_management)
-        main_layout.addWidget(property_management)
-        self.setLayout(main_layout)
+        self.properties_edit.setMinimumSize(300, 300)
+
+        layout = QGridLayout()
+        layout.addWidget(object_label, 0, 0)
+        layout.addWidget(self.object_list, 1, 0)
+        layout.addWidget(action_label, 0, 1)
+        layout.addWidget(self.action_list, 1, 1)
+        layout.addWidget(self.properties_edit, 2, 0, 1, 2)
+        self.setLayout(layout)
             
-    def properties_update(self):
-        device = self.device_list.currentItem()
+    def text_update(self):
         action = self.action_list.currentItem()
-        if device and action:
-            device = self.network.nf(name=device.text())
-            self.object_list.clear()
-            self.object_list.addItems(device.napalm_data[action.text()])
-            self.properties_edit.clear()
+        object = self.object_list.currentItem()
+        if action and object:
             
-    def object_update(self):
-        device = self.device_list.currentItem().text()
-        action = self.action_list.currentItem().text()
-        object = self.object_list.currentItem().text()
-        self.properties_edit.clear()
-        device = self.network.nf(name=device)
-        
-        if action == 'get_interfaces_ip':
-            value = ''
-        else:
-            value = '\n'.join(
+            self.properties_edit.clear()
+            # we display a dictionnary with the following format:
+            # property1: value1
+            # property2: value2
+            
+            action, object = action.text(), object.text()
+            try:
+                value = '\n'.join(
                         '{}: {}'.format(*data)
-                        for data in device.napalm_data[action][object].items()
+                        for data in self.node.napalm_data[action][object].items()
                         )
-        self.properties_edit.insertPlainText(value)
+            except KeyError:
+                value = ''
+                
+            self.properties_edit.insertPlainText(value)
                         
