@@ -69,7 +69,7 @@ class SelectionMenu(BaseMenu):
         self.addSeparator()
         
     def graph_drawing(self, drawing):
-        self.view.node_selection = self.selected_nodes
+        self.view.node_selection = self.selected_nodes or self.view.all_gnodes()
         super().graph_drawing(drawing)
         
     def show_object_properties(self):

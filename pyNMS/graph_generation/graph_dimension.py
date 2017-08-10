@@ -66,7 +66,7 @@ class GraphDimensionWindow(QWidget):
             'hypercube': self.network.hypercube,
             }[self.graph_type]
             objects = function(nodes, subtype)
-        self.view.draw_objects(objects)
+        self.view.draw_objects(*objects)
         self.close()
         # we close the graph generation window as well, as we usually don't 
         # need to create two graphs in a row
