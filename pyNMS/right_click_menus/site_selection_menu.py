@@ -1,6 +1,6 @@
-from .geographical_selection_menu import GeographicalSelectionMenu
+from .geographical_menu import GeographicalMenu
 
-class SiteSelectionMenu(GeographicalSelectionMenu):
+class SiteSelectionMenu(GeographicalMenu):
     
     def __init__(self, controller):
         super().__init__(controller)

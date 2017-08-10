@@ -25,9 +25,10 @@ class MainNetworkView(GeographicalView, NetworkView):
         
     def draw_objects(self, *objects):
         for obj in objects:
-            if obj.class_type == 'node' and not obj.gnode[self]:
+            if obj.class_type == 'node' and self not in obj.gnode:
                 GraphicalNetworkNode(self, obj)
-            if obj.class_type == 'link' and not obj.glink[self]:
+            if obj.class_type == 'link' and self not in obj.glink:
+                self.draw_objects(obj.source, obj.destination)
                 GraphicalLink(self, obj)
         
     def dropEvent(self, event):

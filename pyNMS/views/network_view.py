@@ -14,6 +14,7 @@
 
 from .base_view import BaseView
 from graphical_objects.graphical_link import GraphicalLink
+from right_click_menus.network_general_menu import NetworkGeneralMenu
 from math import sqrt
 from miscellaneous.decorators import overrider
 from networks import main_network
@@ -32,7 +33,7 @@ class NetworkView(BaseView):
     def refresh_display(self):
         # we draw everything except interface
         for type in set(self.network.pn) - {'interface'}:
-            self.draw_objects(self.network.pn[type].values())
+            self.draw_objects(*self.network.pn[type].values())
             
     @overrider(BaseView)
     def mousePressEvent(self, event):

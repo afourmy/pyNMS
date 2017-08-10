@@ -34,7 +34,7 @@ class GISParameterWindow(QWidget):
         # choose the map/nodes ratio
         ratio = QLabel('Map / nodes ratio')
         self.ratio_edit = QLineEdit()
-        self.ratio_edit.setText('0.001')
+        self.ratio_edit.setText('0.01')
         self.ratio_edit.setMaximumWidth(120)
         
         # cancel button

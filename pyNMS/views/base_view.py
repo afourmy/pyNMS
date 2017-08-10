@@ -1,7 +1,6 @@
 from collections import defaultdict
 from graphical_objects.graphical_node import GraphicalNode
 from graphical_objects.graphical_link import GraphicalLink
-from right_click_menus.network_general_menu import NetworkGeneralMenu
 from miscellaneous.decorators import *
 from objects.objects import *
 from os.path import join
@@ -43,7 +42,7 @@ class BaseView(QGraphicsView):
         return isinstance(item, GraphicalLink)
         
     def get_items(self, objects):
-        return map(lambda n: n.gobject, objects)
+        return map(lambda o: o.gobject[self], objects)
         
     def all_gnodes(self):
         return self.get_items(self.network.nodes.values())

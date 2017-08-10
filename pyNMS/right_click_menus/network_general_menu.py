@@ -14,8 +14,9 @@
 
 from PyQt5.QtWidgets import QMenu, QAction
 from .general_menu import GeneralMenu
+from .geographical_menu import GeographicalMenu
 
-class NetworkGeneralMenu(GeneralMenu):
+class NetworkGeneralMenu(GeneralMenu, GeographicalMenu):
     
     def __init__(self, event, controller):
         super().__init__(event, controller)
@@ -24,8 +25,14 @@ class NetworkGeneralMenu(GeneralMenu):
         refresh = QAction('Refresh', self)        
         refresh.triggered.connect(self.refresh)
         self.addAction(refresh)
+        
         self.addSeparator()
+        
         self.addAction(self.drawing_action)
+        
+        self.addSeparator()
+        
+        self.addAction(self.map_action)
         
     def graph_drawing(self, drawing):
         self.view.node_selection = set(self.view.all_gnodes())

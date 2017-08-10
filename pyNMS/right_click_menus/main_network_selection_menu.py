@@ -1,9 +1,9 @@
-from .geographical_selection_menu import GeographicalSelectionMenu
+from .geographical_menu import GeographicalMenu
 from miscellaneous.site_operations import SiteOperations
 from .network_selection_menu import NetworkSelectionMenu
 from PyQt5.QtWidgets import QAction
 
-class MainNetworkSelectionMenu(GeographicalSelectionMenu, NetworkSelectionMenu):
+class MainNetworkSelectionMenu(GeographicalMenu, NetworkSelectionMenu):
     
     def __init__(self, controller):
         super().__init__(controller)

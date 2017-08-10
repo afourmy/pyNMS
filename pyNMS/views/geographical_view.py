@@ -96,8 +96,8 @@ class GeographicalView(BaseView):
 class Map():
 
     projections = OrderedDict([
-    ('mercator', Proj(init='epsg:3395')),
     ('spherical', Proj('+proj=ortho +lat_0=47 +lon_0=28')),
+    ('mercator', Proj(init='epsg:3395')),
     ('wgs84', Proj(init='epsg:3857')),
     ('3035', Proj("+init=EPSG:3035")),
     ('3947', Proj("+init=EPSG:3947"))
@@ -106,7 +106,7 @@ class Map():
     def __init__(self, view):
         self.view = view
         self.proj = 'spherical'
-        self.ratio, self.offset = 1/1000, (0, 0)
+        self.ratio, self.offset = 1/100, (0, 0)
         self.shapefile = join(self.view.controller.path_shapefiles, 'World countries.shp')
         self.display = True
         

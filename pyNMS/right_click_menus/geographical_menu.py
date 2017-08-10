@@ -16,7 +16,7 @@ from collections import OrderedDict
 from .selection_menu import SelectionMenu
 from PyQt5.QtWidgets import QMenu, QAction
                                 
-class GeographicalSelectionMenu(SelectionMenu):
+class GeographicalMenu(SelectionMenu):
     
     def __init__(self, controller):
         super().__init__(controller)
