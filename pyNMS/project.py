@@ -22,8 +22,8 @@ try:
     import xlwt
 except ImportError:
     warnings.warn('Excel libraries missing: excel import/export disabled')
-    
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QFileDialog
+from yaml import dump
 
 class Project(QWidget):
     
@@ -231,110 +231,142 @@ class Project(QWidget):
                         value = self.objectizer(property, args[idx])
                         interface(AS.name, property, value)   
                         
-        print('test')
         self.network_view.refresh_display()
         
     def export_project(self, filepath=None):
-        
-        # to convert a list of object into a string of a list of strings
-        # useful for AS nodes, edges, links as well as area nodes and links
-        to_string = lambda s: str(list(map(str, s)))
-        
+                
         # filepath is set for unittest
         if not filepath:
             filepath = QFileDialog.getSaveFileName(
                                                    self, 
                                                    "Export project",
                                                    self.name, 
-                                                   ".xls"
+                                                   ".yaml"
                                                    )
-            selected_file = ''.join(filepath)
-        else:
-            selected_file = open(filepath, 'w')
+            filepath = ''.join(filepath)
+        # else:
+        #     selected_file = open(filepath, 'w')
+        
+        with open(filepath, 'w') as file:
             
-        excel_workbook = xlwt.Workbook()
-        for obj_subtype, properties in object_ie.items():
-            # we have one excel sheet per subtype of object.
-            # we filter the network pool based on the subtype to 
-            # retrieve only the object of the corresponding subtype
-            # this was done because objects have different properties
-            # depending on the subtype, and we want to avoid using 
-            # hasattr() all the time to check if a property exists.
-            obj_type = subtype_to_type[obj_subtype]
-            if obj_subtype == 'site':
-                pool_obj = list(self.site_view.network.nodes.values())
-            else:
-                pool_obj = list(self.network_view.network.ftr(obj_type, obj_subtype))
-            # we create an excel sheet only if there's at least one object
-            # of a given subtype
-            if pool_obj:
-                xls_sheet = excel_workbook.add_sheet(obj_subtype)
-                for id, property in enumerate(properties):
-                    xls_sheet.write(0, id, property)
-                    for i, obj in enumerate(pool_obj, 1):
-                        xls_sheet.write(i, id, str(getattr(obj, property)))
+            project_objects = {
+            subtype: {
+                      obj.name:  {
+                                  property: str(getattr(obj, property))
+                                  for property in properties
+                                  }
+                      for obj in self.network_view.network.ftr(
+                                                subtype_to_type[subtype], 
+                                                subtype
+                                                )
+                      }
+            for subtype, properties in object_ie.items()
+            }
+                      
+            dump(project_objects, file, default_flow_style=False)
                     
-        pool_AS = list(self.network_view.network.pnAS.values())
         
-        if pool_AS:
-            AS_sheet = excel_workbook.add_sheet('AS')
-            for i, AS in enumerate(self.network_view.network.pnAS.values(), 1):
-                AS_sheet.write(i, 0, str(AS.name))
-                AS_sheet.write(i, 1, str(AS.AS_type))
-                AS_sheet.write(i, 2, str(AS.id))
-                AS_sheet.write(i, 3, to_string(AS.pAS['node']))
-                AS_sheet.write(i, 4, to_string(AS.pAS['link']))
-                
-            node_AS_sheet = excel_workbook.add_sheet('per-AS node properties')
-                
-            cpt = 1
-            for AS in self.network_view.network.pnAS.values():
-                for node in AS.nodes:
-                    node_AS_sheet.write(cpt, 0, AS.name)
-                    node_AS_sheet.write(cpt, 1, node.name)
-                    for idx, property in enumerate(perAS_properties[node.subtype], 2):
-                        node_AS_sheet.write(cpt, idx, str(node(AS.name, property)))
-                    cpt += 1
-                    
-            if_AS_sheet = excel_workbook.add_sheet('per-AS interface properties')
-            
-            cpt = 1
-            for AS in self.network_view.network.pnAS.values():
-                if AS.AS_type != 'BGP':
-                    for link in AS.links:
-                        for interface in (link.interfaceS, link.interfaceD):
-                            if_AS_sheet.write(cpt, 0, AS.name)
-                            if_AS_sheet.write(cpt, 1, str(interface.link))
-                            if_AS_sheet.write(cpt, 2, str(interface.node)) 
-                            for idx, property in enumerate(ethernet_interface_perAS_properties, 3):
-                                if_AS_sheet.write(cpt, idx, str(interface(AS.name, property)))
-                            cpt += 1
-            
-        has_area = lambda a: a.has_area
-        pool_area = list(filter(has_area, self.network_view.network.pnAS.values()))
-        
-        if pool_area:
-            area_sheet = excel_workbook.add_sheet('area')
-        
-            cpt = 1
-            for AS in filter(lambda a: a.has_area, self.network_view.network.pnAS.values()):
-                for area in AS.areas.values():
-                    area_sheet.write(cpt, 0, str(area.name))
-                    area_sheet.write(cpt, 1, str(area.AS))
-                    area_sheet.write(cpt, 2, str(area.id))
-                    area_sheet.write(cpt, 3, to_string(area.pa['node']))
-                    area_sheet.write(cpt, 4, to_string(area.pa['link']))
-                    cpt += 1
-             
-        if self.site_view.network.nodes:
-            site_sheet = excel_workbook.add_sheet('sites')
-            for cpt, site in enumerate(self.site_view.network.nodes.values()):
-                site_sheet.write(cpt, 0, str(site.name))
-                site_sheet.write(cpt, 1, to_string(site.ps['node']))
-                site_sheet.write(cpt, 2, to_string(site.ps['link']))
-                
-        excel_workbook.save(selected_file)
-        # selected_file.close()
+    # def export_project(self, filepath=None):
+    #     
+    #     # to convert a list of object into a string of a list of strings
+    #     # useful for AS nodes, edges, links as well as area nodes and links
+    #     to_string = lambda s: str(list(map(str, s)))
+    #     
+    #     # filepath is set for unittest
+    #     if not filepath:
+    #         filepath = QFileDialog.getSaveFileName(
+    #                                                self, 
+    #                                                "Export project",
+    #                                                self.name, 
+    #                                                ".xls"
+    #                                                )
+    #         selected_file = ''.join(filepath)
+    #     else:
+    #         selected_file = open(filepath, 'w')
+    #         
+    #     excel_workbook = xlwt.Workbook()
+    #     for obj_subtype, properties in object_ie.items():
+    #         # we have one excel sheet per subtype of object.
+    #         # we filter the network pool based on the subtype to 
+    #         # retrieve only the object of the corresponding subtype
+    #         # this was done because objects have different properties
+    #         # depending on the subtype, and we want to avoid using 
+    #         # hasattr() all the time to check if a property exists.
+    #         obj_type = subtype_to_type[obj_subtype]
+    #         if obj_subtype == 'site':
+    #             pool_obj = list(self.site_view.network.nodes.values())
+    #         else:
+    #             pool_obj = list(self.network_view.network.ftr(obj_type, obj_subtype))
+    #         # we create an excel sheet only if there's at least one object
+    #         # of a given subtype
+    #         if pool_obj:
+    #             xls_sheet = excel_workbook.add_sheet(obj_subtype)
+    #             for id, property in enumerate(properties):
+    #                 xls_sheet.write(0, id, property)
+    #                 for i, obj in enumerate(pool_obj, 1):
+    #                     xls_sheet.write(i, id, str(getattr(obj, property)))
+    #                 
+    #     pool_AS = list(self.network_view.network.pnAS.values())
+    #     
+    #     if pool_AS:
+    #         AS_sheet = excel_workbook.add_sheet('AS')
+    #         for i, AS in enumerate(self.network_view.network.pnAS.values(), 1):
+    #             AS_sheet.write(i, 0, str(AS.name))
+    #             AS_sheet.write(i, 1, str(AS.AS_type))
+    #             AS_sheet.write(i, 2, str(AS.id))
+    #             AS_sheet.write(i, 3, to_string(AS.pAS['node']))
+    #             AS_sheet.write(i, 4, to_string(AS.pAS['link']))
+    #             
+    #         node_AS_sheet = excel_workbook.add_sheet('per-AS node properties')
+    #             
+    #         cpt = 1
+    #         for AS in self.network_view.network.pnAS.values():
+    #             for node in AS.nodes:
+    #                 node_AS_sheet.write(cpt, 0, AS.name)
+    #                 node_AS_sheet.write(cpt, 1, node.name)
+    #                 for idx, property in enumerate(perAS_properties[node.subtype], 2):
+    #                     node_AS_sheet.write(cpt, idx, str(node(AS.name, property)))
+    #                 cpt += 1
+    #                 
+    #         if_AS_sheet = excel_workbook.add_sheet('per-AS interface properties')
+    #         
+    #         cpt = 1
+    #         for AS in self.network_view.network.pnAS.values():
+    #             if AS.AS_type != 'BGP':
+    #                 for link in AS.links:
+    #                     for interface in (link.interfaceS, link.interfaceD):
+    #                         if_AS_sheet.write(cpt, 0, AS.name)
+    #                         if_AS_sheet.write(cpt, 1, str(interface.link))
+    #                         if_AS_sheet.write(cpt, 2, str(interface.node)) 
+    #                         for idx, property in enumerate(ethernet_interface_perAS_properties, 3):
+    #                             if_AS_sheet.write(cpt, idx, str(interface(AS.name, property)))
+    #                         cpt += 1
+    #         
+    #     has_area = lambda a: a.has_area
+    #     pool_area = list(filter(has_area, self.network_view.network.pnAS.values()))
+    #     
+    #     if pool_area:
+    #         area_sheet = excel_workbook.add_sheet('area')
+    #     
+    #         cpt = 1
+    #         for AS in filter(lambda a: a.has_area, self.network_view.network.pnAS.values()):
+    #             for area in AS.areas.values():
+    #                 area_sheet.write(cpt, 0, str(area.name))
+    #                 area_sheet.write(cpt, 1, str(area.AS))
+    #                 area_sheet.write(cpt, 2, str(area.id))
+    #                 area_sheet.write(cpt, 3, to_string(area.pa['node']))
+    #                 area_sheet.write(cpt, 4, to_string(area.pa['link']))
+    #                 cpt += 1
+    #          
+    #     if self.site_view.network.nodes:
+    #         site_sheet = excel_workbook.add_sheet('sites')
+    #         for cpt, site in enumerate(self.site_view.network.nodes.values()):
+    #             site_sheet.write(cpt, 0, str(site.name))
+    #             site_sheet.write(cpt, 1, to_string(site.ps['node']))
+    #             site_sheet.write(cpt, 2, to_string(site.ps['link']))
+    #             
+    #     excel_workbook.save(selected_file)
+    #     # selected_file.close()
         
     def import_site(self):
     

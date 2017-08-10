@@ -58,7 +58,7 @@ class InternalSiteView(NetworkView):
         for obj in objects:
             if obj not in self.site.ps[obj.class_type]:
                 continue
-            item = self.gobj[obj]
+            item = self.gobj.pop(obj)
             self.site.remove_from_site(obj)
             self.scene.removeItem(item)
             # remove it from the scene and the network model

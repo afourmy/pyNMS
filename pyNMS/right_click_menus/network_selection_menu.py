@@ -21,12 +21,12 @@ from autonomous_system import area_operations
 from objects.objects import *
 import ip_networks.configuration as conf
 import ip_networks.troubleshooting as ip_ts
-import ip_networks.ping as ip_ping
 import ip_networks.switching_table as switching_table
 import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
 from miscellaneous.site_operations import SiteOperations
 from NAPALM.device_information import DeviceInformation
+from NAPALM.napalm_update import napalm_update
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
 from subprocess import Popen
@@ -82,15 +82,13 @@ class NetworkSelectionMenu(SelectionMenu):
         
         if self.no_shape and self.no_link:
             
-            napalm = QAction('NAPALM', self)
-            napalm_submenu = QMenu('NAPALM', self)
+            napalm_update = QAction('NAPALM update', self)        
+            napalm_update.triggered.connect(self.napalm_update)
+            self.addAction(napalm_update)
             
-            get_interfaces = QAction('Get information', self)        
-            get_interfaces.triggered.connect(self.napalm)
-            napalm_submenu.addAction(get_interfaces)
-            
-            napalm.setMenu(napalm_submenu)
-            self.addAction(napalm)
+            napalm_data = QAction('NAPALM data', self)        
+            napalm_data.triggered.connect(self.napalm_data)
+            self.addAction(napalm_data)
             
             self.addSeparator()
             
@@ -98,6 +96,7 @@ class NetworkSelectionMenu(SelectionMenu):
             multiple_links = QAction('Create multiple links', self)        
             multiple_links.triggered.connect(self.multiple_links)
             self.addAction(multiple_links)
+            
             self.addSeparator()
         
         if self.no_shape:
@@ -230,7 +229,11 @@ class NetworkSelectionMenu(SelectionMenu):
         
     ## NAPALM operations:
     
-    def napalm(self, action):
+    def napalm_update(self, action):
+        nodes = set(self.view.get_obj(self.selected_nodes))
+        napalm_update(*nodes)
+    
+    def napalm_data(self, action):
         nodes = set(self.view.get_obj(self.selected_nodes))
         self.napalm_interfaces = DeviceInformation(nodes, self.controller)
         self.napalm_interfaces.show()

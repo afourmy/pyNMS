@@ -707,6 +707,9 @@ class Node(NDobject):
         # than AS itself: if we have the AS, AS.name is the name, while if we 
         # have the name, it is more verbose to retrieve the AS itself)
         self.AS_properties = defaultdict(dict)
+        
+        # NAPALM data
+        self.napalm_data = {}
         super().__init__()
         
     def __repr__(self):
