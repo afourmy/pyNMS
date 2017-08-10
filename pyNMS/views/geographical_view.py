@@ -145,6 +145,7 @@ class Map():
             # convert shapefile geometries into shapely geometries
             # to extract the polygons of a multipolygon
             polygon = shapely.geometry.shape(polygon)
+            print(polygon.geom_type)
             # if it is a polygon, we use a list to make it iterable
             if polygon.geom_type == 'Polygon':
                 polygon = [polygon]

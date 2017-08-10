@@ -83,6 +83,7 @@ class NapalmInterfaces(QWidget):
             device = self.network.nf(name=device.text())
             self.object_list.clear()
             self.object_list.addItems(device.napalm_data[action.text()])
+            self.properties_edit.clear()
             
     def object_update(self):
         device = self.device_list.currentItem().text()
@@ -90,6 +91,13 @@ class NapalmInterfaces(QWidget):
         object = self.object_list.currentItem().text()
         self.properties_edit.clear()
         device = self.network.nf(name=device)
-        value = device.napalm_data[action][object]
-        self.properties_edit.insertPlainText(pformat(value))
+        
+        if action == 'get_interfaces_ip':
+            value = ''
+        else:
+            value = '\n'.join(
+                        '{}: {}'.format(*data)
+                        for data in device.napalm_data[action][object].items()
+                        )
+        self.properties_edit.insertPlainText(value)
                         
