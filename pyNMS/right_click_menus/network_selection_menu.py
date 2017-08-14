@@ -26,7 +26,7 @@ import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
 from miscellaneous.site_operations import SiteOperations
 from NAPALM.device_information import DeviceInformation
-from NAPALM.napalm_update import napalm_update
+from NAPALM.napalm_functions import *
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
 from subprocess import Popen
@@ -85,6 +85,25 @@ class NetworkSelectionMenu(SelectionMenu):
             napalm_update = QAction('NAPALM update', self)        
             napalm_update.triggered.connect(self.napalm_update)
             self.addAction(napalm_update)
+            
+            napalm_actions = QAction('NAPALM actions', self)
+            napalm_actions_submenu = QMenu('NAPALM actions', self)
+                
+            commit_config = QAction('Commit configuration', self)        
+            commit_config.triggered.connect(self.commit_config)
+            napalm_actions_submenu.addAction(commit_config)
+            
+            discard_config = QAction('Discard configuration', self)        
+            discard_config.triggered.connect(self.discard_config)
+            napalm_actions_submenu.addAction(discard_config)
+            
+            load_merge_candidate = QAction('Load merge candidate', self)        
+            load_merge_candidate.triggered.connect(self.load_merge_candidate)
+            napalm_actions_submenu.addAction(load_merge_candidate)
+            
+            load_replace_candidate = QAction('Load replace candidate', self)        
+            load_replace_candidate.triggered.connect(self.load_replace_candidate)
+            napalm_actions_submenu.addAction(load_replace_candidate)
             
             if self.one_node:
                 napalm_data = QAction('NAPALM data', self)        

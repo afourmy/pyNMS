@@ -11,9 +11,9 @@ class GraphicalLink(QGraphicsLineItem):
         self.view = view
         self.controller = view.controller
         self.setFlag(QGraphicsItem.ItemIsSelectable, view.selection['links'])
-        # source and destination graphic nodes
         if link:
             self.link = link
+            # source and destination graphic nodes
             self.source = link.source.gnode[view]
             self.destination = link.destination.gnode[view]
         else:

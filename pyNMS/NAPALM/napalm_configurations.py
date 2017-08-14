@@ -25,7 +25,7 @@ class NapalmConfigurations(QTabWidget):
     def __init__(self, node, controller):
         super().__init__()
         
-        for config in ('running', 'startup', 'candidate'):
+        for config in ('running', 'startup', 'candidate', 'compare'):
             value = node.napalm_data['Configuration'][config]
             text_edit = QTextEdit()
             text_edit.insertPlainText(value)
