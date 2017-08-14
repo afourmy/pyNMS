@@ -36,8 +36,8 @@ class GraphicalNode(QGraphicsPixmapItem):
         super().__init__(self.pixmap)
         self.node.gnode[view] = self.node.gobject[view] = self
         self.setFlag(QGraphicsItem.ItemSendsScenePositionChanges, True)
-        self.setFlag(QGraphicsItem.ItemIsSelectable, True)
-        self.setFlag(QGraphicsItem.ItemIsMovable, True)
+        self.setFlag(QGraphicsItem.ItemIsSelectable, view.selection['nodes'])
+        self.setFlag(QGraphicsItem.ItemIsMovable, view.selection['nodes'])
         self.setOffset(
                        QPointF(
                                -self.boundingRect().width()/2, 
@@ -76,12 +76,20 @@ class GraphicalNode(QGraphicsPixmapItem):
         
     def mousePressEvent(self, event):
         selection_allowed = self.controller.mode == 'selection'
-        self.setFlag(QGraphicsItem.ItemIsSelectable, selection_allowed)
-        self.setFlag(QGraphicsItem.ItemIsMovable, selection_allowed)
+        node_selection_allowed = self.view.selection['nodes']
+        can_be_selected = selection_allowed and node_selection_allowed
+        self.setFlag(QGraphicsItem.ItemIsSelectable, can_be_selected)
+        self.setFlag(QGraphicsItem.ItemIsMovable, can_be_selected)
         # ideally, the menu should be triggered from the mouseReleaseEvent
         # binding, but for QT-related issues, the right-click filter does not
         # work in mouseReleaseEvent
         if event.buttons() == Qt.RightButton:
+            # we set the item selectability to True, no matter what the actual
+            # selection mode is, because we want the user to be able to trigger
+            # the right-click menu at all times
+            # eventually, we will rollback this change if needed depending on 
+            # the selection mode
+            self.setFlag(QGraphicsItem.ItemIsSelectable, True)
             self.setSelected(True)
             menu = {
                     'main': MainNetworkSelectionMenu,
@@ -89,4 +97,5 @@ class GraphicalNode(QGraphicsPixmapItem):
                     'site': SiteSelectionMenu
                     }[self.view.subtype](self.controller)
             menu.exec_(QCursor.pos())
+            self.setFlag(QGraphicsItem.ItemIsSelectable, can_be_selected)
         super(GraphicalNode, self).mousePressEvent(event)

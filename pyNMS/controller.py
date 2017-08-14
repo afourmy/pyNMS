@@ -30,7 +30,8 @@ from main_menus import (
                         link_creation_panel,
                         node_display_panel,
                         link_display_panel,
-                        routing_panel
+                        routing_panel,
+                        selection_panel
                         )
 from project import Project
 from ip_networks.ssh_management import SSHManagementWindow
@@ -326,16 +327,7 @@ class Controller(QMainWindow):
         creation_menu_layout.addWidget(self.node_creation_menu)
         creation_menu_layout.addWidget(self.link_creation_menu)
         
-        # second tab: the routing menu
-        routing_menu = QWidget(notebook_menu)
-        notebook_menu.addTab(routing_menu, 'Routing')
-        
-        # routing panel
-        self.routing_panel = routing_panel.RoutingPanel(self)
-        routing_menu_layout = QVBoxLayout(routing_menu)
-        routing_menu_layout.addWidget(self.routing_panel)
-        
-        # third tab: the display menu
+        # second tab: the display menu
         display_menu = QWidget(notebook_menu)
         notebook_menu.addTab(display_menu, 'Display')
         
@@ -346,6 +338,18 @@ class Controller(QMainWindow):
         display_menu_layout = QVBoxLayout(display_menu)
         display_menu_layout.addWidget(self.node_display_menu)
         display_menu_layout.addWidget(self.link_display_menu)
+        
+        # third tab: the options menu
+        options_menu = QWidget(notebook_menu)
+        notebook_menu.addTab(options_menu, 'Options')
+        
+        # options panel
+        self.routing_panel = routing_panel.RoutingPanel(self)
+        self.selection_panel = selection_panel.SelectionPanel(self)
+        
+        options_menu_layout = QGridLayout(options_menu)
+        options_menu_layout.addWidget(self.selection_panel, 0, 0, 1, 2)
+        options_menu_layout.addWidget(self.routing_panel, 2, 0, 3, 1)
         
         ## notebook containing all projects
         self.notebook_project = QTabWidget(self)

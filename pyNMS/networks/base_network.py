@@ -254,6 +254,13 @@ class BaseNetwork(object):
             for neighbor, _ in self.graph[node.id][subtype]:
                 yield neighbor
                 
+    def all_nodes(self):
+        yield from self.nodes.values()
+                
+    def all_links(self):
+        for type in link_type:
+            yield from self.pn[type].values()
+                
     # given a node, retrieves all attached links    
     def attached_links(self, node):
         for type in link_type:

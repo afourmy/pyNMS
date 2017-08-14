@@ -32,6 +32,8 @@ class BaseView(QGraphicsView):
         self.setRenderHint(QPainter.Antialiasing)
         # per-subtype display (True -> display, False -> don't display)
         self.display = dict.fromkeys(all_subtypes, True)
+        # per-mode selection (nodes, links, shapes)
+        self.selection = dict.fromkeys(self.controller.selection_panel.modes, True)
         
     ## Useful functions
     
@@ -45,7 +47,10 @@ class BaseView(QGraphicsView):
         return map(lambda o: o.gobject[self], objects)
         
     def all_gnodes(self):
-        return self.get_items(self.network.nodes.values())
+        return self.get_items(self.network.all_nodes())
+        
+    def all_glinks(self):
+        return self.get_items(self.network.all_links())
         
     def get_obj(self, graphical_objects):
         return map(lambda gobject: gobject.object, graphical_objects)

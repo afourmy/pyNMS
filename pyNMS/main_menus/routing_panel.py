@@ -21,7 +21,6 @@ class RoutingPanel(QGroupBox):
         super().__init__(controller)
         self.controller = controller
         self.setTitle('Routing')
-        self.setMinimumSize(300, 300)
         
         select_all_button = QPushButton()
         select_all_button.setText('Select / Unselect all')

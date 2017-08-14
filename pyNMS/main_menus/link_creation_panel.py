@@ -33,7 +33,6 @@ class LinkCreationPanel(QGroupBox):
             if subtype in ('l2vc', 'l3vc'):
                 continue
             button = QToolButton(self)
-            
             button.setStyleSheet('''QToolButton{ 
                     background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, 
                     stop: 0 rgb(230, 230, 250), stop: 1 rgb(230, 230, 250));
