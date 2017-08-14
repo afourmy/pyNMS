@@ -168,6 +168,7 @@ class NetworkSelectionMenu(SelectionMenu):
             
         self.common_sites = set(self.site_network.nodes.values())
         for obj in self.so:
+            print(obj.object.sites, type(obj.object.sites))
             self.common_sites &= obj.object.sites
         
         self.remove_from_site_action = QAction('Remove from site', self)        

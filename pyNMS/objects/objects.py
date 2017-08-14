@@ -14,19 +14,21 @@
 
 # ordered dicts are needed to have the same menu order 
 from collections import defaultdict, OrderedDict
+from .properties import *
 
 # decorating __init__ to initialize properties
 def initializer(default_properties):
     def inner_decorator(init):
         def wrapper(self, *a, **kw):
             for k in kw:
-                setattr(self, k, kw[k])
+                property = property_classes[k]
+                setattr(self, k, property(kw[k]))
                 # if the imported property is not an existing NetDim property,
                 # we make sure to add it everywhere it is needed, so that it's
                 # properly added to the model and displayed
                 # it is also automatically made exportable
-                if (k not in object_properties[self.__class__.subtype]
-                        and k is not 'id'):
+                if (property not in object_properties[self.__class__.subtype]
+                        and property.name is not 'id'):
                     for property_manager in (
                                              object_properties,
                                              object_ie,
@@ -35,15 +37,15 @@ def initializer(default_properties):
                         property_manager[self.__class__.subtype] += (k,)
                     prop_to_name[k] = k
                     
-            for property in default_properties:
-                value = default_properties[property]
-                if not hasattr(self, property):
+            for property in object_properties[self.__class__.subtype]:
+                print(property)
+                if not hasattr(self, property.name):
                     # if the value should be an empty list / set, we make
                     # sure it refers to different objects in memory by using eval
                     try:
-                        setattr(self, property, eval(value))
+                        setattr(self, property.name, property())
                     except (TypeError, NameError, SyntaxError):
-                        setattr(self, property, value)
+                        setattr(self, property.name, property())
             init(self, *a)
         return wrapper
     return inner_decorator
@@ -107,107 +109,105 @@ subtype_to_type = {
 
 # 0) properties common to all objects
 
-obj_common_properties = (
-)
+obj_common_properties = ()
 
 # 1) properties common to all nodes
 
 # ordered dicts are needed to have the same menu order 
 node_common_properties = obj_common_properties + (
-'name', 
-'x', 
-'y', 
-'longitude', 
-'latitude', 
-'logical_x',
-'logical_y',
-'ipaddress', 
-'subnetmask', 
-'sites',
-'AS',
+Name, 
+X, 
+Y, 
+Longitude, 
+Latitude, 
+LogicalX,
+LogicalY,
+IP_Address, 
+SubnetMask, 
+Sites,
+AS,
 )
 
 # 2) properties common to all physical links
 
 plink_common_properties = obj_common_properties + (
-'name', 
-'source', 
-'destination', 
-'interface',
-'interfaceS',
-'interfaceD',
-'distance', 
-'costSD', 
-'costDS', 
-'capacitySD', 
-'capacityDS', 
+Name, 
+Source, 
+Destination, 
+Interface,
+InterfaceS,
+InterfaceD,
+Distance, 
+CostSD, 
+CostDS, 
+CapacitySD, 
+CapacityDS, 
 # if there is no failure simulation, the traffic property tells us how
 # much traffic is transiting on the plink in a 'no failure' situation
 # if there is a link in failure, the traffic that is redirected will 
 # also contribute to this 'traffic parameter'.
-'trafficSD', 
-'trafficDS',
+TrafficSD, 
+TrafficDS,
 # unlike the traffic property above, wctraffic is the worst case
 # traffic. It is the traffic that we use for dimensioning purposes, and
 # it considers the maximum traffic that the link must be able to 
 # handle, considering all possible failure cases.
-'wctrafficSD',
-'wctrafficDS',
-# the plink which failure results in the worst case traffic
-'wcfailure',
-'flowSD', 
-'flowDS',
-'sites',
-'sntw',
-'AS',
+# 'wctrafficSD',
+# 'wctrafficDS',
+# # the plink which failure results in the worst case traffic
+# 'wcfailure',
+# 'flowSD', 
+# 'flowDS',
+Sites,
+Subnetwork,
+AS,
 )
 
 # 3) properties common to all interfaces
 
 interface_common_properties = obj_common_properties + (
-'link',
-'node',
-'name'
+Link,
+Node
 )
 
 # 4) properties common to all interfaces
 
 ethernet_interface_properties = interface_common_properties + (
-'ipaddress',
-'subnetmask',
-'macaddress'
+IP_Address,
+SubnetMask,
+MAC_Address
 )
 
 # 5) properties common to all routes
 
 route_common_properties = obj_common_properties + (
-'name',
-'subtype',
-'source', 
-'destination',
-'sites'
+Name,
+Subtype,
+Source, 
+Destination,
+Sites
 )
 
 # 6) properties common to all VC
 
 vc_common_properties = (
-'name',
-'source', 
-'destination',
-'linkS',
-'linkD',
-'sites'
+Name,
+Source, 
+Destination,
+LinkS,
+LinkD,
+Sites
 )
 
 # 7) properties common to all traffic links
 
 traffic_common_properties = obj_common_properties + (
-'name', 
-'subtype',
-'source', 
-'destination', 
-'throughput',
-'sites'
+Name,
+Subtype,
+Source, 
+Destination,
+Throughput,
+Sites
 )
 
 ## Common Import / Export properties
@@ -257,19 +257,12 @@ traffic_common_ie_properties = obj_common_properties + (
 ## Common properties per subtype
 # properties shared by all objects of a given subtype
 
-# controller properties
-controller_properties = (
-'controller_type',
-'controller_IP',
-'controller_port',
-)
-
 object_properties = OrderedDict([
-('site', node_common_properties + ('site_type',)),
-('router', node_common_properties + ('default_route',)),
-('switch', node_common_properties + ('base_macaddress',)),
+('site', node_common_properties),
+('router', node_common_properties),
+('switch', node_common_properties),
 ('oxc', node_common_properties),
-('host', node_common_properties + ('mininet_name',)),
+('host', node_common_properties),
 ('antenna', node_common_properties),
 ('regenerator', node_common_properties),
 ('splitter', node_common_properties),
@@ -277,8 +270,8 @@ object_properties = OrderedDict([
 ('firewall', node_common_properties),
 ('load_balancer', node_common_properties),
 ('server', node_common_properties),
-('sdn_switch', node_common_properties + ('mininet_name',)),
-('sdn_controller', node_common_properties + controller_properties),
+('sdn_switch', node_common_properties),
+('sdn_controller', node_common_properties),
 
 ('ethernet link', plink_common_properties),
 ('optical link', plink_common_properties + ('lambda_capacity',)),
@@ -311,8 +304,8 @@ object_properties = OrderedDict([
 
 object_ie = OrderedDict([
 ('site', node_common_ie_properties),
-('router', node_common_ie_properties + ('default_route',)),
-('switch', node_common_ie_properties + ('base_macaddress',)),
+('router', node_common_ie_properties),
+('switch', node_common_ie_properties),
 ('oxc', node_common_ie_properties),
 ('host', node_common_ie_properties),
 ('antenna', node_common_ie_properties),
@@ -360,8 +353,8 @@ interface_public_properties = (
 )
                                
 ethernet_interface_public_properties = interface_public_properties + (
-'ipaddress',
-'subnetmask',
+'ip_address',
+'subnet_mask',
 'macaddress'
 )
 
@@ -391,13 +384,13 @@ type_labels = OrderedDict([
 ('l2link', route_common_ie_properties),
 ('l3link', route_common_ie_properties),
 ('traffic', traffic_common_ie_properties),
-('interface', ('name', 'ipaddress', 'cost')),
+('interface', ('name', 'ip_address', 'cost')),
 ])
 
 subtype_labels = OrderedDict([
 ('site', node_common_ie_properties),
-('router', node_common_ie_properties + ('default_route',)),
-('switch', node_common_ie_properties + ('base_macaddress',)),
+('router', node_common_ie_properties),
+('switch', node_common_ie_properties),
 ('oxc', node_common_ie_properties),
 ('host', node_common_ie_properties),
 ('antenna', node_common_ie_properties),
@@ -408,7 +401,7 @@ subtype_labels = OrderedDict([
 ('load_balancer', node_common_ie_properties),
 ('server', node_common_ie_properties),
 ('sdn_switch', node_common_ie_properties),
-('sdn_controller', node_common_ie_properties + controller_properties),
+('sdn_controller', node_common_ie_properties),
 
 ('ethernet link', plink_common_ie_properties),
 ('optical link', plink_common_ie_properties + ('lambda_capacity',)),
@@ -443,8 +436,8 @@ subtype_labels = OrderedDict([
 node_box_properties = (
 'name', 
 'subtype',
-'ipaddress', 
-'subnetmask',
+'ip_address', 
+'subnet_mask',
 'longitude',
 'latitude',
 'logical_x',
@@ -472,11 +465,11 @@ vc_box_properties = (
 )
 
 box_properties = OrderedDict([
-('site', node_box_properties + ('site_type',)),
-('router', node_box_properties + ('default_route',)),
-('switch', node_box_properties + ('base_macaddress',)),
+('site', node_box_properties),
+('router', node_box_properties),
+('switch', node_box_properties),
 ('oxc', node_box_properties),
-('host', node_box_properties + ('mininet_name',)),
+('host', node_box_properties),
 ('antenna', node_box_properties),
 ('regenerator', node_box_properties),
 ('splitter', node_box_properties),
@@ -484,8 +477,8 @@ box_properties = OrderedDict([
 ('firewall', node_box_properties),
 ('load_balancer', node_box_properties),
 ('server', node_box_properties),
-('sdn_switch', node_box_properties + ('mininet_name',)),
-('sdn_controller', node_box_properties + controller_properties),
+('sdn_switch', node_box_properties),
+('sdn_controller', node_box_properties),
 
 ('ethernet link', plink_box_properties),
 ('optical link', plink_box_properties + ('lambda_capacity',)),
@@ -553,8 +546,8 @@ prop_to_name = {
 'type': 'Type',
 'protocol': 'Protocol',
 'interface': 'Interface',
-'ipaddress': 'IP address',
-'subnetmask': 'Subnet mask',
+'ip_address': 'IP address',
+'subnet_mask': 'Subnet mask',
 'LB_paths': 'Maximum paths (LB)',
 'default_route': 'Default Route',
 'x': 'X coordinate', 
@@ -586,9 +579,9 @@ prop_to_name = {
 'flowSD': 'Flow S -> D', 
 'flowDS': 'Flow D -> S', 
 'ipaddressS': 'IP address (source)',
-'subnetmaskS': 'Subnet mask (source)',
+'subnet_maskS': 'Subnet mask (source)',
 'ipaddressD': 'IP address (destination)',
-'subnetmaskD': 'Subnet mask (destination)',
+'subnet_maskD': 'Subnet mask (destination)',
 'interfaceS': 'Interface (source)',
 'interfaceD': 'Interface (destination)',
 'macaddressS': 'MAC address (source)',
@@ -689,8 +682,8 @@ class Node(NDobject):
                     'latitude' : 2.352241, 
                     'logical_x': 0,
                     'logical_y': 0,
-                    'ipaddress' : None,
-                    'subnetmask' : None
+                    'ip_address' : None,
+                    'subnet_mask' : None
                     }
                     
     @initializer(ie_properties)
@@ -748,8 +741,8 @@ class Site(Node):
                     'latitude' : 0, 
                     'logical_x': 0,
                     'logical_y': 0,
-                    'ipaddress' : None,
-                    'subnetmask' : None
+                    'ip_address' : None,
+                    'subnet_mask' : None
                     }
                     
     @initializer(ie_properties)
@@ -780,12 +773,7 @@ class Router(Node):
     layer = 3
     imagex, imagey = 33, 25
         
-    ie_properties = {
-                    # the default route is the gateway of last resort: 
-                    # it is the IP address of the next-hop 
-                    # (either loopback or interface)
-                    'default_route' : None
-                    }
+    ie_properties = {}
                     
     @initializer(ie_properties)
     def __init__(self, **kwargs):
@@ -1162,8 +1150,8 @@ class EthernetInterface(Interface):
     perAS_properties = ethernet_interface_perAS_properties
     
     ie_properties = {
-                    'ipaddress' : 'none', 
-                    'subnetmask' : 'none',
+                    'ip_address' : 'none', 
+                    'subnet_mask' : 'none',
                     'macaddress' : 'none',
                     }
     

@@ -64,12 +64,11 @@ class ObjectManagementWindow(QWidget):
         for index, property in enumerate(object_properties[obj.subtype]):
             
             # too much trouble handling interfaces here
-            if property in ('interfaceS', 'interfaceD'):
+            if property.name in ('interfaceS', 'interfaceD'):
                 continue
             
             # creation of the label associated to the property
-            text = prop_to_name[property]
-            label = QLabel(text)
+            label = QLabel(property.pretty_name)
             
             # value of the property: drop-down list or entry
             if property in self.property_list:
@@ -137,26 +136,27 @@ class ObjectManagementWindow(QWidget):
                 value = property_widget.currentText()
             # convert 'None' to None if necessary
             value = None if value == 'None' else value              
-            if property == 'path':
-                setattr(self.current_obj, property, self.current_path)
-            if property == 'sites':
+            if property.name == 'path':
+                setattr(self.current_obj, property.name, self.current_path)
+            if property.name == 'sites':
                 value = filter(None, set(re.sub(r'\s+', '', value).split(',')))
                 value = set(map(self.site_network.convert_node, value))
-                setattr(self.current_obj, property, value)
-            elif property in self.property_list:
-                if property in ('ipS', 'ipD', 'default_route'):
+                setattr(self.current_obj, property.name, value)
+            elif property.name in self.property_list:
+                if property.name in ('ipS', 'ipD', 'default_route'):
                     # convert the IP to a Object IP, if it isn't None
                     if value:
                         value = self.network.ip_to_oip[value]
-                setattr(self.current_obj, property, value)
+                setattr(self.current_obj, property.name, value)
             else:
-                if property not in self.read_only and 'interface' not in property:
-                    value = self.network.prop_to_type[property](value)
+                if (property.name not in self.read_only 
+                and 'interface' not in property.name):
+                    value = self.network.prop_to_type[property.name](value)
                     if property == 'name':
-                        name = getattr(self.current_obj, property)
+                        name = getattr(self.current_obj, property.name)
                         id = self.network.name_to_id.pop(name)
                         self.network.name_to_id[value] = id
-                    setattr(self.current_obj, property, value)
+                    setattr(self.current_obj, property.name, value)
              
         # if hasattr(self.current_obj, 'AS_properties'):
         #     if self.current_obj.AS_properties:
@@ -168,7 +168,7 @@ class ObjectManagementWindow(QWidget):
     def update(self):
         for property, property_widget in self.dict_global_properties.items():
             print(property)
-            obj_prop = getattr(self.current_obj, property)
+            obj_prop = getattr(self.current_obj, property.name)
             if property == 'default_route':
                 # in practice, the default route can also be set as an outgoing
                 # interface, but the router has to do an ARP request for each
