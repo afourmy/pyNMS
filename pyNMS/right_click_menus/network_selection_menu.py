@@ -25,8 +25,8 @@ import ip_networks.switching_table as switching_table
 import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
 from miscellaneous.site_operations import SiteOperations
-from NAPALM.device_information import DeviceInformation
-from NAPALM.napalm_functions import *
+from NAPALM.napalm_window import NapalmWindow
+from NAPALM.napalm_functions import standalone_napalm_update
 from collections import OrderedDict
 from objects.interface_window import InterfaceWindow
 from subprocess import Popen
@@ -87,7 +87,7 @@ class NetworkSelectionMenu(SelectionMenu):
             self.addAction(napalm_update)
             
             if self.one_node:
-                napalm_data = QAction('NAPALM data', self)        
+                napalm_data = QAction('NAPALM window', self)        
                 napalm_data.triggered.connect(self.napalm_data)
                 self.addAction(napalm_data)
             
@@ -232,12 +232,12 @@ class NetworkSelectionMenu(SelectionMenu):
     
     def napalm_update(self, _):
         nodes = set(self.view.get_obj(self.selected_nodes))
-        napalm_update(*nodes)
+        standalone_napalm_update(*nodes)
     
     def napalm_data(self, _):
         gnode ,= self.selected_nodes
-        self.napalm_interfaces = DeviceInformation(gnode.node, self.controller)
-        self.napalm_interfaces.show()
+        self.napalm_window = NapalmWindow(gnode.node, self.controller)
+        self.napalm_window.show()
         
     ## Site operations
     

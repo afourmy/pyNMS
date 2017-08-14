@@ -12,10 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from collections import OrderedDict
 from miscellaneous.decorators import update_paths
-from pprint import pformat
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget, QTextEdit)
 
@@ -34,6 +31,7 @@ class NapalmConfigurations(QTabWidget):
                 
     def update(self):
         for config in ('running', 'startup', 'candidate', 'compare'):
-            value = node.napalm_data['Configuration'][config]
+            self.config_edit[config].clear()
+            value = self.node.napalm_data['Configuration'][config]
             self.config_edit[config].insertPlainText(value)
                         

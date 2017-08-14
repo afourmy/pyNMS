@@ -50,7 +50,8 @@ class NapalmGeneral(QWidget):
         self.setLayout(layout)
         
     def update(self):
-        infos = ['Facts'] + list(node.napalm_data['Environment'])
+        self.general_list.clear()
+        infos = ['Facts'] + list(self.node.napalm_data['Environment'])
         self.general_list.addItems(infos)
             
     def info_update(self):

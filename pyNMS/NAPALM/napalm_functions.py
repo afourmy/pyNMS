@@ -41,40 +41,73 @@ napalm_actions = OrderedDict([
 # ('Routing table', 'get_route_to') # need argument
 ])
 
-def napalm_update(*nodes):
+def open_device(node):
+    driver = get_network_driver('ios')
+    device = driver(
+                    hostname = node.ipaddress, 
+                    username = 'cisco', 
+                    password = 'cisco', 
+                    optional_args = {'secret': 'cisco'}
+                    )
+    device.open()
+    return device
+
+def napalm_update(device, node):
+    for action, function in napalm_actions.items():
+        node.napalm_data[action] = getattr(device, function)()
+    node.napalm_data['Configuration']['compare'] = device.compare_config()
+
+def standalone_napalm_update(*nodes):
     for node in nodes:
-        driver = get_network_driver('ios')
-        device = driver(
-                        hostname = node.ipaddress, 
-                        username = 'cisco', 
-                        password = 'cisco', 
-                        optional_args = {'secret': 'cisco'}
-                        )
-        device.open()
-        for action, function in napalm_actions.items():
-            node.napalm_data[action] = getattr(device, function)()
-        node.napalm_data['Configuration']['compare'] = device.compare_config()
+        device = open_device(node)
+        napalm_update(device, node)
         device.close()
         
-def napalm_action(action, *nodes):
+def napalm_commit(*nodes):
     for node in nodes:
-        driver = get_network_driver('ios')
-        device = driver(
-                        hostname = node.ipaddress, 
-                        username = 'cisco', 
-                        password = 'cisco', 
-                        optional_args = {'secret': 'cisco'}
-                        )
-        device.open()
-        if action in ('commit', 'discard'):
-            function = {
-                        'commit': device.commit_config,
-                        'discard': device.discard_config,
-                        }[action]()
-        else:
-            config = node.napalm_data['Configuration']['candidate']
-            function = {
-                        'load_merge_candidate': device.load_merge_candidate,
-                        'load_replace_candidate': device.load_replace_candidate
-                        }[action](config=config)
+        device = open_device(node)
+        device.commit_config()
+        napalm_update(device, node)
         device.close()
+        
+def napalm_discard(*nodes):
+    for node in nodes:
+        device = open_device(node)
+        device.discard_config()
+        napalm_update(device, node)
+        device.close()
+        
+def napalm_load_merge(*nodes):
+    for node in nodes:
+        device = open_device(node)
+        config = node.napalm_data['Configuration']['candidate']
+        device.load_merge_candidate(config=config)
+        napalm_update(device, node)
+        device.close()
+        
+def napalm_load_merge_commit(*nodes):
+    for node in nodes:
+        device = open_device(node)
+        config = node.napalm_data['Configuration']['candidate']
+        device.load_merge_candidate(config=config)
+        device.commit_config()
+        napalm_update(device, node)
+        device.close()
+        
+def napalm_load_replace(*nodes):
+    for node in nodes:
+        device = open_device(node)
+        config = node.napalm_data['Configuration']['candidate']
+        device.load_replace_candidate(config=config)
+        napalm_update(device, node)
+        device.close()
+        
+def napalm_load_replace_commit(*nodes):
+    for node in nodes:
+        device = open_device(node)
+        config = node.napalm_data['Configuration']['candidate']
+        device.load_replace_candidate(config=config)
+        device.commit_config()
+        napalm_update(device, node)
+        device.close()
+        

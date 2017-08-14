@@ -56,6 +56,7 @@ class NapalmInterfaces(QWidget):
         self.setLayout(layout)
         
     def update(self):
+        self.object_list.clear()
         self.object_list.addItems(self.node.napalm_data['Interfaces'])
             
     def text_update(self):
