@@ -53,10 +53,10 @@ def napalm_update(*nodes):
         device.open()
         for action, function in napalm_actions.items():
             node.napalm_data[action] = getattr(device, function)()
-            node.napalm_data['Configuration']['compare'] = device.compare_config()
+        node.napalm_data['Configuration']['compare'] = device.compare_config()
         device.close()
         
-def napalm_configuration(action, *nodes):
+def napalm_action(action, *nodes):
     for node in nodes:
         driver = get_network_driver('ios')
         device = driver(
@@ -66,11 +66,15 @@ def napalm_configuration(action, *nodes):
                         optional_args = {'secret': 'cisco'}
                         )
         device.open()
-        function = {
-                    'commit': device.commit_config,
-                    'discard': device.discard_config,
-                    'load_merge_candidate': device.load_merge_candidate,
-                    'load_replace_candidate': device.load_replace_candidate
-                    }[action]
-        function()
+        if action in ('commit', 'discard'):
+            function = {
+                        'commit': device.commit_config,
+                        'discard': device.discard_config,
+                        }[action]()
+        else:
+            config = node.napalm_data['Configuration']['candidate']
+            function = {
+                        'load_merge_candidate': device.load_merge_candidate,
+                        'load_replace_candidate': device.load_replace_candidate
+                        }[action](config=config)
         device.close()

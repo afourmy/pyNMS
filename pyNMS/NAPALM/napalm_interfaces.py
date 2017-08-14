@@ -37,9 +37,7 @@ class NapalmInterfaces(QWidget):
         
         self.object_list = QListWidget()
         self.object_list.setSortingEnabled(True)
-        self.object_list.itemSelectionChanged.connect(self.text_update)
-        interfaces = node.napalm_data['Interfaces'] if node.napalm_data else ()
-        self.object_list.addItems(interfaces)
+        self.object_list.itemSelectionChanged.connect(self.text_update)        
         
         self.action_list = QListWidget()
         self.action_list.setSortingEnabled(True)
@@ -56,12 +54,15 @@ class NapalmInterfaces(QWidget):
         layout.addWidget(self.action_list, 1, 1)
         layout.addWidget(self.properties_edit, 2, 0, 1, 2)
         self.setLayout(layout)
+        
+    def update(self):
+        self.object_list.addItems(self.node.napalm_data['Interfaces'])
             
     def text_update(self):
         action = self.action_list.currentItem()
         object = self.object_list.currentItem()
+        
         if action and object:
-            
             self.properties_edit.clear()
             # we display a dictionnary with the following format:
             # property1: value1

@@ -86,25 +86,6 @@ class NetworkSelectionMenu(SelectionMenu):
             napalm_update.triggered.connect(self.napalm_update)
             self.addAction(napalm_update)
             
-            napalm_actions = QAction('NAPALM actions', self)
-            napalm_actions_submenu = QMenu('NAPALM actions', self)
-                
-            commit_config = QAction('Commit configuration', self)        
-            commit_config.triggered.connect(self.commit_config)
-            napalm_actions_submenu.addAction(commit_config)
-            
-            discard_config = QAction('Discard configuration', self)        
-            discard_config.triggered.connect(self.discard_config)
-            napalm_actions_submenu.addAction(discard_config)
-            
-            load_merge_candidate = QAction('Load merge candidate', self)        
-            load_merge_candidate.triggered.connect(self.load_merge_candidate)
-            napalm_actions_submenu.addAction(load_merge_candidate)
-            
-            load_replace_candidate = QAction('Load replace candidate', self)        
-            load_replace_candidate.triggered.connect(self.load_replace_candidate)
-            napalm_actions_submenu.addAction(load_replace_candidate)
-            
             if self.one_node:
                 napalm_data = QAction('NAPALM data', self)        
                 napalm_data.triggered.connect(self.napalm_data)
@@ -249,11 +230,11 @@ class NetworkSelectionMenu(SelectionMenu):
         
     ## NAPALM operations:
     
-    def napalm_update(self, action):
+    def napalm_update(self, _):
         nodes = set(self.view.get_obj(self.selected_nodes))
         napalm_update(*nodes)
     
-    def napalm_data(self, action):
+    def napalm_data(self, _):
         gnode ,= self.selected_nodes
         self.napalm_interfaces = DeviceInformation(gnode.node, self.controller)
         self.napalm_interfaces.show()

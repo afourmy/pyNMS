@@ -19,21 +19,15 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget, QTextEdit)
 
-class NapalmConfigurations(QTabWidget):
+class NapalmActions(QTabWidget):
 
     @update_paths(True)
     def __init__(self, node, controller):
         super().__init__()
-        self.node = node
-        self.config_edit = {}
         
-        for config in ('running', 'startup', 'candidate', 'compare'):
-            text_edit = QTextEdit()
-            self.config_edit[config] = text_edit
-            self.addTab(text_edit, '{} config'.format(config.title()))
-                
-    def update(self):
-        for config in ('running', 'startup', 'candidate', 'compare'):
-            value = node.napalm_data['Configuration'][config]
-            self.config_edit[config].insertPlainText(value)
+        # confirmation button
+        confirmation_button = QPushButton(self)
+        confirmation_button.setText('Commit')
+        confirmation_button.clicked.connect(self.confirm)
+
                         

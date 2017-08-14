@@ -33,8 +33,6 @@ class NapalmGeneral(QWidget):
         self.general_list = QListWidget()
         self.general_list.setSortingEnabled(True)
         self.general_list.itemSelectionChanged.connect(self.info_update)
-        infos = ['Facts'] + list(node.napalm_data['Environment'])
-        self.general_list.addItems(infos)
         
         self.action_list = QListWidget()
         self.action_list.setSortingEnabled(True)
@@ -50,6 +48,10 @@ class NapalmGeneral(QWidget):
         layout.addWidget(self.action_list, 1, 1)
         layout.addWidget(self.properties_edit, 2, 0, 1, 2)
         self.setLayout(layout)
+        
+    def update(self):
+        infos = ['Facts'] + list(node.napalm_data['Environment'])
+        self.general_list.addItems(infos)
             
     def info_update(self):
         self.properties_edit.clear()

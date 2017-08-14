@@ -26,17 +26,25 @@ class DeviceInformation(QTabWidget):
     
     def __init__(self, node, controller):
         super().__init__()
+        self.node = node
         self.setMinimumSize(600, 600)
         self.setWindowTitle('NAPALM: device information')
         
-        # first tab: general information (facts + environment)
-        general_frame = NapalmGeneral(node, controller)
-        self.addTab(general_frame, 'General')
-                                
-        # second tab: the interfaces
-        interfaces_frame = NapalmInterfaces(node, controller)
-        self.addTab(interfaces_frame, 'Interfaces')
+        if len(node.napalm_data) > 1:
+            # first tab: general information (facts + environment)
+            general_frame = NapalmGeneral(node, controller)
+            self.addTab(general_frame, 'General')
+                                    
+            # second tab: the interfaces
+            interfaces_frame = NapalmInterfaces(node, controller)
+            self.addTab(interfaces_frame, 'Interfaces')
         
         # third tab: the configurations
-        configurations_frame = NapalmConfigurations(node, controller)
-        self.addTab(configurations_frame, 'Configurations')
+        self.configurations_frame = NapalmConfigurations(node, controller)
+        self.addTab(self.configurations_frame, 'Configurations')
+        
+    def closeEvent(self, _):
+        candidate = self.configurations_frame.candidate_edit.toPlainText()
+        if 'Configuration' not in self.node.napalm_data:
+            self.node.napalm_data['Configuration'] = {}
+        self.node.napalm_data['Configuration']['candidate'] = candidate
