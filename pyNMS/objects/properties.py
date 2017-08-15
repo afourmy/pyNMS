@@ -46,7 +46,7 @@ class Name(TextProperty):
     name = 'name'
     pretty_name = 'Name'
     
-    def __init__(self, value):
+    def __init__(self, value=''):
         super().__init__(value)
         
 class Subtype(TextProperty):
@@ -154,16 +154,16 @@ class Source():
     name = 'source'
     pretty_name = 'Source'
     
-    def __init__(self, value):
-        self.value = value
+    def __new__(self, value):
+        return value
         
 class Destination():
     
     name = 'destination'
     pretty_name = 'Destination'
     
-    def __init__(self, value):
-        self.value = value
+    def __new__(self, value):
+        return value
         
 class Interface(TextProperty):
     
@@ -317,8 +317,8 @@ property_classes = {
                     'source': Source,
                     'destination': Destination,
                     'interface': Interface,
-                    'interfaceS': InterfaceS,
-                    'interfaceD': InterfaceD,
+                    # 'interfaceS': InterfaceS,
+                    # 'interfaceD': InterfaceD,
                     'distance': Distance,
                     'costSD': CostSD,
                     'costDS': CostDS,

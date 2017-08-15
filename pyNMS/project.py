@@ -17,6 +17,7 @@ import warnings
 from views.main_network_view import MainNetworkView
 from views.site_view import SiteView
 from objects.objects import *
+from objects.properties import property_classes
 try:
     import xlrd
     import xlwt
@@ -66,8 +67,10 @@ class Project(QWidget):
     def objectizer(self, property, value):
         if value == 'None': 
             return None
-        elif property in self.network.prop_to_type:
-            return self.network.prop_to_type[property](value)
+        elif property in ('source', 'destination'):
+            return self.network_view.network.convert_node(value)
+        elif property in property_classes:
+            return value
         # if the property doesn't exist, we consider it is a string
         else:
             self.network.prop_to_type[property] = str
@@ -160,9 +163,9 @@ class Project(QWidget):
                     kwargs = self.mass_objectizer(properties, values)
                     if name in node_subtype:
                         if name == 'site':
-                            self.site_view.network.nf(node_type=name, **kwargs)
+                            self.site_view.network.nf(subtype=name, **kwargs)
                         else:
-                            self.network_view.network.nf(node_type=name, **kwargs)
+                            self.network_view.network.nf(subtype=name, **kwargs)
                     if name in link_subtype: 
                         self.network_view.network.lf(subtype=name, **kwargs)
                 
@@ -177,7 +180,7 @@ class Project(QWidget):
                     interface = link('interface', node)
                     for property, value in zip(if_properties[2:], args):
                         # we convert all (valid) string IPs to an OIPs
-                        if property == 'ipaddress' and value != 'none':
+                        if property == 'ip_address' and value != 'none':
                             value = self.network_view.network.OIPf(value, interface)
                         setattr(interface, property, value)
                         

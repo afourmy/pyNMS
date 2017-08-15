@@ -64,7 +64,7 @@ class ObjectManagementWindow(QWidget):
         for index, property in enumerate(object_properties[obj.subtype]):
             
             # too much trouble handling interfaces here
-            if property.name in ('interfaceS', 'interfaceD'):
+            if not hasattr(property, 'name') or property.name in ('interfaceS', 'interfaceD'):
                 continue
             
             # creation of the label associated to the property

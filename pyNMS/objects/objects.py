@@ -29,6 +29,7 @@ def initializer(default_properties):
                 # it is also automatically made exportable
                 if (property not in object_properties[self.__class__.subtype]
                         and property.name is not 'id'):
+                    print('test')
                     for property_manager in (
                                              object_properties,
                                              object_ie,
@@ -38,7 +39,6 @@ def initializer(default_properties):
                     prop_to_name[k] = k
                     
             for property in object_properties[self.__class__.subtype]:
-                print(property)
                 if not hasattr(self, property.name):
                     # if the value should be an empty list / set, we make
                     # sure it refers to different objects in memory by using eval
@@ -166,6 +166,7 @@ AS,
 # 3) properties common to all interfaces
 
 interface_common_properties = obj_common_properties + (
+Name,
 Link,
 Node
 )
@@ -223,35 +224,35 @@ node_common_ie_properties = node_common_properties[:-2]
 # 2) import / export properties for physical links
 
 plink_common_ie_properties = obj_common_properties + (
-'name', 
-'source', 
-'destination', 
-'interface',
-'distance', 
-'costSD', 
-'costDS', 
-'capacitySD', 
-'capacityDS', 
-'sites'
+Name, 
+Source, 
+Destination, 
+Interface,
+Distance, 
+CostSD, 
+CostDS, 
+CapacitySD, 
+CapacityDS, 
+Sites
 )
 
 # 3) import / export properties for routes
         
 route_common_ie_properties = obj_common_properties + (
-'name',
-'source', 
-'destination',
-'sites'
+Name, 
+Source, 
+Destination, 
+Sites
 )
 
 # 4) import / export properties for traffic links
 
 traffic_common_ie_properties = obj_common_properties + (
-'name', 
-'source', 
-'destination', 
-'throughput',
-'sites'
+Name, 
+Source, 
+Destination, 
+Throughput, 
+Sites
 )
 
 ## Common properties per subtype
@@ -274,7 +275,7 @@ object_properties = OrderedDict([
 ('sdn_controller', node_common_properties),
 
 ('ethernet link', plink_common_properties),
-('optical link', plink_common_properties + ('lambda_capacity',)),
+('optical link', plink_common_properties),
 
 ('l2vc', vc_common_properties),
 ('l3vc', vc_common_properties),
@@ -319,7 +320,7 @@ object_ie = OrderedDict([
 ('sdn_controller', node_common_ie_properties),
 
 ('ethernet link', plink_common_ie_properties),
-('optical link', plink_common_ie_properties + ('lambda_capacity',)),
+('optical link', plink_common_ie_properties),
 
 ('optical channel', route_common_ie_properties),
 ('etherchannel', route_common_ie_properties),
@@ -404,7 +405,7 @@ subtype_labels = OrderedDict([
 ('sdn_controller', node_common_ie_properties),
 
 ('ethernet link', plink_common_ie_properties),
-('optical link', plink_common_ie_properties + ('lambda_capacity',)),
+('optical link', plink_common_ie_properties),
 
 ('optical channel', route_common_ie_properties),
 ('etherchannel', route_common_ie_properties),
@@ -481,7 +482,7 @@ box_properties = OrderedDict([
 ('sdn_controller', node_box_properties),
 
 ('ethernet link', plink_box_properties),
-('optical link', plink_box_properties + ('lambda_capacity',)),
+('optical link', plink_box_properties),
 
 ('l2vc', vc_box_properties),
 ('l3vc', vc_box_properties),
@@ -592,7 +593,6 @@ prop_to_name = {
 'local_pref': 'Local preference',
 'sntw': 'Subnetwork',
 'throughput': 'Throughput',
-'lambda_capacity': 'Lambda capacity',
 'source': 'Source',
 'destination': 'Destination',
 'nh_tk': 'Next-hop plink',
@@ -642,11 +642,7 @@ class NDobject(object):
         # each site corresponds to a 'site' node, but the filter can also be
         # a set of sites, in which case any object that belongs to at least
         # one site of the user-defined filter will be displayed
-    ie_properties = {
-                    'id': None,
-                    'sites': set(),
-                    'name': None,
-                    }
+    ie_properties = {}
                     
     @initializer(ie_properties)
     def __init__(self):
@@ -1086,17 +1082,15 @@ class EthernetLink(PhysicalLink):
     @initializer(ie_properties)
     def __init__(self, **kwargs):
         super().__init__()
-        self.interfaceS = EthernetInterface(self.source, self)
-        self.interfaceD = EthernetInterface(self.destination, self)
+        # self.interfaceS = EthernetInterface(self.source, self)
+        # self.interfaceD = EthernetInterface(self.destination, self)
         
 class OpticalLink(PhysicalLink):
     
     color = 'violet red'
     subtype = 'optical link'
     
-    ie_properties = {
-                    'lambda_capacity' : 88
-                    }
+    ie_properties = {}
     
     @initializer(ie_properties)
     def __init__(self, **kwargs):
@@ -1108,9 +1102,7 @@ class Interface(NDobject):
     
     type = 'interface'
     
-    ie_properties = {
-                    'name': 'none'
-                    }
+    ie_properties = {}
         
     @initializer(ie_properties)
     def __init__(self, node, link):
