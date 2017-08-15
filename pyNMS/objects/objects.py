@@ -17,40 +17,43 @@ from collections import defaultdict, OrderedDict
 from .properties import *
 
 # decorating __init__ to initialize properties
-def initializer(default_properties):
-    def inner_decorator(init):
-        def wrapper(self, *a, **kw):
-            for k in kw:
-                print(k, kw[k])
-                # if the imported property is not an existing NetDim property,
-                # we make sure to add it everywhere it is needed, so that it's
-                # properly added to the model and displayed
-                # it is also automatically made exportable
-                if k not in property_classes:
-                    new_property = type(k, (TextProperty,), {'name':k,
-                                                     'pretty_name':k})
-                    property_classes[k] = new_property
-                    for property_manager in (
-                                             object_properties,
-                                             object_ie,
-                                             box_properties,
-                                             ):
-                        property_manager[self.__class__.subtype] += (new_property,) 
-                property = property_classes[k]
-                setattr(self, k, property(kw[k]))
-                    
-            for property in object_properties[self.__class__.subtype]:
-                print(property, self)
-                if not hasattr(self, property.name):
-                    # if the value should be an empty list / set, we make
-                    # sure it refers to different objects in memory by using eval
-                    try:
-                        setattr(self, property.name, property())
-                    except (TypeError, NameError, SyntaxError):
-                        setattr(self, property.name, property())
-            init(self, *a)
-        return wrapper
-    return inner_decorator
+def initializer(init):
+    def wrapper(self, **properties):
+        for property_name, value in properties.items():
+            # if the imported property is not an existing NetDim property,
+            # we make sure to add it everywhere it is needed, so that it's
+            # properly added to the model and displayed
+            # it is also automatically made exportable
+            if property_name not in property_classes:
+                property_class = type(
+                                      property_name, 
+                                      (TextProperty,), 
+                                      {
+                                      'name': property_name, 
+                                      'pretty_name': property_name
+                                      })
+                property_classes[property_name] = property_class
+                for property_manager in (
+                                        object_properties,
+                                        object_ie,
+                                        box_properties,
+                                        ):
+                    property_manager[self.__class__.subtype] += (property_class,)
+            else:
+                property_class = property_classes[property_name]
+            setattr(self, property_name, property_class(value))
+                
+        for property_class in object_properties[self.__class__.subtype]:
+            if not hasattr(self, property_class.name):
+                # if the value should be an empty list / set, we make
+                # sure it refers to different objects in memory by using eval
+                try:
+                    setattr(self, property_class.name, property_class())
+                except (TypeError, NameError, SyntaxError):
+                    setattr(self, property_class.name, property_class())
+        init(self)
+    return wrapper
+
     
 ## NetDim objects
 
@@ -471,84 +474,6 @@ obj_to_name = {
 
 name_to_obj = {v: k for k, v in obj_to_name.items()}
 
-# Properties <-> User-friendly names
-
-prop_to_name = {
-'coordinates': 'Coordinates',
-'capacity': 'Capacity',
-'flow': 'Flow',
-'name': 'Name',
-'type': 'Type',
-'protocol': 'Protocol',
-'interface': 'Interface',
-'ip_address': 'IP address',
-'subnet_mask': 'Subnet mask',
-'LB_paths': 'Maximum paths (LB)',
-'default_route': 'Default Route',
-'x': 'X coordinate', 
-'y': 'Y coordinate', 
-'longitude': 'Longitude', 
-'latitude': 'Latitude',
-'distance': 'Distance',
-'node': 'Node',
-'link': 'Link',
-'linkS': 'Source link',
-'linkD': 'Destination link', 
-'logical_x': 'Logical X coordinate',
-'logical_y': 'Logical Y coordinate',
-'controller_type' : 'Controller type',
-'controller_IP' : 'Controller IP',
-'controller_port' : 'Controller Port',
-'costSD': 'Cost S -> D', 
-'costDS': 'Cost D -> S', 
-'cost': 'Cost',
-'capacitySD': 'Capacity S -> D', 
-'capacityDS': 'Capacity D -> S',
-'traffic': 'Traffic',
-'trafficSD': 'Traffic S -> D', 
-'trafficDS': 'Traffic D -> S', 
-'wctraffic': 'Worst case traffic',
-'wctrafficSD': 'Worst case traffic S -> D', 
-'wctrafficDS': 'Worst case traffic D -> S', 
-'wcfailure': 'Worst case failure',
-'flowSD': 'Flow S -> D', 
-'flowDS': 'Flow D -> S', 
-'ipaddressS': 'IP address (source)',
-'subnet_maskS': 'Subnet mask (source)',
-'ipaddressD': 'IP address (destination)',
-'subnet_maskD': 'Subnet mask (destination)',
-'interfaceS': 'Interface (source)',
-'interfaceD': 'Interface (destination)',
-'macaddressS': 'MAC address (source)',
-'macaddressD': 'MAC address (destination)',
-'macaddress': 'MAC address',
-'None': 'None',
-'sntw': 'Subnetwork',
-'throughput': 'Throughput',
-'source': 'Source',
-'destination': 'Destination',
-'nh_tk': 'Next-hop plink',
-'nh_ip': 'Next-hop IP',
-'ipS': 'Source IP',
-'ipD': 'Destination IP',
-'dst_sntw': 'Destination subnetwork',
-'ad': 'Administrative distance',
-'router_id': 'Router ID',
-'subtype': 'Type',
-'path_constraints': 'Path constraints',
-'excluded_nodes': 'Excluded nodes',
-'excluded_plinks': 'Excluded physical links',
-'path': 'Path',
-'position': 'Position',
-'sites': 'Sites',
-'AS': 'Autonomous system',
-'role': 'Role',
-'priority': 'Priority',
-'base_macaddress': 'Base MAC address',
-}
-
-name_to_prop = {v: k for k, v in prop_to_name.items()}
-
 type_to_name = {
 'node': 'Node',
 'plink': 'Physical link',
@@ -564,14 +489,6 @@ name_to_type = {v: k for k, v in type_to_name.items()}
 
 class NDobject(object):
     
-        # an object in NetDim belongs to one or several groups, which we can
-        # use as a filter to display a subset of objects
-        # each site corresponds to a 'site' node, but the filter can also be
-        # a set of sites, in which case any object that belongs to at least
-        # one site of the user-defined filter will be displayed
-    ie_properties = {}
-                    
-    @initializer(ie_properties)
     def __init__(self):
         self.gobject = {}
         # sites is the set of sites the object belongs to
@@ -600,18 +517,7 @@ class NDobject(object):
 class Node(NDobject):
     
     class_type = type = 'node'
-    ie_properties = {
-                    'x' : 0, 
-                    'y' : 0, 
-                    'longitude' : 48.856638, 
-                    'latitude' : 2.352241, 
-                    'logical_x': 0,
-                    'logical_y': 0,
-                    'ip_address' : None,
-                    'subnet_mask' : None
-                    }
-                    
-    @initializer(ie_properties)
+
     def __init__(self):
         # dictionnary that associates a graphical item to a view
         self.gnode = {}
@@ -659,18 +565,7 @@ class Site(Node):
     imagex, imagey = 50, 50
     layer = 1
         
-    ie_properties = {
-                    'x' : 600, 
-                    'y' : 300, 
-                    'longitude' : 0, 
-                    'latitude' : 0, 
-                    'logical_x': 0,
-                    'logical_y': 0,
-                    'ip_address' : None,
-                    'subnet_mask' : None
-                    }
-                    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         # pool site: nodes and links that belong to the site
         self.ps = {'node': set(), 'link': set()}
@@ -697,10 +592,8 @@ class Router(Node):
     subtype = 'router'
     layer = 3
     imagex, imagey = 33, 25
-        
-    ie_properties = {}
                     
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         # routing table: binds an IP address to a cost / next-hop
         self.rt = {}
@@ -719,14 +612,7 @@ class Switch(Node):
     layer = 2
     imagex, imagey = 54, 36
     
-    # each switch has a base mac address which is hardcoded in
-    # hardware and cannot be changed. It is used for STP
-    # root election, in case switches' priorities tie.
-    ie_properties = {
-                     'base_macaddress': '0A0000000000',
-                     }
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         # switching table: binds a MAC address to an outgoing interface
         self.st = {}
@@ -739,9 +625,7 @@ class OXC(Node):
     layer = 2
     imagex, imagey = 35, 32
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         
@@ -752,9 +636,7 @@ class Host(Node):
     layer = 3
     imagex, imagey = 35, 32
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         self.rt = {}
         self.default_route = None
@@ -771,9 +653,7 @@ class Regenerator(Node):
     layer = 1
     imagex, imagey = 64, 48
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         
@@ -784,9 +664,7 @@ class Splitter(Node):
     layer = 1
     imagex, imagey = 64, 50
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         
@@ -797,9 +675,7 @@ class Antenna(Node):
     layer = 1
     imagex, imagey = 35, 32
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         
@@ -810,9 +686,7 @@ class Cloud(Node):
     layer = 3
     imagex, imagey = 60, 35
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         
@@ -823,9 +697,7 @@ class Firewall(Node):
     layer = 3
     imagex, imagey = 40, 40
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         
@@ -836,9 +708,7 @@ class LoadBalancer(Node):
     layer = 3
     imagex, imagey = 46, 34
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         
@@ -849,9 +719,7 @@ class Server(Node):
     layer = 3
     imagex, imagey = 26, 26
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         
@@ -882,16 +750,6 @@ class PhysicalLink(Link):
     layer = 1
     dash = ()
     
-    ie_properties = {
-                    'interface' : 'GE',
-                    'distance' : 0., 
-                    'costSD' : 1., 
-                    'costDS' : 1., 
-                    'capacitySD' : 3, 
-                    'capacityDS' : 3
-                    }
-
-    @initializer(ie_properties)
     def __init__(self):
         self.sntw = None
         self.trafficSD = self.trafficDS = 0.
@@ -960,9 +818,7 @@ class EthernetLink(PhysicalLink):
     color = 'blue'
     subtype = 'ethernet link'
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         self.interfaceS = EthernetInterface(self.source, self)
@@ -973,9 +829,7 @@ class OpticalLink(PhysicalLink):
     color = 'violet red'
     subtype = 'optical link'
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         self.interfaceS = OpticalInterface(self.source, self)
@@ -984,10 +838,8 @@ class OpticalLink(PhysicalLink):
 class Interface(NDobject):
     
     type = 'interface'
-    
-    ie_properties = {}
         
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         # self.node = node
         # self.link = link
@@ -1021,9 +873,6 @@ class EthernetInterface(Interface):
     public_properties = ethernet_interface_public_properties
     perAS_properties = ethernet_interface_perAS_properties
     
-    ie_properties = {}
-    
-    # @initializer(ie_properties)
     def __init__(self, node, link, **kwargs):
         kwargs['node'] = node
         kwargs['link'] = link
@@ -1033,9 +882,6 @@ class OpticalInterface(Interface):
     
     subtype = 'optical interface'
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
     def __init__(self, node, link, **kwargs):
         kwargs['node'] = node
         kwargs['link'] = link
@@ -1043,11 +889,10 @@ class OpticalInterface(Interface):
         
 class VirtualConnection(Link):  
     
-    ie_properties = {}
     color = 'bisque3'
     dash = (3,5)
 
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         self.linkS = None
         self.linkD = None
@@ -1075,10 +920,8 @@ class L2VC(VirtualConnection):
     type = 'l2link'
     subtype = 'l2vc'
     layer = 2
-    
-    ie_properties = {}
 
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         
@@ -1088,20 +931,15 @@ class L3VC(VirtualConnection):
     subtype = 'l3vc'
     layer = 3
     
-    ie_properties = {}
-
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         
 class Route(Link):
         
-    ie_properties = {
-                    'path' : 'list()'
-                    }
     dash = ()
     
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         
@@ -1124,9 +962,7 @@ class OpticalChannel(Route):
     color = 'sienna1'
     layer = 2
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         # list of AS to which the physical links belongs. AS is actually 
         # a dictionnary associating an AS to a set of area the physical links 
@@ -1141,9 +977,7 @@ class EtherChannel(Route):
     color = 'firebrick3'
     layer = 2
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         # list of AS to which the physical links belongs. AS is actually 
         # a dictionnary associating an AS to a set of area the physical links 
@@ -1158,9 +992,7 @@ class PseudoWire(Route):
     color = 'purple2'
     layer = 3
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         # list of AS to which the physical links belongs. AS is actually 
         # a dictionnary associating an AS to a set of area the physical links 
@@ -1175,9 +1007,7 @@ class BGPPeering(Route):
     color = 'aquamarine2'
     layer = 3
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         # list of AS to which the physical links belongs. AS is actually 
         # a dictionnary associating an AS to a set of area the physical links 
@@ -1192,11 +1022,7 @@ class Traffic(Link):
     dash = (7,1,1,1)
     layer = 4
     
-    ie_properties = {
-                    'throughput': 15
-                    }
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         
@@ -1205,9 +1031,7 @@ class RoutedTraffic(Traffic):
     color = 'cyan4'
     subtype = 'routed traffic'
     
-    ie_properties = {}
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         
@@ -1216,13 +1040,7 @@ class StaticTraffic(Traffic):
     color = 'green3'
     subtype = 'static traffic'
     
-    ie_properties = {
-                    'path_constraints' : '[]', 
-                    'excluded_plinks' : 'set()', 
-                    'excluded_nodes' : 'set()', 
-                    }
-    
-    @initializer(ie_properties)
+    @initializer
     def __init__(self, **kwargs):
         super().__init__()
         

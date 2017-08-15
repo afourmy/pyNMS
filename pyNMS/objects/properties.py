@@ -55,6 +55,7 @@ class LinkProperty(Property):
 class ID(IntProperty):
     
     name = 'id'
+    pretty_name = 'ID'
     
     def __init__(self, value):
         super().__init__(value)
@@ -273,7 +274,7 @@ class Subnetwork(TextProperty):
         
 ## VC properties
 
-class LinkS():
+class LinkS(LinkProperty):
     
     name = 'linkS'
     pretty_name = 'Source link'
@@ -281,7 +282,7 @@ class LinkS():
     def __init__(self, value):
         self.value = value
         
-class LinkD():
+class LinkD(LinkProperty):
     
     name = 'linkD'
     pretty_name = 'Destination link'
@@ -340,7 +341,6 @@ class Role(TextProperty):
     
     def __init__(self, value=''):
         super().__init__(value)
-
         
 property_classes = {
                     'id': ID,
@@ -377,6 +377,9 @@ property_classes = {
                     'role': Role,
                     'cost': Cost,
                     'priority': Priority
-                    
                     }
+               
+# Pretty name -> property class association
+pretty_name_to_class = {property_class.pretty_name: property_class 
+                        for property_class in property_classes.values()}
                         

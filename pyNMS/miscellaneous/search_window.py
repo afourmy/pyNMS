@@ -14,6 +14,7 @@
 
 import re
 from objects.objects import *
+from objects.properties import pretty_name_to_class
 from miscellaneous.decorators import update_paths
 from PyQt5.QtWidgets import (
                              QCheckBox, 
@@ -68,9 +69,8 @@ class SearchWindow(QWidget):
         
     def update_properties(self):
         subtype = self.subtypes_list.currentText()
-        print(subtype)
         properties = object_properties[name_to_obj[subtype]]
-        properties = tuple(p.name for p in properties)
+        properties = tuple(p.pretty_name for p in properties)
         self.property_list.clear()
         self.property_list.addItems(properties)
         
@@ -78,17 +78,17 @@ class SearchWindow(QWidget):
     def search(self, _):
         self.view.scene.clearSelection()
         subtype = name_to_obj[self.subtypes_list.currentText()]
-        property = name_to_prop[self.property_list.currentText()]
+        property = pretty_name_to_class[self.property_list.currentText()]
         type = subtype_to_type[subtype]
         input = self.entry_search.text()
         for obj in self.network.ftr(type, subtype):
-            value = getattr(obj, property)
+            value = getattr(obj, property.name)
             if not self.checkbox_regex.isChecked():
-                converted_input = self.project.objectizer(property, input)
+                converted_input = self.project.objectizer(property.name, input)
                 if value == converted_input:
-                    obj.gobject.setSelected(True)
+                    obj.gobject[self.view].setSelected(True)
             else:
                 if re.search(str(input), str(value)):
-                    obj.gobject.setSelected(True)
+                    obj.gobject[self.view].setSelected(True)
                 
         
