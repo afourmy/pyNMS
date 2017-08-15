@@ -269,30 +269,16 @@ object_properties = OrderedDict([
 ('firewall', node_common_properties),
 ('load_balancer', node_common_properties),
 ('server', node_common_properties),
-
 ('ethernet link', plink_common_properties),
 ('optical link', plink_common_properties),
-
 ('l2vc', vc_common_properties),
 ('l3vc', vc_common_properties),
-
 ('optical channel', route_common_properties),
 ('etherchannel', route_common_properties),
-
 ('pseudowire', route_common_properties),
-
-('BGP peering', route_common_properties + (
-'bgp_type',
-'ipS',
-'ipD',
-'weightS',
-'weightD',
-'AS'
-)),
-
-('routed traffic', traffic_common_properties + ('ipS', 'ipD')),
+('BGP peering', route_common_properties),
+('routed traffic', traffic_common_properties),
 ('static traffic', traffic_common_properties),
-
 ('ethernet interface', ethernet_interface_properties),
 ('optical interface', interface_common_properties)
 ])
@@ -312,29 +298,14 @@ object_ie = OrderedDict([
 ('firewall', node_common_ie_properties),
 ('load_balancer', node_common_ie_properties),
 ('server', node_common_ie_properties),
-
 ('ethernet link', plink_common_ie_properties),
 ('optical link', plink_common_ie_properties),
-
 ('optical channel', route_common_ie_properties),
 ('etherchannel', route_common_ie_properties),
-
 ('pseudowire', route_common_ie_properties),
-
-('BGP peering', route_common_ie_properties + (
-'bgp_type',
-'ipS',
-'ipD',
-'weightS',
-'weightD'
-)),
-
-('routed traffic', traffic_common_ie_properties + (
-'ipS',
-'ipD'
-)),
+('BGP peering', route_common_ie_properties),
+('routed traffic', traffic_common_ie_properties),
 ('static traffic', traffic_common_ie_properties),
-
 ('ethernet interface', ethernet_interface_properties),
 ('optical interface', interface_common_properties)
 ])
@@ -395,29 +366,14 @@ subtype_labels = OrderedDict([
 ('firewall', node_common_ie_properties),
 ('load_balancer', node_common_ie_properties),
 ('server', node_common_ie_properties),
-
 ('ethernet link', plink_common_ie_properties),
 ('optical link', plink_common_ie_properties),
-
 ('optical channel', route_common_ie_properties),
 ('etherchannel', route_common_ie_properties),
-
 ('pseudowire', route_common_ie_properties),
-
-('BGP peering', route_common_ie_properties + (
-'bgp_type',
-'ipS',
-'ipD',
-'weightS',
-'weightD'
-)),
-
-('routed traffic', traffic_common_ie_properties + (
-'ipS',
-'ipD'
-)),
+('BGP peering', route_common_ie_properties),
+('routed traffic', traffic_common_ie_properties),
 ('static traffic', traffic_common_ie_properties),
-
 ('ethernet interface', ethernet_interface_properties),
 ('optical interface', interface_common_properties)
 ])
@@ -470,26 +426,14 @@ box_properties = OrderedDict([
 ('firewall', node_box_properties),
 ('load_balancer', node_box_properties),
 ('server', node_box_properties),
-
 ('ethernet link', plink_box_properties),
 ('optical link', plink_box_properties),
-
 ('l2vc', vc_box_properties),
 ('l3vc', vc_box_properties),
-
 ('optical channel', route_common_properties),
 ('etherchannel', route_common_properties),
-
 ('pseudowire', route_common_properties),
-
-('BGP peering', route_common_properties + (
-'bgp_type',
-'ipS',
-'ipD',
-'weightS',
-'weightD'
-)),
-
+('BGP peering', route_common_properties),
 ('routed traffic', traffic_common_properties),
 ('static traffic', traffic_common_properties)
 ])
@@ -576,9 +520,7 @@ prop_to_name = {
 'macaddressS': 'MAC address (source)',
 'macaddressD': 'MAC address (destination)',
 'macaddress': 'MAC address',
-'mininet_name': 'Mininet name',
 'None': 'None',
-'local_pref': 'Local preference',
 'sntw': 'Subnetwork',
 'throughput': 'Throughput',
 'source': 'Source',
@@ -591,21 +533,17 @@ prop_to_name = {
 'ad': 'Administrative distance',
 'router_id': 'Router ID',
 'subtype': 'Type',
-'bgp_type': 'BGP Type',
 'path_constraints': 'Path constraints',
 'excluded_nodes': 'Excluded nodes',
 'excluded_plinks': 'Excluded physical links',
 'path': 'Path',
 'position': 'Position',
 'subnets': 'Subnets', 
-'site_type': 'Type of site',
 'sites': 'Sites',
 'AS': 'Autonomous system',
 'role': 'Role',
 'priority': 'Priority',
 'base_macaddress': 'Base MAC address',
-'weightS': 'Source weight',
-'weightD': 'Destination weight'
 }
 
 name_to_prop = {v: k for k, v in prop_to_name.items()}
@@ -1239,13 +1177,7 @@ class BGPPeering(Route):
     color = 'aquamarine2'
     layer = 3
     
-    ie_properties = {
-                    'weightD' : 0,
-                    'weightS' : 0, 
-                    'ipS' : None, 
-                    'ipD': None,
-                    'bgp_type': 'eBGP'
-                    }
+    ie_properties = {}
     
     @initializer(ie_properties)
     def __init__(self, **kwargs):
@@ -1275,10 +1207,7 @@ class RoutedTraffic(Traffic):
     color = 'cyan4'
     subtype = 'routed traffic'
     
-    ie_properties = {
-                    'ipS' : None, 
-                    'ipD': None
-                    }
+    ie_properties = {}
     
     @initializer(ie_properties)
     def __init__(self, **kwargs):

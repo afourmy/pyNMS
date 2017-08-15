@@ -68,6 +68,7 @@ class SearchWindow(QWidget):
         
     def update_properties(self):
         subtype = self.subtypes_list.currentText()
+        print(subtype)
         properties = object_properties[name_to_obj[subtype]]
         properties = tuple(p.name for p in properties)
         self.property_list.clear()
