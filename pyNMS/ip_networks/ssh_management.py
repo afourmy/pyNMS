@@ -12,6 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from os.path import join
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QFileDialog)
 
@@ -24,12 +25,10 @@ class SSHManagementWindow(QWidget):
         
         username = QLabel('Username')
         self.username_edit = QLineEdit()
-        # self.username_edit.setMaximumWidth(120)
         self.username_edit.setText('cisco')
         
         password = QLabel('Password')
         self.password_edit = QLineEdit()
-        # self.password_edit.setMaximumWidth(120)
         self.password_edit.setText('cisco')
     
         path_to_putty = QPushButton()
@@ -37,8 +36,8 @@ class SSHManagementWindow(QWidget):
         path_to_putty.clicked.connect(self.choose_path)
         
         self.path_edit = QLineEdit()
-        # self.path_edit.setMaximumWidth(120)
-        self.path_edit.setText('C:/Users/minto/Desktop/Apps/putty.exe')
+        path = join(controller.path_apps, 'putty.exe')
+        self.path_edit.setText(path)
         
         layout = QGridLayout()
         layout.addWidget(username, 0, 0, 1, 1)

@@ -72,9 +72,10 @@ class Controller(QMainWindow):
         # initialize all paths
         self.path_app = path_app
         path_parent = abspath(join(path_app, pardir))
+        self.path_apps = join(path_parent, 'Apps')
         self.path_icon = join(path_parent, 'Icons')
-        self.path_workspace = join(path_parent, 'Workspace')
         self.path_shapefiles = join(path_parent, 'Shapefiles')
+        self.path_workspace = join(path_parent, 'Workspace')
         
         # a QMainWindow needs a central widget for the layout
         central_widget = QWidget(self)

@@ -24,11 +24,11 @@ try:
     from pyproj import Proj
 except ImportError:
     warnings.warn('SHP librairies missing: map import disabled')
-    
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import (
                          QBrush,
+                         QPen,
                          QColor, 
                          QDrag, 
                          QPainter, 
@@ -106,13 +106,14 @@ class Map():
     def __init__(self, view):
         self.view = view
         self.proj = 'spherical'
-        self.ratio, self.offset = 1/100, (0, 0)
+        self.ratio, self.offset = 1/500, (0, 0)
         self.shapefile = join(self.view.controller.path_shapefiles, 'World countries.shp')
         self.display = True
         
         # brush for water and lands
         self.water_brush = QBrush(QColor(64, 164, 223))
         self.land_brush = QBrush(QColor(52, 165, 111))
+        self.land_pen = QPen(QColor(52, 165, 111))
         
         # draw the map 
         self.polygons = self.view.scene.createItemGroup(self.draw_polygons())
@@ -159,6 +160,7 @@ class Map():
                     qt_polygon.append(QtCore.QPointF(px, py))
                 polygon_item = QtWidgets.QGraphicsPolygonItem(qt_polygon)
                 polygon_item.setBrush(self.land_brush)
+                polygon_item.setPen(self.land_pen)
                 polygon_item.setZValue(1)
                 yield polygon_item
                 
