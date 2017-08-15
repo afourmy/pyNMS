@@ -64,12 +64,15 @@ class Project(QWidget):
         self.current_view = site.site_view
         self.view_type = 'insite'
 
-    def objectizer(self, property, value):
+    def objectizer(self, str_property, value):
         if value == 'None': 
             return None
-        elif property in ('source', 'destination'):
-            return self.network_view.network.convert_node(value)
-        elif property in property_classes:
+        # elif property in ('source', 'destination'):
+        #     return self.network_view.network.convert_node(value)
+        elif str_property in property_classes:
+            property = property_classes[str_property]
+            if property.conversion_needed:
+                value = getattr(self.network, property.converter)(value)
             return value
         # if the property doesn't exist, we consider it is a string
         else:
@@ -97,7 +100,7 @@ class Project(QWidget):
         for idx, boolean in enumerate(self.controller.routing_panel.checkboxes):
             if boolean.isChecked():
                 commands[idx]()
-        
+    
     def import_project(self, filepath=None):
         # filepath is set for unittest
         filepath = QFileDialog.getOpenFileName(
@@ -235,6 +238,7 @@ class Project(QWidget):
                         interface(AS.name, property, value)   
                         
         self.network_view.refresh_display()
+        self.network_view.move_to_geographical_coordinates()
         
     def export_project(self, filepath=None):
                 

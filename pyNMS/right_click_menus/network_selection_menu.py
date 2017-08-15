@@ -80,6 +80,7 @@ class NetworkSelectionMenu(SelectionMenu):
             self.addAction(tables)
             self.addSeparator()
         
+        # only nodes
         if self.no_shape and self.no_link:
             
             napalm_update = QAction('NAPALM update', self)        
@@ -109,13 +110,34 @@ class NetworkSelectionMenu(SelectionMenu):
             remove_failure = QAction('Remove failure', self)        
             remove_failure.triggered.connect(lambda: self.remove_failure(*self.so))
             self.addAction(remove_failure)
-            self.addSeparator()
             
-        if self.no_shape:
+            self.addSeparator()
             
             create_AS = QAction('Create AS', self)        
             create_AS.triggered.connect(self.create_AS)
             self.addAction(create_AS)
+            
+        # only one link
+        if self.no_shape and self.no_node and self.one_link:
+            
+            # we retrieve the node
+            glink ,= self.so
+            self.link = glink.link
+            
+            interfaces = QAction('Interfaces', self)
+            interfaces_submenu = QMenu('Interfaces', self)
+            
+            source_interface = QAction('Source interface', self)        
+            source_interface.triggered.connect(self.source_interface)
+            interfaces_submenu.addAction(source_interface)
+            
+            destination_interface = QAction('Destination interface', self)        
+            destination_interface.triggered.connect(self.destination_interface)
+            interfaces_submenu.addAction(destination_interface)
+
+            interfaces.setMenu(interfaces_submenu)
+            self.addAction(interfaces)
+            self.addSeparator()
 
         # at least one AS in the network: add to AS
         if self.network.pnAS and self.no_shape:
@@ -239,6 +261,18 @@ class NetworkSelectionMenu(SelectionMenu):
         gnode ,= self.selected_nodes
         self.napalm_window = NapalmWindow(gnode.node, self.controller)
         self.napalm_window.show()
+        
+    ## Interface
+    
+    def source_interface(self):
+        interface = self.link.interfaceS
+        self.interface_window = InterfaceWindow(interface, self.controller)
+        self.interface_window.show()
+        
+    def destination_interface(self):
+        interface = self.link.interfaceD
+        self.interface_window = InterfaceWindow(interface, self.controller)
+        self.interface_window.show()
         
     ## Site operations
     

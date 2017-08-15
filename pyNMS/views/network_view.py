@@ -191,6 +191,7 @@ class NetworkView(BaseView):
     ## Drawing functions
         
     def random_layout(self):
+        print('random', self)
         for gnode in self.node_selection:
             gnode.x = randint(int(gnode.x) - 500, int(gnode.x) + 500)
             gnode.y = randint(int(gnode.y) - 500, int(gnode.y) + 500)

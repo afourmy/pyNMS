@@ -12,86 +12,86 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous.decorators import update_paths
 from objects.objects import *
+from objects.properties import IP_Address, SubnetMask, MAC_Address
+from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
+        QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox)
 
-class InterfaceWindow(FocusTopLevel):
+class InterfaceWindow(QWidget):
     
     interface_properties = (
-                 'ipaddress',
-                 'subnetmask',
-                 'macaddress'
-                )
+                            IP_Address, 
+                            SubnetMask, 
+                            MAC_Address
+                            )
                 
-    @update_paths
+    @update_paths(True)
     def __init__(self, interface, controller):
         super().__init__()
         self.interface = interface
-        self.title('Manage interface properties')
+        self.setWindowTitle('Manage interface properties')
+        
         self.dict_global_properties = {}
 
-        # labelframe for global interface properties 
-        lf_global = Labelframe(self)
-        lf_global.text = 'Global properties'
-        lf_global.grid(0, 0)
+        # global properties
+        global_properties = QGroupBox('Global properties')
+        global_properties_layout = QGridLayout(global_properties)
         
         for index, property in enumerate(interface.public_properties):
-            # creation of the label associated to the property
-            label = Label(self)
-            label.text = prop_to_name[property]
+            label = QLabel(property.pretty_name)
             
-            property_entry = Entry(self, width=15)
-            property_entry.text = str(getattr(self.interface, property))
-            self.dict_global_properties[property] = property_entry
+            property_edit = QLineEdit()
+            property_edit.setText = getattr(self.interface, property.name)
+            self.dict_global_properties[property] = property_edit
             
-            label.grid(index+1, 0, pady=1, in_=lf_global)
-            property_entry.grid(index+1, 1, pady=1, in_=lf_global)
+            global_properties_layout.addWidget(label, index + 1, 0, 1, 1)
+            global_properties_layout.addWidget(property_edit, index + 1, 1, 1, 1)
             
         if self.interface.AS_properties:
-            # labelframe for per-AS interface properties
-            lf_perAS = Labelframe(self)
-            lf_perAS.text = 'Per-AS properties'
-            lf_perAS.grid(1, 0)
+            
+            # per-AS properties
+            perAS_properties = QGroupBox('Per-AS properties')
+            perAS_properties_layout = QGridLayout(global_properties)
             self.dict_perAS_properties = {}
             
             # AS combobox
-            self.AS_combobox = Combobox(self, width=20)
-            self.AS_combobox['values'] = tuple(self.interface.AS_properties)
-            self.AS_combobox.current(0)
-            self.AS_combobox.bind('<<ComboboxSelected>>', self.update_AS_properties)
-            self.AS_combobox.grid(0, 0, 1, 2, in_=lf_perAS)
+            self.AS_list = QComboBox()
+            self.AS_list.addItems(tuple(self.interface.AS_properties))
+            self.AS_list.activated.connect(self.update_AS_properties)
             
             for index, property in enumerate(interface.perAS_properties):
-                # creation of the label associated to the property
-                label = Label(self)
-                label.text = prop_to_name[property]
+                label = QLabel(property.pretty_name)
                 
-                property_entry = Entry(self, width=15)
-                property_entry.text = str(self.interface(self.AS_combobox.text, property))
-                self.dict_perAS_properties[property] = property_entry
+                property_edit = QLineEdit()
+                text = self.interface(self.AS_list.currentText(), property.name)
+                property_edit.setText(text)
+                self.dict_perAS_properties[property] = property_edit
                 
-                label.grid(index+1, 0, pady=1, in_=lf_perAS)
-                property_entry.grid(index+1, 1, pady=1, in_=lf_perAS)
-            
-        # when the window is closed, save all parameters (in case the user
-        # made a change), then withdraw the window.
-        self.protocol('WM_DELETE_WINDOW', lambda: self.save_and_destroy())
+                perAS_properties_layout.addWidget(label, index + 1, 0, 1, 1)
+                perAS_properties_layout.addWidget(property_edit, index + 1, 1, 1, 1)
+
+        grid = QGridLayout()
+        grid.addWidget(global_properties, 0, 0)
+        if self.interface.AS_properties:
+            grid.addWidget(perAS_properties_layout, 0, 1)
+        self.setLayout(grid)
         
     def update_AS_properties(self, _):
-        AS = self.AS_combobox.text
-        for property, entry in self.dict_perAS_properties.items():
-            entry.text = self.interface(AS, property)
-        
-    def save_and_destroy(self):
-        for property, entry in self.dict_global_properties.items():
-            value = self.project.objectizer(property, entry.get())
-            setattr(self.interface, property, value)
+        AS = self.AS_list.currentText()
+        for property, line_edit in self.dict_perAS_properties.items():
+            line_edit.setText(self.interface(AS, property.name))
             
-        if self.interface.AS_properties:
-            AS = self.AS_combobox.text
-            for property, entry in self.dict_perAS_properties.items():
-                value = self.project.objectizer(property, entry.text)
-                self.interface(AS, property, value)
-                
-        self.destroy()
+    #TODO save upon leaving
+    # def save_and_destroy(self):
+    #     for property, entry in self.dict_global_properties.items():
+    #         value = self.project.objectizer(property, entry.get())
+    #         setattr(self.interface, property, value)
+    #         
+    #     if self.interface.AS_properties:
+    #         AS = self.AS_combobox.text
+    #         for property, entry in self.dict_perAS_properties.items():
+    #             value = self.project.objectizer(property, entry.text)
+    #             self.interface(AS, property, value)
+    #             
+    #     self.destroy()

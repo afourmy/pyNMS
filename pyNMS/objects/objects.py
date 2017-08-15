@@ -21,6 +21,7 @@ def initializer(default_properties):
     def inner_decorator(init):
         def wrapper(self, *a, **kw):
             for k in kw:
+                print(k, kw[k])
                 # if the imported property is not an existing NetDim property,
                 # we make sure to add it everywhere it is needed, so that it's
                 # properly added to the model and displayed
@@ -39,6 +40,7 @@ def initializer(default_properties):
                 setattr(self, k, property(kw[k]))
                     
             for property in object_properties[self.__class__.subtype]:
+                print(property, self)
                 if not hasattr(self, property.name):
                     # if the value should be an empty list / set, we make
                     # sure it refers to different objects in memory by using eval
@@ -313,21 +315,21 @@ object_ie = OrderedDict([
 ## Interface basic and per-AS public properties
 
 interface_public_properties = (
-'link',
-'node',
-'name'
+Link,
+Node,
+Name
 )
                                
 ethernet_interface_public_properties = interface_public_properties + (
-'ip_address',
-'subnet_mask',
-'macaddress'
+IP_Address,
+SubnetMask,
+MAC_Address
 )
 
 ethernet_interface_perAS_properties = (
-'cost',
-'role',
-'priority'
+Cost,
+Role,
+Priority
 )
 
 ## Nodes per-AS properties
@@ -963,8 +965,8 @@ class EthernetLink(PhysicalLink):
     @initializer(ie_properties)
     def __init__(self, **kwargs):
         super().__init__()
-        # self.interfaceS = EthernetInterface(self.source, self)
-        # self.interfaceD = EthernetInterface(self.destination, self)
+        self.interfaceS = EthernetInterface(self.source, self)
+        self.interfaceD = EthernetInterface(self.destination, self)
         
 class OpticalLink(PhysicalLink):
     
@@ -986,9 +988,9 @@ class Interface(NDobject):
     ie_properties = {}
         
     @initializer(ie_properties)
-    def __init__(self, node, link):
-        self.node = node
-        self.link = link
+    def __init__(self, **kwargs):
+        # self.node = node
+        # self.link = link
         # AS_properties contains all per-AS properties: interface cost, 
         # interface role. It is a dictionnary which AS name are the keys 
         # (it is easier to store AS names rather than AS itself: if we have the
@@ -996,9 +998,6 @@ class Interface(NDobject):
         # verbose to retrieve the AS itself)
         self.AS_properties = defaultdict(dict)
         super().__init__()
-        
-    def __repr__(self):
-        return self.name
         
     def __eq__(self, other):
         return self.node == other.node and self.link == other.link
@@ -1022,15 +1021,13 @@ class EthernetInterface(Interface):
     public_properties = ethernet_interface_public_properties
     perAS_properties = ethernet_interface_perAS_properties
     
-    ie_properties = {
-                    'ip_address' : 'none', 
-                    'subnet_mask' : 'none',
-                    'macaddress' : 'none',
-                    }
+    ie_properties = {}
     
-    @initializer(ie_properties)
+    # @initializer(ie_properties)
     def __init__(self, node, link, **kwargs):
-        super().__init__(node, link)
+        kwargs['node'] = node
+        kwargs['link'] = link
+        super().__init__(**kwargs)
         
 class OpticalInterface(Interface):
     
@@ -1040,7 +1037,9 @@ class OpticalInterface(Interface):
     
     @initializer(ie_properties)
     def __init__(self, node, link, **kwargs):
-        super().__init__(node, link)
+        kwargs['node'] = node
+        kwargs['link'] = link
+        super().__init__(**kwargs)
         
 class VirtualConnection(Link):  
     

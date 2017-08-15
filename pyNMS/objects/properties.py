@@ -1,36 +1,54 @@
 class Property():
     
+    conversion_needed = False
+    
     def __init__(self):
         pass
         
-class TextProperty(str):
+class TextProperty(str, Property):
     
     def __init__(self, value):
         return str.__init__(value)
         
-class IntProperty(int):
+class IntProperty(int, Property):
     
     def __init__(self, value):
         return int.__init__(value)
         
-class FloatProperty(float):
+class FloatProperty(float, Property):
     
     def __init__(self, value):
         return float.__init__(value)
         
-class ListProperty(list):
+class ListProperty(list, Property):
     
     def __init__(self, value):
         if value is None:
             value = []
         return list.__init__(value)
         
-class SetProperty(set):
+class SetProperty(set, Property):
     
     def __init__(self, value):
         if value is None:
             value = set()
         return set.__init__(value)
+        
+class NodeProperty(Property):
+    
+    conversion_needed = True
+    converter = 'convert_node'
+    
+    def __new__(self, node):
+        return node
+        
+class LinkProperty(Property):
+    
+    conversion_needed = True
+    converter = 'convert_link'
+    
+    def __new__(self, link):
+        return link
         
 ## Object properties
 
@@ -149,7 +167,7 @@ class AS(SetProperty):
         
 ## Link property
         
-class Source():
+class Source(NodeProperty):
     
     name = 'source'
     pretty_name = 'Source'
@@ -157,7 +175,7 @@ class Source():
     def __new__(self, value):
         return value
         
-class Destination():
+class Destination(NodeProperty):
     
     name = 'destination'
     pretty_name = 'Destination'
@@ -283,21 +301,45 @@ class Throughput(IntProperty):
         
 ## Interface properties
 
-class Link():
+class Link(LinkProperty):
     
     name = 'link'
     pretty_name = 'Link'
     
-    def __init__(self, value=''):
+    def __init__(self, value):
         self.value = value
         
-class Node():
+class Node(NodeProperty):
     
     name = 'node'
     pretty_name = 'Node'
     
-    def __init__(self, value=''):
+    def __init__(self, value):
         self.value = value
+        
+class Cost(IntProperty):
+    
+    name = 'cost'
+    pretty_name = 'Cost'
+    
+    def __init__(self, value=0):
+        super().__init__(value)
+        
+class Priority(IntProperty):
+    
+    name = 'priority'
+    pretty_name = 'Priority'
+    
+    def __init__(self, value=0):
+        super().__init__(value)
+        
+class Role(TextProperty):
+    
+    name = 'role'
+    pretty_name = 'Role'
+    
+    def __init__(self, value=''):
+        super().__init__(value)
 
         
 property_classes = {
@@ -329,6 +371,12 @@ property_classes = {
                     'subnetwork': Subnetwork,
                     'linkS': LinkS,
                     'linkD': LinkD,
-                    'throughput': Throughput
+                    'throughput': Throughput,
+                    'link': Link,
+                    'node': Node,
+                    'role': Role,
+                    'cost': Cost,
+                    'priority': Priority
+                    
                     }
                         

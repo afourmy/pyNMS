@@ -167,7 +167,6 @@ class ObjectManagementWindow(QWidget):
             
     def update(self):
         for property, property_widget in self.dict_global_properties.items():
-
             obj_prop = getattr(self.current_obj, property.name)
             if property == 'default_route':
                 # in practice, the default route can also be set as an outgoing

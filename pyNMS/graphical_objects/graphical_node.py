@@ -13,7 +13,7 @@ class GraphicalNode(QGraphicsPixmapItem):
         # if node is not defined, it means the node is created with the 
         # drag & drop system, which implies that: 
         # - the subtype is the value of creation_mode
-        # the node object does not yet exist: it must be created
+        # - the node object does not yet exist: it must be created
         if not node:
             subtype = self.controller.creation_mode
             self.node = self.view.network.nf(subtype=subtype)

@@ -140,6 +140,7 @@ class BaseNetwork(object):
                 link.update_properties(kwargs)
                 return link
             s, d = kwargs['source'], kwargs['destination']
+            # print(s, d, s.id, d.id)
             id = self.cpt_link
             if not name:
                 name = subtype + str(self.cpt_link)
@@ -149,6 +150,7 @@ class BaseNetwork(object):
             self.pn[link_type][id] = new_link
             self.graph[s.id][link_type].add((d, new_link))
             self.graph[d.id][link_type].add((s, new_link))
+            # print(self.graph[d.id][link_type])
             if subtype in ('ethernet link', 'optical link'):
                 self.interfaces |= {new_link.interfaceS, new_link.interfaceD}
             self.cpt_link += 1
