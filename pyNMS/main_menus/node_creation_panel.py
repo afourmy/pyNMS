@@ -63,6 +63,7 @@ class NodeCreationPanel(QGroupBox):
         if not child:
             return
         
+        self.controller.mode = 'selection'
         # update the creation mode to the appropriate subtype
         self.controller.creation_mode = child.subtype
         # we change the view if necessary:
