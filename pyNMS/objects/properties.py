@@ -1,38 +1,56 @@
-class Property():
+# all classes have a name parameter: it is the name of the object variable
+# all classes have a "pretty name": the name of the property when displayed
+# in the GUI.
+# MetaProperty is a metaclass for all properties: it implements the __repr__
+# function to display the pretty name by calling str on the property class itself.
+
+class MetaProperty(type):
+    
+    def __repr__(self):
+        return self.pretty_name
+
+class Property(metaclass=MetaProperty):
     
     conversion_needed = False
     
-    def __init__(self):
-        pass
+    def __repr__(self):
+        return str(self.value)
         
 class TextProperty(str, Property):
     
     def __init__(self, value):
-        return str.__init__(value)
+        self.value = str.__init__(value)
+        return self.value
         
 class IntProperty(int, Property):
     
     def __init__(self, value):
-        return int.__init__(value)
+        self.value = int.__init__(value)
+        return self.value
         
 class FloatProperty(float, Property):
     
     def __init__(self, value):
-        return float.__init__(value)
+        self.value = float.__init__(value)
+        return self.value
         
 class ListProperty(list, Property):
     
     def __init__(self, value):
         if value is None:
-            value = []
-        return list.__init__(value)
+            self.value = []
+        else:
+            self.value = list.__init__(value)
+        return self.value
         
 class SetProperty(set, Property):
     
     def __init__(self, value):
         if value is None:
-            value = set()
-        return set.__init__(value)
+            self.value = set()
+        else:
+            self.value = set.__init__(value)
+        return self.value
         
 class NodeProperty(Property):
     
@@ -40,7 +58,8 @@ class NodeProperty(Property):
     converter = 'convert_node'
     
     def __new__(self, node):
-        return node
+        self.value = node
+        return self.value
         
 class LinkProperty(Property):
     
@@ -48,7 +67,8 @@ class LinkProperty(Property):
     converter = 'convert_link'
     
     def __new__(self, link):
-        return link
+        self.value = link
+        return self.value
         
 ## Object properties
 
@@ -67,6 +87,9 @@ class Name(TextProperty):
     
     def __init__(self, value=''):
         super().__init__(value)
+        
+    def __repr__(self):
+        return 'Name'
         
 class Subtype(TextProperty):
     

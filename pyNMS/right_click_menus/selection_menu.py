@@ -14,7 +14,8 @@
 
 from .base_menu import BaseMenu
 from graph_generation.multiple_objects import MultipleLinks
-from objects.object_management_window import ObjectManagementWindow, PropertyChanger
+from objects.object_management_window import ObjectManagementWindow
+from objects.property_changer import PropertyChanger
 from PyQt5.QtWidgets import QMenu, QAction
                                 
 class SelectionMenu(BaseMenu):
@@ -24,19 +25,24 @@ class SelectionMenu(BaseMenu):
         
         # set containing all selected objects: we convert generators into sets
         # because to know if they are empty or not to build the menu
-        self.so = set(self.view.scene.selectedItems())
-        self.selected_nodes = set(self.view.selected_nodes())
-        self.selected_links = set(self.view.selected_links())
-        self.no_node = not self.selected_nodes
-        self.no_link = not self.selected_links
+        self.items = set(self.view.scene.selectedItems())
+        self.objects = set(self.view.get_obj(self.items))
+        self.gnodes = set(self.view.selected_nodes())
+        self.nodes = set(self.view.get_obj(self.gnodes))
+        self.glinks = set(self.view.selected_links())
+        self.links = set(self.view.get_obj(self.glinks))
+        self.no_node = not self.gnodes
+        self.no_link = not self.glinks
         self.no_shape = True
-        self.one_object = len(self.so) == 1
-        self.one_node = len(self.selected_nodes) == 1
-        self.one_link = len(self.selected_links) == 1
-        self.one_subtype = False
+        self.one_object = len(self.items) == 1
+        self.one_node = len(self.gnodes) == 1
+        self.one_link = len(self.glinks) == 1
+        print(set(map(lambda obj: obj.subtype, self.objects)))
+        self.one_subtype = len(set(map(lambda obj: obj.subtype, self.objects))) == 1
         
         # exactly one object: property window 
         if self.no_shape and self.one_object == 1:
+            
             properties = QAction('Properties', self)        
             properties.triggered.connect(lambda: self.show_object_properties())
             self.addAction(properties)
@@ -56,41 +62,42 @@ class SelectionMenu(BaseMenu):
                 action.triggered.connect(lambda _, m=method: self.distribute(m))
                 align_submenu.addAction(action)
             self.align_action.setMenu(align_submenu)
+            self.addSeparator()
             
-        change_property = QAction('Change property', self)        
-        change_property.triggered.connect(self.change_property)
-        self.addAction(change_property)
-        self.addSeparator()
+        if self.one_subtype:
+            self.subtype ,= set(map(lambda obj: obj.subtype, self.objects))
+            change_property = QAction('Change property', self)        
+            change_property.triggered.connect(self.change_property)
+            self.addAction(change_property)
+            self.addSeparator()
         
-        # at least one object: deletion and property changer
         delete_objects = QAction('Delete', self)        
         delete_objects.triggered.connect(self.delete_objects)
         self.addAction(delete_objects)
         self.addSeparator()
         
     def graph_drawing(self, drawing):
-        self.view.node_selection = self.selected_nodes or self.view.all_gnodes()
+        self.view.node_selection = self.gnodes or self.view.all_gnodes()
         super().graph_drawing(drawing)
         
     def show_object_properties(self):
-        obj ,= self.so
-        self.properties = ObjectManagementWindow(obj.object, self.controller)
+        obj ,= self.objects
+        self.properties = ObjectManagementWindow(obj, self.controller)
         self.properties.show()
             
     def change_property(self):
-        pass
-        # objects = set(objects)
-        # PropertyChanger(objects, subtype, self.controller)
+        self.property_changer = PropertyChanger(self.objects, self.subtype, self.controller)
+        self.property_changer.show()
                 
     def delete_objects(self, _):
-        self.view.remove_objects(*self.so)
+        self.view.remove_objects(*self.items)
         
     def align(self, method):
         horizontal = method == 'Horizontal alignment'
-        self.view.align(self.selected_nodes, horizontal)
+        self.view.align(self.gnodes, horizontal)
         
     def distribute(self, method):
         horizontal = method == 'Horizontal distribution'
-        self.view.distribute(self.selected_nodes, horizontal)
+        self.view.distribute(self.gnodes, horizontal)
                 
                         

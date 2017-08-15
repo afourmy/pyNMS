@@ -40,8 +40,7 @@ class NetworkSelectionMenu(SelectionMenu):
         if self.no_link and self.no_shape and self.one_node:
             
             # we retrieve the node
-            gnode ,= self.so
-            self.node = gnode.node
+            self.node ,= self.nodes
             
             # configuration + troubleshooting windows
             configuration = QAction('Configuration', self)        
@@ -104,11 +103,11 @@ class NetworkSelectionMenu(SelectionMenu):
         if self.no_shape:
             
             simulate_failure = QAction('Simulate failure', self)        
-            simulate_failure.triggered.connect(lambda: self.simulate_failure(*self.so))
+            simulate_failure.triggered.connect(lambda: self.simulate_failure(*self.items))
             self.addAction(simulate_failure)
             
             remove_failure = QAction('Remove failure', self)        
-            remove_failure.triggered.connect(lambda: self.remove_failure(*self.so))
+            remove_failure.triggered.connect(lambda: self.remove_failure(*self.items))
             self.addAction(remove_failure)
             
             self.addSeparator()
@@ -120,9 +119,8 @@ class NetworkSelectionMenu(SelectionMenu):
         # only one link
         if self.no_shape and self.no_node and self.one_link:
             
-            # we retrieve the node
-            glink ,= self.so
-            self.link = glink.link
+            # we retrieve the link
+            self.link = self.links
             
             interfaces = QAction('Interfaces', self)
             interfaces_submenu = QMenu('Interfaces', self)
@@ -152,7 +150,7 @@ class NetworkSelectionMenu(SelectionMenu):
             
             self.common_AS = set(self.network.pnAS.values())  
             cmd = lambda o: o.object.type in ('node', 'plink')
-            for obj in filter(cmd, self.so):
+            for obj in filter(cmd, self.items):
                 self.common_AS &= obj.object.AS.keys()
             
             # if at least one common AS: remove from AS or manage AS
@@ -189,9 +187,8 @@ class NetworkSelectionMenu(SelectionMenu):
         self.addSeparator()
             
         self.common_sites = set(self.site_network.nodes.values())
-        for obj in self.so:
-            print(obj.object.sites, type(obj.object.sites))
-            self.common_sites &= obj.object.sites
+        for obj in self.objects:
+            self.common_sites &= obj.sites
         
         self.remove_from_site_action = QAction('Remove from site', self)        
         self.remove_from_site_action.triggered.connect(self.remove_from_site)
@@ -230,19 +227,18 @@ class NetworkSelectionMenu(SelectionMenu):
     # - create an AS
         
     def change_AS(self, mode):
-        objects = set(self.view.get_obj(self.so))
-        self.change_AS = AS_operations.ASOperation(mode, objects, self.common_AS, self.controller)
+        self.change_AS = AS_operations.ASOperation(mode, self.objects, 
+                                            self.common_AS, self.controller)
         self.change_AS.show()
         
     def change_area(self, mode):
-        objects = set(self.view.get_obj(self.so))
-        self.change_area = area_operations.AreaOperation(mode, self.so, self.common_AS, self.controller)
+        self.change_area = area_operations.AreaOperation(mode, self.objects,
+                                            self.common_AS, self.controller)
         self.change_area.show()
         
     def create_AS(self):
-        nodes = set(self.view.get_obj(self.selected_nodes))
-        plinks = set(self.view.get_obj(self.selected_links))
-        self.create_AS = AS_operations.ASCreation(nodes, plinks, self.controller)
+        self.create_AS = AS_operations.ASCreation(
+                                self.nodes, self.links, self.controller)
         self.create_AS.show()
                 
     def simulate_failure(self, *objects):
@@ -254,12 +250,11 @@ class NetworkSelectionMenu(SelectionMenu):
     ## NAPALM operations:
     
     def napalm_update(self, _):
-        nodes = set(self.view.get_obj(self.selected_nodes))
-        standalone_napalm_update(*nodes)
+        standalone_napalm_update(*self.nodes)
     
     def napalm_data(self, _):
-        gnode ,= self.selected_nodes
-        self.napalm_window = NapalmWindow(gnode.node, self.controller)
+        node ,= self.nodes
+        self.napalm_window = NapalmWindow(node, self.controller)
         self.napalm_window.show()
         
     ## Interface
@@ -277,8 +272,7 @@ class NetworkSelectionMenu(SelectionMenu):
     ## Site operations
     
     def add_to_site(self):
-        objects = set(self.view.get_obj(self.so))
-        self.add_window = SiteOperations('add', objects, self.all_sites, self.controller)
+        self.add_window = SiteOperations('add', self.objects, self.all_sites, self.controller)
         self.add_window.show()
         
     ## Multiple links

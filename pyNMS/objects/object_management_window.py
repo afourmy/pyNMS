@@ -225,34 +225,4 @@ class ObjectManagementWindow(QWidget):
         #         else:
         #             value = ''
         #         property_widget.setText = value
-                
-class PropertyChanger():
-    pass
-                
-# class PropertyChanger(FocusTopLevel):
-#                                  
-#     @update_paths
-#     def __init__(self, objects, type, controller):
-#         super().__init__()
-#         
-#         # list of properties
-#         self.property_list = Combobox(self, width=15)
-#         self.property_list['values'] = object_properties[type]
-#         self.property_list.current(0)        
-#                             
-#         self.entry_prop = Entry(self, width=15)
-#         button_OK = Button(self)
-#         button_OK.text = 'OK'
-#         button_OK.command = lambda: self.confirm(objects)
-#                                         
-#         self.property_list.grid(0, 0)
-#         self.entry_prop.grid(1, 0)
-#         button_OK.grid(2, 0)
-#         
-#     def confirm(self, objects):
-#         selected_property = self.property_list.text
-#         value = self.network.prop_to_type[selected_property](self.entry_prop.text)
-#         for object in objects:
-#             setattr(object, selected_property, value)
-#         self.destroy()
         

@@ -10,5 +10,4 @@ class InternalSiteSelectionMenu(NetworkSelectionMenu):
         self.addAction(self.remove_from_site_action)
         
     def remove_from_site(self):
-        objects = set(self.view.get_obj(self.so))
-        self.view.remove_from_site(*objects)
+        self.view.remove_from_site(*self.objects)
