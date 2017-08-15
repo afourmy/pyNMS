@@ -1,5 +1,5 @@
 from .geographical_menu import GeographicalMenu
-from miscellaneous.site_operations import SiteOperations
+from sites.site_operations import SiteOperations
 from .network_selection_menu import NetworkSelectionMenu
 from PyQt5.QtWidgets import QAction
 

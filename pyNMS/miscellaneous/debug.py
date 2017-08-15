@@ -1,30 +1,20 @@
-# Copyright (C) 2017 Antoine Fourmy <antoine dot fourmy at gmail dot com>
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from pythonic_tkinter.preconfigured_widgets import *
 from miscellaneous.decorators import update_paths
+from PyQt5.QtWidgets import (
+                             QGridLayout, 
+                             QTextEdit,
+                             QPushButton, 
+                             QWidget, 
+                             QLabel, 
+                             QLineEdit, 
+                             QComboBox
+                             )
 
-class Debug(CustomTopLevel):
+class DebugWindow(QWidget):
     
     def __init__(self, controller):
-        super().__init__() 
+        super().__init__()
         self.controller = controller
-        
-        # label frame for debugging
-        lf_debug = Labelframe(self)
-        lf_debug.text = 'Debug'
-        lf_debug.grid(0, 0)
+        self.setWindowTitle('Debug')
         
         values = (
                   'Objects',
@@ -38,41 +28,35 @@ class Debug(CustomTopLevel):
                   'IP addresses'
                   )
         
-        # List of debugging options
-        self.debug_list = Combobox(self, width=15)
-        self.debug_list['values'] = values
-        self.debug_list.current(0)
-        self.debug_list.bind('<<ComboboxSelected>>', lambda e: self.debug())
+        self.debug_list = QComboBox()
+        self.debug_list.addItems(values)
+        self.debug_list.activated.connect(self.debug)
+        self.debug_edit = QLineEdit()
         
-        self.entry_debug  = Entry(self, width=60)
-
-        button_debug = Button(self, width=10)
-        button_debug.text = 'Debug'
-        button_debug.command = lambda: self.query_netdim
-                                
-        self.ST = Text(self)
-        self.wm_attributes('-topmost', True)                     
-
-        self.debug_list.grid(0, 0, in_=lf_debug)
-        self.entry_debug.grid(0, 1, in_=lf_debug)
-        button_debug.grid(0, 2, in_=lf_debug)
-        self.ST.grid(1, 0, 1, 3, in_=lf_debug)
+        query_button = QPushButton()
+        query_button.setText('OK')
+        query_button.clicked.connect(self.query_pynms)
         
-        # hide the window when closed
-        self.protocol('WM_DELETE_WINDOW', self.withdraw)
-        # close the window when initialized
-        self.withdraw()
+        self.debug_result = QTextEdit()
         
-    def query_netdim(self, master):
-        query = self.entry_debug.text
+        # position in the grid
+        layout = QGridLayout()
+        layout.addWidget(self.debug_list, 0, 0)
+        layout.addWidget(self.debug_edit, 0, 1)
+        layout.addWidget(query_button, 0, 2)
+        layout.addWidget(self.debug_result, 1, 0, 1, 3)
+        self.setLayout(layout)
+        
+    def query_pynms(self, _):
+        query = self.debug_edit.text()
         query_result = eval(query)
-        self.ST.delete('1.0', 'end')
-        self.ST.insert('insert', query_result)
+        self.debug_result.clear()
+        self.debug_result.insertPlainText(query_result)
         
-    @update_paths
-    def debug(self):
-        self.ST.delete('1.0', 'end')
-        value = self.debug_list.text
+    @update_paths(False)
+    def debug(self, _):
+        self.debug_result.clear()
+        value = self.debug_list.currentText()
         if value == 'Objects':
             query_result = eval('self.view.object_id_to_object')
         elif value == 'Nodes':
@@ -105,6 +89,4 @@ AS links: {links}
                            nodes = AS.nodes,
                            links = AS.links
                            )
-        self.ST.insert('insert', query_result)
-            
-
+        self.debug_result.insertPlainText(str(query_result))

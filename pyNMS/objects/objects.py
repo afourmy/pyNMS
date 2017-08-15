@@ -538,7 +538,6 @@ prop_to_name = {
 'excluded_plinks': 'Excluded physical links',
 'path': 'Path',
 'position': 'Position',
-'subnets': 'Subnets', 
 'sites': 'Sites',
 'AS': 'Autonomous system',
 'role': 'Role',

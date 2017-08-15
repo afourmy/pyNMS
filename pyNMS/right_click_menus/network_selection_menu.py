@@ -24,7 +24,7 @@ import ip_networks.troubleshooting as ip_ts
 import ip_networks.switching_table as switching_table
 import ip_networks.arp_table as arp_table
 import ip_networks.routing_table as ip_rt
-from miscellaneous.site_operations import SiteOperations
+from sites.site_operations import SiteOperations
 from NAPALM.napalm_window import NapalmWindow
 from NAPALM.napalm_functions import standalone_napalm_update
 from collections import OrderedDict

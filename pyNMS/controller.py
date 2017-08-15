@@ -25,6 +25,7 @@ from gis.gis_parameter import GISParameterWindow
 from miscellaneous.graph_drawing import *
 from miscellaneous.search_window import SearchWindow
 from miscellaneous.style_window import StyleWindow
+from miscellaneous.debug import DebugWindow
 from main_menus import (
                         node_creation_panel,
                         link_creation_panel,
@@ -87,6 +88,7 @@ class Controller(QMainWindow):
         self.ssh_management_window = SSHManagementWindow(self)
         self.search_window = SearchWindow(self)
         self.style_window = StyleWindow()
+        self.debug_window = DebugWindow(self)
         
         # Graph algorithm windows
         self.shortest_path_window = ShortestPathWindow(self)   
@@ -114,6 +116,11 @@ class Controller(QMainWindow):
         export_project.setStatusTip('Export the current project')
         export_project.triggered.connect(self.export_project)
         
+        debug_pynms = QAction('Debug', self)
+        debug_pynms.setShortcut('Ctrl+D')
+        debug_pynms.setStatusTip('Debug')
+        debug_pynms.triggered.connect(self.debug)
+        
         quit_pynms = QAction('Quit', self)
         quit_pynms.setShortcut('Ctrl+Q')
         quit_pynms.setStatusTip('Close pyNMS')
@@ -126,6 +133,7 @@ class Controller(QMainWindow):
         main_menu.addAction(import_project)
         main_menu.addAction(export_project)
         main_menu.addSeparator()
+        main_menu.addAction(debug_pynms)
         main_menu.addAction(quit_pynms)
         
         edit_style = QAction('Styles', self)
@@ -398,6 +406,9 @@ class Controller(QMainWindow):
         
     def generate_graph(self):
         self.current_project.generate_graph()
+        
+    def debug(self):
+        self.debug_window.show()
 
     def close(self):
         pass
