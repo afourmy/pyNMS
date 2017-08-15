@@ -84,8 +84,6 @@ subtype_to_type = {
 'firewall': 'node',
 'load_balancer': 'node',
 'server': 'node',
-'sdn_switch': 'node',
-'sdn_controller': 'node',
 'ethernet link': 'plink',
 'optical link': 'plink',
 'l2vc': 'l2link',
@@ -271,8 +269,6 @@ object_properties = OrderedDict([
 ('firewall', node_common_properties),
 ('load_balancer', node_common_properties),
 ('server', node_common_properties),
-('sdn_switch', node_common_properties),
-('sdn_controller', node_common_properties),
 
 ('ethernet link', plink_common_properties),
 ('optical link', plink_common_properties),
@@ -316,8 +312,6 @@ object_ie = OrderedDict([
 ('firewall', node_common_ie_properties),
 ('load_balancer', node_common_ie_properties),
 ('server', node_common_ie_properties),
-('sdn_switch', node_common_ie_properties),
-('sdn_controller', node_common_ie_properties),
 
 ('ethernet link', plink_common_ie_properties),
 ('optical link', plink_common_ie_properties),
@@ -401,8 +395,6 @@ subtype_labels = OrderedDict([
 ('firewall', node_common_ie_properties),
 ('load_balancer', node_common_ie_properties),
 ('server', node_common_ie_properties),
-('sdn_switch', node_common_ie_properties),
-('sdn_controller', node_common_ie_properties),
 
 ('ethernet link', plink_common_ie_properties),
 ('optical link', plink_common_ie_properties),
@@ -478,8 +470,6 @@ box_properties = OrderedDict([
 ('firewall', node_box_properties),
 ('load_balancer', node_box_properties),
 ('server', node_box_properties),
-('sdn_switch', node_box_properties),
-('sdn_controller', node_box_properties),
 
 ('ethernet link', plink_box_properties),
 ('optical link', plink_box_properties),
@@ -519,8 +509,6 @@ obj_to_name = {
 'firewall': 'Firewall',
 'load_balancer': 'Load Balancer',
 'server': 'Server',
-'sdn_switch': 'SDN Switch',
-'sdn_controller': 'SDN controller',
 'ethernet link': 'Ethernet link',
 'optical link': 'Optical link',
 'l2vc': 'Layer-2 flow',
@@ -928,52 +916,6 @@ class Server(Node):
     def __init__(self, **kwargs):
         super().__init__()
         
-class SDN_Switch(Node):
-
-    color = 'black'
-    subtype = 'sdn_switch'
-    layer = 3
-    imagex, imagey = 40, 40
-    
-    ie_properties = {}
-    
-    @initializer(ie_properties)
-    def __init__(self, **kwargs):
-        self.mininet_name = None
-        super().__init__()
-        
-    def mininet_conf(self):
-        return '{n} = net.addSwitch(\'{n}\')\n'.format(n=self.mininet_name)
-        
-class SDN_Controller(Node):
-
-    color = 'black'
-    subtype = 'sdn_controller'
-    layer = 3
-    imagex, imagey = 40, 40
-    
-    ie_properties = {}
-    
-    @initializer(ie_properties)
-    def __init__(self, **kwargs):
-        self.controller_type = 'DefaultController'
-        self.controller_IP = '0.0.0.0'
-        self.controller_port = 6633
-        super().__init__()
-        
-    def mininet_conf(self):
-        return ('{name} = net.addController(\n'
-                        'name = \'{name}\',\n'
-                        'controller = {type},\n'
-                        'ip = \'{ip}\',\n'
-                        'port = {port})\n').format(
-                                name = self.name,
-                                type = self.controller_type,
-                                ip = self.controller_IP,
-                                port = self.controller_port
-                                )
-                        
-        
 ## Links
 class Link(NDobject):
     
@@ -1373,8 +1315,6 @@ node_class = OrderedDict([
 ('load_balancer', LoadBalancer),
 ('server', Server),
 ('site', Site),
-('sdn_switch', SDN_Switch),
-('sdn_controller', SDN_Controller)
 ])
 
 # layer 1 (physical links)
