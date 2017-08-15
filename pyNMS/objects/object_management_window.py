@@ -64,7 +64,7 @@ class ObjectManagementWindow(QWidget):
         for index, property in enumerate(object_properties[obj.subtype]):
             
             # too much trouble handling interfaces here
-            if not hasattr(property, 'name') or property.name in ('interfaceS', 'interfaceD'):
+            if property.name in ('interfaceS', 'interfaceD'):
                 continue
             
             # creation of the label associated to the property
@@ -167,7 +167,7 @@ class ObjectManagementWindow(QWidget):
             
     def update(self):
         for property, property_widget in self.dict_global_properties.items():
-            print(property)
+
             obj_prop = getattr(self.current_obj, property.name)
             if property == 'default_route':
                 # in practice, the default route can also be set as an outgoing

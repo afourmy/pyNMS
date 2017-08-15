@@ -21,22 +21,22 @@ def initializer(default_properties):
     def inner_decorator(init):
         def wrapper(self, *a, **kw):
             for k in kw:
-                property = property_classes[k]
-                setattr(self, k, property(kw[k]))
                 # if the imported property is not an existing NetDim property,
                 # we make sure to add it everywhere it is needed, so that it's
                 # properly added to the model and displayed
                 # it is also automatically made exportable
-                if (property not in object_properties[self.__class__.subtype]
-                        and property.name is not 'id'):
-                    print('test')
+                if k not in property_classes:
+                    new_property = type(k, (TextProperty,), {'name':k,
+                                                     'pretty_name':k})
+                    property_classes[k] = new_property
                     for property_manager in (
                                              object_properties,
                                              object_ie,
                                              box_properties,
                                              ):
-                        property_manager[self.__class__.subtype] += (k,)
-                    prop_to_name[k] = k
+                        property_manager[self.__class__.subtype] += (new_property,) 
+                property = property_classes[k]
+                setattr(self, k, property(kw[k]))
                     
             for property in object_properties[self.__class__.subtype]:
                 if not hasattr(self, property.name):
@@ -652,20 +652,22 @@ class NDobject(object):
         
     def update_properties(self, kwargs):
         for k in kwargs:
-            setattr(self, k, kwargs[k])
             # if the imported property is not an existing NetDim property,
             # we make sure to add it everywhere it is needed, so that it's
             # properly added to the model and displayed
             # it is also automatically made exportable
-            if (k not in object_properties[self.subtype]
-                    and k is not 'id'):
+            if k not in property_classes:
+                new_property = type(k, (TextProperty,), {'name':k,
+                                                    'pretty_name':k})
+                property_classes[k] = new_property
                 for property_manager in (
-                                        object_properties,
-                                        object_ie,
-                                        box_properties,
-                                        ):
-                    property_manager[self.subtype] += (k,)
-                prop_to_name[k] = k
+                                            object_properties,
+                                            object_ie,
+                                            box_properties,
+                                            ):
+                    property_manager[self.__class__.subtype] += (new_property,) 
+            property = property_classes[k]
+            setattr(self, k, property(kwargs[k]))
 
 ## Nodes
 class Node(NDobject):

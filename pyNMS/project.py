@@ -73,7 +73,7 @@ class Project(QWidget):
             return value
         # if the property doesn't exist, we consider it is a string
         else:
-            self.network.prop_to_type[property] = str
+            # self.network.prop_to_type[property] = str
             return value
                         
     def mass_objectizer(self, properties, values):
