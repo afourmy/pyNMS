@@ -41,15 +41,14 @@ class ObjectManagementWindow(QWidget):
     'ipD': (None,),
     'dst_sntw': (None,)
     }
+    
+    perAS_properties = ()
                 
     @update_paths(True)
     def __init__(self, obj, controller):
         super().__init__()
         self.setWindowTitle('Properties')
         self.current_obj = obj
-        
-        # current path of the object: computing a path is not saving it
-        self.current_path = None
         
         # dictionnary containing all global properties entries / combobox
         self.dict_global_properties = {}
@@ -82,46 +81,38 @@ class ObjectManagementWindow(QWidget):
             global_properties_layout.addWidget(label, index + 1, 0, 1, 1)
             global_properties_layout.addWidget(pvalue, index + 1, 1, 1, 1)
             
+        if obj.subtype in self.perAS_properties:
+            
+            # global properties
+            perAS_properties = QGroupBox('Per-AS properties')
+            perAS_properties_layout = QGridLayout(perAS_properties)
+
+            self.dict_perAS_properties = {}
+            
+            # AS combobox
+            self.AS_list = QComboBox()
+            self.AS_list.addItems(obj.AS)
+            self.AS_list.activated.connect(self.update_AS_properties)
+            # self.AS_combobox.grid(0, 0, 1, 2, in_=lf_perAS)
+        
+            for index, property in enumerate(perAS_properties[obj.subtype]):
+                
+                # creation of the label associated to the property
+                label = QLabel(property.pretty_name)
+                pvalue = QLineEdit()
+                
+                self.dict_perAS_properties[property] = pvalue
+                perAS_properties_layout.addWidget(label, index + 1, 0)
+                perAS_properties_layout.addWidget(pvalue, index + 1, 1)
+                
         # update all properties with the selected object properties
         self.update()
-        
-        # self.aboutToQuit.connect(self.save)
             
         grid = QGridLayout()
         grid.addWidget(global_properties, 0, 0)
+        if obj.subtype in self.perAS_properties:
+            grid.addWidget(perAS_properties, 1, 0)
         self.setLayout(grid)
-            
-        # if obj.subtype in perAS_properties:
-        #     # labelframe for per-AS interface properties
-        #     lf_perAS = Labelframe(self)
-        #     lf_perAS.text = 'Per-AS properties'
-        #     lf_perAS.grid(2, 0, 1, 2)
-        #     self.dict_perAS_properties = {}
-        #     
-        #     # AS combobox
-        #     self.AS_combobox = Combobox(self, width=30)
-        #     self.AS_combobox.bind('<<ComboboxSelected>>', self.update_AS_properties)
-        #     self.AS_combobox.grid(0, 0, 1, 2, in_=lf_perAS)
-        # 
-        #     for index, property in enumerate(perAS_properties[obj.subtype]):
-        #         
-        #         # creation of the label associated to the property
-        #         text = prop_to_name[property]
-        #         label = Label(self)
-        #         label.text = text
-        #         
-        #         # value of the property
-        #         pvalue = Entry(self, width=15)
-        #         
-        #         self.dict_perAS_properties[property] = pvalue
-        #             
-        #         label.grid(index+1, 0, pady=1, in_=lf_perAS)
-        #         pvalue.grid(index+1, 1, pady=1, in_=lf_perAS)
-                                                                            
-        # button_save_obj = Button(self) 
-        # button_save_obj.text = 'Save'
-        # button_save_obj.command = self.save_obj
-        # button_save_obj.grid(0, 1)
         
     def update_AS_properties(self, _):
         AS = self.AS_combobox.text

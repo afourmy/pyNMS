@@ -42,7 +42,7 @@ class InterfaceWindow(QWidget):
             label = QLabel(property.pretty_name)
             
             property_edit = QLineEdit()
-            property_edit.setText = getattr(self.interface, property.name)
+            property_edit.setText(str(getattr(self.interface, property.name)))
             self.dict_global_properties[property] = property_edit
             
             global_properties_layout.addWidget(label, index + 1, 0, 1, 1)
@@ -82,16 +82,15 @@ class InterfaceWindow(QWidget):
         for property, line_edit in self.dict_perAS_properties.items():
             line_edit.setText(self.interface(AS, property.name))
             
-    #TODO save upon leaving
-    # def save_and_destroy(self):
-    #     for property, entry in self.dict_global_properties.items():
-    #         value = self.project.objectizer(property, entry.get())
-    #         setattr(self.interface, property, value)
-    #         
-    #     if self.interface.AS_properties:
-    #         AS = self.AS_combobox.text
-    #         for property, entry in self.dict_perAS_properties.items():
-    #             value = self.project.objectizer(property, entry.text)
-    #             self.interface(AS, property, value)
-    #             
-    #     self.destroy()
+    def closeEvent(self, _):
+        for property, edit in self.dict_global_properties.items():
+            value = self.project.objectizer(property.name, edit.text())
+            setattr(self.interface, property.name, value)
+            
+        if self.interface.AS_properties:
+            AS = self.AS_list.currentText()
+            for property, edit in self.dict_perAS_properties.items():
+                value = self.project.objectizer(property.name, edit.text())
+                self.interface(AS, property.name, value)
+                
+        self.close()
