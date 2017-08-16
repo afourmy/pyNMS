@@ -27,7 +27,6 @@ napalm_actions = OrderedDict([
 ('LLDP neighbors', 'get_lldp_neighbors'),
 ('LLDP neighbors detail', 'get_lldp_neighbors_detail'),
 ('MAC address', 'get_mac_address_table'),
-('ARP table', 'get_arp_table'),
 ('NTP servers', 'get_ntp_servers'),
 ('NTP statistics', 'get_ntp_stats'),
 ('Transceivers', 'get_optics'),
@@ -52,16 +51,19 @@ def open_device(node):
     device.open()
     return device
 
-def napalm_update(device, node):
+def napalm_update(device, node, update_allowed):
     for action, function in napalm_actions.items():
-        node.napalm_data[action] = getattr(device, function)()
-    node.napalm_data['Configuration']['compare'] = device.compare_config()
-    node.napalm_data['cli'] = device.cli(['show logging'])
+        if action in update_allowed:
+            node.napalm_data[action] = getattr(device, function)()
+    if 'Configuration' in update_allowed:
+        node.napalm_data['Configuration']['compare'] = device.compare_config()
+    if 'Logging' in update_allowed:
+        node.napalm_data['cli'] = device.cli(['show logging'])
 
-def standalone_napalm_update(*nodes):
+def standalone_napalm_update(update_allowed, *nodes):
     for node in nodes:
         device = open_device(node)
-        # napalm_update(device, node)
+        napalm_update(device, node, update_allowed)
         device.close()
         
 def napalm_commit(*nodes):

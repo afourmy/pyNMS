@@ -54,7 +54,7 @@ class GraphGenerationWindow(QWidget):
             icon = QIcon(image_path)
             button.setIcon(icon)
             button.setIconSize(QSize(50, 50))
-            layout.addWidget(button, index // 2, index % 2, 1, 1)
+            layout.addWidget(button, index // 2, index % 2)
         return classic_graph_groupbox
 
     def complex_graph_generation(self):
@@ -67,7 +67,7 @@ class GraphGenerationWindow(QWidget):
             icon = QIcon(image_path)
             button.setIcon(icon)
             button.setIconSize(QSize(50, 50))
-            layout.addWidget(button, index // 2, index % 2, 1, 1)
+            layout.addWidget(button, index // 2, index % 2)
         return complex_graph_groupbox
             
     def graph_dimension(self, graph_type):

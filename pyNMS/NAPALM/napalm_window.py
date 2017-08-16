@@ -27,7 +27,7 @@ class NapalmWindow(QTabWidget):
     def __init__(self, node, controller):
         super().__init__()
         self.node = node
-        self.setMinimumSize(800, 1000)
+        self.setMinimumSize(1100, 700)
         self.setWindowTitle('NAPALM: device information')
 
         # 1st tab: general information (facts + environment)
