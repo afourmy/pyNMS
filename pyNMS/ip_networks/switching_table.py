@@ -14,7 +14,8 @@
 
 from miscellaneous.decorators import update_paths
 from operator import itemgetter
-from PyQt5.QtWidgets import QWidget, QTextEdit, QGridLayout
+from pyQT_widgets.Q_console_edit import QConsoleEdit
+from PyQt5.QtWidgets import QWidget, QGridLayout
 
 class SwitchingTable(QWidget):
     
@@ -24,7 +25,7 @@ class SwitchingTable(QWidget):
         self.setWindowTitle('Switching table')
         self.setMinimumSize(600, 800)
         
-        config_edit = QTextEdit()
+        config_edit = QConsoleEdit()
 
         introduction = '''
                             Mac Address Table

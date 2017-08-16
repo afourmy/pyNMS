@@ -13,6 +13,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from miscellaneous.decorators import update_paths
+from pyQT_widgets.Q_console_edit import QConsoleEdit
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget, QTextEdit)
 
@@ -25,7 +26,7 @@ class NapalmConfigurations(QTabWidget):
         self.config_edit = {}
         
         for config in ('running', 'startup', 'candidate', 'compare'):
-            text_edit = QTextEdit()
+            text_edit = QConsoleEdit()
             self.config_edit[config] = text_edit
             self.addTab(text_edit, '{} config'.format(config.title()))
                 

@@ -17,6 +17,7 @@ from .napalm_interfaces import NapalmInterfaces
 from .napalm_configurations import NapalmConfigurations
 from .napalm_general import NapalmGeneral
 from .napalm_actions import NapalmActions
+from .napalm_logs import NapalmLogs
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget, QTextEdit)
@@ -26,22 +27,26 @@ class NapalmWindow(QTabWidget):
     def __init__(self, node, controller):
         super().__init__()
         self.node = node
-        self.setMinimumSize(600, 600)
+        self.setMinimumSize(800, 1000)
         self.setWindowTitle('NAPALM: device information')
 
-        # first tab: general information (facts + environment)
+        # 1st tab: general information (facts + environment)
         self.general_frame = NapalmGeneral(node, controller)
         self.addTab(self.general_frame, 'General')
                                     
-        # second tab: the interfaces
+        # 2nd tab: the interfaces
         self.interfaces_frame = NapalmInterfaces(node, controller)
         self.addTab(self.interfaces_frame, 'Interfaces')
         
-        # third tab: the configurations
+        # 3rd tab: the logs
+        self.logs_frame = NapalmLogs(node)
+        self.addTab(self.logs_frame, 'Logs')
+        
+        # 4th tab: the configurations
         self.configurations_frame = NapalmConfigurations(node, controller)
         self.addTab(self.configurations_frame, 'Configurations')
         
-        # fourth tab: actions (commit, discard, and load)
+        # 5th tab: actions (commit, discard, and load)
         actions_frame = NapalmActions(self, node, controller)
         self.addTab(actions_frame, 'Actions')
         
@@ -55,6 +60,7 @@ class NapalmWindow(QTabWidget):
         for frame in (
                       self.general_frame,
                       self.interfaces_frame,
-                      self.configurations_frame
+                      self.configurations_frame,
+                      self.logs_frame
                       ):
             frame.update()

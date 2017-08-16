@@ -44,7 +44,7 @@ napalm_actions = OrderedDict([
 def open_device(node):
     driver = get_network_driver('ios')
     device = driver(
-                    hostname = node.ipaddress, 
+                    hostname = node.ip_address, 
                     username = 'cisco', 
                     password = 'cisco', 
                     optional_args = {'secret': 'cisco'}
@@ -56,11 +56,12 @@ def napalm_update(device, node):
     for action, function in napalm_actions.items():
         node.napalm_data[action] = getattr(device, function)()
     node.napalm_data['Configuration']['compare'] = device.compare_config()
+    node.napalm_data['cli'] = device.cli(['show logging'])
 
 def standalone_napalm_update(*nodes):
     for node in nodes:
         device = open_device(node)
-        napalm_update(device, node)
+        # napalm_update(device, node)
         device.close()
         
 def napalm_commit(*nodes):
