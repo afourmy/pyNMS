@@ -67,8 +67,6 @@ class Project(QWidget):
     def objectizer(self, str_property, value):
         if value == 'None': 
             return None
-        # elif property in ('source', 'destination'):
-        #     return self.network_view.network.convert_node(value)
         elif str_property in property_classes:
             property = property_classes[str_property]
             if property.conversion_needed:
@@ -102,17 +100,18 @@ class Project(QWidget):
                 commands[idx]()
     
     def import_project(self, filepath=None):
-        # filepath is set for unittest
-        filepath = QFileDialog.getOpenFileName(
-                                           self, 
-                                           'Import project', 
-                                           'Choose a project to import'
-                                           )
-            
         if not filepath:
-            return
+            # filepath is set for unittest
+            filepath = QFileDialog.getOpenFileName(
+                                            self, 
+                                            'Import project', 
+                                            'Choose a project to import'
+                                            )[0]
+                
+            # if not filepath:
+            #     return
                   
-        book = xlrd.open_workbook(filepath[0])
+        book = xlrd.open_workbook(filepath)
         
         # the order in which objects are imported is extremely important:
         # - nodes must be imported first, before links

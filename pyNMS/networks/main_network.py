@@ -1905,7 +1905,6 @@ class MainNetwork(BaseNetwork):
     def multiple_links(self, source_nodes, destination_nodes):
         # create a link between the destination node and all source nodes
         for src_node in source_nodes:
-            print(src_node)
             for dest_node in destination_nodes:
                 if src_node != dest_node:
                     yield self.lf(source=src_node, destination=dest_node)

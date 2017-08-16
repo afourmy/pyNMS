@@ -13,10 +13,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from miscellaneous.decorators import update_paths
-from objects.objects import *
+from objects.objects import node_name_to_obj
 from pyQT_widgets.Q_object_combo_box import QObjectComboBox
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
-        QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView)
+from PyQt5.QtWidgets import (
+                             QGridLayout, 
+                             QPushButton, 
+                             QWidget, 
+                             QLabel, 
+                             QLineEdit
+                             )
 
 class MultipleNodes(QWidget):  
 
@@ -61,41 +66,3 @@ class MultipleNodes(QWidget):
         self.view.draw_objects(*self.network.multiple_nodes(nb_nodes, subtype))
         self.close()
         
-class MultipleLinks(QWidget):  
-
-    @update_paths(True)
-    def __init__(self, nodes, controller):
-        super().__init__()
-        self.controller = controller
-        self.sources = self.view.get_obj(nodes)
-        self.setWindowTitle('Multiple links')
-        
-        link_type = QLabel('Type of link')
-        self.link_subtype_list = QComboBox()
-        self.link_subtype_list.addItems(link_name_to_obj)
-        
-        destinations = QLabel('Destination nodes')
-        self.destination_list = QListWidget()
-        self.destination_list.addItems(map(str, self.network.nodes.values()))
-        self.destination_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        
-        confirmation_button = QPushButton()
-        confirmation_button.setText('OK')
-        confirmation_button.clicked.connect(self.create_links)
-        
-        cancel_button = QPushButton()
-        cancel_button.setText('Cancel')
-        
-        layout = QGridLayout()
-        layout.addWidget(link_type, 0, 0, 1, 2)
-        layout.addWidget(self.link_subtype_list, 1, 0, 1, 2)
-        layout.addWidget(destinations, 2, 0, 1, 2)
-        layout.addWidget(self.destination_list, 3, 0, 1, 2)
-        layout.addWidget(confirmation_button, 4, 0, 1, 1)
-        layout.addWidget(cancel_button, 4, 1, 1, 1)
-        self.setLayout(layout)
-        
-    def create_links(self):
-        selection = map(lambda s: s.text(), self.destination_list.selectedItems())
-        destinations = set(self.network.convert_nodes(selection))
-        self.view.draw_objects(*self.network.multiple_links(self.sources, destinations))

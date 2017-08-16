@@ -400,8 +400,3 @@ class OSPF_Management(ASManagementWithArea, IPManagement):
             exit_asbr = self.network.pn['node'][self.exit_asbr.get()]
             self.AS.exit_point = exit_asbr
         self.withdraw()
-        
-class BGP_Management(ASManagementWithArea):
-    
-    def __init__(self, *args):
-        super().__init__(*args)
