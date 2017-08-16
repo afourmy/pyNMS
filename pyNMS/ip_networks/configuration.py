@@ -13,7 +13,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from miscellaneous.decorators import update_paths
-from PyQt5.QtWidgets import QWidget, QTextEdit, QGridLayout
+from pyQT_widgets.Q_console_edit import QConsoleEdit
+from PyQt5.QtWidgets import QWidget, QGridLayout
 
 class RouterConfiguration(QWidget):
     
@@ -21,9 +22,9 @@ class RouterConfiguration(QWidget):
     def __init__(self, node, controller):
         super().__init__()
         self.setWindowTitle('Router configuration')
-        self.setMinimumSize(600, 800)
+        self.setMinimumSize(600, 400)
         
-        config_edit = QTextEdit()
+        config_edit = QConsoleEdit()
             
         for conf in self.network.build_router_configuration(node):
             config_edit.insertPlainText(conf + '\n')
@@ -40,7 +41,7 @@ class SwitchConfiguration(QWidget):
         self.setWindowTitle('Switch configuration')
         self.setMinimumSize(500, 600)
         
-        config_edit = QTextEdit()
+        config_edit = QConsoleEdit()
         
         for conf in self.network.build_switch_configuration(node):
             config_edit.insertPlainText(conf + '\n')
