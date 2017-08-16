@@ -84,7 +84,7 @@ class NapalmActions(QWidget):
         self.setLayout(layout)
         
     def update(self):
-        standalone_napalm_update(self.allowed_actions, self.node)
+        standalone_napalm_update(self.allowed_actions(), self.node)
         self.napalm_window.update()
         
     def allowed_actions(self):

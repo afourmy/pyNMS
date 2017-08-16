@@ -18,6 +18,7 @@ from .napalm_configurations import NapalmConfigurations
 from .napalm_general import NapalmGeneral
 from .napalm_actions import NapalmActions
 from .napalm_logs import NapalmLogs
+from .napalm_troubleshoot import NapalmTroubleshoot
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget, QTextEdit)
@@ -49,6 +50,10 @@ class NapalmWindow(QTabWidget):
         # 5th tab: actions (commit, discard, and load)
         actions_frame = NapalmActions(self, node, controller)
         self.addTab(actions_frame, 'Actions')
+        
+        # 6th tab: troubleshoot (ping, traceroute, route to)
+        troubleshoot_frame = NapalmTroubleshoot(self, node)
+        self.addTab(troubleshoot_frame, 'Troubleshoot')
         
     def closeEvent(self, _):
         candidate = self.configurations_frame.config_edit['candidate'].toPlainText()

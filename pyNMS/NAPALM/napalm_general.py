@@ -14,6 +14,7 @@
 
 from collections import OrderedDict
 from miscellaneous.decorators import update_paths
+from .napalm_functions import str_dict
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget, QTextEdit)
@@ -59,10 +60,7 @@ class NapalmGeneral(QWidget):
         info = self.general_list.currentItem().text()
         
         if info == 'Facts':
-            value = '\n'.join(
-                    '{}: {}'.format(*data)
-                    for data in self.node.napalm_data['Facts'].items()
-                    )
+            value = str_dict(self.node.napalm_data['Facts'])
             self.properties_edit.insertPlainText(value)
         else:
             self.action_list.clear()
@@ -75,12 +73,5 @@ class NapalmGeneral(QWidget):
         if action:
             info = self.general_list.currentItem().text()
             action_dict = self.node.napalm_data['Environment'][info][action.text()]
-            try:
-                value = '\n'.join(
-                        '{}: {}'.format(*data)
-                        for data in action_dict.items()
-                        )
-            except KeyError:
-                value = ''
-            self.properties_edit.insertPlainText(value)
+            self.properties_edit.insertPlainText(str_dict(action_dict))
                         

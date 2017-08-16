@@ -14,7 +14,7 @@
 
 from collections import OrderedDict
 from miscellaneous.decorators import update_paths
-from pprint import pformat
+from .napalm_functions import str_dict
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget, QTextEdit)
@@ -70,13 +70,6 @@ class NapalmInterfaces(QWidget):
             # property2: value2
             
             action, object = action.text(), object.text()
-            try:
-                value = '\n'.join(
-                        '{}: {}'.format(*data)
-                        for data in self.node.napalm_data[action][object].items()
-                        )
-            except KeyError:
-                value = ''
-                
+            value = str_dict(self.node.napalm_data[action][object])                
             self.properties_edit.insertPlainText(value)
                         

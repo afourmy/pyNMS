@@ -114,3 +114,34 @@ def napalm_load_replace_commit(*nodes):
         napalm_update(device, node)
         device.close()
         
+def napalm_ping(node, **parameters):
+    device = open_device(node)
+    result = device.ping(**parameters)
+    device.close()
+    return result
+    
+def napalm_traceroute(node, **parameters):
+    device = open_device(node)
+    result = device.traceroute(**parameters)
+    device.close()
+    return result
+    
+## pretty print the output
+
+# this is a recursive function that pretty print the output based on what it contains.
+# I keep track of how 'deep' the recursion goes to compute the appropriate amount
+# of tabulation required
+def str_dict(input, depth=0):
+    result, tab = '', '\t'*depth
+    if isinstance(input, list):
+        for element in input:
+            result += tab + str_dict(element, depth + 1) + '\n'
+        return result
+    elif isinstance(input, dict):
+        for key, value in input.items():
+            value = str_dict(value, depth + 1)
+            result += '\n{}{}: {}'.format(tab, key, value)
+        return result
+    else:
+        return str(input)
+        
