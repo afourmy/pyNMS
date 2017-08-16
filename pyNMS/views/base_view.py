@@ -18,7 +18,9 @@ class BaseView(QGraphicsView):
     'pseudowire': QPen(QColor(144, 43, 236), 3),
     'BGP peering': QPen(QColor(119, 235, 202), 3),
     'routed traffic': QPen(QColor(3, 139, 132), 3),
-    'static traffic': QPen(QColor(0, 210, 0), 3)
+    'static traffic': QPen(QColor(0, 210, 0), 3),
+    'l3vc': QPen(QColor(100, 100, 100), 3),
+    'l2vc': QPen(QColor(200, 200, 200), 3)
     }
     
     selection_pen = QPen(QColor(Qt.red), 3)

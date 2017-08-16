@@ -1,12 +1,12 @@
 from miscellaneous.decorators import update_paths
 from objects.objects import *
 from os.path import join
+from pyQT_widgets.Q_object_combo_box import QObjectComboBox
 from PyQt5.QtWidgets import (
                              QGridLayout, 
                              QWidget, 
                              QLabel, 
                              QLineEdit, 
-                             QComboBox,
                              QPushButton
                              )
 
@@ -19,7 +19,7 @@ class GraphDimensionWindow(QWidget):
         self.setWindowTitle('Graph generation')
         
         layout = QGridLayout()
-        self.node_subtype_list = QComboBox(self)
+        self.node_subtype_list = QObjectComboBox()
         self.node_subtype_list.addItems(node_name_to_obj)
         
         number_of_nodes = QLabel('Nodes')
@@ -47,7 +47,7 @@ class GraphDimensionWindow(QWidget):
         
     @update_paths(False)
     def confirm(self, _):
-        nodes = int(self.nodes_edit.text())
+        nodes = int(self.nodes_edit.text()) - 1
         subtype = node_name_to_obj[self.node_subtype_list.currentText()]
         if self.graph_type in ('kneser', 'petersen'):
             subset = int(self.subset_edit.text())

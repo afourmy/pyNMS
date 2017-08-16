@@ -22,6 +22,7 @@ class ASManagement(QTabWidget):
     def __init__(self, AS, is_imported):
         super().__init__()
         self.AS = AS
+        self.view = AS.view
         self.network = self.AS.view.network
         self.setMinimumSize(300, 300)
         self.dict_listbox = {}
@@ -260,11 +261,11 @@ class ASManagementWithArea(ASManagement):
     def display_area(self):
         self.area_nodes_list.clear()
         self.area_links_list.clear()
-        self.AS.view.scene.clearSelection()
+        self.view.scene.clearSelection()
         for area in self.area_list.selectedItems():
             area = self.AS.area_factory(area.text())
             for obj in area.pa['node'] | area.pa['link']:
-                obj.gobject.setSelected(True)
+                obj.gobject[self.view].setSelected(True)
             for node in area.pa['node']:
                 self.area_nodes_list.addItem(str(node))
             for link in area.pa['link']:

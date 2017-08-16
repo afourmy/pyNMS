@@ -234,8 +234,8 @@ class MainNetwork(BaseNetwork):
                                      destination = neighbor, 
                                      subtype = vc_type
                                      )
-                        vc("link", node, source_plink)
-                        vc("link", neighbor, destination_plink)
+                        vc('link', node, source_plink)
+                        vc('link', neighbor, destination_plink)
                         # self.view.create_link(vc)
                         
     def vc_creation(self):
@@ -291,7 +291,7 @@ class MainNetwork(BaseNetwork):
         # xE:xx:xx:xx:xx:xx
         
         # allocation of mac_x2 and mac_x6 for interfaces MAC address
-        mac_x2, mac_x6 = "020000000000", "060000000000"
+        mac_x2, mac_x6 = '020000000000', '060000000000'
         for id, plink in enumerate(self.plinks.values(), 1):
             macS, macD = mac_incrementer(mac_x2, id), mac_incrementer(mac_x6, id)
             source_mac = ':'.join(macS[i:i+2] for i in range(0, 12, 2))
@@ -300,7 +300,7 @@ class MainNetwork(BaseNetwork):
             plink.interfaceD.macaddress = destination_mac
             
         # allocation of mac_xA for switches base (hardware) MAC address
-        mac_xA = "0A0000000000"
+        mac_xA = '0A0000000000'
         for id, switch in enumerate(self.ftr('node', 'switch', 1)):
             switch.base_macaddress = mac_incrementer(mac_xA, id)
 
@@ -531,18 +531,7 @@ class MainNetwork(BaseNetwork):
     
     def static_RFT_builder(self, source):
         
-        if source.default_route:
-            nh_node = source.default_route.interface.node
-            source.rt['0.0.0.0'] = {('S*', source.default_route, 
-                                                None, 0, nh_node, None)}
-
         for _, sr in self.gftr(source, 'l3link', 'static route', False):
-            # if the static route next-hop ip is not properly configured, 
-            # we ignore it.
-            try:
-                nh_node = source.default_route.interface.node
-            except KeyError:
-                continue
             source.rt[sr.dst_sntw] = {('S', sr.nh_ip, None, 0, nh_node, None)}
                                                                 
                     
@@ -1002,7 +991,7 @@ class MainNetwork(BaseNetwork):
         
     def ford_fulkerson(self, s, d):
         self.reset_flow()
-        while self.augment_ff(float('inf'), s, d, {n:0 for n in self.pn["node"].values()}):
+        while self.augment_ff(float('inf'), s, d, {n:0 for n in self.pn['node'].values()}):
             pass
         # flow leaving from the source 
         return sum(
@@ -1013,8 +1002,8 @@ class MainNetwork(BaseNetwork):
     ## 2) Edmonds-Karp algorithm
         
     def augment_ek(self, source, destination):
-        res_cap = {n:0 for n in self.pn["node"].values()}
-        augmenting_path = {n: None for n in self.pn["node"].values()}
+        res_cap = {n:0 for n in self.pn['node'].values()}
+        augmenting_path = {n: None for n in self.pn['node'].values()}
         Q = deque()
         Q.append(source)
         augmenting_path[source] = source
@@ -1923,7 +1912,7 @@ class MainNetwork(BaseNetwork):
         for neighbor, adj_plink in self.graph[node.id]['plink']:
             interface = adj_plink('interface', node)
             ip = interface.ipaddress
-            mask = interface.subnetmask
+            mask = interface.subnet_mask
             
             yield 'interface ' + str(interface)
             yield 'ip address {ip} {mask}'.format(ip=ip.ip_addr, mask=ip.mask)
@@ -2041,10 +2030,6 @@ class MainNetwork(BaseNetwork):
                 yield 'is-type ' + level                        
                 yield 'passive-interface Loopback0'
                 yield 'exit'
-                
-        # configuration of the static routes, including the default one
-        if node.default_route:
-            yield 'ip route 0.0.0.0 0.0.0.0 ' + node.default_route
         
     def build_switch_configuration(self, node):
         # initialization
@@ -2081,7 +2066,7 @@ class MainNetwork(BaseNetwork):
                         # finds all VLAN IDs
                         VLAN_IDs = map(lambda vlan: str(vlan.id), adj_plink.AS[AS])
                         # allow them on the trunk
-                        yield 'switchport trunk allowed vlan add ' + ",".join(VLAN_IDs)
+                        yield 'switchport trunk allowed vlan add ' + ','.join(VLAN_IDs)
                         
         yield 'end'
             

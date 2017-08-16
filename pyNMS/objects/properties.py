@@ -28,19 +28,20 @@ class Property(metaclass=MetaProperty):
     conversion_needed = False
     
     def __repr__(self):
-        return str(self.value)
+        return str(self)
         
 class TextProperty(str, Property):
     
-    def __init__(self, value):
-        self.value = str.__init__(value)
-        return self.value
+    def __new__(cls, value):
+        return str.__new__(cls, value)
         
-class IntProperty(int, Property):
+class IntProperty(int):
     
-    def __init__(self, value):
-        self.value = int.__init__(value)
-        return self.value
+    # int is immutable: it cannot be modified after creation
+    # we must use __new__ instead of __init_
+    
+    def __new__(cls, value):
+        return int.__new__(cls, value)
         
 class FloatProperty(float, Property):
     
@@ -71,18 +72,16 @@ class NodeProperty(Property):
     conversion_needed = True
     converter = 'convert_node'
     
-    def __new__(self, node):
-        self.value = node
-        return self.value
+    def __new__(cls, node):
+        return node
         
 class LinkProperty(Property):
     
     conversion_needed = True
     converter = 'convert_link'
     
-    def __new__(self, link):
-        self.value = link
-        return self.value
+    def __new__(cls, link):
+        return link
         
 ## Object properties
 
@@ -91,27 +90,24 @@ class ID(IntProperty):
     name = 'id'
     pretty_name = 'ID'
     
-    def __init__(self, value):
-        super().__init__(value)
+    def __new__(cls, value):
+        return super().__new__(cls, value)
 
 class Name(TextProperty):
     
     name = 'name'
     pretty_name = 'Name'
     
-    def __init__(self, value=''):
-        super().__init__(value)
-        
-    def __repr__(self):
-        return 'Name'
+    def __new__(cls, value=''):
+        return super().__new__(cls, value)
         
 class Subtype(TextProperty):
     
     name = 'subtype'
     pretty_name = 'Subtype'
     
-    def __init__(self, value):
-        super().__init__(value)
+    def __new__(cls, value):
+        return super().__new__(cls, value)
         
 ## Node property
         
@@ -120,24 +116,24 @@ class IP_Address(TextProperty):
     name = 'ip_address'
     pretty_name = 'IP address'
     
-    def __init__(self, value='0.0.0.0'):
-        super().__init__(value)
+    def __new__(cls, value='0.0.0.0'):
+        return super().__new__(cls, value)
         
 class MAC_Address(TextProperty):
     
     name = 'mac_address'
     pretty_name = 'MAC address'
     
-    def __init__(self, value='00:00:00:00:00:00'):
-        super().__init__(value)
+    def __new__(cls, value='00:00:00:00:00:00'):
+        return super().__new__(cls, value)
         
 class SubnetMask(TextProperty):
     
     name = 'subnet_mask'
     pretty_name = 'Subnet Mask'
     
-    def __init__(self, value='255.255.255.255'):
-        super().__init__(value)
+    def __new__(cls, value='255.255.255.255'):
+        return super().__new__(cls, value)
         
 class X(FloatProperty):
     
@@ -226,24 +222,24 @@ class Interface(TextProperty):
     name = 'interface'
     pretty_name = 'Interface'
     
-    def __init__(self, value=''):
-        super().__init__(value)
+    def __new__(cls, value='GE'):
+        return super().__new__(cls, value)
         
 class InterfaceS(TextProperty):
     
     name = 'interfaceS'
     pretty_name = 'Source Interface'
     
-    def __init__(self, value=''):
-        super().__init__(value)
+    def __new__(cls, value=''):
+        return super().__new__(cls, value)
         
 class InterfaceD(TextProperty):
     
     name = 'interfaceD'
     pretty_name = 'Destination Interface'
     
-    def __init__(self, value=''):
-        super().__init__(value)
+    def __new__(cls, value=''):
+        return super().__new__(cls, value)
         
 class Distance(FloatProperty):
     
@@ -258,56 +254,56 @@ class CostSD(IntProperty):
     name = 'costSD'
     pretty_name = 'S -> D cost'
     
-    def __init__(self, value=0):
-        super().__init__(value)
+    def __new__(cls, value=1):
+        return super().__new__(cls, value)
         
 class CostDS(IntProperty):
     
     name = 'costDS'
     pretty_name = 'D -> S cost'
     
-    def __init__(self, value=0):
-        super().__init__(value)
+    def __new__(cls, value=1):
+        return super().__new__(cls, value)
         
 class CapacitySD(IntProperty):
     
     name = 'capacitySD'
     pretty_name = 'S -> D capacity'
     
-    def __init__(self, value=0):
-        super().__init__(value)
+    def __new__(cls, value=3):
+        return super().__new__(cls, value)
         
 class CapacityDS(IntProperty):
     
     name = 'capacityDS'
     pretty_name = 'D -> S capacity'
     
-    def __init__(self, value=0):
-        super().__init__(value)
+    def __new__(cls, value=3):
+        return super().__new__(cls, value)
         
 class TrafficSD(IntProperty):
     
     name = 'trafficSD'
     pretty_name = 'S -> D traffic'
     
-    def __init__(self, value=0):
-        super().__init__(value)
+    def __new__(cls, value=0):
+        return super().__new__(cls, value)
         
 class TrafficDS(IntProperty):
     
     name = 'trafficDS'
     pretty_name = 'D -> S traffic'
     
-    def __init__(self, value=0):
-        super().__init__(value)
+    def __new__(cls, value=0):
+        return super().__new__(cls, value)
         
 class Subnetwork(TextProperty):
     
     name = 'subnetwork'
     pretty_name = 'Subnetwork'
     
-    def __init__(self, value=''):
-        super().__init__(value)
+    def __new__(cls, value=''):
+        return super().__new__(cls, value)
         
 ## VC properties
 
@@ -316,16 +312,16 @@ class LinkS(LinkProperty):
     name = 'linkS'
     pretty_name = 'Source link'
     
-    def __init__(self, value):
-        self.value = value
+    def __new__(cls, value=None):
+        return super().__new__(cls, value)
         
 class LinkD(LinkProperty):
     
     name = 'linkD'
     pretty_name = 'Destination link'
     
-    def __init__(self, value):
-        self.value = value
+    def __new__(cls, value=None):
+        return super().__new__(cls, value)
         
 ## Traffic properties
 
@@ -334,8 +330,8 @@ class Throughput(IntProperty):
     name = 'throughput'
     pretty_name = 'Throughput'
     
-    def __init__(self, value=0):
-        super().__init__(value)
+    def __new__(cls, value=0):
+        return super().__new__(cls, value)
         
 ## Interface properties
 
@@ -360,24 +356,24 @@ class Cost(IntProperty):
     name = 'cost'
     pretty_name = 'Cost'
     
-    def __init__(self, value=0):
-        super().__init__(value)
+    def __new__(cls, value=0):
+        return super().__new__(cls, value)
         
 class Priority(IntProperty):
     
     name = 'priority'
     pretty_name = 'Priority'
     
-    def __init__(self, value=0):
-        super().__init__(value)
+    def __new__(cls, value=0):
+        return super().__new__(cls, value)
         
 class Role(TextProperty):
     
     name = 'role'
     pretty_name = 'Role'
     
-    def __init__(self, value=''):
-        super().__init__(value)
+    def __new__(cls, value=''):
+        return super().__new__(cls, value)
         
 property_classes = {
                     'id': ID,

@@ -841,8 +841,7 @@ class Interface(NDobject):
         
     @initializer
     def __init__(self, **kwargs):
-        # self.node = node
-        # self.link = link
+        self.name = ''
         # AS_properties contains all per-AS properties: interface cost, 
         # interface role. It is a dictionnary which AS name are the keys 
         # (it is easier to store AS names rather than AS itself: if we have the
@@ -853,6 +852,9 @@ class Interface(NDobject):
         
     def __eq__(self, other):
         return self.node == other.node and self.link == other.link
+        
+    def __repr__(self):
+        return self.name
                                             
     def __hash__(self):
         return hash(self.node) + hash(self.link)
@@ -894,8 +896,6 @@ class VirtualConnection(Link):
 
     @initializer
     def __init__(self, **kwargs):
-        self.linkS = None
-        self.linkD = None
         super().__init__()
         
     def __lt__(self, other):

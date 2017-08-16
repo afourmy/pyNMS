@@ -45,11 +45,7 @@ Codes: C - connected, S - static, R - RIP, M - mobile, B - BGP
         
         config_edit.insertPlainText(codes)
         
-        if node.default_route:
-            gateway = 'Gateway of last resort is {gw} to network 0.0.0.0\n\n'\
-                                        .format(gw=node.default_route)
-        else:
-            gateway = 'Gateway of last resort is not set\n\n'
+        gateway = 'Gateway of last resort is not set\n\n'
         config_edit.insertPlainText(gateway)
                 
         list_RT = sorted(node.rt.items(), key=itemgetter(1))
