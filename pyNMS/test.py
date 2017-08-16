@@ -290,7 +290,7 @@ def start_pyNMS_and_import_project(filename):
 #         self.pj.refresh()
 #  
 #     def tearDown(self):
-#         self.ct.destroy()
+#         self.app.quit()
 #  
 #     def test_OSPF(self):
 #         self.assertEqual(len(self.nk.pn['traffic']), 2)
@@ -473,7 +473,7 @@ def start_pyNMS_and_import_project(filename):
 #         pass
 #  
 #     def tearDown(self):
-#         self.ct.destroy()
+#         self.app.quit()
 #         
 #     def test_FullMeshRIP(self):
 #         dimension_window = NetworkDimension('full-mesh', self.ct)
@@ -516,34 +516,34 @@ def start_pyNMS_and_import_project(filename):
 #         troubleshooting = Troubleshooting(router, self.ct)
 #         ping = Ping(router, self.ct)
 #         
-class TestMultipleObjectGeneration(unittest.TestCase):
-     
-    @start_pyNMS
-    def setUp(self):
-        pass
- 
-    def tearDown(self):
-        self.app.quit()
-        
-    def test_ObjectGeneration(self):
-        # we created 10 nodes with the multiple nodes window
-        multiple_nodes = MultipleNodes(0, 0, self.ct)
-        multiple_nodes.nb_nodes_edit.setText(str(10))
-        multiple_nodes.node_subtype_list.setText('Switch')
-        multiple_nodes.create_nodes(_)
-        
-        self.assertEqual(len(self.nk.pn['node']), 10)
-        
-        # we create multiple links from a switch to all other switches
-        for switch in self.nk.nodes.values():
-            break
-            
-        multiple_links = MultipleLinks({switch}, self.ct)
-        multiple_links.destination_list.selectAll()
-        multiple_links.create_links()
-        
-        # there should be 9 links in total
-        self.assertEqual(len(self.nk.pn['plink']), 9)
+# class TestMultipleObjectGeneration(unittest.TestCase):
+#      
+#     @start_pyNMS
+#     def setUp(self):
+#         pass
+#  
+#     def tearDown(self):
+#         self.app.quit()
+#         
+#     def test_ObjectGeneration(self):
+#         # we created 10 nodes with the multiple nodes window
+#         multiple_nodes = MultipleNodes(0, 0, self.ct)
+#         multiple_nodes.nb_nodes_edit.setText(str(10))
+#         multiple_nodes.node_subtype_list.setText('Switch')
+#         multiple_nodes.create_nodes(_)
+#         
+#         self.assertEqual(len(self.nk.pn['node']), 10)
+#         
+#         # we create multiple links from a switch to all other switches
+#         for switch in self.nk.nodes.values():
+#             break
+#             
+#         multiple_links = MultipleLinks({switch}, self.ct)
+#         multiple_links.destination_list.selectAll()
+#         multiple_links.create_links()
+#         
+#         # there should be 9 links in total
+#         self.assertEqual(len(self.nk.pn['plink']), 9)
         
 if str.__eq__(__name__, '__main__'):
     unittest.main(warnings='ignore')  

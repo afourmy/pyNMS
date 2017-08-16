@@ -13,7 +13,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .base_network import BaseNetwork
-from autonomous_system import AS
+from autonomous_system.AS import AS_class
 from objects import objects
 import random
 import re
@@ -33,12 +33,6 @@ try:
     from cvxopt import matrix, glpk, solvers
 except ImportError:
     warnings.warn('Package missing: linear programming functions will fail')
-try:
-    from Exscript import Host, Account
-    from Exscript.protocols import SSH2
-    from Exscript.util.start import start
-except ImportError:
-    warnings.warn('Exscript missing: scripting function will fail')
 
 class MainNetwork(BaseNetwork):
     
@@ -133,14 +127,14 @@ class MainNetwork(BaseNetwork):
             name = 'AS' + str(self.cpt_AS)
         if name not in self.pnAS:
             # creation of the AS
-            self.pnAS[name] = AS.AS_class[AS_type](
-                                                    self.view,
-                                                    name, 
-                                                    id,
-                                                    plinks, 
-                                                    nodes,
-                                                    imp
-                                                    )
+            self.pnAS[name] = AS_class[AS_type](
+                                                self.view,
+                                                name, 
+                                                id,
+                                                plinks, 
+                                                nodes,
+                                                imp
+                                                )
             # increase the AS counter by one
             self.cpt_AS += 1
         return self.pnAS[name]
@@ -2090,27 +2084,4 @@ class MainNetwork(BaseNetwork):
                         yield 'switchport trunk allowed vlan add ' + ",".join(VLAN_IDs)
                         
         yield 'end'
-
-    def push_configuration(self, *nodes):
-        self.account = Account('cisco', 'cisco')
-        
-        hosts = []
-        for node in nodes:
-            host = Host('ssh://{}'.format(node.ipaddress))
-            host.set_account(self.account)
-            hosts.append(host)
-            self.ip_to_instructions = {}
-            configuration = self.build_router_configuration(node)
-            self.ip_to_instructions[node.ipaddress] = configuration
-
-        # send the script
-        conn = SSH2()
-        start([self.account], hosts, self.execute_script, max_threads=10)
-        
-    def execute_script(self, job, host, conn):
-        conn.execute('terminal length 0')
-        conn.send("enable\r")
-        conn.app_authorize(self.account)
-        for command in self.ip_to_instructions[host.address]:
-            conn.execute(command)
             
