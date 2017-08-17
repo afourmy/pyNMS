@@ -12,6 +12,7 @@ Contact us: contact@pynms.fr
 
 The following modules are used in pyNMS:
 ```
+pyQT (GUI framework)
 shapely, shapefile, pyproj (mandatory: used for shapefile import)
 xlrd, xlwt, yaml (desirable: used for saving projects)
 numpy, cvxopt (optional: used for linear programming)
@@ -53,10 +54,10 @@ Projects can be imported from / exported to an Excel or a YAML file. This allows
 
 ## AS Management
 
-Autonomous systems can be created to keep track of which devices runs which protocol (OSPF, IS-IS, BGP, etc).
+Autonomous systems can be created to keep track of which device runs which protocol (OSPF, IS-IS, BGP, etc).
 Autonomous systems can be divided into multiple areas.
 
-![AS Management](https://github.com/mintoo/networks/raw/master/Readme/domain_management.PNG)
+![AS Management](https://github.com/mintoo/networks/raw/master/Readme/AS_management.png)
 
 ## Automatic device configuration
 
