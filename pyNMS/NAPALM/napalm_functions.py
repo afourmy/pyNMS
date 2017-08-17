@@ -14,7 +14,6 @@
 
 from collections import OrderedDict, defaultdict
 from napalm_base import get_network_driver
-from threading import Thread
 
 napalm_actions = OrderedDict([
 ('ARP table', 'get_arp_table'),

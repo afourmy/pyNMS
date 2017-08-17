@@ -14,8 +14,13 @@
 
 from miscellaneous.decorators import update_paths
 from .napalm_functions import *
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
-        QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget, QTextEdit)
+from PyQt5.QtWidgets import (
+                             QCheckBox,
+                             QGridLayout, 
+                             QGroupBox,
+                             QPushButton, 
+                             QWidget
+                             )
 
 class NapalmActions(QWidget):
     
@@ -27,7 +32,9 @@ class NapalmActions(QWidget):
     'Configuration': {'Configuration'},
     'Logging': {'Logging'},
     'NTP': {'NTP servers', 'NTP statistics'},
-    'SNMP': {'SNMP'}
+    'SNMP': {'SNMP'},
+    'BGP': set(),
+    'Probes': set()
     }
 
     @update_paths
@@ -49,7 +56,7 @@ class NapalmActions(QWidget):
         napalm_update = QPushButton(self)
         napalm_update.setText('Update')
         napalm_update.clicked.connect(self.update)
-        update_groupbox_layout.addWidget(napalm_update, 4, 0, 1, 2)
+        update_groupbox_layout.addWidget(napalm_update, 5, 0, 1, 2)
         
         update_groupbox.setLayout(update_groupbox_layout)
         

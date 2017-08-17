@@ -20,8 +20,7 @@ from .napalm_actions import NapalmActions
 from .napalm_logs import NapalmLogs
 from .napalm_troubleshoot import NapalmTroubleshoot
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
-        QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget, QTextEdit)
+from PyQt5.QtWidgets import QTabWidget
 
 class NapalmWindow(QTabWidget):
     

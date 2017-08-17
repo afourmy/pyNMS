@@ -15,9 +15,13 @@
 from collections import OrderedDict
 from miscellaneous.decorators import update_paths
 from .napalm_functions import str_dict
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
-        QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView, QTabWidget, QTextEdit)
+from pyQT_widgets.Q_console_edit import QConsoleEdit
+from PyQt5.QtWidgets import (
+                             QGridLayout, 
+                             QLabel, 
+                             QListWidget,
+                             QWidget
+                             )
 
 class NapalmInterfaces(QWidget):
     
@@ -44,7 +48,7 @@ class NapalmInterfaces(QWidget):
         self.action_list.itemSelectionChanged.connect(self.text_update)
         self.action_list.addItems(self.napalm_actions)
         
-        self.properties_edit = QTextEdit()
+        self.properties_edit = QConsoleEdit()
         self.properties_edit.setMinimumSize(300, 300)
 
         layout = QGridLayout()
