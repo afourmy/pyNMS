@@ -16,7 +16,6 @@ from miscellaneous.decorators import update_paths
 from pyQT_widgets.Q_console_edit import QConsoleEdit
 from PyQt5.QtWidgets import QTabWidget
 
-
 class NapalmConfigurations(QTabWidget):
 
     @update_paths

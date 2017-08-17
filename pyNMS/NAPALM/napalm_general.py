@@ -56,8 +56,9 @@ class NapalmGeneral(QWidget):
         
     def update(self):
         self.general_list.clear()
-        infos = ['Facts'] + list(self.node.napalm_data['Environment'])
-        self.general_list.addItems(infos)
+        if 'Environment' in self.node.napalm_data:
+            infos = ['Facts'] + list(self.node.napalm_data['Environment'])
+            self.general_list.addItems(infos)
             
     def info_update(self):
         self.properties_edit.clear()

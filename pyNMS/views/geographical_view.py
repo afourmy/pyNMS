@@ -12,7 +12,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import warnings
 from collections import OrderedDict
 from os.path import join
 from .base_view import BaseView
@@ -22,7 +21,8 @@ try:
     import shapely.geometry
     from pyproj import Proj
 except ImportError:
-    warnings.warn('SHP librairies missing: map import disabled')
+    import warnings
+    warnings.warn('SHP librairies missing')
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import (
@@ -95,7 +95,7 @@ class GeographicalView(BaseView):
 class Map():
 
     projections = OrderedDict([
-    ('spherical', Proj('+proj=ortho +lat_0=41 +lon_0=-87')),
+    ('spherical', Proj('+proj=ortho +lat_0=48 +lon_0=2')),
     ('mercator', Proj(init='epsg:3395')),
     ('wgs84', Proj(init='epsg:3857')),
     ('3035', Proj("+init=EPSG:3035")),
@@ -105,7 +105,7 @@ class Map():
     def __init__(self, view):
         self.view = view
         self.proj = 'spherical'
-        self.ratio, self.offset = 1/3000, (0, 0)
+        self.ratio, self.offset = 1/100, (0, 0)
         self.shapefile = join(self.view.controller.path_shapefiles, 'World countries.shp')
         self.display = True
         
@@ -129,7 +129,7 @@ class Map():
     def draw_water(self):
         if self.proj == 'spherical':
             # draw the planet
-            cx, cy = self.to_canvas_coordinates(-87, 41)
+            cx, cy = self.to_canvas_coordinates(2, 48)
             R = 6371000*self.ratio
             earth_water = QtWidgets.QGraphicsEllipseItem(cx - R, cy - R, 2*R, 2*R)
             earth_water.setZValue(0)

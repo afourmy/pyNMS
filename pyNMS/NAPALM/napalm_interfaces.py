@@ -61,7 +61,8 @@ class NapalmInterfaces(QWidget):
         
     def update(self):
         self.object_list.clear()
-        self.object_list.addItems(self.node.napalm_data['Interfaces'])
+        if 'Interfaces' in self.node.napalm_data:
+            self.object_list.addItems(self.node.napalm_data['Interfaces'])
             
     def text_update(self):
         action = self.action_list.currentItem()

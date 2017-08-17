@@ -12,7 +12,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from napalm_base import get_network_driver
 from .napalm_interfaces import NapalmInterfaces
 from .napalm_configurations import NapalmConfigurations
 from .napalm_general import NapalmGeneral
@@ -28,7 +27,7 @@ class NapalmWindow(QTabWidget):
         super().__init__()
         self.node = node
         self.setMinimumSize(1100, 700)
-        self.setWindowTitle('NAPALM: device information')
+        self.setWindowTitle('NAPALM')
 
         # 1st tab: general information (facts + environment)
         self.general_frame = NapalmGeneral(node, controller)

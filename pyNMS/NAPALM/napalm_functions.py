@@ -13,7 +13,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from collections import OrderedDict, defaultdict
-from napalm_base import get_network_driver
+try:
+    from napalm_base import get_network_driver
+except ImportError:
+    import warnings
+    warnings.warn('napalm not installed')
 
 napalm_actions = OrderedDict([
 ('ARP table', 'get_arp_table'),
@@ -69,14 +73,14 @@ def napalm_commit(*nodes):
     for node in nodes:
         device = open_device(node)
         device.commit_config()
-        napalm_update(device, node)
+        napalm_update(device, node, {'Configuration'})
         device.close()
         
 def napalm_discard(*nodes):
     for node in nodes:
         device = open_device(node)
         device.discard_config()
-        napalm_update(device, node)
+        napalm_update(device, node, {'Configuration'})
         device.close()
         
 def napalm_load_merge(*nodes):
@@ -84,7 +88,7 @@ def napalm_load_merge(*nodes):
         device = open_device(node)
         config = node.napalm_data['Configuration']['candidate']
         device.load_merge_candidate(config=config)
-        napalm_update(device, node)
+        napalm_update(device, node, {'Configuration'})
         device.close()
         
 def napalm_load_merge_commit(*nodes):
@@ -93,7 +97,7 @@ def napalm_load_merge_commit(*nodes):
         config = node.napalm_data['Configuration']['candidate']
         device.load_merge_candidate(config=config)
         device.commit_config()
-        napalm_update(device, node)
+        napalm_update(device, node, {'Configuration'})
         device.close()
         
 def napalm_load_replace(*nodes):
@@ -101,7 +105,7 @@ def napalm_load_replace(*nodes):
         device = open_device(node)
         config = node.napalm_data['Configuration']['candidate']
         device.load_replace_candidate(config=config)
-        napalm_update(device, node)
+        napalm_update(device, node, {'Configuration'})
         device.close()
         
 def napalm_load_replace_commit(*nodes):
@@ -110,7 +114,14 @@ def napalm_load_replace_commit(*nodes):
         config = node.napalm_data['Configuration']['candidate']
         device.load_replace_candidate(config=config)
         device.commit_config()
-        napalm_update(device, node)
+        napalm_update(device, node, {'Configuration'})
+        device.close()
+        
+def napalm_rollback(*nodes):
+    for node in nodes:
+        device = open_device(node)
+        device.rollback()
+        napalm_update(device, node, {'Configuration'})
         device.close()
         
 def napalm_ping(node, **parameters):

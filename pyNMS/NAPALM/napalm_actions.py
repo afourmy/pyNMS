@@ -63,26 +63,29 @@ class NapalmActions(QWidget):
         config_groupbox = QGroupBox('Configuration')
         config_groupbox_layout = QGridLayout(config_groupbox)
         
-        napalm_commit = QPushButton()
-        napalm_commit.setText('Commit')
+        napalm_commit = QPushButton('Commit')
         napalm_commit.clicked.connect(self.commit)
         
-        napalm_discard = QPushButton()
-        napalm_discard.setText('Discard')
+        napalm_discard = QPushButton('Discard')
         napalm_discard.clicked.connect(self.discard)
         
-        napalm_load_merge = QPushButton()
-        napalm_load_merge.setText('Load merge candidate')
+        self.automatic_commit = QCheckBox('Commit after loading candidate')
+
+        napalm_load_merge = QPushButton('Load merge candidate')
         napalm_load_merge.clicked.connect(self.load_merge)
         
-        napalm_load_replace = QPushButton()
-        napalm_load_replace.setText('Load replace candidate')
+        napalm_load_replace = QPushButton('Load replace candidate')
         napalm_load_replace.clicked.connect(self.load_replace)
+        
+        napalm_rollback = QPushButton('Rollback')
+        napalm_rollback.clicked.connect(self.rollback)
         
         config_groupbox_layout.addWidget(napalm_commit, 0, 0)
         config_groupbox_layout.addWidget(napalm_discard, 0, 1)
-        config_groupbox_layout.addWidget(napalm_load_merge, 1, 0)
-        config_groupbox_layout.addWidget(napalm_load_replace, 1, 1)
+        config_groupbox_layout.addWidget(self.automatic_commit, 1, 0, 1, 2)
+        config_groupbox_layout.addWidget(napalm_load_merge, 2, 0)
+        config_groupbox_layout.addWidget(napalm_load_replace, 2, 1)
+        config_groupbox_layout.addWidget(napalm_rollback, 3, 0, 1, 2)
         config_groupbox.setLayout(config_groupbox_layout)
         
         layout = QGridLayout()
@@ -111,12 +114,22 @@ class NapalmActions(QWidget):
         
     def load_merge(self):
         self.napalm_window.closeEvent(None)
-        napalm_load_merge_commit(self.node)
+        if self.automatic_commit.isChecked():
+            napalm_load_merge_commit(self.node)
+        else:
+            napalm_load_merge(self.node)
         self.napalm_window.configurations_frame.update()
         
     def load_replace(self):
         self.napalm_window.closeEvent(None)
-        napalm_load_replace_commit(self.node)
+        if self.automatic_commit.isChecked():
+            napalm_load_replace_commit(self.node)
+        else:
+            napalm_load_replace(self.node)
+        self.napalm_window.configurations_frame.update()
+        
+    def rollback(self):
+        napalm_rollback(self.node)
         self.napalm_window.configurations_frame.update()
 
                         
