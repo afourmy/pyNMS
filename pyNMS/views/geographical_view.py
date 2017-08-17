@@ -105,8 +105,8 @@ class Map():
     def __init__(self, view):
         self.view = view
         self.proj = 'spherical'
-        self.ratio, self.offset = 1/500, (0, 0)
-        self.shapefile = join(self.view.controller.path_shapefiles, 'World countries (low resolution).shp')
+        self.ratio, self.offset = 1/300, (0, 0)
+        self.shapefile = join(self.view.controller.path_shapefiles, 'World countries.shp')
         self.display = True
         
         # brush for water and lands

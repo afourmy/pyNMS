@@ -2,22 +2,20 @@
 
 pyNMS is a network design and planning software.
 
+![pyNMS](https://github.com/mintoo/networks/raw/master/Readme/pynms.PNG)
+
 [Visit our website](http://www.pynms.fr)
 
 Contact us: contact@pynms.fr
-
-Watch a quick demo: on the [website](http://www.pynms.fr) 
 
 # Getting started
 
 The following modules are used in pyNMS:
 ```
-PIL / Pillow (mandatory)
-xlrd, xlwt (desirable: used for saving projects)
-shapely, shapefile, pyproj (optional: used for shapefile import)
+shapely, shapefile, pyproj (mandatory: used for shapefile import)
+xlrd, xlwt, yaml (desirable: used for saving projects)
 numpy, cvxopt (optional: used for linear programming)
-Exscript (optional: used for network automation)
-Paramiko (optional: used for emulating SDN networks)
+NAPALM (optional: used for network automation)
 ```
 
 In order to use pyNMS, you need to run **main.py**.
@@ -31,40 +29,38 @@ python main.py
 
 Maps can be displayed in pyNMS to draw all network
 devices at their exact location (longitude and latitude),
-using the linear, mercator or spheric projections.
-This is done by importing shapefiles, a data format
-used in Geographic Information Systems (GIS) that contains geographical coordinates.
+using the mercator or azimuthal orthographic projections.
 
-![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/GIS_pyNMS.PNG)
+![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/gis_visualization.PNG)
 
 ## Network algorithmic visualization
 
 GIS visualization this can only be done if we have all GPS coordinates: it is not always the case.
-Another to visualize a network is use graph drawing algorithms to display the network.
+Another way to visualize a network is use graph drawing algorithms to display the network.
 Two spring-layout algorithms are implemented: 
 - Eades algorithm
 - Fructherman-Reingold algorithm
 
-On a 4-layer deep tree which nodes are initially drawn at a random position on the canvas, the algorithm converges within a few milliseconds to a visually pleasing tree shape.
+On a 4-layer deep tree, the algorithm converges within a few milliseconds to a visually pleasing tree shape.
 
 ![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/visualization.PNG)
 
 ## Saving and import/export
 
-Projects can be imported from / exported to an excel or a csv file. This allows to import an existing network into pyNMS.
+Projects can be imported from / exported to an Excel or a YAML file. This allows to import an existing network into pyNMS.
 
 ![Excel project](https://github.com/mintoo/networks/raw/master/Readme/xls_import.PNG)
 
 ## AS Management
 
-Nodes and trunks can be added to an AS by selecting them on the canvas, with the right-click menu. The AS topology is displayed in the "AS Management" panel. This window is also used to create and manage areas.
+Autonomous systems can be created to keep track of which devices runs which protocol (OSPF, IS-IS, BGP, etc).
+Autonomous systems can be divided into multiple areas.
 
 ![AS Management](https://github.com/mintoo/networks/raw/master/Readme/domain_management.PNG)
 
 ## Automatic device configuration
 
-After an AS is created, pyNMS shows all Cisco commands required to properly configure the protocol on the device. 
-This information can in turn be used along with network emulator like GNS3 to learn how to configure a network.
+pyNMS shows all Cisco commands required to properly configure a protocol on the device. 
 
 ![Automatic configuration](https://github.com/mintoo/networks/raw/master/Readme/config.PNG)
 
@@ -97,23 +93,15 @@ pyNMS also provides an help with troubleshooting. You can right-click on a route
 
 ![Troubleshooting](https://github.com/mintoo/networks/raw/master/Readme/troubleshooting.png)
 
-## 3D display
-
-There are 3 layers in pyNMS: the physical layer (Ethernet and WDM fiber trunks), the logical layer ("routes", i.e logical links), and the traffic layer (traffic links).
-In order to enhance network visualization, it is possible to have a per-layer view of the network.
-Nodes are drawn at all 3 layers, and connected with a dashed line to further improve the display.
-
-![AS Management](https://github.com/mintoo/networks/raw/master/Readme/3D-display.PNG)
-
 ## Capacity planning 
 
-Once traffic links are created, they are routed on the trunks. The resulting traffic flow is computed for all for all interfaces. In the following example, the router load-balance the traffic on four equal-cost paths.
+Once traffic links are created, they are routed on the physical links. The resulting traffic flow is computed for all for all interfaces. In the following example, the router load-balance the traffic on four equal-cost paths.
 
 ![Capacity planning](https://github.com/mintoo/networks/raw/master/Readme/capacity_planning.PNG)
 
 ## Failure simulation
 
-It is possible to simulate the failure of one or several devices and see how it impacts the network routing and dimensioning. A trunk can be set "in failure" from the right-click menu.
+It is possible to simulate the failure of one or several devices and see how it impacts the network routing and dimensioning. A link can be set "in failure" from the right-click menu.
 For the failure to be considered, it is required to trigger the update of all routing tables, then route the traffic flows again. 
 On the same example as above, we see that the router is now load-balancing the traffic on two paths only, and the total traffic flow is computed accordingly.
 

@@ -21,10 +21,11 @@ from objects.properties import property_classes
 try:
     import xlrd
     import xlwt
+    from yaml import dump
 except ImportError:
     warnings.warn('Excel libraries missing: excel import/export disabled')
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QFileDialog
-from yaml import dump
+
 
 class Project(QWidget):
     
