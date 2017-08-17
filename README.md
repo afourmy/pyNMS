@@ -2,7 +2,7 @@
 
 pyNMS is a network design and planning software.
 
-![pyNMS](https://github.com/mintoo/networks/raw/master/Readme/pynms.PNG)
+![pyNMS](https://github.com/mintoo/networks/raw/master/Readme/pynms.png)
 
 [Visit our website](http://www.pynms.fr)
 
@@ -31,7 +31,7 @@ Maps can be displayed in pyNMS to draw all network
 devices at their exact location (longitude and latitude),
 using the mercator or azimuthal orthographic projections.
 
-![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/gis_visualization.PNG)
+![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/gis_visualization.png)
 
 ## Network algorithmic visualization
 
