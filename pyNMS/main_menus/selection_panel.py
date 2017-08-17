@@ -34,7 +34,7 @@ class SelectionPanel(QGroupBox):
             layout.addWidget(checkbox, index, 1, 1, 1)
         self.setLayout(layout)
         
-    @update_paths(False)
+    @update_paths
     def change_selection(self, mode):
         can_be_selected = not self.view.selection[mode]
         for item in {

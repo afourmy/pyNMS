@@ -13,7 +13,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .base_menu import BaseMenu
-from graph_generation.multiple_objects import MultipleLinks
 from objects.object_management_window import ObjectManagementWindow
 from objects.property_changer import PropertyChanger
 from PyQt5.QtWidgets import QMenu, QAction
@@ -37,7 +36,6 @@ class SelectionMenu(BaseMenu):
         self.one_object = len(self.items) == 1
         self.one_node = len(self.gnodes) == 1
         self.one_link = len(self.glinks) == 1
-        print(set(map(lambda obj: obj.subtype, self.objects)))
         self.one_subtype = len(set(map(lambda obj: obj.subtype, self.objects))) == 1
         
         # exactly one object: property window 

@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
 
 class NapalmConfigurations(QTabWidget):
 
-    @update_paths(True)
+    @update_paths
     def __init__(self, node, controller):
         super().__init__()
         self.node = node

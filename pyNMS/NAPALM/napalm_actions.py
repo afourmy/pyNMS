@@ -30,7 +30,7 @@ class NapalmActions(QWidget):
     'SNMP': {'SNMP'}
     }
 
-    @update_paths(True)
+    @update_paths
     def __init__(self, napalm_window, node, controller):
         super().__init__()
         self.node = node

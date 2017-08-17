@@ -56,7 +56,7 @@ class NodeCreationPanel(QGroupBox):
 
     dragEnterEvent = dragMoveEvent
 
-    @update_paths(False)
+    @update_paths
     def mousePressEvent(self, event):
         # retrieve the label 
         child = self.childAt(event.pos())

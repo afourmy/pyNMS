@@ -40,7 +40,7 @@ class NodeDisplayPanel(QGroupBox):
             self.buttons[subtype] = button
             layout.addWidget(button, index // 4, index % 4, 1, 1)
             
-    @update_paths(False)
+    @update_paths
     def change_display(self, subtype):
         self.view.per_subtype_display(subtype)        
             

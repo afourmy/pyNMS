@@ -20,7 +20,7 @@ class SiteOperations(QWidget):
     
     # add objects to a site, or remove objects from a site
     
-    @update_paths(True)
+    @update_paths
     def __init__(self, mode, objects, sites, controller):
         super().__init__()
         

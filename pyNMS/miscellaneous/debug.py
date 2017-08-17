@@ -53,7 +53,7 @@ class DebugWindow(QWidget):
         self.debug_result.clear()
         self.debug_result.insertPlainText(query_result)
         
-    @update_paths(False)
+    @update_paths
     def debug(self, _):
         self.debug_result.clear()
         value = self.debug_list.currentText()

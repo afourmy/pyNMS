@@ -74,7 +74,7 @@ class SearchWindow(QWidget):
         self.property_list.clear()
         self.property_list.addItems(properties)
         
-    @update_paths(False)
+    @update_paths
     def search(self, _):
         self.view.scene.clearSelection()
         subtype = name_to_obj[self.subtypes_list.currentText()]

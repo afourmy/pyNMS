@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import (
                 
 class PropertyChanger(QWidget):
                                  
-    @update_paths(True)
+    @update_paths
     def __init__(self, objects, type, controller):
         super().__init__()
         

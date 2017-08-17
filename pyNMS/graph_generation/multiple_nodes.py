@@ -59,7 +59,7 @@ class MultipleNodes(QWidget):
         layout.addWidget(cancel_button, 2, 1, 1, 1)
         self.setLayout(layout)
         
-    @update_paths(False)
+    @update_paths
     def create_nodes(self, _):
         nb_nodes = int(self.nb_nodes_edit.text())
         subtype = node_name_to_obj[self.node_subtype_list.currentText()]

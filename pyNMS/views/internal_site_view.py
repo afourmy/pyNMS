@@ -66,7 +66,7 @@ class InternalSiteView(NetworkView):
                 for glink in self.attached_glinks(item):
                     self.remove_from_site(glink.link)
         
-    @update_paths(False)
+    @update_paths
     def dropEvent(self, event):
         pos = self.mapToScene(event.pos())
         if event.mimeData().hasFormat('application/x-dnditemdata'):

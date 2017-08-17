@@ -17,7 +17,7 @@ from miscellaneous.decorators import update_paths
                                 
 class BaseMenu(QMenu):
     
-    @update_paths(True)
+    @update_paths
     def __init__(self, controller):
         super().__init__()
         

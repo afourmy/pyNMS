@@ -45,6 +45,6 @@ class LinkDisplayPanel(QGroupBox):
             button.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
             layout.addWidget(button, index // 2, index % 2, 1, 1)
             
-    @update_paths(False)
+    @update_paths
     def change_display(self, subtype):
         self.view.per_subtype_display(subtype)   

@@ -27,7 +27,7 @@ class NapalmInterfaces(QWidget):
     'Interfaces counters',
     )
 
-    @update_paths(True)
+    @update_paths
     def __init__(self, node, controller):
         super().__init__()
         self.node = node

@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
 
 class ASCreation(QWidget):  
 
-    @update_paths(True)
+    @update_paths
     def __init__(self, nodes, links, controller):
         super().__init__()
         self.controller = controller
@@ -82,7 +82,7 @@ class ASOperation(QWidget):
     # - remove objects from an AS
     # - enter the AS management window
     
-    @update_paths(True)
+    @update_paths
     def __init__(self, mode, obj, AS=set(), controller=None):
         super().__init__()
         

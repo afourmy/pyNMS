@@ -26,7 +26,7 @@ class InterfaceWindow(QWidget):
                             MAC_Address
                             )
                 
-    @update_paths(True)
+    @update_paths
     def __init__(self, interface, controller):
         super().__init__()
         self.interface = interface

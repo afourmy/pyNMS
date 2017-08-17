@@ -45,7 +45,7 @@ class AreaOperation(QWidget):
     # - add objects to an area
     # - remove objects from an area
     
-    @update_paths(True)
+    @update_paths
     def __init__(self, mode, obj, AS=set(), controller=None):
         super().__init__()
         

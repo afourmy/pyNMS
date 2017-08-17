@@ -50,7 +50,7 @@ class GISParameterWindow(QWidget):
         layout.addWidget(draw_map_button, 2, 0, 1, 2)
         self.setLayout(layout)
         
-    @update_paths(False)
+    @update_paths
     def redraw_map(self, _):
         self.view.world_map.ratio = float(self.ratio_edit.text())
         self.view.world_map.proj = self.projection_list.currentText()

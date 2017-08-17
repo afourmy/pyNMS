@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import QWidget, QGridLayout
 
 class RouterConfiguration(QWidget):
     
-    @update_paths(True)
+    @update_paths
     def __init__(self, node, controller):
         super().__init__()
         self.setWindowTitle('Router configuration')
@@ -35,7 +35,7 @@ class RouterConfiguration(QWidget):
         
 class SwitchConfiguration(QWidget):
     
-    @update_paths(True)
+    @update_paths
     def __init__(self, node, controller):
         super().__init__()
         self.setWindowTitle('Switch configuration')

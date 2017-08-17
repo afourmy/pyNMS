@@ -27,11 +27,11 @@ AD = {
 
 class RoutingTable(QWidget):
     
-    @update_paths(True)
+    @update_paths
     def __init__(self, node, controller):
         super().__init__()
         self.setWindowTitle('Switching table')
-        self.setMinimumSize(600, 800)
+        self.setMinimumSize(1000, 800)
         
         config_edit = QConsoleEdit()
 

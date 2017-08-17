@@ -3,7 +3,6 @@ from .network_view import NetworkView
 from graphical_objects.graphical_network_node import GraphicalNetworkNode
 from graphical_objects.graphical_link import GraphicalLink
 from math import sqrt
-from miscellaneous.decorators import overrider
 from networks import main_network
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *

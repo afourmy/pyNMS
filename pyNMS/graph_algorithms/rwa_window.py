@@ -55,12 +55,12 @@ class RWAWindow(QWidget):
         layout.addWidget(button_compute, 3, 0, 1, 2)
         self.setLayout(layout)
         
-    @update_paths(False)
+    @update_paths
     def transform_graph(self, _):
         name = self.scenario_name_edit.text()
         self.network.RWA_graph_transformation(name)
 
-    @update_paths(False)
+    @update_paths
     def compute(self, _):
         algorithm = self.algorithm_list.currentText()
         if algorithm == 'Linear programming':

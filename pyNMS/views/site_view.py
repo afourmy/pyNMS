@@ -14,7 +14,6 @@
 
 from graphical_objects.graphical_site import GraphicalSite
 from .geographical_view import GeographicalView
-from miscellaneous.decorators import overrider
 from networks.site_network import SiteNetwork
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *

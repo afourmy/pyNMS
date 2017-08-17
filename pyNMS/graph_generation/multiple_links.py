@@ -27,7 +27,7 @@ from PyQt5.QtWidgets import (
         
 class MultipleLinks(QWidget):  
 
-    @update_paths(True)
+    @update_paths
     def __init__(self, nodes, controller):
         super().__init__()
         self.controller = controller

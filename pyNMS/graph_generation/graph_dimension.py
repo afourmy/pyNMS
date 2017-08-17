@@ -45,7 +45,7 @@ class GraphDimensionWindow(QWidget):
         layout.addWidget(confirmation_button, 3, 0, 1, 2)
         self.setLayout(layout)
         
-    @update_paths(False)
+    @update_paths
     def confirm(self, _):
         nodes = int(self.nodes_edit.text()) - 1
         subtype = node_name_to_obj[self.node_subtype_list.currentText()]

@@ -19,7 +19,7 @@ from PyQt5.QtWidgets import QWidget, QGridLayout
 
 class SwitchingTable(QWidget):
     
-    @update_paths(True)
+    @update_paths
     def __init__(self, node, controller):
         super().__init__()
         self.setWindowTitle('Switching table')

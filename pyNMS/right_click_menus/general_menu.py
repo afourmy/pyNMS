@@ -14,7 +14,7 @@
 
 from .base_menu import BaseMenu
 from PyQt5.QtWidgets import QMenu, QAction
-from graph_generation.multiple_objects import MultipleNodes
+from graph_generation.multiple_nodes import MultipleNodes
                                 
 class GeneralMenu(BaseMenu):
     

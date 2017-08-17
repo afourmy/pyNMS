@@ -44,7 +44,7 @@ class ObjectManagementWindow(QWidget):
     
     perAS_properties = ()
                 
-    @update_paths(True)
+    @update_paths
     def __init__(self, obj, controller):
         super().__init__()
         self.setWindowTitle('Properties')

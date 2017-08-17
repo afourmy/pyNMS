@@ -67,7 +67,7 @@ class DisjointSPWindow(QWidget):
         layout.addWidget(button_compute, 4, 0, 1, 2)
         self.setLayout(layout)
         
-    @update_paths(False)
+    @update_paths
     def compute_dsp(self, _):
         source = self.network.nf(name=self.source_edit.text())
         destination = self.network.nf(name=self.destination_edit.text())
