@@ -12,7 +12,7 @@ Contact us: contact@pynms.fr
 
 The following modules are used in pyNMS:
 ```
-pyQT (GUI framework)
+pyQT (mandatory: GUI framework)
 shapely, shapefile, pyproj (mandatory: used for shapefile import)
 xlrd, xlwt, yaml (desirable: used for saving projects)
 numpy, cvxopt (optional: used for linear programming)
@@ -51,6 +51,15 @@ On a 4-layer deep tree, the algorithm converges within a few milliseconds to a v
 Projects can be imported from / exported to an Excel or a YAML file. This allows to import an existing network into pyNMS.
 
 ![Excel project](https://github.com/mintoo/networks/raw/master/Readme/xls_import.PNG)
+
+## Interface to NAPALM
+
+NAPALM is an automation framework that provides a set of functions to interact with different network device Operating Systems using a unified API. NAPALM can be used from within pyNMS to retrieve information about a device, and change the configuration.
+
+A demonstration of how to use NAPALM from pyNMS is available here:
+https://www.youtube.com/watch?v=c7ZG7IElgkw
+
+![NAPALM](https://github.com/mintoo/networks/raw/master/Readme/napalm.png)
 
 ## AS Management
 
