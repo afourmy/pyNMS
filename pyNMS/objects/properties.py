@@ -186,7 +186,7 @@ class Username(TextProperty):
     name = 'username'
     pretty_name = 'Username'
     
-    def __new__(cls, value='cisco'):
+    def __new__(cls, value=''):
         return super().__new__(cls, value)
         
 class Password(TextProperty):
@@ -195,7 +195,7 @@ class Password(TextProperty):
     pretty_name = 'Password'
     hide_view = True
     
-    def __new__(cls, value='cisco'):
+    def __new__(cls, value=''):
         return super().__new__(cls, value)
         
 class EnablePassword(TextProperty):
@@ -204,7 +204,7 @@ class EnablePassword(TextProperty):
     pretty_name = 'Enable password'
     hide_view = True
     
-    def __new__(cls, value='cisco'):
+    def __new__(cls, value=''):
         return super().__new__(cls, value)
         
 class X(FloatProperty):

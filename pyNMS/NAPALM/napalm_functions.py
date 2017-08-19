@@ -43,13 +43,13 @@ napalm_actions = OrderedDict([
 # ('Routing table', 'get_route_to') # need argument
 ])
 
-def open_device(node):
-    driver = get_network_driver('ios')
+def open_device(credentials, node):
+    driver = get_network_driver(node.operating_system)
     device = driver(
                     hostname = node.ip_address, 
-                    username = 'cisco', 
-                    password = 'cisco', 
-                    optional_args = {'secret': 'cisco'}
+                    username = credentials['username'], 
+                    password = credentials['password'], 
+                    optional_args = {'secret': credentials['enable_password']}
                     )
     device.open()
     return device
@@ -63,75 +63,75 @@ def napalm_update(device, node, update_allowed):
     if 'Logging' in update_allowed:
         node.napalm_data['cli'] = device.cli(['show logging'])
 
-def standalone_napalm_update(update_allowed, *nodes):
+def standalone_napalm_update(credentials, update_allowed, *nodes):
     for node in nodes:
-        device = open_device(node)
+        device = open_device(credentials, node)
         napalm_update(device, node, update_allowed)
         device.close()
         
-def napalm_commit(*nodes):
+def napalm_commit(credentials, *nodes):
     for node in nodes:
-        device = open_device(node)
+        device = open_device(credentials, node)
         device.commit_config()
         napalm_update(device, node, {'Configuration'})
         device.close()
         
-def napalm_discard(*nodes):
+def napalm_discard(credentials, *nodes):
     for node in nodes:
-        device = open_device(node)
+        device = open_device(credentials, node)
         device.discard_config()
         napalm_update(device, node, {'Configuration'})
         device.close()
         
-def napalm_load_merge(*nodes):
+def napalm_load_merge(credentials, *nodes):
     for node in nodes:
-        device = open_device(node)
+        device = open_device(credentials, node)
         config = node.napalm_data['Configuration']['candidate']
         device.load_merge_candidate(config=config)
         napalm_update(device, node, {'Configuration'})
         device.close()
         
-def napalm_load_merge_commit(*nodes):
+def napalm_load_merge_commit(credentials, *nodes):
     for node in nodes:
-        device = open_device(node)
+        device = open_device(credentials, node)
         config = node.napalm_data['Configuration']['candidate']
         device.load_merge_candidate(config=config)
         device.commit_config()
         napalm_update(device, node, {'Configuration'})
         device.close()
         
-def napalm_load_replace(*nodes):
+def napalm_load_replace(credentials, *nodes):
     for node in nodes:
-        device = open_device(node)
+        device = open_device(credentials, node)
         config = node.napalm_data['Configuration']['candidate']
         device.load_replace_candidate(config=config)
         napalm_update(device, node, {'Configuration'})
         device.close()
         
-def napalm_load_replace_commit(*nodes):
+def napalm_load_replace_commit(credentials, *nodes):
     for node in nodes:
-        device = open_device(node)
+        device = open_device(credentials, node)
         config = node.napalm_data['Configuration']['candidate']
         device.load_replace_candidate(config=config)
         device.commit_config()
         napalm_update(device, node, {'Configuration'})
         device.close()
         
-def napalm_rollback(*nodes):
+def napalm_rollback(credentials, *nodes):
     for node in nodes:
-        device = open_device(node)
+        device = open_device(credentials, node)
         device.rollback()
         napalm_update(device, node, {'Configuration'})
         device.close()
         
-def napalm_ping(node, **parameters):
-    device = open_device(node)
+def napalm_ping(credentials, node, **parameters):
+    device = open_device(credentials, node)
     result = device.ping(**parameters)
     device.close()
     return result
     
-def napalm_traceroute(node, **parameters):
-    device = open_device(node)
+def napalm_traceroute(credentials, node, **parameters):
+    device = open_device(credentials, node)
     result = device.traceroute(**parameters)
     device.close()
     return result

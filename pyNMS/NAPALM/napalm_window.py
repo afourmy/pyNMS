@@ -26,6 +26,7 @@ class NapalmWindow(QTabWidget):
     def __init__(self, node, controller):
         super().__init__()
         self.node = node
+        credentials = controller.current_project.network.get_credentials(node)
         self.setMinimumSize(1100, 700)
         self.setWindowTitle('NAPALM')
 
@@ -46,11 +47,11 @@ class NapalmWindow(QTabWidget):
         self.addTab(self.configurations_frame, 'Configurations')
         
         # 5th tab: actions (commit, discard, and load)
-        actions_frame = NapalmActions(self, node, controller)
+        actions_frame = NapalmActions(self, node, credentials, controller)
         self.addTab(actions_frame, 'Actions')
         
         # 6th tab: troubleshoot (ping, traceroute, route to)
-        troubleshoot_frame = NapalmTroubleshoot(self, node)
+        troubleshoot_frame = NapalmTroubleshoot(self, node, credentials)
         self.addTab(troubleshoot_frame, 'Troubleshoot')
         
     def closeEvent(self, _):

@@ -29,30 +29,30 @@ class CredentialsWindow(QWidget):
         layout = QGridLayout()
         
         username = QLabel('Default username')
-        self.username_edit = QLineEdit('cisco')
+        self.username = QLineEdit('cisco')
         
         password = QLabel('Default password')
-        self.password_edit = QLineEdit('cisco')
-        self.password_edit.setEchoMode(QLineEdit.Password)
+        self.password = QLineEdit('cisco')
+        self.password.setEchoMode(QLineEdit.Password)
         
         enable_password = QLabel('Default "Enable" password')
-        self.enable_password_edit = QLineEdit('cisco')
-        self.enable_password_edit.setEchoMode(QLineEdit.Password)
+        self.enable_password = QLineEdit('cisco')
+        self.enable_password.setEchoMode(QLineEdit.Password)
         
         layout = QGridLayout()
         layout.addWidget(username, 0, 0)
-        layout.addWidget(self.username_edit, 0, 1)
+        layout.addWidget(self.username, 0, 1)
         layout.addWidget(password, 1, 0)
-        layout.addWidget(self.password_edit, 1, 1)
+        layout.addWidget(self.password, 1, 1)
         layout.addWidget(enable_password, 2, 0)
-        layout.addWidget(self.enable_password_edit, 2, 1)
+        layout.addWidget(self.enable_password, 2, 1)
         self.setLayout(layout)
         
-    def get_default_credentials(self):
+    def get_credentials(self):
         return {
-                'username': self.username_edit.text(),
-                'password': self.password_edit.text(),
-                'secret': self.enable_password_edit.text()
+                'username': self.username.text(),
+                'password': self.password.text(),
+                'enable_password': self.enable_password.text()
                 }
     
         

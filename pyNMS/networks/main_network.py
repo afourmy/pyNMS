@@ -135,6 +135,17 @@ class MainNetwork(BaseNetwork):
             # increase the AS counter by one
             self.cpt_AS += 1
         return self.pnAS[name]
+        
+    ## Retrieve the credentials
+    
+    def get_credentials(self, node):
+        credentials = self.view.controller.credentials_window.get_credentials()
+        for property in ('username', 'password', 'enable_password'):
+            value = getattr(node, property)
+            if value:
+                credentials[property] = value
+        print(credentials)
+        return credentials
             
     ## Conversion methods and property -> type mapping
     

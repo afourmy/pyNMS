@@ -35,10 +35,11 @@ class NapalmTroubleshoot(QWidget):
     'count': (5, 'Count')
     } 
 
-    def __init__(self, napalm_window, node):
+    def __init__(self, napalm_window, node, credentials):
         super().__init__()
         self.napalm_window = napalm_window
         self.node = node
+        self.credentials = credentials
         
         destination = QLabel('Destination')
         destination_edit = QLineEdit()
@@ -94,11 +95,11 @@ class NapalmTroubleshoot(QWidget):
         
     def traceroute(self):
         self.console.clear()
-        output = napalm_traceroute(self.node, **self.get_parameters())
+        output = napalm_traceroute(self.credentials, self.node, **self.get_parameters())
         self.console.insertPlainText(str_dict(output))
         
     def ping(self):
         self.console.clear()
-        output = napalm_ping(self.node, **self.get_parameters(False))
+        output = napalm_ping(self.credentials, self.node, **self.get_parameters(False))
         self.console.insertPlainText(str_dict(output))
                         

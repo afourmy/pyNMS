@@ -38,10 +38,11 @@ class NapalmActions(QWidget):
     }
 
     @update_paths
-    def __init__(self, napalm_window, node, controller):
+    def __init__(self, napalm_window, node, credentials, controller):
         super().__init__()
         self.node = node
         self.napalm_window = napalm_window
+        self.credentials = credentials
         
         update_groupbox = QGroupBox('Update')
         update_groupbox_layout = QGridLayout(update_groupbox)
@@ -94,7 +95,7 @@ class NapalmActions(QWidget):
         self.setLayout(layout)
         
     def update(self):
-        standalone_napalm_update(self.allowed_actions(), self.node)
+        standalone_napalm_update(self.credentials, self.allowed_actions(), self.node)
         self.napalm_window.update()
         
     def allowed_actions(self):
@@ -105,31 +106,31 @@ class NapalmActions(QWidget):
         return update_allowed
         
     def commit(self):
-        napalm_commit(self.node)
+        napalm_commit(self.credentials, self.node)
         self.napalm_window.configurations_frame.update()
         
     def discard(self):
-        napalm_discard(self.node)
+        napalm_discard(self.credentials, self.node)
         self.napalm_window.configurations_frame.update()
         
     def load_merge(self):
         self.napalm_window.closeEvent(None)
         if self.automatic_commit.isChecked():
-            napalm_load_merge_commit(self.node)
+            napalm_load_merge_commit(self.credentials, self.node)
         else:
-            napalm_load_merge(self.node)
+            napalm_load_merge(self.credentials, self.node)
         self.napalm_window.configurations_frame.update()
         
     def load_replace(self):
         self.napalm_window.closeEvent(None)
         if self.automatic_commit.isChecked():
-            napalm_load_replace_commit(self.node)
+            napalm_load_replace_commit(self.credentials, self.node)
         else:
-            napalm_load_replace(self.node)
+            napalm_load_replace(self.credentials, self.node)
         self.napalm_window.configurations_frame.update()
         
     def rollback(self):
-        napalm_rollback(self.node)
+        napalm_rollback(self.credentials, self.node)
         self.napalm_window.configurations_frame.update()
 
                         
