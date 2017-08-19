@@ -1,6 +1,7 @@
 from collections import defaultdict
 from graphical_objects.graphical_node import GraphicalNode
 from graphical_objects.graphical_link import GraphicalLink
+from graphical_objects.graphical_text import GraphicalText
 from miscellaneous.decorators import *
 from objects.objects import *
 from os.path import join
@@ -92,10 +93,18 @@ class BaseView(QGraphicsView):
         # activate rubberband for selection
         # by default, the rubberband is active for both clicks, we have to
         # deactivate it explicitly for the right-click
-        if event.buttons() == Qt.LeftButton and self.controller.mode == 'selection':
-            self.setDragMode(QGraphicsView.RubberBandDrag)
-        else:
-            self.setDragMode(QGraphicsView.NoDrag)
+        if event.buttons() == Qt.LeftButton:
+            if self.controller.mode == 'selection':
+                self.setDragMode(QGraphicsView.RubberBandDrag)
+            else:
+                self.setDragMode(QGraphicsView.NoDrag)
+                if self.controller.creation_mode == 'text':
+                    text_item = GraphicalText(self)
+                    print(text_item)
+                    text_item.setTextInteractionFlags(Qt.TextEditorInteraction)
+                    text_item.setZValue(1000.0)
+                    self.scene.addItem(text_item)
+                    text_item.setPos(self.mapToScene(event.pos()))
         if event.button() == Qt.RightButton:
             # when the right-click button is pressed, we don't know yet whether
             # the user wants to access the general right-click menu or move

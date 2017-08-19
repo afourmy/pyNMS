@@ -438,7 +438,8 @@ class Controller(QMainWindow):
         self.current_project.refresh()
         
     def add_note(self):
-        pass
+        self.mode = 'creation'
+        self.creation_mode = 'text'
         
     def rectangle(self):
         pass
