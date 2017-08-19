@@ -35,9 +35,12 @@ class BaseMenu(QMenu):
             drawing_submenu.addAction(action)
         self.drawing_action.setMenu(drawing_submenu)
         
-    def graph_drawing(self, drawing):
+    def graph_drawing(self, drawing, gnodes=None):
+        self.view.node_selection = gnodes or set(self.view.all_gnodes())
         self.view.random_layout()
         if drawing != 'Random drawing':
             self.view.drawing_algorithm = drawing
+            if hasattr(self.view, 'timer') and self.view.timer:
+                self.view.stop_timer()
             self.view.timer = self.view.startTimer(1)
                         

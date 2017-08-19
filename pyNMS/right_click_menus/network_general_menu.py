@@ -12,9 +12,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt5.QtWidgets import QMenu, QAction
 from .general_menu import GeneralMenu
 from .geographical_menu import GeographicalMenu
+from miscellaneous.decorators import overrider
+from PyQt5.QtWidgets import QMenu, QAction
 
 class NetworkGeneralMenu(GeneralMenu, GeographicalMenu):
     
@@ -34,8 +35,8 @@ class NetworkGeneralMenu(GeneralMenu, GeographicalMenu):
         
         self.addAction(self.map_action)
         
+    @overrider(GeneralMenu)
     def graph_drawing(self, drawing):
-        self.view.node_selection = set(self.view.all_gnodes())
         super().graph_drawing(drawing)
 
     def remove_all_failures(self):

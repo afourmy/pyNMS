@@ -13,6 +13,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .base_menu import BaseMenu
+from miscellaneous.decorators import overrider
 from objects.object_management_window import ObjectManagementWindow
 from objects.property_changer import PropertyChanger
 from PyQt5.QtWidgets import QMenu, QAction
@@ -74,9 +75,9 @@ class SelectionMenu(BaseMenu):
         self.addAction(delete_objects)
         self.addSeparator()
         
+    @overrider(BaseMenu)
     def graph_drawing(self, drawing):
-        self.view.node_selection = self.gnodes or self.view.all_gnodes()
-        super().graph_drawing(drawing)
+        super().graph_drawing(drawing, set(self.gnodes))
         
     def show_object_properties(self):
         obj ,= self.objects

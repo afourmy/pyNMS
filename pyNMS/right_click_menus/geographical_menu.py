@@ -47,14 +47,14 @@ class GeographicalMenu(SelectionMenu):
         self.map_action.setMenu(map_submenu)
         
     def update_geographical_coordinates(self):
-        self.view.update_geographical_coordinates(*self.so)
+        self.view.update_geographical_coordinates(*self.items)
         
     def update_logical_coordinates(self):
-        self.view.update_logical_coordinates(*self.so)
+        self.view.update_logical_coordinates(*self.items)
         
     def move_to_geographical_coordinates(self):
-        self.view.move_to_geographical_coordinates(*self.so)
+        self.view.move_to_geographical_coordinates(*self.items)
         
     def move_to_logical_coordinates(self):
-        self.view.move_to_logical_coordinates(*self.so)
+        self.view.move_to_logical_coordinates(*self.items)
         
