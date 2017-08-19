@@ -112,13 +112,21 @@ class Controller(QMainWindow):
         delete_project.setStatusTip('Delete the current project')
         delete_project.triggered.connect(self.close)
         
-        import_project = QAction('Import project', self)
-        import_project.setStatusTip('Import a project')
-        import_project.triggered.connect(self.import_project)
+        excel_import = QAction('Excel import', self)
+        excel_import.setStatusTip('Import a project (Excel format)')
+        excel_import.triggered.connect(self.excel_import)
         
-        export_project = QAction('Export project', self)
-        export_project.setStatusTip('Export the current project')
-        export_project.triggered.connect(self.export_project)
+        excel_export = QAction('Excel export', self)
+        excel_export.setStatusTip('Export the current project (Excel format)')
+        excel_export.triggered.connect(self.excel_export)
+        
+        yaml_import = QAction('YAML import', self)
+        yaml_import.setStatusTip('Import a project (YAML format)')
+        yaml_import.triggered.connect(self.yaml_import)
+        
+        yaml_export = QAction('YAML export', self)
+        yaml_export.setStatusTip('Export the current project (YAML format)')
+        yaml_export.triggered.connect(self.yaml_export)
         
         debug_pynms = QAction('Debug', self)
         debug_pynms.setShortcut('Ctrl+D')
@@ -134,8 +142,11 @@ class Controller(QMainWindow):
         main_menu.addAction(new_project)
         main_menu.addAction(delete_project)
         main_menu.addSeparator()
-        main_menu.addAction(import_project)
-        main_menu.addAction(export_project)
+        main_menu.addAction(excel_import)
+        main_menu.addAction(excel_export)
+        main_menu.addSeparator()
+        main_menu.addAction(yaml_import)
+        main_menu.addAction(yaml_export)
         main_menu.addSeparator()
         main_menu.addAction(debug_pynms)
         main_menu.addAction(quit_pynms)
@@ -214,17 +225,6 @@ class Controller(QMainWindow):
         new_project.setStatusTip('Create a new project')
         new_project.triggered.connect(self.add_project)
         
-        import_project_icon = QIcon(join(self.path_icon, 'import_project.png'))
-        import_project = QAction(import_project_icon, 'Import project', self)
-        import_project.setStatusTip('Import an existing project')
-        import_project.triggered.connect(self.import_project)
-        
-        save_project_icon = QIcon(join(self.path_icon, 'save_project.png'))
-        save_project = QAction(save_project_icon, 'Export project', self)
-        save_project.setShortcut('Ctrl+S')
-        save_project.setStatusTip('Export the project')
-        save_project.triggered.connect(self.export_project)
-        
         selection_icon = QIcon(join(self.path_icon, 'selection.png'))
         selection_mode = QAction(selection_icon, 'Selection mode', self)
         selection_mode.setStatusTip('Switch to selection mode')
@@ -291,8 +291,6 @@ class Controller(QMainWindow):
         toolbar.resize(1500, 1500)
         toolbar.setIconSize(QtCore.QSize(70, 70))
         toolbar.addAction(new_project)
-        toolbar.addAction(import_project)
-        toolbar.addAction(save_project)
         toolbar.addSeparator()
         toolbar.addAction(selection_mode)
         toolbar.addAction(rectangle)
@@ -397,11 +395,17 @@ class Controller(QMainWindow):
         self.dict_project[name] = new_project
         return new_project
         
-    def import_project(self):
-        self.current_project.import_project()
+    def excel_import(self):
+        self.current_project.excel_import()
         
-    def export_project(self):
-        self.current_project.export_project()
+    def excel_export(self):
+        self.current_project.excel_export()
+        
+    def yaml_import(self):
+        self.current_project.yaml_import()
+        
+    def yaml_export(self):
+        self.current_project.yaml_export()
         
     def stop_drawing(self):
         self.current_project.current_view.stop_timer()

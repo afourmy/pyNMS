@@ -73,7 +73,6 @@ class BaseNetwork(object):
                 link.update_properties(kwargs)
                 return link
             s, d = kwargs['source'], kwargs['destination']
-            # print(s, d, s.id, d.id)
             id = self.cpt_link
             if not name:
                 name = subtype + str(self.cpt_link)

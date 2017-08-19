@@ -278,16 +278,16 @@ class Source(NodeProperty):
     name = 'source'
     pretty_name = 'Source'
     
-    def __new__(self, value):
-        return value
+    def __new__(cls, value):
+        return super().__new__(cls, value)
         
 class Destination(NodeProperty):
     
     name = 'destination'
     pretty_name = 'Destination'
     
-    def __new__(self, value):
-        return value
+    def __new__(cls, value):
+        return super().__new__(cls, value)
         
 class Interface(TextProperty):
     

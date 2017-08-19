@@ -170,8 +170,8 @@ TrafficDS,
 # 'wcfailure',
 # 'flowSD', 
 # 'flowDS',
-Sites,
 Subnetwork,
+Sites,
 AS,
 )
 
@@ -244,8 +244,7 @@ Distance,
 CostSD, 
 CostDS, 
 CapacitySD, 
-CapacityDS, 
-Sites
+CapacityDS
 )
 
 # 3) import / export properties for routes
@@ -320,8 +319,8 @@ object_ie = OrderedDict([
 ('BGP peering', route_common_ie_properties),
 ('routed traffic', traffic_common_ie_properties),
 ('static traffic', traffic_common_ie_properties),
-('ethernet interface', ethernet_interface_properties),
-('optical interface', interface_common_properties)
+# ('ethernet interface', ethernet_interface_properties),
+# ('optical interface', interface_common_properties)
 ])
 
 ## Interface basic and per-AS public properties
@@ -546,7 +545,7 @@ class Node(NDobject):
         super().__init__()
         
     def __repr__(self):
-        return self.name
+        return str(self.name)
         
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.name == other.name
@@ -832,6 +831,7 @@ class EthernetLink(PhysicalLink):
         super().__init__()
         self.interfaceS = EthernetInterface(self.source, self)
         self.interfaceD = EthernetInterface(self.destination, self)
+        print(self, type(self.source), type(str(self.source)))
         
 class OpticalLink(PhysicalLink):
     
