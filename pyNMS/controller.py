@@ -20,9 +20,10 @@ from graph_algorithms.maximum_flow_window import MaximumFlowWindow
 from graph_algorithms.disjoint_sp_window import DisjointSPWindow
 from graph_algorithms.minimum_cost_flow_window import MCFlowWindow
 from graph_algorithms.rwa_window import RWAWindow
-from graph_generation.graph_generation import GraphGenerationWindow
-from gis.gis_parameter import GISParameterWindow
+from graph_generation.graph_generation_window import GraphGenerationWindow
+from gis.gis_parameter_window import GISParameterWindow
 from miscellaneous.graph_drawing import *
+from miscellaneous.credentials_window import CredentialsWindow
 from miscellaneous.search_window import SearchWindow
 from miscellaneous.style_window import StyleWindow
 from miscellaneous.debug import DebugWindow
@@ -91,6 +92,7 @@ class Controller(QMainWindow):
         self.search_window = SearchWindow(self)
         self.style_window = StyleWindow()
         self.debug_window = DebugWindow(self)
+        self.credentials_window = CredentialsWindow(self)
         
         # Graph algorithm windows
         self.shortest_path_window = ShortestPathWindow(self)   
@@ -160,14 +162,21 @@ class Controller(QMainWindow):
         delete_map.setStatusTip('Delete the map')
         delete_map.triggered.connect(self.delete_map)
         
-        GIS_parameters = QAction('GIS parameters', self)
-        GIS_parameters.setStatusTip('GIS parameters')
-        GIS_parameters.triggered.connect(lambda: self.gis_parameter_window.show())
+        modify_map = QAction('Modify map', self)
+        modify_map.setStatusTip('Modify map')
+        modify_map.triggered.connect(lambda: self.gis_parameter_window.show())
         
-        gis_menu = menu_bar.addMenu('GIS')
-        gis_menu.addAction(show_hide_map)
-        gis_menu.addAction(delete_map)
-        gis_menu.addAction(GIS_parameters)
+        gis_parameters_menu = menu_bar.addMenu('GIS parameters')
+        gis_parameters_menu.addAction(show_hide_map)
+        gis_parameters_menu.addAction(delete_map)
+        gis_parameters_menu.addAction(modify_map)
+        
+        default_credentials = QAction('Defaut credentials', self)
+        default_credentials.setStatusTip('Default username and password')
+        default_credentials.triggered.connect(lambda: self.credentials_window.show())
+        
+        connectivity_menu = menu_bar.addMenu('Connectivity')
+        connectivity_menu.addAction(default_credentials)
         
         SP_window = QAction('Shortest path', self)
         SP_window.setStatusTip('Shortest path')

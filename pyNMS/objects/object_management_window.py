@@ -115,11 +115,11 @@ class ObjectManagementWindow(QWidget):
         # update all properties with the selected object properties
         self.update()
             
-        grid = QGridLayout()
-        grid.addWidget(global_properties, 0, 0)
+        layout = QGridLayout()
+        layout.addWidget(global_properties, 0, 0)
         if obj.subtype in self.perAS_properties:
-            grid.addWidget(perAS_properties, 1, 0)
-        self.setLayout(grid)
+            layout.addWidget(perAS_properties, 1, 0)
+        self.setLayout(layout)
         
     def update_AS_properties(self, _):
         AS = self.AS_combobox.text
