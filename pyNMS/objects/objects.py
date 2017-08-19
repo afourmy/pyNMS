@@ -25,32 +25,36 @@ def initializer(init):
             # properly added to the model and displayed
             # it is also automatically made exportable
             if property_name not in property_classes:
-                property_class = type(
+                property = type(
                                       property_name, 
                                       (TextProperty,), 
                                       {
                                       'name': property_name, 
                                       'pretty_name': property_name
                                       })
-                property_classes[property_name] = property_class
+                property_classes[property_name] = property
                 for property_manager in (
                                         object_properties,
                                         object_ie,
                                         box_properties,
                                         ):
-                    property_manager[self.__class__.subtype] += (property_class,)
+                    property_manager[self.__class__.subtype] += (property,)
             else:
-                property_class = property_classes[property_name]
-            setattr(self, property_name, property_class(value))
+                property = property_classes[property_name]
+            # if it is a property with multiple values, and the value is not 
+            # in the predefined available values, we add it
+            if property.multiple_values and value not in property.values:
+                property.values.append(value)
+            setattr(self, property_name, property(value))
                 
-        for property_class in object_properties[self.__class__.subtype]:
-            if not hasattr(self, property_class.name):
+        for property in object_properties[self.__class__.subtype]:
+            if not hasattr(self, property.name):
                 # if the value should be an empty list / set, we make
                 # sure it refers to different objects in memory by using eval
                 try:
-                    setattr(self, property_class.name, property_class())
+                    setattr(self, property.name, property())
                 except (TypeError, NameError, SyntaxError):
-                    setattr(self, property_class.name, property_class())
+                    setattr(self, property.name, property())
         init(self)
     return wrapper
 
@@ -119,6 +123,11 @@ obj_common_properties = ()
 # ordered dicts are needed to have the same menu order 
 node_common_properties = obj_common_properties + (
 Name, 
+Vendor,
+OperatingSystem,
+Username,
+Password,
+EnablePassword,
 X, 
 Y, 
 Longitude, 

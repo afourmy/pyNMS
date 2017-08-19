@@ -25,7 +25,12 @@ class MetaProperty(type):
 
 class Property(metaclass=MetaProperty):
     
+    # whether we need to convert the property value into a pyNMS object or not
     conversion_needed = False
+    # some properties have multiple values (defined as a list: property.values)
+    multiple_values = False
+    # for property such as password, we hide the view
+    hide_view = False
     
     def __repr__(self):
         return str(self)
@@ -35,7 +40,7 @@ class TextProperty(str, Property):
     def __new__(cls, value):
         return str.__new__(cls, value)
         
-class IntProperty(int):
+class IntProperty(int, Property):
     
     # int is immutable: it cannot be modified after creation
     # we must use __new__ instead of __init_
@@ -45,18 +50,16 @@ class IntProperty(int):
         
 class FloatProperty(float, Property):
     
-    def __init__(self, value):
-        self.value = float.__init__(value)
-        return self.value
+    def __new__(cls, value):
+        return float.__new__(cls, value)
         
 class ListProperty(list, Property):
     
-    def __init__(self, value):
-        if value is None:
-            self.value = []
+    def __new__(cls, values=None):
+        if values is None:
+            return []
         else:
-            self.value = list.__init__(value)
-        return self.value
+            return list.__new__(cls, values)
         
 class SetProperty(set, Property):
     
@@ -110,6 +113,49 @@ class Subtype(TextProperty):
         return super().__new__(cls, value)
         
 ## Node property
+
+class Vendor(TextProperty):
+    
+    name = 'vendor'
+    pretty_name = 'Vendor'
+    multiple_values = True
+    values = [
+              'Cisco', 
+              'Juniper', 
+              'Arista',
+              'Nokia', 
+              'Huawei',
+              'MikroTik', 
+              'Fortinet', 
+              'Palo Alto',
+              'IBM', 
+              'HP'
+              ]
+    
+    def __new__(cls, value='Cisco'):
+        return super().__new__(cls, value)
+        
+class OperatingSystem(TextProperty):
+    
+    name = 'operating_system'
+    pretty_name = 'Operating System'
+    multiple_values = True
+    values = [
+              'IOS', 
+              'IOSXR', 
+              'NXOS', 
+              'JunOS', 
+              'EOS', 
+              'FortiOS', 
+              'PANOS',
+              'MikroTik',
+              'VyOS',
+              'IBM', 
+              'Pluribus'
+              ]
+    
+    def __new__(cls, value='IOS'):
+        return super().__new__(cls, value)
         
 class IP_Address(TextProperty):
     
@@ -135,53 +181,79 @@ class SubnetMask(TextProperty):
     def __new__(cls, value='255.255.255.255'):
         return super().__new__(cls, value)
         
+class Username(TextProperty):
+    
+    name = 'username'
+    pretty_name = 'Username'
+    
+    def __new__(cls, value='cisco'):
+        return super().__new__(cls, value)
+        
+class Password(TextProperty):
+    
+    name = 'password'
+    pretty_name = 'Password'
+    hide_view = True
+    
+    def __new__(cls, value='cisco'):
+        return super().__new__(cls, value)
+        
+class EnablePassword(TextProperty):
+    
+    name = 'enable_password'
+    pretty_name = 'Enable password'
+    hide_view = True
+    
+    def __new__(cls, value='cisco'):
+        return super().__new__(cls, value)
+        
 class X(FloatProperty):
     
     name = 'x'
     pretty_name = 'X coordinate'
     
-    def __init__(self, value=0.):
-        super().__init__(value)
+    def __new__(cls, value=0.):
+        return super().__new__(cls, value)
         
 class Y(FloatProperty):
     
     name = 'y'
     pretty_name = 'Y coordinate'
     
-    def __init__(self, value=0.):
-        super().__init__(value)
+    def __new__(cls, value=0.):
+        return super().__new__(cls, value)
         
 class Longitude(FloatProperty):
     
     name = 'longitude'
     pretty_name = 'Longitude'
     
-    def __init__(self, value=0.):
-        super().__init__(value)
+    def __new__(cls, value=0.):
+        return super().__new__(cls, value)
         
 class Latitude(FloatProperty):
     
     name = 'latitude'
     pretty_name = 'Latitude'
     
-    def __init__(self, value=0.):
-        super().__init__(value)
+    def __new__(cls, value=0.):
+        return super().__new__(cls, value)
         
 class LogicalX(FloatProperty):
     
     name = 'logical_x'
     pretty_name = 'Logical X coordinate'
     
-    def __init__(self, value=0.):
-        super().__init__(value)
+    def __new__(cls, value=0.):
+        return super().__new__(cls, value)
         
 class LogicalY(FloatProperty):
     
     name ='logical_y'
     pretty_name = 'Logical Y coordinate'
     
-    def __init__(self, value=0.):
-        super().__init__(value)
+    def __new__(cls, value=0.):
+        return super().__new__(cls, value)
         
 class Sites(SetProperty):
     
@@ -246,8 +318,8 @@ class Distance(FloatProperty):
     name = 'distance'
     pretty_name = 'Distance'
     
-    def __init__(self, value=0.):
-        super().__init__(value)
+    def __new__(cls, value=0.):
+        return super().__new__(cls, value)
         
 class CostSD(IntProperty):
     
@@ -383,6 +455,7 @@ property_classes = {
                     'subnet_mask': SubnetMask,
                     'x': X,
                     'y': Y,
+                    'enable_password': EnablePassword,
                     'longitude': Longitude,
                     'latitude': Latitude,
                     'logical_x': LogicalX,
@@ -399,17 +472,21 @@ property_classes = {
                     'costDS': CostDS,
                     'capacitySD': CapacitySD,
                     'capacityDS': CapacityDS,
+                    'operating_system': OperatingSystem,
+                    'password': Password,
                     'trafficSD': TrafficSD,
                     'trafficDS': TrafficDS,
                     'subnetwork': Subnetwork,
                     'linkS': LinkS,
                     'linkD': LinkD,
                     'throughput': Throughput,
+                    'username': Username,
                     'link': Link,
                     'node': Node,
                     'role': Role,
                     'cost': Cost,
-                    'priority': Priority
+                    'priority': Priority,
+                    'vendor': Vendor,
                     }
                
 # Pretty name -> property class association

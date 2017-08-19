@@ -74,9 +74,6 @@ class MainNetwork(BaseNetwork):
         1: ('regenerator', 'splitter', 'antenna')
         }
         
-        self.prop_to_type['ipS'] = self.convert_IP
-        self.prop_to_type['ipD'] = self.convert_IP
-        
     # function filtering AS either per layer or per subtype
     def ASftr(self, filtering_mode, *sts):
         if filtering_mode == 'layer':

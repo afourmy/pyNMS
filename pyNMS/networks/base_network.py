@@ -34,6 +34,7 @@ class BaseNetwork(object):
                    'l3link': self.l3links,
                    'traffic': self.traffics, 
                    }
+                   
         self.view = view
         self.graph = defaultdict(lambda: defaultdict(set))
         self.cpt_link = self.cpt_node = self.cpt_AS = 1
@@ -41,79 +42,11 @@ class BaseNetwork(object):
         # based on its name. The only object that needs changing when a object
         # is renamed by the user.
         self.name_to_id = {}
-        
+
         # set of all objects in failure: this parameter is used for
         # link dimensioning and failure simulation
         self.failed_obj = set()
-        
-        # property -> type associations 
-        self.prop_to_type = {
-        'capacitySD': int, 
-        'capacityDS': int,
-        'costSD': float, 
-        'costDS': float, 
-        'cost': float,
-        'destination': self.convert_node, 
-        'distance': float, 
-        'flowSD': float,
-        'flowDS': float,
-        'interface': str,
-        'interfaceS': str,
-        'interfaceD': str,
-        'ip_address': str,
-        'lambda_capacity': int,
-        'latitude': float,
-        'LB_paths': int,
-        'longitude': float, 
-        'logical_x': float,
-        'logical_y': float,
-        'macaddress': str,
-        'mininet_name': str,
-        'name': str,
-        'node': self.convert_node, 
-        'protocol': str,
-        'sntw': str,
-        'source': self.convert_node,
-        'subnet_mask': str,
-        'throughput': float,
-        'traffic': float,
-        'trafficSD': float,
-        'trafficDS': float,
-        'wctrafficSD': float,
-        'wctrafficDS': float,
-        'wcfailure': str,
-        'x': float, 
-        'y': float, 
-        'link': self.convert_link, 
-        'linkS': self.convert_link, 
-        'linkD': self.convert_link, 
-        'nh_tk': str,
-        'nh_ip': str,
-        'bgp_AS': str,
-        'weightS': int,
-        'weightD': int,
-        'dst_sntw': str,
-        'ad': int,
-        'subtype': str,
-        'bgp_type': str,
-        'lsp_type': str,
-        'path_constraints': self.convert_node_list, 
-        'excluded_nodes': self.convert_node_set,
-        'excluded_plinks': self.convert_link_set, 
-        'path': self.convert_link_list, 
-        'subnets': str, 
-        'sites': str,
-        'role': str,
-        'priority': int,
-        'router_id': str,
-        'site_type': str,
-        'base_macaddress': str,
-        'LB_paths': int,
-        'role': str,
-        'priority': int,
-        'router_id': str
-        }
-        
+
     # function filtering pn to retrieve all objects of given subtypes
     def ftr(self, type, *sts):
         keep = lambda r: r.subtype in sts
@@ -181,6 +114,24 @@ class BaseNetwork(object):
             return self.lf(name=name)
             
     ## Conversion methods and property -> type mapping
+    
+    def objectizer(self, str_property, value):
+        if value == 'None': 
+            return None
+        elif str_property in property_classes:
+            property = property_classes[str_property]
+            if property.conversion_needed:
+                value = getattr(self, property.converter)(value)
+            return value
+        # if the property doesn't exist, we consider it is a string
+        else:
+            return value
+                        
+    def mass_objectizer(self, properties, values):
+        kwargs = {}
+        for property, value in zip(properties, values):
+            kwargs[property] = self.objectizer(property, value)
+        return kwargs
     
     # methods used to convert a string to an object 
     

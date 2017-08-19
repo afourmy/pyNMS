@@ -15,8 +15,14 @@
 import re
 from objects.objects import *
 from miscellaneous.decorators import update_paths
-from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
-        QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox)
+from pyQT_widgets.Q_object_combo_box import QObjectComboBox
+from PyQt5.QtWidgets import (
+                             QGridLayout,
+                             QGroupBox,
+                             QLabel, 
+                             QLineEdit,
+                             QWidget
+                             )
 
 class ObjectManagementWindow(QWidget):
     
@@ -70,12 +76,14 @@ class ObjectManagementWindow(QWidget):
             label = QLabel(property.pretty_name)
             
             # value of the property: drop-down list or entry
-            if property in self.property_list:
-                pvalue = QComboBox()
-                pvalue.addItems(self.property_list[property])
+            if property.multiple_values:
+                pvalue = QObjectComboBox()
+                pvalue.addItems(property.values)
             else:
                 # s = 'readonly' if property in self.read_only else 'normal'
                 pvalue = QLineEdit()
+                if property.hide_view:
+                    pvalue.setEchoMode(QLineEdit.Password)
                 
             self.dict_global_properties[property] = pvalue
             global_properties_layout.addWidget(label, index + 1, 0, 1, 1)
@@ -93,7 +101,6 @@ class ObjectManagementWindow(QWidget):
             self.AS_list = QComboBox()
             self.AS_list.addItems(obj.AS)
             self.AS_list.activated.connect(self.update_AS_properties)
-            # self.AS_combobox.grid(0, 0, 1, 2, in_=lf_perAS)
         
             for index, property in enumerate(perAS_properties[obj.subtype]):
                 
@@ -127,8 +134,6 @@ class ObjectManagementWindow(QWidget):
                 value = property_widget.currentText()
             # convert 'None' to None if necessary
             value = None if value == 'None' else value              
-            if property.name == 'path':
-                setattr(self.current_obj, property.name, self.current_path)
             if property.name == 'sites':
                 value = filter(None, set(re.sub(r'\s+', '', value).split(',')))
                 value = set(map(self.site_network.convert_node, value))
@@ -142,7 +147,7 @@ class ObjectManagementWindow(QWidget):
             else:
                 if (property.name not in self.read_only 
                 and 'interface' not in property.name):
-                    value = self.network.prop_to_type[property.name](value)
+                    value = self.network.objectizer(property.name, value)
                     if property == 'name':
                         name = getattr(self.current_obj, property.name)
                         id = self.network.name_to_id.pop(name)
@@ -159,18 +164,7 @@ class ObjectManagementWindow(QWidget):
     def update(self):
         for property, property_widget in self.dict_global_properties.items():
             obj_prop = getattr(self.current_obj, property.name)
-            if property == 'default_route':
-                # in practice, the default route can also be set as an outgoing
-                # interface, but the router has to do an ARP request for each
-                # unknown destination IP address to fill the destination 
-                # MAC field of the Ethernet frame, which may result in 
-                # ARP table being overloaded: to be avoided in real-life and
-                # forbidden here.
-                attached_ints = (None,) + tuple(filter(None, 
-                                    self.network.nh_ips(self.current_obj)))
-                property_widget.addItems(attached_ints)
-                # property_widget.text = obj_prop
-            elif property == 'nh_tk':
+            if property == 'nh_tk':
                 src_route = self.current_obj.source
                 attached_ints = tuple(filter(None, (plink for _, plink 
                                 in self.network.graph[src_route]['plink'])))
@@ -209,10 +203,6 @@ class ObjectManagementWindow(QWidget):
                 property_widget.setText(','.join(map(str, obj_prop)))
             else:
                 property_widget.setText(str(obj_prop))
-            # if there is a path, we set current_path in case the object is saved
-            # without computing a new path
-            if property == 'path':
-                self.current_path = self.current_obj.path
                 
         # if self.current_obj.subtype in perAS_properties:
         #     self.AS_combobox.addItems(tuple(self.current_obj.AS_properties))

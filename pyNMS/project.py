@@ -64,25 +64,6 @@ class Project(QWidget):
         site.site_view.show()
         self.current_view = site.site_view
         self.view_type = 'insite'
-
-    def objectizer(self, str_property, value):
-        if value == 'None': 
-            return None
-        elif str_property in property_classes:
-            property = property_classes[str_property]
-            if property.conversion_needed:
-                value = getattr(self.network, property.converter)(value)
-            return value
-        # if the property doesn't exist, we consider it is a string
-        else:
-            # self.network.prop_to_type[property] = str
-            return value
-                        
-    def mass_objectizer(self, properties, values):
-        kwargs = {}
-        for property, value in zip(properties, values):
-            kwargs[property] = self.objectizer(property, value)
-        return kwargs
         
     def refresh(self):
         
@@ -163,7 +144,7 @@ class Project(QWidget):
                 properties = sheet.row_values(0)
                 for row in range(1, sheet.nrows):
                     values = sheet.row_values(row)
-                    kwargs = self.mass_objectizer(properties, values)
+                    kwargs = self.network.mass_objectizer(properties, values)
                     if name in node_subtype:
                         if name == 'site':
                             self.site_view.network.nf(subtype=name, **kwargs)
@@ -212,7 +193,7 @@ class Project(QWidget):
                     AS, node, *args = sheet.row_values(row_index)
                     node = self.network_view.network.convert_node(node)
                     for idx, property in enumerate(perAS_properties[node.subtype]):
-                        value = self.objectizer(property, args[idx])
+                        value = self.network.objectizer(property, args[idx])
                         node(AS, property, value)
                  
             # import of site objects
@@ -234,7 +215,7 @@ class Project(QWidget):
                     node = self.network_view.network.convert_node(node)
                     interface = link('interface', node)
                     for idx, property in enumerate(ethernet_interface_perAS_properties):
-                        value = self.objectizer(property, args[idx])
+                        value = self.network.objectizer(property, args[idx])
                         interface(AS.name, property, value)   
                         
         self.network_view.refresh_display()
