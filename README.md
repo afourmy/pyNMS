@@ -51,9 +51,9 @@ Two spring-layout algorithms are implemented:
 - Eades algorithm
 - Fructherman-Reingold algorithm
 
-On a 4-layer deep tree, the algorithm converges within a few milliseconds to a visually pleasing tree shape.
+On a four-dimensional hypercube, the algorithm converges within a few milliseconds to a visually pleasing tree shape.
 
-![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/visualization.PNG)
+![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/visualization.png)
 
 ## Saving and import/export
 
