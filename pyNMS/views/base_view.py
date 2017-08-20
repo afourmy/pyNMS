@@ -13,9 +13,9 @@ class BaseView(QGraphicsView):
     
     link_color = {
     'ethernet link': QPen(QColor(0, 0, 255), 3),
-    'optical link': QPen(QColor(207, 34, 138), 3),
-    'optical channel': QPen(QColor(93, 188, 210), 3),
-    'etherchannel': QPen(QColor(212, 34, 42), 3),
+    'optical link': QPen(QColor(212, 34, 42), 3),
+    'optical channel': QPen(QColor(255, 130, 71), 3),
+    'etherchannel': QPen(QColor(207, 34, 138), 3),
     'pseudowire': QPen(QColor(144, 43, 236), 3),
     'BGP peering': QPen(QColor(119, 235, 202), 3),
     'routed traffic': QPen(QColor(3, 139, 132), 3),
@@ -107,7 +107,7 @@ class BaseView(QGraphicsView):
                 if self.controller.creation_mode == 'text':
                     text_item = GraphicalText(self)
                     text_item.setTextInteractionFlags(Qt.TextEditorInteraction)
-                    text_item.setZValue(1000.0)
+                    text_item.setZValue(11)
                     self.scene.addItem(text_item)
                     text_item.setPos(self.mapToScene(event.pos()))
         if event.button() == Qt.RightButton:
