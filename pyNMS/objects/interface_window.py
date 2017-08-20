@@ -65,7 +65,7 @@ class InterfaceWindow(QWidget):
                 
                 property_edit = QLineEdit()
                 text = self.interface(self.AS_list.currentText(), property.name)
-                property_edit.setText(text)
+                property_edit.setText(str(text))
                 self.dict_perAS_properties[property] = property_edit
                 
                 perAS_properties_layout.addWidget(label, index + 1, 0, 1, 1)
@@ -74,7 +74,7 @@ class InterfaceWindow(QWidget):
         grid = QGridLayout()
         grid.addWidget(global_properties, 0, 0)
         if self.interface.AS_properties:
-            grid.addWidget(perAS_properties_layout, 0, 1)
+            grid.addWidget(perAS_properties, 0, 1)
         self.setLayout(grid)
         
     def update_AS_properties(self, _):
@@ -84,13 +84,13 @@ class InterfaceWindow(QWidget):
             
     def closeEvent(self, _):
         for property, edit in self.dict_global_properties.items():
-            value = self.project.objectizer(property.name, edit.text())
+            value = self.network.objectizer(property.name, edit.text())
             setattr(self.interface, property.name, value)
             
         if self.interface.AS_properties:
             AS = self.AS_list.currentText()
             for property, edit in self.dict_perAS_properties.items():
-                value = self.project.objectizer(property.name, edit.text())
+                value = self.network.objectizer(property.name, edit.text())
                 self.interface(AS, property.name, value)
                 
         self.close()

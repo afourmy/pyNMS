@@ -282,14 +282,14 @@ class Project(QWidget):
         self.network_view.refresh_display()
         self.network_view.move_to_geographical_coordinates()
         
-    def excel_export(self, filepath=None):
+    def excel_export(self, selected_file=None):
         
         # to convert a list of object into a string of a list of strings
         # useful for AS nodes, edges, links as well as area nodes and links
         to_string = lambda s: str(list(map(str, s)))
         
         # filepath is set for unittest
-        if not filepath:
+        if not selected_file:
             filepath = QFileDialog.getSaveFileName(
                                                    self, 
                                                    "Export project",
@@ -297,9 +297,10 @@ class Project(QWidget):
                                                    ".xls"
                                                    )
             selected_file = ''.join(filepath)
-        else:
-            selected_file = open(filepath, 'w')
-            
+        print(selected_file)
+        # else:
+        #     selected_file = open(filepath, 'w')
+        
         excel_workbook = xlwt.Workbook()
         for obj_subtype, properties in object_ie.items():
             # we have one excel sheet per subtype of object.
@@ -318,14 +319,15 @@ class Project(QWidget):
             if pool_obj:
                 xls_sheet = excel_workbook.add_sheet(obj_subtype)
                 for id, property in enumerate(properties):
-                    xls_sheet.write(0, id, property)
+                    xls_sheet.write(0, id, property.name)
                     for i, obj in enumerate(pool_obj, 1):
-                        xls_sheet.write(i, id, str(getattr(obj, property)))
+                        xls_sheet.write(i, id, str(getattr(obj, property.name)))
                     
         pool_AS = list(self.network_view.network.pnAS.values())
         
         if pool_AS:
             AS_sheet = excel_workbook.add_sheet('AS')
+            
             for i, AS in enumerate(self.network_view.network.pnAS.values(), 1):
                 AS_sheet.write(i, 0, str(AS.name))
                 AS_sheet.write(i, 1, str(AS.AS_type))
@@ -341,7 +343,7 @@ class Project(QWidget):
                     node_AS_sheet.write(cpt, 0, AS.name)
                     node_AS_sheet.write(cpt, 1, node.name)
                     for idx, property in enumerate(perAS_properties[node.subtype], 2):
-                        node_AS_sheet.write(cpt, idx, str(node(AS.name, property)))
+                        node_AS_sheet.write(cpt, idx, str(node(AS.name, property.name)))
                     cpt += 1
                     
             if_AS_sheet = excel_workbook.add_sheet('per-AS interface properties')
@@ -355,7 +357,7 @@ class Project(QWidget):
                             if_AS_sheet.write(cpt, 1, str(interface.link))
                             if_AS_sheet.write(cpt, 2, str(interface.node)) 
                             for idx, property in enumerate(ethernet_interface_perAS_properties, 3):
-                                if_AS_sheet.write(cpt, idx, str(interface(AS.name, property)))
+                                if_AS_sheet.write(cpt, idx, str(interface(AS.name, property.name)))
                             cpt += 1
             
         has_area = lambda a: a.has_area

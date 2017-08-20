@@ -86,6 +86,14 @@ class LinkProperty(Property):
     def __new__(cls, link):
         return link
         
+class IPProperty(Property):
+    
+    conversion_needed = True
+    converter = 'convert_IP'
+    
+    def __new__(cls, ip):
+        return ip
+        
 ## Object properties
 
 class ID(IntProperty):
@@ -271,6 +279,24 @@ class AS(SetProperty):
     def __init__(self, value=None):
         super().__init__(value)
         
+## Per-AS node properties
+
+class RouterID(TextProperty):
+    
+    name = 'router_id'
+    pretty_name = 'Router ID'
+    
+    def __new__(cls, value=''):
+        return super().__new__(cls, value)
+        
+class LB_Paths(IntProperty):
+    
+    name ='LB_paths'
+    pretty_name = 'Load-balancing paths'
+    
+    def __new__(cls, value=4):
+        return super().__new__(cls, value)
+        
 ## Link property
         
 class Source(NodeProperty):
@@ -397,12 +423,12 @@ class LinkD(LinkProperty):
         
 ## Traffic properties
 
-class Throughput(IntProperty):
+class Throughput(FloatProperty):
     
     name = 'throughput'
     pretty_name = 'Throughput'
     
-    def __new__(cls, value=0):
+    def __new__(cls, value=0.):
         return super().__new__(cls, value)
         
 ## Interface properties
@@ -447,6 +473,24 @@ class Role(TextProperty):
     def __new__(cls, value=''):
         return super().__new__(cls, value)
         
+## Traffic properties
+
+class SourceIP(IPProperty):
+    
+    name = 'source_IP'
+    pretty_name = 'Source IP'
+    
+    def __new__(cls, value='0.0.0.0/0'):
+        return super().__new__(cls, value)
+        
+class DestinationIP(IPProperty):
+    
+    name = 'destination_IP'
+    pretty_name = 'Destination IP'
+    
+    def __new__(cls, value='0.0.0.0/0'):
+        return super().__new__(cls, value)
+        
 property_classes = {
                     'id': ID,
                     'name': Name,
@@ -465,8 +509,8 @@ property_classes = {
                     'source': Source,
                     'destination': Destination,
                     'interface': Interface,
-                    # 'interfaceS': InterfaceS,
-                    # 'interfaceD': InterfaceD,
+                    'interfaceS': InterfaceS,
+                    'interfaceD': InterfaceD,
                     'distance': Distance,
                     'costSD': CostSD,
                     'costDS': CostDS,
@@ -479,11 +523,15 @@ property_classes = {
                     'subnetwork': Subnetwork,
                     'linkS': LinkS,
                     'linkD': LinkD,
+                    'source_IP': SourceIP,
+                    'destination_IP': DestinationIP,
                     'throughput': Throughput,
                     'username': Username,
                     'link': Link,
                     'node': Node,
                     'role': Role,
+                    'router_id': RouterID,
+                    'LB_paths': LB_Paths,
                     'cost': Cost,
                     'priority': Priority,
                     'vendor': Vendor,

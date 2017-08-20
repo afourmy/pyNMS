@@ -120,7 +120,7 @@ class NetworkSelectionMenu(SelectionMenu):
         if self.no_shape and self.no_node and self.one_link:
             
             # we retrieve the link
-            self.link = self.links
+            self.link ,= self.links
             
             interfaces = QAction('Interfaces', self)
             interfaces_submenu = QMenu('Interfaces', self)

@@ -52,9 +52,12 @@ def initializer(init):
                 # if the value should be an empty list / set, we make
                 # sure it refers to different objects in memory by using eval
                 try:
-                    setattr(self, property.name, property())
-                except (TypeError, NameError, SyntaxError):
-                    setattr(self, property.name, property())
+                    try:
+                        setattr(self, property.name, property())
+                    except (TypeError, NameError, SyntaxError):
+                        setattr(self, property.name, property())
+                except TypeError:
+                    print(property.name)
         init(self)
     return wrapper
 
@@ -220,7 +223,8 @@ Subtype,
 Source, 
 Destination,
 Throughput,
-Sites
+SourceIP,
+DestinationIP
 )
 
 ## Common Import / Export properties
@@ -252,8 +256,7 @@ CapacityDS
 route_common_ie_properties = obj_common_properties + (
 Name, 
 Source, 
-Destination, 
-Sites
+Destination
 )
 
 # 4) import / export properties for traffic links
@@ -262,8 +265,9 @@ traffic_common_ie_properties = obj_common_properties + (
 Name, 
 Source, 
 Destination, 
-Throughput, 
-Sites
+Throughput,
+SourceIP,
+DestinationIP
 )
 
 ## Common properties per subtype
@@ -319,8 +323,8 @@ object_ie = OrderedDict([
 ('BGP peering', route_common_ie_properties),
 ('routed traffic', traffic_common_ie_properties),
 ('static traffic', traffic_common_ie_properties),
-# ('ethernet interface', ethernet_interface_properties),
-# ('optical interface', interface_common_properties)
+('ethernet interface', ethernet_interface_properties),
+('optical interface', interface_common_properties)
 ])
 
 ## Interface basic and per-AS public properties
@@ -414,7 +418,7 @@ plink_box_properties = (
 'interfaceD',
 'source', 
 'destination',
-'sntw'
+'subnetwork'
 )
 
 vc_box_properties = (
@@ -741,7 +745,7 @@ class Link(NDobject):
         super().__init__()
         
     def __repr__(self):
-        return self.name
+        return str(self.name)
         
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.name == other.name

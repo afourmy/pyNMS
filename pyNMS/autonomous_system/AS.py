@@ -204,7 +204,7 @@ class STP_AS(Ethernet_AS):
             # if the priority is the same
             if node_priority == root_priority:
                 # and the current node has a higher MAC address, it becomes root
-                if mac_comparer(self.root.base_macaddress, node.base_macaddress):
+                if mac_comparer(self.root.base_mac_address, node.base_mac_address):
                     self.root = node
         
     def build_SPT(self):
@@ -324,11 +324,11 @@ class RIP_AS(IP_AS):
                     if adj_link not in allowed_links: 
                         continue
                     if node == source:
-                        ex_ip = remote_link('ipaddress', neighbor)
+                        ex_ip = remote_link('ip_address', neighbor)
                         ex_int = adj_link('interface', source)
-                        source.rt[adj_link.sntw] = {('C', ex_ip, ex_int,
+                        source.rt[adj_link.subnetwork] = {('C', ex_ip, ex_int,
                                             dist, neighbor, adj_link)}
-                        SP_cost[adj_link.sntw] = 0
+                        SP_cost[adj_link.subnetwork] = 0
                     ex_int_cost = adj_link('cost', node, AS=self.name)
                     heappush(heap, (dist + ex_int_cost, 
                             neighbor, l3_path + [l3vc], ex_int))
@@ -337,17 +337,17 @@ class RIP_AS(IP_AS):
                 curr_l3, ex_l3 = l3_path[-1], l3_path[0]
                 ex_tk = ex_l3('link', source)
                 nh = ex_l3.destination if ex_l3.source == source else ex_l3.source
-                ex_ip = ex_l3('link', nh)('ipaddress', nh)
+                ex_ip = ex_l3('link', nh)('ip_address', nh)
                 link = curr_l3('link', node)
                 ex_int = ex_tk('interface', source)
-                if link.sntw not in source.rt:
-                    SP_cost[link.sntw] = dist
-                    source.rt[link.sntw] = {('R', ex_ip, ex_int, 
+                if link.subnetwork not in source.rt:
+                    SP_cost[link.subnetwork] = dist
+                    source.rt[link.subnetwork] = {('R', ex_ip, ex_int, 
                                                 dist, nh, ex_tk)}
                 else:
-                    if (dist == SP_cost[link.sntw] 
-                        and K > len(source.rt[link.sntw])):
-                        source.rt[link.sntw].add(('R', ex_ip, ex_int, 
+                    if (dist == SP_cost[link.subnetwork] 
+                        and K > len(source.rt[link.subnetwork])):
+                        source.rt[link.subnetwork].add(('R', ex_ip, ex_int, 
                                                 dist, nh, ex_tk))
         
 class ISIS_AS(ASWithArea, IP_AS):
@@ -464,11 +464,11 @@ class ISIS_AS(ASWithArea, IP_AS):
                     if adj_link not in allowed_links: 
                         continue
                     if node == source:
-                        ex_ip = remote_link('ipaddress', neighbor)
+                        ex_ip = remote_link('ip_address', neighbor)
                         ex_int = adj_link('interface', source)
-                        source.rt[adj_link.sntw] = {('C', ex_ip, ex_int,
+                        source.rt[adj_link.subnetwork] = {('C', ex_ip, ex_int,
                                             dist, neighbor, adj_link)}
-                        SP_cost[adj_link.sntw] = 0
+                        SP_cost[adj_link.subnetwork] = 0
                     ex_int_cost = adj_link('cost', node, AS=self.name)
                     heappush(heap, (dist + ex_int_cost, 
                                 neighbor, l3_path + [l3vc], ex_int))
@@ -477,22 +477,20 @@ class ISIS_AS(ASWithArea, IP_AS):
                 curr_l3, ex_l3 = l3_path[-1], l3_path[0]
                 ex_tk = ex_l3('link', source)
                 nh = ex_l3.destination if ex_l3.source == source else ex_l3.source
-                ex_ip = ex_l3('link', nh)('ipaddress', nh)
+                ex_ip = ex_l3('link', nh)('ip_address', nh)
                 link = curr_l3('link', node)
                 ex_int = ex_tk('interface', source)
                 link_int_cost = link('cost', node, AS=self.name)
                 if isL1:
                     if (node in self.border_routers 
                                         and '0.0.0.0' not in source.rt):
-                        if source.name == 'router4':
-                            print(node, self.border_routers, link, link.sntw)
                         source.rt['0.0.0.0'] = {('i*L1', ex_ip, ex_int,
                                                     dist, nh, ex_tk)}
                     else:
-                        if (('i L1', link.sntw) not in visited_subnetworks 
+                        if (('i L1', link.subnetwork) not in visited_subnetworks 
                                         and link.AS[self] & ex_tk.AS[self]):
-                            visited_subnetworks.add(('i L1', link.sntw))
-                            source.rt[link.sntw] = {('i L1', ex_ip, ex_int,
+                            visited_subnetworks.add(('i L1', link.subnetwork))
+                            source.rt[link.subnetwork] = {('i L1', ex_ip, ex_int,
                                     dist + link_int_cost, nh, ex_tk)}
                 else:
                     linkAS ,= link.AS[self]
@@ -512,10 +510,10 @@ class ISIS_AS(ASWithArea, IP_AS):
                     if (rtype == 'i L2' and source in self.border_routers and 
                                 exit_area.name != 'Backbone'):
                         continue
-                    if (('i L1', link.sntw) not in visited_subnetworks 
-                        and ('i L2', link.sntw) not in visited_subnetworks):
-                        visited_subnetworks.add((rtype, link.sntw))
-                        source.rt[link.sntw] = {(rtype, ex_ip, ex_int,
+                    if (('i L1', link.subnetwork) not in visited_subnetworks 
+                        and ('i L2', link.subnetwork) not in visited_subnetworks):
+                        visited_subnetworks.add((rtype, link.subnetwork))
+                        source.rt[link.subnetwork] = {(rtype, ex_ip, ex_int,
                                 dist + link_int_cost, nh, ex_tk)}
                     # TODO
                     # IS-IS uses per-address unequal cost load balancing 
@@ -592,7 +590,7 @@ class OSPF_AS(ASWithArea, IP_AS):
                     area.add_to_area(node)  
             
     def RFT_builder(self, source, allowed_nodes, allowed_links):
-        K = source.AS_properties[self.name]['LB_paths']
+        K = int(source.AS_properties[self.name]['LB_paths'])
         visited = set()
         # we keep track of all already visited subnetworks so that we 
         # don't add them more than once to the mapping dict.
@@ -620,11 +618,11 @@ class OSPF_AS(ASWithArea, IP_AS):
                     if adj_link not in allowed_links: 
                         continue
                     if node == source:
-                        ex_ip = remote_link('ipaddress', neighbor)
+                        ex_ip = remote_link('ip_address', neighbor)
                         ex_int = adj_link('interface', source)
-                        source.rt[adj_link.sntw] = {('C', ex_ip, ex_int,
+                        source.rt[adj_link.subnetwork] = {('C', ex_ip, ex_int,
                                             dist, neighbor, adj_link)}
-                        SP_cost[adj_link.sntw] = 0
+                        SP_cost[adj_link.subnetwork] = 0
                     ex_int_cost = adj_link('cost', node, AS=self.name)
                     heappush(heap, (dist + ex_int_cost, 
                                     neighbor, l3_path + [l3vc], ex_int))
@@ -633,38 +631,38 @@ class OSPF_AS(ASWithArea, IP_AS):
                 curr_l3, ex_l3 = l3_path[-1], l3_path[0]
                 ex_tk = ex_l3('link', source)
                 nh = ex_l3.destination if ex_l3.source == source else ex_l3.source
-                ex_ip = ex_l3('link', nh)('ipaddress', nh)
+                ex_ip = ex_l3('link', nh)('ip_address', nh)
                 link = curr_l3('link', node)
                 ex_int = ex_tk('interface', source)
                 # we check if the physical link has any common area with the
                 # exit physical link: if it does not, it is an inter-area route.
                 rtype = 'O' if (link.AS[self] & ex_tk.AS[self]) else 'O IA'
-                if link.sntw not in source.rt:
-                    SP_cost[link.sntw] = dist
-                    source.rt[link.sntw] = {(rtype, ex_ip, ex_int, 
+                if link.subnetwork not in source.rt:
+                    SP_cost[link.subnetwork] = dist
+                    source.rt[link.subnetwork] = {(rtype, ex_ip, ex_int, 
                                                 dist, nh, ex_tk)}
                 else:
-                    for route in source.rt[link.sntw]:
+                    for route in source.rt[link.subnetwork]:
                         break
                     if route[0] == 'O' and rtype == 'IA':
                         continue
                     elif route[0] == 'O IA' and rtype == 'O':
-                        SP_cost[link.sntw] = dist
-                        source.rt[link.sntw] = {(rtype, ex_ip, ex_int, 
+                        SP_cost[link.subnetwork] = dist
+                        source.rt[link.subnetwork] = {(rtype, ex_ip, ex_int, 
                                                 dist, nh, ex_tk)}
                     else:
-                        if (dist == SP_cost[link.sntw]
-                            and K > len(source.rt[link.sntw])):
-                            source.rt[link.sntw].add((
+                        if (dist == SP_cost[link.subnetwork]
+                            and int(K) > len(source.rt[link.subnetwork])):
+                            source.rt[link.subnetwork].add((
                                                     rtype, ex_ip, ex_int, 
                                                         dist, nh, ex_tk
                                                         ))
-                if (rtype, link.sntw) not in visited_subnetworks:
-                    if ('O', link.sntw) in visited_subnetworks:
+                if (rtype, link.subnetwork) not in visited_subnetworks:
+                    if ('O', link.subnetwork) in visited_subnetworks:
                         continue
                     else:
-                        visited_subnetworks.add((rtype, link.sntw))
-                        source.rt[link.sntw] = {(rtype, ex_ip, ex_int, 
+                        visited_subnetworks.add((rtype, link.subnetwork))
+                        source.rt[link.subnetwork] = {(rtype, ex_ip, ex_int, 
                                                         dist, nh, ex_tk)}
                                                         
 class BGP_AS(ASWithArea, IP_AS):

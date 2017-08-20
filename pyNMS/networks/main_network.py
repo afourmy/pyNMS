@@ -86,15 +86,15 @@ class MainNetwork(BaseNetwork):
     # it's loopback IP.
     def attached_ips(self, src):
         for _, plink in self.graph[src.id]['plink']:
-            yield plink('ipaddress', src)
-        yield src.ipaddress
+            yield plink('ip_address', src)
+        yield src.ip_address
         
     # function that retrieves all next-hop IP addresses attached to a node, 
     # including the loopback addresses of its neighbors
     def nh_ips(self, src):
         for nh, plink in self.graph[src.id]['plink']:
-            yield plink('ipaddress', nh)
-            yield nh.ipaddress
+            yield plink('ip_address', nh)
+            yield nh.ip_address
         
     def OIPf(self, str_ip, interface=None):
         # creates  or retrieves an OIP based on a string IP ('IP/subnet' format)
@@ -243,15 +243,12 @@ class MainNetwork(BaseNetwork):
                                      )
                         vc('link', node, source_plink)
                         vc('link', neighbor, destination_plink)
-                        # self.view.create_link(vc)
                         
     def vc_creation(self):
         # clear all existing multi-access segments
         self.ma_segments.clear()
         for i in (2, 3):
             type, subtype = 'l{}link'.format(i), 'l{}vc'.format(i)
-            for vc in list(self.ftr(type, subtype)):
-                self.view.remove_objects(vc)
             self.segment_finder(i)
             self.multi_access_network(i)
             
@@ -261,34 +258,34 @@ class MainNetwork(BaseNetwork):
         # reset all traffic links source and destination IP as new IP will
         # be assigned
         for traffic in self.traffics.values():
-            traffic.ipS = traffic.ipD = None
+            traffic.source_IP = traffic.destination_IP = None
             
     def ip_allocation(self):
         self.clear_ip()
         # we will perform the IP addressing of all subnetworks with VLSM
         # we first sort all subnetworks in increasing order of size, then
         # compute which subnet is needed
-        sntws = sorted(list(self.ma_segments[3]), key=len)
-        sntw_ip = '10.0.0.0'
-        while sntws:
+        subnetworks = sorted(list(self.ma_segments[3]), key=len)
+        subnetwork_ip = '10.0.0.0'
+        while subnetworks:
             # we retrieve the biggest subnetwork not yet treated
-            sntw = sntws.pop()
+            subnetwork = subnetworks.pop()
             # both network and broadcast addresses are excluded:
             # we add 2 to the size of the subnetwork
-            size = ceil(log(len(sntw) + 2, 2))
+            size = ceil(log(len(subnetwork) + 2, 2))
             subnet = 32 - size
-            for idx, (plink, node) in enumerate(sntw, 1):
-                curr_ip = ip_incrementer(sntw_ip, idx)
+            for idx, (plink, node) in enumerate(subnetwork, 1):
+                curr_ip = ip_incrementer(subnetwork_ip, idx)
                 ip_addr = IPAddress(curr_ip, subnet, plink('interface', node))
                 self.ip_to_oip[str(ip_addr)] = ip_addr
-                plink('ipaddress', node, ip_addr)
-                plink.sntw = ip_addr.network
-            sntw_ip = ip_incrementer(sntw_ip, 2**size)
+                plink('ip_address', node, ip_addr)
+                plink.subnetwork = ip_addr.network
+            subnetwork_ip = ip_incrementer(subnetwork_ip, 2**size)
             
         # allocate loopback address using the 192.168.0.0/16 private 
         # address space
         for idx, router in enumerate(self.ftr('node', 'router'), 1):
-            router.ipaddress = '192.168.{}.{}'.format(idx // 255, idx % 255)
+            router.ip_address = '192.168.{}.{}'.format(idx // 255, idx % 255)
             
     def mac_allocation(self):
         # ranges of private MAC addresses
@@ -303,13 +300,13 @@ class MainNetwork(BaseNetwork):
             macS, macD = mac_incrementer(mac_x2, id), mac_incrementer(mac_x6, id)
             source_mac = ':'.join(macS[i:i+2] for i in range(0, 12, 2))
             destination_mac = ':'.join(macD[i:i+2] for i in range(0, 12, 2))
-            plink.interfaceS.macaddress = source_mac
-            plink.interfaceD.macaddress = destination_mac
+            plink.interfaceS.mac_address = source_mac
+            plink.interfaceD.mac_address = destination_mac
             
         # allocation of mac_xA for switches base (hardware) MAC address
         mac_xA = '0A0000000000'
         for id, switch in enumerate(self.ftr('node', 'switch', 1)):
-            switch.base_macaddress = mac_incrementer(mac_xA, id)
+            switch.base_mac_address = mac_incrementer(mac_xA, id)
 
     def interface_allocation(self):
         for node in self.nodes.values():
@@ -363,8 +360,8 @@ class MainNetwork(BaseNetwork):
         for l3_segments in self.ma_segments[3]:
             for (plinkA, routerA) in l3_segments:
                 for (plinkB, routerB) in l3_segments: 
-                    remote_ip = plinkB('ipaddress', routerB)
-                    remote_mac = plinkB('macaddress', routerB)
+                    remote_ip = plinkB('ip_address', routerB)
+                    remote_mac = plinkB('mac_address', routerB)
                     outgoing_if = plinkA('name', routerA)
                     routerA.arpt[remote_ip] = (remote_mac, outgoing_if)
             
@@ -425,21 +422,21 @@ class MainNetwork(BaseNetwork):
                         continue
                     if node == source:
                         ex_int = adj_plink('interface', source)
-                        mac = remote_plink('macaddress', neighbor)
+                        mac = remote_plink('mac_address', neighbor)
                         source.st[mac] = ex_int
                     heappush(heap, (neighbor, path_node + [neighbor], 
                                             path_plink + [adj_plink], ex_int))
                     
             if path_plink:
                 plink, ex_tk = path_plink[-1], path_plink[0]
-                source.st[plink.interfaceS.macaddress] = ex_tk('interface', source)
-                source.st[plink.interfaceD.macaddress] = ex_tk('interface', source)
+                source.st[plink.interfaceS.mac_address] = ex_tk('interface', source)
+                source.st[plink.interfaceD.mac_address] = ex_tk('interface', source)
     
     ## 1) RFT-based routing and dimensioning
     
     def RFT_path_finder(self, traffic):
         source, destination = traffic.source, traffic.destination
-        src_ip, dst_ip = traffic.ipS, traffic.ipD
+        src_ip, dst_ip = traffic.source_IP, traffic.destination_IP
         valid = bool(src_ip) & bool(dst_ip)
         
         if valid:
@@ -479,7 +476,7 @@ class MainNetwork(BaseNetwork):
                     new_dataflow.throughput /= len(routes) - failed_plinks
                     # the source MAC address is the MAC address of the interface
                     # used to exit the current node
-                    new_dataflow.src_mac = ex_int.macaddress
+                    new_dataflow.src_mac = ex_int.mac_address
                     # the destination MAC address is the MAC address
                     # corresponding to the next-hop IP address in the ARP table
                     # we take the first element as the ARP table is built as 
@@ -531,6 +528,7 @@ class MainNetwork(BaseNetwork):
                                                 ex_tk = ex_tk,
                                                 ex_int = ex_int
                                                 ))
+        print(path)
         traffic.path = path
         return path, path_str
         
@@ -545,12 +543,12 @@ class MainNetwork(BaseNetwork):
         for neighbor, adj_l3vc in self.gftr(source, 'l3link', 'l3vc'):
             # if adj_plink in self.failed_obj:
             #     continue
-            ex_ip = adj_l3vc('ipaddress', neighbor)
+            ex_ip = adj_l3vc('ip_address', neighbor)
             ex_int = adj_l3vc('interface', source)
             adj_plink = adj_l3vc('link', source)
             # we compute the subnetwork of the attached
             # interface: it is a directly connected interface
-            source.rt[adj_plink.sntw] = {('C', ex_ip, ex_int, 
+            source.rt[adj_plink.subnetwork] = {('C', ex_ip, ex_int, 
                                                     0, neighbor, adj_plink)}
                              
     def switching_table_creation(self):
@@ -560,7 +558,7 @@ class MainNetwork(BaseNetwork):
         
     def subnetwork_update(self):
         for ip in self.ip_to_oip.values():
-            ip.interface.link.sntw = ip.network
+            ip.interface.link.subnetwork = ip.network
         
     def routing_table_creation(self):
         self.subnetwork_update()
@@ -1908,17 +1906,17 @@ class MainNetwork(BaseNetwork):
         
         # configuration of the loopback interface
         # yield 'interface Loopback0'
-        # yield 'ip address {ip} 255.255.255.255'.format(ip=node.ipaddress) 
+        # yield 'ip address {ip} 255.255.255.255'.format(ip=node.ip_address) 
         # yield 'exit'
         
         for _, sr in self.gftr(node, 'route', 'static route', False):
-            sntw, mask = sr.dst_sntw.split('/')
+            subnetwork, mask = sr.dst_sntw.split('/')
             mask = tomask(int(mask))
-            yield ' '.join(('ip route ', sntw, mask, sr.nh_ip))
+            yield ' '.join(('ip route ', subnetwork, mask, sr.nh_ip))
         
         for neighbor, adj_plink in self.graph[node.id]['plink']:
             interface = adj_plink('interface', node)
-            ip = interface.ipaddress
+            ip = interface.ip_address
             mask = interface.subnet_mask
             
             yield 'interface ' + str(interface)
@@ -1966,7 +1964,7 @@ class MainNetwork(BaseNetwork):
                 for _, adj_plink in self.graph[node.id]['plink']:
                     interface = adj_plink('interface', node)
                     if adj_plink in AS.pAS['link']:
-                        ip = interface.ipaddress
+                        ip = interface.ip_address
                         
                         yield 'network ' + ip.ip_addr
                     else:
@@ -1979,7 +1977,7 @@ class MainNetwork(BaseNetwork):
                 for _, adj_plink in self.graph[node.id]['plink']:
                     interface = adj_plink('interface', node)
                     if adj_plink in AS.pAS['link']:
-                        ip = interface.ipaddress
+                        ip = interface.ip_address
                         plink_area ,= adj_plink.AS[AS]
                         yield ' '.join((
                                         'network', 
@@ -2029,7 +2027,7 @@ class MainNetwork(BaseNetwork):
                 # We will derive it from the router's loopback address
                     
                 AFI = '49.' + str(format(node_area.id, '04d'))
-                sid = '.'.join((format(int(n), '03d') for n in node.ipaddress.split('.')))
+                sid = '.'.join((format(int(n), '03d') for n in node.ip_address.split('.')))
                 net = '.'.join((AFI, sid, '00'))
             
                 yield 'router isis'

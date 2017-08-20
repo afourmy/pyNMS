@@ -20,6 +20,8 @@ class MainNetworkView(GeographicalView, NetworkView):
     # given a graphical node, retrieves all attached graphical links    
     def attached_glinks(self, gnode):
         for link in self.network.attached_links(gnode.node):
+            if 'vc' in link.subtype:
+                continue
             yield link.glink[self]
         
     def draw_objects(self, *objects):
@@ -27,6 +29,8 @@ class MainNetworkView(GeographicalView, NetworkView):
             if obj.class_type == 'node' and self not in obj.gnode:
                 GraphicalNetworkNode(self, obj)
             if obj.class_type == 'link' and self not in obj.glink:
+                if 'vc' in obj.subtype:
+                    continue
                 self.draw_objects(obj.source, obj.destination)
                 GraphicalLink(self, obj)
         
