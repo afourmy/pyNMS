@@ -96,10 +96,7 @@ The only way to properly route flows in a network is to bring the model as close
 
 ## Troubleshooting commands
 
-pyNMS also provides an help with troubleshooting. You can right-click on a router and select the "Troubleshooting" entry to get a list of (Cisco) troubleshooting commands:
-
-- General troubleshooting commands
-- Per-AS type troubleshooting commands, depending on which AS the router belongs to
+pyNMS also provides an help with troubleshooting, by listing the most useful commands depending on the protocol used in the simulation.
 
 ![Troubleshooting](https://github.com/mintoo/networks/raw/master/Readme/troubleshooting.png)
 
@@ -111,9 +108,7 @@ Once traffic links are created, they are routed on the physical links. The resul
 
 ## Failure simulation
 
-It is possible to simulate the failure of one or several devices and see how it impacts the network routing and dimensioning. A link can be set "in failure" from the right-click menu.
-For the failure to be considered, it is required to trigger the update of all routing tables, then route the traffic flows again. 
-On the same example as above, we see that the router is now load-balancing the traffic on two paths only, and the total traffic flow is computed accordingly.
+It is possible to simulate the failure of one or several devices and see how it impacts the network routing and dimensioning. 
 
 ![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/failure_simulation.PNG)
 
@@ -141,11 +136,6 @@ Four methods were implemented to find the K link-disjoint shortest paths:
 - Bhandari algorithm
 - Suurbale algorithm
 - Linear programming with GLPK
-
-To run these algorithms, go to the "Network routing" menu and click on the "Advanced algorithms" entry.
-Select an algorithm, fill in all the associated fields, and confirm.
-
-![Algorithm window](https://github.com/mintoo/networks/raw/master/Readme/algorithm_window.png)
 
 ## Wavelength allocation problem
 

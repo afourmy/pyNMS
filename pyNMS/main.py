@@ -30,6 +30,7 @@ from PyQt5.QtWidgets import QApplication
 if str.__eq__(__name__, '__main__'):
     app = QApplication(sys.argv)
     controller = controller.Controller(path_app)
+    controller.setWindowTitle('pyNMS')
     controller.setGeometry(100, 100, 1500, 800)
     controller.show()
     sys.exit(app.exec_())

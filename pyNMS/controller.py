@@ -78,6 +78,9 @@ class Controller(QMainWindow):
         self.path_test = join(path_parent, 'Tests')
         self.path_workspace = join(path_parent, 'Workspace')
         
+        # set the icon
+        self.setWindowIcon(QIcon(join(self.path_icon, 'pynms_icon.gif')))
+        
         # a QMainWindow needs a central widget for the layout
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
