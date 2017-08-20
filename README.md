@@ -53,7 +53,7 @@ Two spring-layout algorithms are implemented:
 
 On a four-dimensional hypercube, the algorithm converges within a few milliseconds to a visually pleasing tree shape.
 
-![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/visualization.png)
+![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/visualization.PNG)
 
 ## Saving and import/export
 
