@@ -36,7 +36,6 @@ from main_menus import (
                         selection_panel
                         )
 from project import Project
-from ip_networks.ssh_management import SSHManagementWindow
 from views import base_view
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
@@ -88,7 +87,6 @@ class Controller(QMainWindow):
         self.graph_generation_window = GraphGenerationWindow(self)
         self.spring_layout_parameters_window = SpringLayoutParametersWindow(self)
         self.gis_parameter_window = GISParameterWindow(self)
-        self.ssh_management_window = SSHManagementWindow(self)
         self.search_window = SearchWindow(self)
         self.style_window = StyleWindow()
         self.debug_window = DebugWindow(self)

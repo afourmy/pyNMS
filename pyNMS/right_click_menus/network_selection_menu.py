@@ -204,7 +204,7 @@ class NetworkSelectionMenu(SelectionMenu):
         ip_ts.Troubleshooting(self.node, self.controller)
         
     def ssh_connection(self):
-        ssh_data = self.controller.ssh_management_window.get()
+        ssh_data = self.controller.credentials_window.get_credentials()
         ssh_data['IP'] = self.node.ip_address
         ssh_connection = '{path} -ssh {username}@{IP} -pw {password}'
         connect = Popen(ssh_connection.format(**ssh_data).split())
