@@ -58,11 +58,17 @@ class BaseView(QGraphicsView):
     def get_obj(self, graphical_objects):
         return map(lambda gobject: gobject.object, graphical_objects)
         
-    def selected_nodes(self):
+    def selected_gnodes(self):
         return filter(self.is_node, self.scene.selectedItems())
         
-    def selected_links(self):
+    def selected_nodes(self):
+        return self.get_obj(self.selected_gnodes())
+        
+    def selected_glinks(self):
         return filter(self.is_link, self.scene.selectedItems())
+        
+    def selected_links(self):
+        return self.get_obj(self.selected_glinks())
     
     def filter(self, type, *subtypes):
         return self.get_items(self.network.ftr(type, *subtypes))

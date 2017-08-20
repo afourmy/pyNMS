@@ -354,7 +354,7 @@ class ISIS_Management(ASManagementWithArea, IPManagement):
         
     def add_to_AS(self, *objects):
         super(ISIS_Management, self).add_to_AS(*objects)  
-        self.add_to_area(self.default_area, *objects)
+        self.add_to_area('Backbone', *objects)
                 
     def update_cost(self):
         for link in self.AS.pAS['link']:

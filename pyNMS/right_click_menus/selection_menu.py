@@ -27,10 +27,10 @@ class SelectionMenu(BaseMenu):
         # because to know if they are empty or not to build the menu
         self.items = set(self.view.scene.selectedItems())
         self.objects = set(self.view.get_obj(self.items))
-        self.gnodes = set(self.view.selected_nodes())
-        self.nodes = set(self.view.get_obj(self.gnodes))
-        self.glinks = set(self.view.selected_links())
-        self.links = set(self.view.get_obj(self.glinks))
+        self.gnodes = set(self.view.selected_gnodes())
+        self.nodes = set(self.view.selected_nodes())
+        self.glinks = set(self.view.selected_glinks())
+        self.links = set(self.view.selected_links())
         self.no_node = not self.gnodes
         self.no_link = not self.glinks
         self.no_shape = True

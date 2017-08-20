@@ -14,6 +14,7 @@
 
 from .AS import AS_subtypes
 from miscellaneous.decorators import update_paths
+from pyQT_widgets.Q_object_combo_box import QObjectComboBox
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox, QListWidget, QAbstractItemView)
 
@@ -29,7 +30,7 @@ class ASCreation(QWidget):
         
         # AS type
         AS_type = QLabel('Type')
-        self.AS_type_list = QComboBox()
+        self.AS_type_list = QObjectComboBox()
         self.AS_type_list.addItems(AS_subtypes)
         
         # AS name
@@ -68,7 +69,7 @@ class ASCreation(QWidget):
         id = self.id_edit.text()
         id = int(id) if id else len(self.network.pnAS) + 1
         new_AS = self.network.AS_factory(
-                                         self.AS_type_list.currentText(), 
+                                         self.AS_type_list.text, 
                                          self.name_edit.text(), 
                                          id,
                                          self.links, 

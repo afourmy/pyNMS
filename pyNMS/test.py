@@ -386,17 +386,17 @@ class TestHypercubeOSPF(unittest.TestCase):
         
         # we select all nodes and set the type of AS to OSPF (AS Creation window)
         self.vw.select(*self.vw.all_gnodes())
-        as_creation = ASCreation(set(self.vw.so['node']), set(), self.ct)
+        as_creation = ASCreation(set(self.vw.selected_nodes()), set(), self.ct)
         as_creation.AS_type_list.text = 'OSPF'
         as_creation.create_AS()
         
         # find all links
         ospf_as ,= self.nk.pnAS.values()
+        print(ospf_as.AS_type)
         ospf_as.management.find_links()
         
         # tick the address allocation box and trigger all routing functions
-        self.ct.routing_menu.action_booleans[2].set(True)
-        self.ct.routing_menu.refresh()
+        self.pj.refresh()
         
         # pick a router and check its routing table / configuration 
         for router in self.nk.pn['node'].values():
@@ -405,67 +405,62 @@ class TestHypercubeOSPF(unittest.TestCase):
         
         # generate the configuration
         configuration = RouterConfiguration(router, self.ct)
-        self.assertEqual(len(tuple(configuration.build_config(router))), 27)
+        self.assertEqual(len(list(self.nk.build_router_configuration(router))), 22)
         
         # generate the ARP, routing and BGP tables
         arp_table = ARPTable(router, self.ct)
-        bgp_table = BGPTable(router, self.ct)
         routing_table = RoutingTable(router, self.ct)
         
         # generate the ping and troubleshooting tab
-        troubleshooting = Troubleshooting(router, self.ct)
-        ping = Ping(router, self.ct)
+        # troubleshooting = Troubleshooting(router, self.ct)
         
-# class TestSquareTilingISIS(unittest.TestCase):
-#      
-#     @start_pyNMS
-#     def setUp(self):
-#         pass
-#  
-#     def tearDown(self):
-#         self.ct.destroy()
-#         
-#     def test_SquareTilingISIS(self):
-#         dimension_window = NetworkDimension('square-tiling', self.ct)
-#         dimension_window.entry_dimension.text = 8
-#         dimension_window.node_type_list.text = 'Router'
-#         dimension_window.create_graph()
-#         
-#         # we created a 4-dimensional hypercube: the network shoud have 16 nodes
-#         self.assertEqual(len(self.nk.pn['node']), 81)
-#         
-#         # we select all nodes and set the type of AS to OSPF (AS Creation window)
-#         self.vw.highlight_objects(*self.nk.pn['node'].values())
-#         as_creation = ASCreation(set(self.vw.so['node']), set(), self.ct)
-#         as_creation.AS_type_list.text = 'ISIS'
-#         as_creation.create_AS()
-#         
-#         # find all links
-#         ospf_as ,= self.nk.pnAS.values()
-#         ospf_as.management.find_links()
-#         
-#         # tick the address allocation box and trigger all routing functions
-#         self.ct.routing_menu.action_booleans[2].set(True)
-#         self.ct.routing_menu.refresh()
-#         
-#         # pick a router and check its routing table / configuration 
-#         for router in self.nk.pn['node'].values():
-#             break
-#         self.assertEqual(len(router.rt), 144)
-#         
-#         # generate the configuration
-#         configuration = RouterConfiguration(router, self.ct)
-#         self.assertEqual(len(tuple(configuration.build_config(router))), 23)
-#         
-#         # generate the ARP, routing and BGP tables
-#         arp_table = ARPTable(router, self.ct)
-#         bgp_table = BGPTable(router, self.ct)
-#         routing_table = RoutingTable(router, self.ct)
-#         
-#         # generate the ping and troubleshooting tab
-#         troubleshooting = Troubleshooting(router, self.ct)
-#         ping = Ping(router, self.ct)
-#         
+class TestSquareTilingISIS(unittest.TestCase):
+     
+    @start_pyNMS
+    def setUp(self):
+        pass
+ 
+    def tearDown(self):
+        self.ct.destroy()
+        
+    def test_SquareTilingISIS(self):
+        dimension_window = GraphDimensionWindow('square-tiling', self.ct)
+        dimension_window.nodes_edit.setText(str(10))
+        dimension_window.node_subtype_list.setText('Router')
+        dimension_window.confirm(_)
+        
+        # we created a 4-dimensional hypercube: the network shoud have 16 nodes
+        self.assertEqual(len(self.nk.pn['node']), 81)
+        
+        # we select all nodes and set the type of AS to OSPF (AS Creation window)
+        self.vw.select(*self.vw.all_gnodes())
+        as_creation = ASCreation(set(self.vw.selected_nodes()), set(), self.ct)
+        as_creation.AS_type_list.text = 'ISIS'
+        as_creation.create_AS()
+        
+        # find all links
+        ospf_as ,= self.nk.pnAS.values()
+        ospf_as.management.find_links()
+        
+        # tick the address allocation box and trigger all routing functions
+        self.pj.refresh()
+        
+        # pick a router and check its routing table / configuration 
+        for router in self.nk.pn['node'].values():
+            break
+        self.assertEqual(len(router.rt), 144)
+        
+        # generate the configuration
+        configuration = RouterConfiguration(router, self.ct)
+        self.assertEqual(len(list(self.nk.build_router_configuration(router))), 18)
+        
+        # generate the ARP, routing and BGP tables
+        arp_table = ARPTable(router, self.ct)
+        routing_table = RoutingTable(router, self.ct)
+        
+        # generate the ping and troubleshooting tab
+        # troubleshooting = Troubleshooting(router, self.ct)
+        
 # class TestFullMeshRIP(unittest.TestCase):
 #      
 #     @start_pyNMS

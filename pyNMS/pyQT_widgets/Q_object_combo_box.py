@@ -10,5 +10,13 @@ class QObjectComboBox(QComboBox):
         index = self.findText(text, Qt.MatchExactly)
         self.setCurrentIndex(index)
         
+    @property
+    def text(self):
+        return self.currentText()
+        
+    @text.setter
+    def text(self, value):
+        self.setText(value)
+        
     
     
