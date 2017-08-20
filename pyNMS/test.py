@@ -56,7 +56,7 @@ def start_pyNMS_and_import_project(filename):
         @start_pyNMS
         def wrapper(self):
             filepath = join(self.ct.path_test, filename)
-            self.pj.import_project(filepath=filepath)
+            self.pj.excel_import(filepath=filepath)
             function(self)
         return wrapper
     return inner_decorator
@@ -248,58 +248,58 @@ def start_pyNMS_and_import_project(filename):
 #             # we check that the path is conform to IS-IS protocol
 #             self.assertEqual(set(map(str, traffic_link.path)), path)
 #             
-# class TestOSPF(unittest.TestCase):
-#     
-#     results = (
-#     ('routed traffic0', {
-#     'ethernet link1', 
-#     'ethernet link2', 
-#     'ethernet link9', 
-#     'ethernet link10', 
-#     'ethernet link11', 
-#     'ethernet link12',
-#     'ethernet link13',
-#     'router9',
-#     'router7',
-#     'router5',
-#     'router4',
-#     'router6',
-#     'router3',
-#     'router1',
-#     'router0'
-#     }),
-#     
-#     ('routed traffic1', {
-#     'ethernet link1', 
-#     'ethernet link2', 
-#     'ethernet link9', 
-#     'ethernet link8',  
-#     'ethernet link12',
-#     'ethernet link13',
-#     'router9',
-#     'router7',
-#     'router5',
-#     'router4',
-#     'router3',
-#     'router1',
-#     'router0'
-#     }))
-#  
-#     @start_pyNMS_and_import_project('test_ospf.xls')
-#     def setUp(self):
-#         self.pj.refresh()
-#  
-#     def tearDown(self):
-#         self.app.quit()
-#  
-#     def test_OSPF(self):
-#         self.assertEqual(len(self.nk.pn['traffic']), 2)
-#         for traffic_link, path in self.results:
-#             # we retrieve the actual route from its name in pn
-#             traffic_link = self.nk.pn['traffic'][self.nk.name_to_id[traffic_link]]
-#             # we check that the path is conform to OSPF protocol
-#             self.assertEqual(set(map(str, traffic_link.path)), path)
-#             
+class TestOSPF(unittest.TestCase):
+    
+    results = (
+    ('routed traffic0', {
+    'ethernet link1', 
+    'ethernet link2', 
+    'ethernet link9', 
+    'ethernet link10', 
+    'ethernet link11', 
+    'ethernet link12',
+    'ethernet link13',
+    'router9',
+    'router7',
+    'router5',
+    'router4',
+    'router6',
+    'router3',
+    'router1',
+    'router0'
+    }),
+    
+    ('routed traffic1', {
+    'ethernet link1', 
+    'ethernet link2', 
+    'ethernet link9', 
+    'ethernet link8',  
+    'ethernet link12',
+    'ethernet link13',
+    'router9',
+    'router7',
+    'router5',
+    'router4',
+    'router3',
+    'router1',
+    'router0'
+    }))
+ 
+    @start_pyNMS_and_import_project('test_ospf.xls')
+    def setUp(self):
+        self.pj.refresh()
+ 
+    def tearDown(self):
+        self.app.quit()
+ 
+    def test_OSPF(self):
+        self.assertEqual(len(self.nk.pn['traffic']), 2)
+        for traffic_link, path in self.results:
+            # we retrieve the actual route from its name in pn
+            traffic_link = self.nk.pn['traffic'][self.nk.name_to_id[traffic_link]]
+            # we check that the path is conform to OSPF protocol
+            self.assertEqual(set(map(str, traffic_link.path)), path)
+            
 # class TestCSPF(unittest.TestCase):
 #     
 #     results = (
@@ -366,101 +366,100 @@ def start_pyNMS_and_import_project(filename):
 # 
 # ## Graph generation and IGP simulation
 # 
-class TestHypercubeOSPF(unittest.TestCase):
-     
-    @start_pyNMS
-    def setUp(self):
-        pass
- 
-    def tearDown(self):
-        self.ct.destroy()
-        
-    def test_HypercubeOSPF(self):
-        dimension_window = GraphDimensionWindow('hypercube', self.ct)
-        dimension_window.nodes_edit.setText(str(4))
-        dimension_window.node_subtype_list.setText('Router')
-        dimension_window.confirm(_)
-        
-        # we created a 4-dimensional hypercube: the network shoud have 16 nodes
-        self.assertEqual(len(self.nk.pn['node']), 16)
-        
-        # we select all nodes and set the type of AS to OSPF (AS Creation window)
-        self.vw.select(*self.vw.all_gnodes())
-        as_creation = ASCreation(set(self.vw.selected_nodes()), set(), self.ct)
-        as_creation.AS_type_list.text = 'OSPF'
-        as_creation.create_AS()
-        
-        # find all links
-        ospf_as ,= self.nk.pnAS.values()
-        print(ospf_as.AS_type)
-        ospf_as.management.find_links()
-        
-        # tick the address allocation box and trigger all routing functions
-        self.pj.refresh()
-        
-        # pick a router and check its routing table / configuration 
-        for router in self.nk.pn['node'].values():
-            break
-        self.assertEqual(len(router.rt), 32)
-        
-        # generate the configuration
-        configuration = RouterConfiguration(router, self.ct)
-        self.assertEqual(len(list(self.nk.build_router_configuration(router))), 22)
-        
-        # generate the ARP, routing and BGP tables
-        arp_table = ARPTable(router, self.ct)
-        routing_table = RoutingTable(router, self.ct)
-        
-        # generate the ping and troubleshooting tab
-        # troubleshooting = Troubleshooting(router, self.ct)
-        
-class TestSquareTilingISIS(unittest.TestCase):
-     
-    @start_pyNMS
-    def setUp(self):
-        pass
- 
-    def tearDown(self):
-        self.ct.destroy()
-        
-    def test_SquareTilingISIS(self):
-        dimension_window = GraphDimensionWindow('square-tiling', self.ct)
-        dimension_window.nodes_edit.setText(str(10))
-        dimension_window.node_subtype_list.setText('Router')
-        dimension_window.confirm(_)
-        
-        # we created a 4-dimensional hypercube: the network shoud have 16 nodes
-        self.assertEqual(len(self.nk.pn['node']), 81)
-        
-        # we select all nodes and set the type of AS to OSPF (AS Creation window)
-        self.vw.select(*self.vw.all_gnodes())
-        as_creation = ASCreation(set(self.vw.selected_nodes()), set(), self.ct)
-        as_creation.AS_type_list.text = 'ISIS'
-        as_creation.create_AS()
-        
-        # find all links
-        ospf_as ,= self.nk.pnAS.values()
-        ospf_as.management.find_links()
-        
-        # tick the address allocation box and trigger all routing functions
-        self.pj.refresh()
-        
-        # pick a router and check its routing table / configuration 
-        for router in self.nk.pn['node'].values():
-            break
-        self.assertEqual(len(router.rt), 144)
-        
-        # generate the configuration
-        configuration = RouterConfiguration(router, self.ct)
-        self.assertEqual(len(list(self.nk.build_router_configuration(router))), 18)
-        
-        # generate the ARP, routing and BGP tables
-        arp_table = ARPTable(router, self.ct)
-        routing_table = RoutingTable(router, self.ct)
-        
-        # generate the ping and troubleshooting tab
-        # troubleshooting = Troubleshooting(router, self.ct)
-        
+# class TestHypercubeOSPF(unittest.TestCase):
+#      
+#     @start_pyNMS
+#     def setUp(self):
+#         pass
+#  
+#     def tearDown(self):
+#         self.ct.destroy()
+#         
+#     def test_HypercubeOSPF(self):
+#         dimension_window = GraphDimensionWindow('hypercube', self.ct)
+#         dimension_window.nodes_edit.setText(str(4))
+#         dimension_window.node_subtype_list.setText('Router')
+#         dimension_window.confirm(_)
+#         
+#         # we created a 4-dimensional hypercube: the network shoud have 16 nodes
+#         self.assertEqual(len(self.nk.pn['node']), 16)
+#         
+#         # we select all nodes and set the type of AS to OSPF (AS Creation window)
+#         self.vw.select(*self.vw.all_gnodes())
+#         as_creation = ASCreation(set(self.vw.selected_nodes()), set(), self.ct)
+#         as_creation.AS_type_list.text = 'OSPF'
+#         as_creation.create_AS()
+#         
+#         # find all links
+#         ospf_as ,= self.nk.pnAS.values()
+#         ospf_as.management.find_links()
+#         
+#         # tick the address allocation box and trigger all routing functions
+#         self.pj.refresh()
+#         
+#         # pick a router and check its routing table / configuration 
+#         for router in self.nk.pn['node'].values():
+#             break
+#         self.assertEqual(len(router.rt), 32)
+#         
+#         # generate the configuration
+#         configuration = RouterConfiguration(router, self.ct)
+#         self.assertEqual(len(list(self.nk.build_router_configuration(router))), 22)
+#         
+#         # generate the ARP, routing and BGP tables
+#         arp_table = ARPTable(router, self.ct)
+#         routing_table = RoutingTable(router, self.ct)
+#         
+#         # generate the ping and troubleshooting tab
+#         # troubleshooting = Troubleshooting(router, self.ct)
+#         
+# class TestSquareTilingISIS(unittest.TestCase):
+#      
+#     @start_pyNMS
+#     def setUp(self):
+#         pass
+#  
+#     def tearDown(self):
+#         self.ct.destroy()
+#         
+#     def test_SquareTilingISIS(self):
+#         dimension_window = GraphDimensionWindow('square-tiling', self.ct)
+#         dimension_window.nodes_edit.setText(str(10))
+#         dimension_window.node_subtype_list.setText('Router')
+#         dimension_window.confirm(_)
+#         
+#         # we created a square-tiling
+#         self.assertEqual(len(self.nk.pn['node']), 81)
+#         
+#         # we select all nodes and set the type of AS to OSPF (AS Creation window)
+#         self.vw.select(*self.vw.all_gnodes())
+#         as_creation = ASCreation(set(self.vw.selected_nodes()), set(), self.ct)
+#         as_creation.AS_type_list.text = 'ISIS'
+#         as_creation.create_AS()
+#         
+#         # find all links
+#         ospf_as ,= self.nk.pnAS.values()
+#         ospf_as.management.find_links()
+#         
+#         # tick the address allocation box and trigger all routing functions
+#         self.pj.refresh()
+#         
+#         # pick a router and check its routing table / configuration 
+#         for router in self.nk.pn['node'].values():
+#             break
+#         self.assertEqual(len(router.rt), 144)
+#         
+#         # generate the configuration
+#         configuration = RouterConfiguration(router, self.ct)
+#         self.assertEqual(len(list(self.nk.build_router_configuration(router))), 18)
+#         
+#         # generate the ARP, routing and BGP tables
+#         arp_table = ARPTable(router, self.ct)
+#         routing_table = RoutingTable(router, self.ct)
+#         
+#         # generate the ping and troubleshooting tab
+#         # troubleshooting = Troubleshooting(router, self.ct)
+#         
 # class TestFullMeshRIP(unittest.TestCase):
 #      
 #     @start_pyNMS
@@ -471,17 +470,17 @@ class TestSquareTilingISIS(unittest.TestCase):
 #         self.app.quit()
 #         
 #     def test_FullMeshRIP(self):
-#         dimension_window = NetworkDimension('full-mesh', self.ct)
-#         dimension_window.entry_dimension.text = 5
-#         dimension_window.node_type_list.text = 'Router'
-#         dimension_window.create_graph()
+#         dimension_window = GraphDimensionWindow('full-mesh', self.ct)
+#         dimension_window.nodes_edit.setText(str(6))
+#         dimension_window.node_subtype_list.setText('Router')
+#         dimension_window.confirm(_)
 #         
-#         # we created a 4-dimensional hypercube: the network shoud have 16 nodes
+#         # we created a full-mesh
 #         self.assertEqual(len(self.nk.pn['node']), 5)
 #         
 #         # we select all nodes and set the type of AS to OSPF (AS Creation window)
-#         self.vw.highlight_objects(*self.nk.pn['node'].values())
-#         as_creation = ASCreation(set(self.vw.so['node']), set(), self.ct)
+#         self.vw.select(*self.vw.all_gnodes())
+#         as_creation = ASCreation(set(self.vw.selected_nodes()), set(), self.ct)
 #         as_creation.AS_type_list.text = 'RIP'
 #         as_creation.create_AS()
 #         
@@ -490,8 +489,7 @@ class TestSquareTilingISIS(unittest.TestCase):
 #         ospf_as.management.find_links()
 #         
 #         # tick the address allocation box and trigger all routing functions
-#         self.ct.routing_menu.action_booleans[2].set(True)
-#         self.ct.routing_menu.refresh()
+#         self.pj.refresh()
 #         
 #         # pick a router and check its routing table / configuration 
 #         for router in self.nk.pn['node'].values():
@@ -500,16 +498,14 @@ class TestSquareTilingISIS(unittest.TestCase):
 #         
 #         # generate the configuration
 #         configuration = RouterConfiguration(router, self.ct)
-#         self.assertEqual(len(tuple(configuration.build_config(router))), 27)
+#         self.assertEqual(len(list(self.nk.build_router_configuration(router))), 22)
 #         
 #         # generate the ARP, routing and BGP tables
 #         arp_table = ARPTable(router, self.ct)
-#         bgp_table = BGPTable(router, self.ct)
 #         routing_table = RoutingTable(router, self.ct)
 #         
 #         # generate the ping and troubleshooting tab
-#         troubleshooting = Troubleshooting(router, self.ct)
-#         ping = Ping(router, self.ct)
+#         # troubleshooting = Troubleshooting(router, self.ct)
 #         
 # class TestMultipleObjectGeneration(unittest.TestCase):
 #      

@@ -831,7 +831,6 @@ class EthernetLink(PhysicalLink):
         super().__init__()
         self.interfaceS = EthernetInterface(self.source, self)
         self.interfaceD = EthernetInterface(self.destination, self)
-        print(self, type(self.source), type(str(self.source)))
         
 class OpticalLink(PhysicalLink):
     

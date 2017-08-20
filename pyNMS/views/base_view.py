@@ -106,7 +106,6 @@ class BaseView(QGraphicsView):
                 self.setDragMode(QGraphicsView.NoDrag)
                 if self.controller.creation_mode == 'text':
                     text_item = GraphicalText(self)
-                    print(text_item)
                     text_item.setTextInteractionFlags(Qt.TextEditorInteraction)
                     text_item.setZValue(1000.0)
                     self.scene.addItem(text_item)

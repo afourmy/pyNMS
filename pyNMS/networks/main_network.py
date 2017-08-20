@@ -144,7 +144,6 @@ class MainNetwork(BaseNetwork):
             value = getattr(node, property)
             if value:
                 credentials[property] = value
-        print(credentials)
         return credentials
             
     ## Conversion methods and property -> type mapping
@@ -1609,7 +1608,7 @@ class MainNetwork(BaseNetwork):
                                     )
             visited.add(tlA)
                             
-        graph_project.current_view.draw_all(False)
+        graph_project.current_view.refresh_display()
         return graph_project
         
     def largest_degree_first(self):

@@ -130,8 +130,8 @@ class ObjectManagementWindow(QWidget):
         for property, property_widget in self.dict_global_properties.items():
             try:
                 value = property_widget.text()
-            except AttributeError:
-                value = property_widget.currentText()
+            except (AttributeError, TypeError):
+                value = property_widget.text
             # convert 'None' to None if necessary
             value = None if value == 'None' else value              
             if property.name == 'sites':

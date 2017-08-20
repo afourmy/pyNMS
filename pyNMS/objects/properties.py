@@ -46,12 +46,12 @@ class IntProperty(int, Property):
     # we must use __new__ instead of __init_
     
     def __new__(cls, value):
-        return int.__new__(cls, value)
+        return int.__new__(cls, int(value))
         
 class FloatProperty(float, Property):
     
     def __new__(cls, value):
-        return float.__new__(cls, value)
+        return float.__new__(cls, float(value))
         
 class ListProperty(list, Property):
     
