@@ -137,24 +137,12 @@ Four methods were implemented to find the K link-disjoint shortest paths:
 - Suurbale algorithm
 - Linear programming with GLPK
 
-## Wavelength allocation problem
+Wavelength allocation problem
 
 In an optical-bypass enabled network, a wavelength can cross an optical switch without Optical-Electrical-Optical (OEO) conversion. While this is a step forward towards cheaper and "greener" networks, a trade-off is that there has to be an end-to-end "wavelength continuity": a wavelength stays the same from the source edge to the destination edge, and it cannot be used by different lightpaths on the same optical fiber.
 
-![WA topology](https://github.com/mintoo/networks/raw/master/Readme/WA_problem1.png)
-
-In the following example, there are 3 paths. If there is a transponder at "node2" to take care of the wavelength conversion, we need only two wavelengths overall: we can assign a wavelength M to traffic3, N to traffic4, and traffic5 will first use N from node1 to node2, then M from node2 to node3. However, in an optical-bypass enabled network, there can be no OEO conversion at node2: the number of wavelengths we need depends how we assign them.
-If we assign M to traffic3 and N to traffic4, we will have to use a third wavelength for traffic5, since M and N are already used. However, we could assign M to both traffic3 and traffic4, which leaves N free to use for traffic5: the minimal number of wavelengths required is 2.
-
 The wavelength allocation problem consists in finding the minimum number of wavelengths that are required, and how to allocate them to lightpaths.
-Build an network with optical switches (OXCs) and traffic links (at most one per couple of OXC), then go to the "Network routing" and click on the "Wavelength assignment" entry.
-
-![WA topology](https://github.com/mintoo/networks/raw/master/Readme/WA_problem2.png)
-
-The first step is to trigger the graph transformation: type a name for the scenario and click on "Graph transformation".
 Two methods were implemented to solve the wavelength assignment problem:
 
 - Linear programming with GLPK
 - "Largest degree first" heuristic
-
-Choose one of them in the list and click on "Run algorithm": pyNMS will find out how many wavelengths are needed.

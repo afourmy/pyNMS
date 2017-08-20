@@ -1,0 +1,928 @@
+BGP peering: {}
+antenna: {}
+cloud: {}
+etherchannel: {}
+ethernet interface:
+  ? ''
+  : ip_address: 0.0.0.0
+    link: ethernet link3
+    mac_address: 00:00:00:00:00:00
+    name: ''
+    node: router4
+    subnet_mask: 255.255.255.255
+ethernet link:
+  ethernet link3:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router4
+    distance: '0.0'
+    interface: GE
+    name: ethernet link3
+    source: router4
+firewall: {}
+host: {}
+load_balancer: {}
+optical channel: {}
+optical interface:
+  ? ''
+  : link: optical link31
+    name: ''
+    node: router23
+optical link:
+  optical link10:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router6
+    distance: '0.0'
+    interface: GE
+    name: optical link10
+    source: router26
+  optical link11:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router7
+    distance: '0.0'
+    interface: GE
+    name: optical link11
+    source: router6
+  optical link12:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router9
+    distance: '0.0'
+    interface: GE
+    name: optical link12
+    source: router7
+  optical link13:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router8
+    distance: '0.0'
+    interface: GE
+    name: optical link13
+    source: router9
+  optical link14:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router5
+    distance: '0.0'
+    interface: GE
+    name: optical link14
+    source: router8
+  optical link15:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router26
+    distance: '0.0'
+    interface: GE
+    name: optical link15
+    source: router5
+  optical link16:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router10
+    distance: '0.0'
+    interface: GE
+    name: optical link16
+    source: router7
+  optical link17:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router11
+    distance: '0.0'
+    interface: GE
+    name: optical link17
+    source: router10
+  optical link18:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router7
+    distance: '0.0'
+    interface: GE
+    name: optical link18
+    source: router4
+  optical link19:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router4
+    distance: '0.0'
+    interface: GE
+    name: optical link19
+    source: router11
+  optical link20:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router12
+    distance: '0.0'
+    interface: GE
+    name: optical link20
+    source: router10
+  optical link21:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router13
+    distance: '0.0'
+    interface: GE
+    name: optical link21
+    source: router12
+  optical link22:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router28
+    distance: '0.0'
+    interface: GE
+    name: optical link22
+    source: router13
+  optical link23:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router14
+    distance: '0.0'
+    interface: GE
+    name: optical link23
+    source: router28
+  optical link24:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router16
+    distance: '0.0'
+    interface: GE
+    name: optical link24
+    source: router14
+  optical link25:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router15
+    distance: '0.0'
+    interface: GE
+    name: optical link25
+    source: router16
+  optical link26:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router20
+    distance: '0.0'
+    interface: GE
+    name: optical link26
+    source: router16
+  optical link27:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router19
+    distance: '0.0'
+    interface: GE
+    name: optical link27
+    source: router20
+  optical link28:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router18
+    distance: '0.0'
+    interface: GE
+    name: optical link28
+    source: router19
+  optical link29:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router17
+    distance: '0.0'
+    interface: GE
+    name: optical link29
+    source: router18
+  optical link30:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router23
+    distance: '0.0'
+    interface: GE
+    name: optical link30
+    source: router18
+  optical link31:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router17
+    distance: '0.0'
+    interface: GE
+    name: optical link31
+    source: router23
+  optical link32:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router19
+    distance: '0.0'
+    interface: GE
+    name: optical link32
+    source: router23
+  optical link33:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router23
+    distance: '0.0'
+    interface: GE
+    name: optical link33
+    source: router27
+  optical link34:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router27
+    distance: '0.0'
+    interface: GE
+    name: optical link34
+    source: router19
+  optical link35:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router21
+    distance: '0.0'
+    interface: GE
+    name: optical link35
+    source: router27
+  optical link36:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router23
+    distance: '0.0'
+    interface: GE
+    name: optical link36
+    source: router21
+  optical link37:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router24
+    distance: '0.0'
+    interface: GE
+    name: optical link37
+    source: router27
+  optical link38:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router22
+    distance: '0.0'
+    interface: GE
+    name: optical link38
+    source: router24
+  optical link39:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router9
+    distance: '0.0'
+    interface: GE
+    name: optical link39
+    source: router22
+  optical link4:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router2
+    distance: '0.0'
+    interface: GE
+    name: optical link4
+    source: router1
+  optical link40:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router21
+    distance: '0.0'
+    interface: GE
+    name: optical link40
+    source: router8
+  optical link41:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router22
+    distance: '0.0'
+    interface: GE
+    name: optical link41
+    source: router25
+  optical link42:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router28
+    distance: '0.0'
+    interface: GE
+    name: optical link42
+    source: router22
+  optical link43:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router24
+    distance: '0.0'
+    interface: GE
+    name: optical link43
+    source: router28
+  optical link44:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router16
+    distance: '0.0'
+    interface: GE
+    name: optical link44
+    source: router24
+  optical link45:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router12
+    distance: '0.0'
+    interface: GE
+    name: optical link45
+    source: router25
+  optical link46:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router5
+    distance: '0.0'
+    interface: GE
+    name: optical link46
+    source: router1
+  optical link5:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router6
+    distance: '0.0'
+    interface: GE
+    name: optical link5
+    source: router2
+  optical link6:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router3
+    distance: '0.0'
+    interface: GE
+    name: optical link6
+    source: router6
+  optical link7:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router4
+    distance: '0.0'
+    interface: GE
+    name: optical link7
+    source: router3
+  optical link8:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router2
+    distance: '0.0'
+    interface: GE
+    name: optical link8
+    source: router3
+  optical link9:
+    capacityDS: '3'
+    capacitySD: '3'
+    costDS: '1'
+    costSD: '1'
+    destination: router5
+    distance: '0.0'
+    interface: GE
+    name: optical link9
+    source: router6
+oxc: {}
+pseudowire: {}
+regenerator: {}
+routed traffic: {}
+router:
+  router1:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router1
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router10:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router10
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router11:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router11
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router12:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router12
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router13:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router13
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router14:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router14
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router15:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router15
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router16:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router16
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router17:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router17
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router18:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router18
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router19:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router19
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router2:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router2
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router20:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router20
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router21:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router21
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router22:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router22
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router23:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router23
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router24:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router24
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router25:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router25
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router26:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router26
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router27:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router27
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router28:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router28
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router3:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router3
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router4:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router4
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router5:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router5
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router6:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router6
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router7:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router7
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router8:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router8
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+  router9:
+    enable_password: ''
+    ip_address: 0.0.0.0
+    latitude: '0.0'
+    logical_x: '0.0'
+    logical_y: '0.0'
+    longitude: '0.0'
+    name: router9
+    operating_system: IOS
+    password: ''
+    subnet_mask: 255.255.255.255
+    username: ''
+    vendor: Cisco
+    x: '0.0'
+    y: '0.0'
+server: {}
+site: {}
+splitter: {}
+static traffic:
+  static traffic47:
+    destination: router21
+    destination_IP: 0.0.0.0/0
+    name: static traffic47
+    source: router10
+    source_IP: 0.0.0.0/0
+    throughput: '0.0'
+  static traffic48:
+    destination: router26
+    destination_IP: 0.0.0.0/0
+    name: static traffic48
+    source: router21
+    source_IP: 0.0.0.0/0
+    throughput: '0.0'
+  static traffic49:
+    destination: router12
+    destination_IP: 0.0.0.0/0
+    name: static traffic49
+    source: router26
+    source_IP: 0.0.0.0/0
+    throughput: '0.0'
+  static traffic50:
+    destination: router19
+    destination_IP: 0.0.0.0/0
+    name: static traffic50
+    source: router13
+    source_IP: 0.0.0.0/0
+    throughput: '0.0'
+  static traffic51:
+    destination: router7
+    destination_IP: 0.0.0.0/0
+    name: static traffic51
+    source: router3
+    source_IP: 0.0.0.0/0
+    throughput: '0.0'
+switch: {}
