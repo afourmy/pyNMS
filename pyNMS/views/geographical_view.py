@@ -95,7 +95,7 @@ class GeographicalView(BaseView):
 class Map():
 
     projections = OrderedDict([
-    ('spherical', Proj('+proj=ortho +lat_0=40 +lon_0=-95')),
+    ('spherical', Proj('+proj=ortho +lat_0=48 +lon_0=17')),
     ('mercator', Proj(init='epsg:3395')),
     ('wgs84', Proj(init='epsg:3857')),
     ('3035', Proj("+init=EPSG:3035")),
@@ -105,7 +105,7 @@ class Map():
     def __init__(self, view):
         self.view = view
         self.proj = 'spherical'
-        self.ratio, self.offset = 1/5000, (0, 0)
+        self.ratio, self.offset = 1/1000, (0, 0)
         self.shapefile = join(self.view.controller.path_shapefiles, 'World countries (low resolution).shp')
         self.display = True
         
@@ -129,7 +129,7 @@ class Map():
     def draw_water(self):
         if self.proj == 'spherical':
             # draw the planet
-            cx, cy = self.to_canvas_coordinates(-95, 40)
+            cx, cy = self.to_canvas_coordinates(17, 48)
             R = 6371000*self.ratio
             earth_water = QtWidgets.QGraphicsEllipseItem(cx - R, cy - R, 2*R, 2*R)
             earth_water.setZValue(0)

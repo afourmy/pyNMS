@@ -34,6 +34,7 @@ class SiteView(GeographicalView):
                 
     def dropEvent(self, event):
         pos = self.mapToScene(event.pos())
+        geo_pos = self.world_map.to_geographical_coordinates(pos.x(), pos.y())
         if event.mimeData().hasFormat('application/x-dnditemdata'):
             item_data = event.mimeData().data('application/x-dnditemdata')
             dataStream = QDataStream(item_data, QIODevice.ReadOnly)
@@ -41,3 +42,5 @@ class SiteView(GeographicalView):
             dataStream >> pixmap >> offset
             new_node = GraphicalSite(self)
             new_node.setPos(pos - offset)
+            # update the site coordinates at creation
+            new_gnode.node.longitude, new_gnode.node.latitude = geo_pos

@@ -219,7 +219,7 @@ class Project(QWidget):
                 if_properties = sheet.row_values(0)
                 # creation of ethernet interfaces
                 for row_index in range(1, sheet.nrows):
-                    link, node, *args = sheet.row_values(row_index)
+                    name, link, node, *args = sheet.row_values(row_index)
                     link = self.network_view.network.convert_link(link)
                     node = self.network_view.network.convert_node(node)
                     interface = link('interface', node)
