@@ -4,8 +4,6 @@ pyNMS is a network visualization, inventory and automation software.
 
 ![pyNMS](https://github.com/mintoo/networks/raw/master/Readme/images/pynms.png)
 
-Contact us: contact@pynms.fr
-
 # Getting started
 
 The following modules are used in pyNMS:
@@ -161,7 +159,8 @@ Two methods were implemented to solve the wavelength assignment problem:
 
 You can contact me at my personal email address:
 ```
-print(''.join(map(chr, (97, 110, 116, 111, 105, 110, 101, 46, 102, 111, 117, 114, 109, 121, 64, 103, 109, 97, 105, 108, 46, 99, 111, 109))))
+print(''.join(map(chr, (97, 110, 116, 111, 105, 110, 101, 46, 102, 111, 
+117, 114, 109, 121, 64, 103, 109, 97, 105, 108, 46, 99, 111, 109))))
 ```
 
 or on the [Network to Code slack](http://networktocode.herokuapp.com "Network to Code slack"). (@minto)
@@ -169,4 +168,9 @@ or on the [Network to Code slack](http://networktocode.herokuapp.com "Network to
 # Credits
 
 [Netmiko](https://github.com/ktbyers/netmiko "Netmiko")
+
+[Jinja2](https://github.com/pallets/jinja "Jinja2")
+
 [NAPALM](https://github.com/napalm-automation/napalm "NAPALM")
+
+
