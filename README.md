@@ -2,7 +2,7 @@
 
 pyNMS is a network visualization, inventory and automation software.
 
-![pyNMS](https://github.com/mintoo/networks/raw/master/Readme/pynms.png)
+![pyNMS](https://github.com/mintoo/networks/raw/master/Readme/images/pynms.png)
 
 [Visit our website](http://www.pynms.fr)
 
@@ -32,13 +32,13 @@ Maps can be displayed in pyNMS to draw all network
 devices at their exact location (longitude and latitude),
 using the mercator or azimuthal orthographic projections.
 
-![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/gis_visualization.png)
+![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/images/gis_visualization.png)
 
 ## Embedded SSH client
 
 pyNMS uses PuTTY to automatically establish an SSH connection to any SSH-enabled device (router, switch, server, etc).
 
-![Alt Text](https://github.com/mintoo/networks/raw/master/Readme/ssh_connection.gif)
+![Alt Text](https://github.com/mintoo/networks/raw/master/Readme/animations/ssh_connection.gif)
 
 ## Interface to NAPALM
 
@@ -47,7 +47,7 @@ NAPALM is an automation framework that provides a set of functions to interact w
 A demonstration of how to use NAPALM from pyNMS is available here:
 https://www.youtube.com/watch?v=c7ZG7IElgkw
 
-![SSH connection](https://github.com/mintoo/networks/raw/master/Readme/napalm.png)
+![SSH connection](https://github.com/mintoo/networks/raw/master/Readme/images/napalm.png)
 
 ## Network algorithmic visualization
 
@@ -59,26 +59,26 @@ Two spring-layout algorithms are implemented:
 
 On a four-dimensional hypercube, the algorithm converges within a few milliseconds to a visually pleasing shape.
 
-![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/visualization.PNG)
+![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/images/visualization.PNG)
 
 ## Saving and import/export
 
 Projects can be imported from / exported to an Excel or a YAML file. This allows to import an existing network into pyNMS.
 
-![Excel project](https://github.com/mintoo/networks/raw/master/Readme/xls_import.PNG)
+![Excel project](https://github.com/mintoo/networks/raw/master/Readme/images/xls_import.PNG)
 
 ## AS Management
 
 Autonomous systems can be created to keep track of which device runs which protocol (OSPF, IS-IS, BGP, etc).
 Autonomous systems can be divided into multiple areas.
 
-![AS Management](https://github.com/mintoo/networks/raw/master/Readme/AS_management.png)
+![AS Management](https://github.com/mintoo/networks/raw/master/Readme/images/AS_management.png)
 
 ## Automatic device configuration
 
 pyNMS shows all Cisco commands required to properly configure a protocol on the device. 
 
-![Automatic configuration](https://github.com/mintoo/networks/raw/master/Readme/config.PNG)
+![Automatic configuration](https://github.com/mintoo/networks/raw/master/Readme/images/config.PNG)
 
 ## Routing algorithms
 
@@ -98,25 +98,25 @@ The only way to properly route flows in a network is to bring the model as close
   1. First, pyNMS automatically assigns IP addresses and interfaces to all routers.
   2. For each device, a switching / routing table is created to associate a destination address to an exit interface.
 
-![Routing table](https://github.com/mintoo/networks/raw/master/Readme/routing_table.png)
+![Routing table](https://github.com/mintoo/networks/raw/master/Readme/images/routing_table.png)
 
 ## Troubleshooting commands
 
 pyNMS also provides an help with troubleshooting, by listing the most useful commands depending on the protocol used in the simulation.
 
-![Troubleshooting](https://github.com/mintoo/networks/raw/master/Readme/troubleshooting.png)
+![Troubleshooting](https://github.com/mintoo/networks/raw/master/Readme/images/troubleshooting.png)
 
 ## Capacity planning 
 
 Once traffic links are created, they are routed on the physical links. The resulting traffic flow is computed for all for all interfaces. In the following example, the router load-balance the traffic on four equal-cost paths.
 
-![Capacity planning](https://github.com/mintoo/networks/raw/master/Readme/capacity_planning.PNG)
+![Capacity planning](https://github.com/mintoo/networks/raw/master/Readme/images/capacity_planning.PNG)
 
 ## Failure simulation
 
 It is possible to simulate the failure of one or several devices and see how it impacts the network routing and dimensioning. 
 
-![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/failure_simulation.PNG)
+![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/images/failure_simulation.PNG)
 
 ## Advanced algorithms
 
