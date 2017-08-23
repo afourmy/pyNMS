@@ -50,7 +50,7 @@ napalm_actions = OrderedDict([
 def open_device(credentials, node):
     driver = get_network_driver(node.operating_system)
     device = driver(
-                    hostname = node.ip_address, 
+                    hostname = credentials['ip_address'], 
                     username = credentials['username'], 
                     password = credentials['password'], 
                     optional_args = {'secret': credentials['enable_password']}

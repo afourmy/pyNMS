@@ -140,11 +140,10 @@ class MainNetwork(BaseNetwork):
     
     def get_credentials(self, node):
         credentials = self.view.controller.credentials_window.get_credentials()
-        for property in ('username', 'password', 'enable_password'):
+        for property in ('username', 'password', 'enable_password', 'ip_address'):
             value = getattr(node, property)
             if value:
                 credentials[property] = value
-        print(credentials)
         return credentials
             
     ## Conversion methods and property -> type mapping

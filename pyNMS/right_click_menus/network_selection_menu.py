@@ -211,10 +211,9 @@ class NetworkSelectionMenu(SelectionMenu):
         self.troubleshooting.show()
         
     def ssh_connection(self):
-        ssh_data = self.controller.credentials_window.get_credentials()
-        ssh_data['IP'] = self.node.ip_address
-        ssh_connection = '{path} -ssh {username}@{IP} -pw {password}'
-        connect = Popen(ssh_connection.format(**ssh_data).split())
+        credentials = self.network.get_credentials(list(self.nodes)[0])
+        ssh_connection = '{path} -ssh {username}@{ip_address} -pw {password}'
+        connect = Popen(ssh_connection.format(**credentials).split())
         
     def routing_table(self):
         self.routing_table = ip_rt.RoutingTable(self.node, self.controller)

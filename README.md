@@ -1,6 +1,6 @@
 # Introduction
 
-pyNMS is a network design and planning software.
+pyNMS is a network visualization, inventory and automation software.
 
 ![pyNMS](https://github.com/mintoo/networks/raw/master/Readme/pynms.png)
 
@@ -16,7 +16,7 @@ pyQT (mandatory: GUI framework)
 shapely, shapefile, pyproj (mandatory: used for shapefile import)
 xlrd, xlwt, yaml (desirable: used for saving projects)
 numpy, cvxopt (optional: used for linear programming)
-NAPALM (optional: used for network automation)
+jinja2, netmiko, NAPALM (optional: used for network automation)
 ```
 
 In order to use pyNMS, you need to run **main.py**.
@@ -34,6 +34,12 @@ using the mercator or azimuthal orthographic projections.
 
 ![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/gis_visualization.png)
 
+## Embedded SSH client
+
+pyNMS uses PuTTY to automatically establish an SSH connection to any SSH-enabled device (router, switch, server, etc).
+
+![Alt Text](https://github.com/mintoo/networks/raw/master/Readme/ssh_connection.gif)
+
 ## Interface to NAPALM
 
 NAPALM is an automation framework that provides a set of functions to interact with different network device Operating Systems using a unified API. NAPALM can be used from within pyNMS to retrieve information about a device, and change the configuration.
@@ -41,7 +47,7 @@ NAPALM is an automation framework that provides a set of functions to interact w
 A demonstration of how to use NAPALM from pyNMS is available here:
 https://www.youtube.com/watch?v=c7ZG7IElgkw
 
-![NAPALM](https://github.com/mintoo/networks/raw/master/Readme/napalm.png)
+![SSH connection](https://github.com/mintoo/networks/raw/master/Readme/napalm.png)
 
 ## Network algorithmic visualization
 
