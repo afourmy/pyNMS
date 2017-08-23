@@ -32,13 +32,13 @@ Maps can be displayed in pyNMS to draw all network
 devices at their exact location (longitude and latitude),
 using the mercator or azimuthal orthographic projections.
 
-![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/animations/GGIS_visualization.gif)
+![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/animations/gis_visualization.gif)
 
 ## Embedded SSH client
 
 pyNMS uses PuTTY to automatically establish an SSH connection to any SSH-enabled device (router, switch, server, etc).
 
-![Alt Text](https://github.com/mintoo/networks/raw/master/Readme/animations/ssh_connection.gif)
+![SSH connection](https://github.com/mintoo/networks/raw/master/Readme/animations/ssh_connection.gif)
 
 ## Interface to NAPALM
 
@@ -47,7 +47,7 @@ NAPALM is an automation framework that provides a set of functions to interact w
 A demonstration of how to use NAPALM from pyNMS is available here:
 https://www.youtube.com/watch?v=c7ZG7IElgkw
 
-![SSH connection](https://github.com/mintoo/networks/raw/master/Readme/images/napalm.png)
+![NAPALM](https://github.com/mintoo/networks/raw/master/Readme/images/napalm.png)
 
 ## Network algorithmic visualization
 

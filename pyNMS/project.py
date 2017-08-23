@@ -180,16 +180,15 @@ class Project(QWidget):
             }
             dump(project_objects, file, default_flow_style=False)
     
-    def excel_import(self, filepath='C:/Users/minto/Desktop/nodes.XLS'):
-        # if not filepath:
-        #     # filepath is set for unittest
-        #     filepath = QFileDialog.getOpenFileName(
-        #                                     self, 
-        #                                     'Import project', 
-        #                                     'Choose a project to import'
-        #                                     )[0]
-        #         
-        # print(filepath)
+    def excel_import(self, filepath=None):
+        if not filepath:
+            # filepath is set for unittest
+            filepath = QFileDialog.getOpenFileName(
+                                            self, 
+                                            'Import project', 
+                                            'Choose a project to import'
+                                            )[0]
+
         book = xlrd.open_workbook(filepath)
                                         
         for name in self.import_order:
