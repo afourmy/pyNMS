@@ -14,6 +14,7 @@
 
 from miscellaneous.decorators import update_paths
 from views.geographical_view import Map
+from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
         QMenu, QPushButton, QRadioButton, QVBoxLayout, QWidget, QInputDialog, QLabel, QLineEdit, QComboBox)
 
@@ -23,18 +24,18 @@ class GISParameterWindow(QWidget):
         super().__init__()
         self.controller = controller
         self.setWindowTitle('GIS parameters')
+        self.setWindowFlags(Qt.WindowStaysOnTopHint)
         
         layout = QGridLayout()
         
         # choose the projection and change it
-        choose_projection = QLabel('Projection')
+        choose_projection = QLabel('Type of projection')
         self.projection_list = QComboBox(self)
         self.projection_list.addItems(Map.projections)
         
         # choose the map/nodes ratio
-        ratio = QLabel('Map / nodes ratio')
-        self.ratio_edit = QLineEdit()
-        self.ratio_edit.setText('0.01')
+        ratio = QLabel('Size of a node on the map')
+        self.ratio_edit = QLineEdit('100')
         self.ratio_edit.setMaximumWidth(120)
         
         draw_map_button = QPushButton('Redraw map')
@@ -50,7 +51,7 @@ class GISParameterWindow(QWidget):
         
     @update_paths
     def redraw_map(self, _):
-        self.view.world_map.ratio = float(self.ratio_edit.text())
+        self.view.world_map.ratio = 1/float(self.ratio_edit.text())
         self.view.world_map.proj = self.projection_list.currentText()
         self.view.world_map.redraw_map()
     

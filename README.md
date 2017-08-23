@@ -32,7 +32,7 @@ Maps can be displayed in pyNMS to draw all network
 devices at their exact location (longitude and latitude),
 using the mercator or azimuthal orthographic projections.
 
-![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/images/gis_visualization.png)
+![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/animations/GGIS_visualization.gif)
 
 ## Embedded SSH client
 
@@ -59,7 +59,7 @@ Two spring-layout algorithms are implemented:
 
 On a four-dimensional hypercube, the algorithm converges within a few milliseconds to a visually pleasing shape.
 
-![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/images/visualization.PNG)
+![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/images/visualization.png)
 
 ## Saving and import/export
 

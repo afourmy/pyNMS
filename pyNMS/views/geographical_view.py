@@ -95,18 +95,17 @@ class GeographicalView(BaseView):
 class Map():
 
     projections = OrderedDict([
-    ('spherical', Proj('+proj=ortho +lat_0=48 +lon_0=17')),
-    ('mercator', Proj(init='epsg:3395')),
-    ('wgs84', Proj(init='epsg:3857')),
-    ('3035', Proj("+init=EPSG:3035")),
-    ('3947', Proj("+init=EPSG:3947"))
+    ('Spherical', Proj('+proj=ortho +lat_0=48 +lon_0=17')),
+    ('Mercator', Proj(init='epsg:3395')),
+    ('WGS84', Proj(init='epsg:3857')),
+    ('ETRS89 - LAEA Europe', Proj("+init=EPSG:3035"))
     ])
     
     def __init__(self, view):
         self.view = view
-        self.proj = 'spherical'
+        self.proj = 'Mercator'
         self.ratio, self.offset = 1/1000, (0, 0)
-        self.shapefile = join(self.view.controller.path_shapefiles, 'World countries.shp')
+        self.shapefile = join(self.view.controller.path_shapefiles, 'World countries (low resolution).shp')
         self.display = True
         
         # brush for water and lands
@@ -127,16 +126,26 @@ class Map():
         return px*self.ratio + self.offset[0], -py*self.ratio + self.offset[1]
                 
     def draw_water(self):
-        if self.proj == 'spherical':
-            # draw the planet
+        if self.proj in ('Spherical', 'ETRS89 - LAEA Europe'):
             cx, cy = self.to_canvas_coordinates(17, 48)
-            R = 6371000*self.ratio
+            # if the projection is ETRS89, we need the diameter and not the radius
+            R = 6371000*self.ratio*(1 if self.proj == 'Spherical' else 2)
             earth_water = QtWidgets.QGraphicsEllipseItem(cx - R, cy - R, 2*R, 2*R)
             earth_water.setZValue(0)
             earth_water.setBrush(self.water_brush)
             self.polygons.addToGroup(earth_water)
         else:
-            pass
+            # we compute the projected bounds of the Mercator (3395) projection
+            # upper-left corner x and y coordinates:
+            ulc_x, ulc_y = self.to_canvas_coordinates(-180, 84)
+            # lower-right corner x and y coordinates
+            lrc_x, lrc_y = self.to_canvas_coordinates(180, -84.72)
+            # width and height of the map (required for the QRectItem)
+            width, height = lrc_x - ulc_x, lrc_y - ulc_y
+            earth_water = QtWidgets.QGraphicsRectItem(ulc_x, ulc_y, width, height)
+            earth_water.setZValue(0)
+            earth_water.setBrush(self.water_brush)
+            self.polygons.addToGroup(earth_water)
             
     def draw_polygons(self):
         sf = shapefile.Reader(self.shapefile)       
@@ -174,3 +183,5 @@ class Map():
         self.delete_map()
         self.polygons = self.view.scene.createItemGroup(self.draw_polygons())
         self.draw_water()
+        # replace the nodes at their geographical location
+        self.view.move_to_geographical_coordinates()
