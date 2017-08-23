@@ -161,8 +161,8 @@ class Project(QWidget):
                                                    ".yaml"
                                                    )
             filepath = ''.join(filepath)
-        # else:
-        #     selected_file = open(filepath, 'w')
+        else:
+            selected_file = open(filepath, 'w')
         
         with open(filepath, 'w') as file:                                                            
             project_objects = {

@@ -76,7 +76,7 @@ class ObjectManagementWindow(QWidget):
             label = QLabel(property.pretty_name)
             
             # value of the property: drop-down list or entry
-            if property.multiple_values:
+            if property.multiple_values and property.choose_one_value:
                 pvalue = QObjectComboBox()
                 pvalue.addItems(property.values)
             else:
@@ -147,7 +147,9 @@ class ObjectManagementWindow(QWidget):
             else:
                 if (property.name not in self.read_only 
                 and 'interface' not in property.name):
-                    value = self.network.objectizer(property.name, value)
+                    print(property.name, value, type(value))
+                    value = property(value)
+                    print(property.name, value, type(value))
                     if property == 'name':
                         name = getattr(self.current_obj, property.name)
                         id = self.network.name_to_id.pop(name)

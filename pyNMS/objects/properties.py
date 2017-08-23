@@ -18,6 +18,9 @@
 # MetaProperty is a metaclass for all properties: it implements the __repr__
 # function to display the pretty name by calling str on the property class itself.
 
+# Some classes like 'int' are immutables: they cannot be modified after creation
+# we must use __new__ instead of __init_
+
 class MetaProperty(type):
     
     def __repr__(self):
@@ -37,41 +40,55 @@ class Property(metaclass=MetaProperty):
         
 class TextProperty(str, Property):
     
+    subtype = 'str'
+    
     def __new__(cls, value):
         return str.__new__(cls, value)
         
 class IntProperty(int, Property):
     
-    # int is immutable: it cannot be modified after creation
-    # we must use __new__ instead of __init_
+    subtype = 'int'
     
     def __new__(cls, value):
         return int.__new__(cls, int(value))
         
 class FloatProperty(float, Property):
     
+    subtype = 'float'
+    
     def __new__(cls, value):
         return float.__new__(cls, float(value))
         
 class ListProperty(list, Property):
     
+    subtype = 'list'
+    multiple_values = True
+    choose_one_value = False
+    
     def __new__(cls, values=None):
-        if values is None:
-            return []
-        else:
-            return list.__new__(cls, values)
+        if isinstance(values, str):
+            values = eval(values)
+        cls.values = values
+        return values
         
 class SetProperty(set, Property):
     
-    def __init__(self, value):
-        if value is None:
-            self.value = set()
+    subtype = 'set'
+    multiple_values = True
+    choose_one_value = True
+    
+    def __new__(cls, values=None):
+        # we don't handle list of something else than int for now
+        values = map(str, values)
+        cls.values = values
+        if values is None:
+            return set()
         else:
-            self.value = set.__init__(value)
-        return self.value
+            return set.__new__(cls, values)
         
 class NodeProperty(Property):
     
+    subtype = 'node'
     conversion_needed = True
     converter = 'convert_node'
     
@@ -80,6 +97,7 @@ class NodeProperty(Property):
         
 class LinkProperty(Property):
     
+    subtype = 'link'
     conversion_needed = True
     converter = 'convert_link'
     
@@ -88,6 +106,7 @@ class LinkProperty(Property):
         
 class IPProperty(Property):
     
+    subtype = 'ip'
     conversion_needed = True
     converter = 'convert_IP'
     
@@ -102,7 +121,7 @@ class ID(IntProperty):
     pretty_name = 'ID'
     
     def __new__(cls, value):
-        return super().__new__(cls, value)
+        return value
 
 class Name(TextProperty):
     
@@ -110,7 +129,7 @@ class Name(TextProperty):
     pretty_name = 'Name'
     
     def __new__(cls, value=''):
-        return super().__new__(cls, value)
+        return value
         
 class Subtype(TextProperty):
     
@@ -118,15 +137,14 @@ class Subtype(TextProperty):
     pretty_name = 'Subtype'
     
     def __new__(cls, value):
-        return super().__new__(cls, value)
+        return value
         
 ## Node property
 
-class Vendor(TextProperty):
+class Vendor(ListProperty):
     
     name = 'vendor'
     pretty_name = 'Vendor'
-    multiple_values = True
     values = [
               'Cisco', 
               'Juniper', 
@@ -139,15 +157,15 @@ class Vendor(TextProperty):
               'IBM', 
               'HP'
               ]
+    choose_one_value = True
     
     def __new__(cls, value='Cisco'):
-        return super().__new__(cls, value)
+        return value
         
-class OperatingSystem(TextProperty):
+class OperatingSystem(ListProperty):
     
     name = 'operating_system'
     pretty_name = 'Operating System'
-    multiple_values = True
     values = [
               'IOS', 
               'IOSXR', 
@@ -162,9 +180,10 @@ class OperatingSystem(TextProperty):
               'Pluribus',
               'linux'
               ]
+    choose_one_value = True
     
     def __new__(cls, value='IOS'):
-        return super().__new__(cls, value)
+        return value
         
 class IP_Address(TextProperty):
     
@@ -172,7 +191,7 @@ class IP_Address(TextProperty):
     pretty_name = 'IP address'
     
     def __new__(cls, value='0.0.0.0'):
-        return super().__new__(cls, value)
+        return value
         
 class MAC_Address(TextProperty):
     
@@ -180,7 +199,7 @@ class MAC_Address(TextProperty):
     pretty_name = 'MAC address'
     
     def __new__(cls, value='00:00:00:00:00:00'):
-        return super().__new__(cls, value)
+        return value
         
 class SubnetMask(TextProperty):
     
@@ -188,7 +207,7 @@ class SubnetMask(TextProperty):
     pretty_name = 'Subnet Mask'
     
     def __new__(cls, value='255.255.255.255'):
-        return super().__new__(cls, value)
+        return value
         
 class Username(TextProperty):
     
@@ -196,7 +215,7 @@ class Username(TextProperty):
     pretty_name = 'Username'
     
     def __new__(cls, value=''):
-        return super().__new__(cls, value)
+        return value
         
 class Password(TextProperty):
     
@@ -205,7 +224,7 @@ class Password(TextProperty):
     hide_view = True
     
     def __new__(cls, value=''):
-        return super().__new__(cls, value)
+        return value
         
 class EnablePassword(TextProperty):
     
@@ -214,7 +233,7 @@ class EnablePassword(TextProperty):
     hide_view = True
     
     def __new__(cls, value=''):
-        return super().__new__(cls, value)
+        return value
         
 class X(FloatProperty):
     
@@ -269,16 +288,22 @@ class Sites(SetProperty):
     name = 'sites'
     pretty_name = 'Sites'
     
-    def __init__(self, value=None):
-        super().__init__(value)
+    def __new__(cls, values=None):
+        if not values:
+            values = set()
+        cls.values = values
+        return values
         
 class AS(SetProperty):
     
     name = 'AS'
     pretty_name = 'Autonomous Systems'
     
-    def __init__(self, value=None):
-        super().__init__(value)
+    def __new__(cls, values=None):
+        if not values:
+            values = set()
+        cls.values = values
+        return values
         
 ## Per-AS node properties
 
@@ -541,4 +566,13 @@ property_classes = {
 # Pretty name -> property class association
 pretty_name_to_class = {property_class.pretty_name: property_class 
                         for property_class in property_classes.values()}
+                     
+# Object class to property (ex: int -> IntProperty)
+class_to_property = {
+                    str: TextProperty,
+                    int: IntProperty,
+                    float: FloatProperty,
+                    list: ListProperty,
+                    set: SetProperty
+                    }
                         

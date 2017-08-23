@@ -4,8 +4,6 @@ pyNMS is a network visualization, inventory and automation software.
 
 ![pyNMS](https://github.com/mintoo/networks/raw/master/Readme/images/pynms.png)
 
-[Visit our website](http://www.pynms.fr)
-
 Contact us: contact@pynms.fr
 
 # Getting started
@@ -39,6 +37,12 @@ using the mercator or azimuthal orthographic projections.
 pyNMS uses PuTTY to automatically establish an SSH connection to any SSH-enabled device (router, switch, server, etc).
 
 ![SSH connection](https://github.com/mintoo/networks/raw/master/Readme/animations/ssh_connection.gif)
+
+## Send script to any SSH-enabled device
+
+pyNMS uses Netmiko to send Jinja2 script to any device that supports SSH. Variables can be imported in a YAML file, and a script can be sent graphically to multiple devices at once.
+
+![Send jinja2 script via SSH with netmiko](https://github.com/mintoo/networks/raw/master/Readme/animations/send_script.gif)
 
 ## Interface to NAPALM
 

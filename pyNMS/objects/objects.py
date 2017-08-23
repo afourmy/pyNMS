@@ -26,12 +26,12 @@ def initializer(init):
             # it is also automatically made exportable
             if property_name not in property_classes:
                 property = type(
-                                      property_name, 
-                                      (TextProperty,), 
-                                      {
-                                      'name': property_name, 
-                                      'pretty_name': property_name
-                                      })
+                                property_name, 
+                                (class_to_property[type(value)],), 
+                                {
+                                'name': property_name, 
+                                'pretty_name': property_name
+                                })
                 property_classes[property_name] = property
                 for property_manager in (
                                         object_properties,
@@ -41,10 +41,10 @@ def initializer(init):
                     property_manager[self.__class__.subtype] += (property,)
             else:
                 property = property_classes[property_name]
-            # if it is a property with multiple values, and the value is not 
-            # in the predefined available values, we add it
-            if property.multiple_values and value not in property.values:
-                property.values.append(value)
+                # if it is a property with multiple values, and the value is not 
+                # in the predefined available values, we add it
+                if property.multiple_values and value not in property.values:
+                    property.values.append(value)
             setattr(self, property_name, property(value))
                 
         for property in object_properties[self.__class__.subtype]:
