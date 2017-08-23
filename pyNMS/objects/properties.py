@@ -159,7 +159,8 @@ class OperatingSystem(TextProperty):
               'MikroTik',
               'VyOS',
               'IBM', 
-              'Pluribus'
+              'Pluribus',
+              'linux'
               ]
     
     def __new__(cls, value='IOS'):

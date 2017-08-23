@@ -37,9 +37,7 @@ class GISParameterWindow(QWidget):
         self.ratio_edit.setText('0.01')
         self.ratio_edit.setMaximumWidth(120)
         
-        # cancel button
-        draw_map_button = QPushButton()
-        draw_map_button.setText('Redraw map')
+        draw_map_button = QPushButton('Redraw map')
         draw_map_button.clicked.connect(self.redraw_map)
         
         # position in the grid

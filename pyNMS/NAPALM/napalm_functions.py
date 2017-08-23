@@ -13,11 +13,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from collections import OrderedDict, defaultdict
+import warnings
 try:
     from napalm_base import get_network_driver
 except ImportError:
-    import warnings
     warnings.warn('napalm not installed')
+try:
+    from jinja2 import Template
+except ImportError:
+    warnings.warn('jinja2 not installed')
 
 napalm_actions = OrderedDict([
 ('ARP table', 'get_arp_table'),
@@ -87,7 +91,8 @@ def napalm_load_merge(credentials, *nodes):
     for node in nodes:
         device = open_device(credentials, node)
         config = node.napalm_data['Configuration']['candidate']
-        device.load_merge_candidate(config=config)
+        j2_config = Template(config).render(**node.__dict__)
+        device.load_merge_candidate(config=j2_config)
         napalm_update(device, node, {'Configuration'})
         device.close()
         
@@ -95,7 +100,8 @@ def napalm_load_merge_commit(credentials, *nodes):
     for node in nodes:
         device = open_device(credentials, node)
         config = node.napalm_data['Configuration']['candidate']
-        device.load_merge_candidate(config=config)
+        j2_config = Template(config).render(**node.__dict__)
+        device.load_merge_candidate(config=j2_config)
         device.commit_config()
         napalm_update(device, node, {'Configuration'})
         device.close()
@@ -104,7 +110,8 @@ def napalm_load_replace(credentials, *nodes):
     for node in nodes:
         device = open_device(credentials, node)
         config = node.napalm_data['Configuration']['candidate']
-        device.load_replace_candidate(config=config)
+        j2_config = Template(config).render(**node.__dict__)
+        device.load_replace_candidate(config=j2_config)
         napalm_update(device, node, {'Configuration'})
         device.close()
         
@@ -112,7 +119,8 @@ def napalm_load_replace_commit(credentials, *nodes):
     for node in nodes:
         device = open_device(credentials, node)
         config = node.napalm_data['Configuration']['candidate']
-        device.load_replace_candidate(config=config)
+        j2_config = Template(config).render(**node.__dict__)
+        device.load_replace_candidate(config=j2_config)
         device.commit_config()
         napalm_update(device, node, {'Configuration'})
         device.close()

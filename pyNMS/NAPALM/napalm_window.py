@@ -12,6 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from miscellaneous.decorators import update_paths
 from .napalm_interfaces import NapalmInterfaces
 from .napalm_configurations import NapalmConfigurations
 from .napalm_general import NapalmGeneral
@@ -23,10 +24,11 @@ from PyQt5.QtWidgets import QTabWidget
 
 class NapalmWindow(QTabWidget):
     
+    @update_paths
     def __init__(self, node, controller):
         super().__init__()
         self.node = node
-        credentials = controller.current_project.network.get_credentials(node)
+        credentials = self.network.get_credentials(node)
         self.setMinimumSize(1100, 700)
         self.setWindowTitle('NAPALM')
 

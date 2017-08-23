@@ -144,6 +144,7 @@ class MainNetwork(BaseNetwork):
             value = getattr(node, property)
             if value:
                 credentials[property] = value
+        print(credentials)
         return credentials
             
     ## Conversion methods and property -> type mapping

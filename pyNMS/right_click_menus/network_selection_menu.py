@@ -15,6 +15,7 @@
 import os
 from PyQt5.QtWidgets import QMenu, QAction
 from .selection_menu import SelectionMenu
+from automation.send_script_window import SendScriptWindow
 from autonomous_system import AS
 from autonomous_system import AS_operations
 from autonomous_system import area_operations
@@ -82,6 +83,10 @@ class NetworkSelectionMenu(SelectionMenu):
         
         # only nodes
         if self.no_shape and self.no_link:
+            
+            send_script = QAction('Send a script (Jinja2)', self)        
+            send_script.triggered.connect(self.send_script)
+            self.addAction(send_script)
             
             napalm_update = QAction('NAPALM update', self)        
             napalm_update.triggered.connect(self.napalm_update)
@@ -248,6 +253,12 @@ class NetworkSelectionMenu(SelectionMenu):
         
     def remove_failure(self, *objects):
         self.view.remove_failure(*objects)
+        
+    ## Automation: send script
+    
+    def send_script(self, _):
+        self.send_script_window = SendScriptWindow(set(self.nodes), self.controller)
+        self.send_script_window.show()
         
     ## NAPALM operations:
     

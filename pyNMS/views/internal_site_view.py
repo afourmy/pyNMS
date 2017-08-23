@@ -82,9 +82,9 @@ class InternalSiteView(NetworkView):
         item = self.itemAt(event.pos())
         if hasattr(self, 'temp_line') and self.temp_line:
             if self.is_node(item):
-                self.end_node = item
-                network_glink = GraphicalLink(self.network_view)
-                new_link = GraphicalLink(self, network_glink.link)
+                self.end_node =  item                
+                new_link = GraphicalLink(self)
+                network_glink = GraphicalLink(self.network_view, new_link.link)
                 # we made the start node unselectable and unmovable to enable
                 # the creation of links, in the press binding of GraphicalNode: 
                 # we revert this change at link creation

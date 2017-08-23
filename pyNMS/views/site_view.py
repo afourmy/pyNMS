@@ -40,7 +40,7 @@ class SiteView(GeographicalView):
             dataStream = QDataStream(item_data, QIODevice.ReadOnly)
             pixmap, offset = QPixmap(), QPoint()
             dataStream >> pixmap >> offset
-            new_node = GraphicalSite(self)
-            new_node.setPos(pos - offset)
+            new_gnode = GraphicalSite(self)
+            new_gnode.setPos(pos - offset)
             # update the site coordinates at creation
             new_gnode.node.longitude, new_gnode.node.latitude = geo_pos
