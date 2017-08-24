@@ -147,14 +147,12 @@ class ObjectManagementWindow(QWidget):
             else:
                 if (property.name not in self.read_only 
                 and 'interface' not in property.name):
-                    print(property.name, value, type(value))
-                    value = property(value)
-                    print(property.name, value, type(value))
                     if property == 'name':
                         name = getattr(self.current_obj, property.name)
                         id = self.network.name_to_id.pop(name)
                         self.network.name_to_id[value] = id
-                    setattr(self.current_obj, property.name, value)
+                    if property.is_editable:
+                        setattr(self.current_obj, property.name, value)
              
         # if hasattr(self.current_obj, 'AS_properties'):
         #     if self.current_obj.AS_properties:

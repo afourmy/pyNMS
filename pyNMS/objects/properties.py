@@ -34,6 +34,9 @@ class Property(metaclass=MetaProperty):
     multiple_values = False
     # for property such as password, we hide the view
     hide_view = False
+    # by default, the property can be modified by the user. This wouldn't be the
+    # case of a complex structure like a dictionnnary
+    is_editable = True
     
     def __repr__(self):
         return str(self)
@@ -78,13 +81,20 @@ class SetProperty(set, Property):
     choose_one_value = True
     
     def __new__(cls, values=None):
-        # we don't handle list of something else than int for now
-        values = map(str, values)
+        if isinstance(values, str):
+            values = eval(values)
         cls.values = values
-        if values is None:
-            return set()
-        else:
-            return set.__new__(cls, values)
+        return values
+        
+class DictProperty(set, Property):
+    
+    subtype = 'dict'
+    # a dictionnary is a complex structure (it can contain other dict):
+    # therefore, it cannot be edited graphically, only in YAML
+    is_editable = False
+    
+    def __new__(cls, value):
+        return value
         
 class NodeProperty(Property):
     
@@ -573,6 +583,7 @@ class_to_property = {
                     int: IntProperty,
                     float: FloatProperty,
                     list: ListProperty,
-                    set: SetProperty
+                    set: SetProperty,
+                    dict: DictProperty
                     }
                         

@@ -48,7 +48,7 @@ napalm_actions = OrderedDict([
 ])
 
 def open_device(credentials, node):
-    driver = get_network_driver(node.operating_system)
+    driver = get_network_driver(node.operating_system.lower())
     device = driver(
                     hostname = credentials['ip_address'], 
                     username = credentials['username'], 
@@ -150,15 +150,16 @@ def napalm_traceroute(credentials, node, **parameters):
 # I keep track of how 'deep' the recursion goes to compute the appropriate amount
 # of tabulation required
 def str_dict(input, depth=0):
-    result, tab = '', '\t'*depth
+    tab = '\t'*depth
     if isinstance(input, list):
+        result = '\n'
         for element in input:
-            result += tab + str_dict(element, depth + 1) + '\n'
+            result += '{}- {}\n'.format(tab, str_dict(element, depth + 1))
         return result
     elif isinstance(input, dict):
+        result = ''
         for key, value in input.items():
-            value = str_dict(value, depth + 1)
-            result += '\n{}{}: {}'.format(tab, key, value)
+            result += '\n{}{}: {}'.format(tab, key, str_dict(value, depth + 1))
         return result
     else:
         return str(input)
