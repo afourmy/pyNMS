@@ -29,7 +29,7 @@ from PyQt5.QtWidgets import (QApplication, QCheckBox, QGridLayout, QGroupBox,
 class SpringLayoutParametersWindow(QWidget):
     
     spring_parameters = OrderedDict([
-    ('Coulomb factor', 10000),
+    ('Coulomb factor', 1000000),
     ('Spring stiffness', 0.5),
     ('Speed factor', 3),
     ('Equilibrium length', 8)

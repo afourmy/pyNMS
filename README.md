@@ -59,7 +59,7 @@ Two spring-layout algorithms are implemented:
 
 On a four-dimensional hypercube, the algorithm converges within a few milliseconds to a visually pleasing shape.
 
-![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/images/visualization.png)
+![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/animations/graph_drawing.gif)
 
 ## Saving and import/export
 
@@ -157,7 +157,7 @@ Two methods were implemented to solve the wavelength assignment problem:
 
 You can contact me at my personal email address:
 ```
-print(''.join(map(chr, (97, 110, 116, 111, 105, 110, 101, 46, 102, 111, 
+''.join(map(chr, (97, 110, 116, 111, 105, 110, 101, 46, 102, 111, 
 117, 114, 109, 121, 64, 103, 109, 97, 105, 108, 46, 99, 111, 109))))
 ```
 
