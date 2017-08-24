@@ -49,7 +49,7 @@ NAPALM is an automation framework that provides a set of functions to interact w
 A demonstration of how to use NAPALM from pyNMS is available here:
 https://www.youtube.com/watch?v=c7ZG7IElgkw
 
-![NAPALM](https://github.com/mintoo/networks/raw/master/Readme/images/napalm.png)
+![NAPALM and Jinja2 scripting](https://github.com/mintoo/networks/raw/master/Readme/animations/napalm_jinja2.gif)
 
 ## Network algorithmic visualization
 
