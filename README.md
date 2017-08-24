@@ -36,9 +36,10 @@ pyNMS uses PuTTY to automatically establish an SSH connection to any SSH-enabled
 
 ![SSH connection](https://github.com/mintoo/networks/raw/master/Readme/animations/ssh_connection.gif)
 
-## Send script to any SSH-enabled device
+## Send Jinja2 scripts to any SSH-enabled device
 
-pyNMS uses Netmiko to send Jinja2 script to any device that supports SSH. Variables can be imported in a YAML file, and a script can be sent graphically to multiple devices at once.
+pyNMS uses Netmiko to send Jinja2 scripts to any device that supports SSH. 
+Variables can be imported in a YAML file, and a script can be sent graphically to multiple devices at once.
 
 ![Send jinja2 script via SSH with netmiko](https://github.com/mintoo/networks/raw/master/Readme/animations/send_script.gif)
 
@@ -46,10 +47,7 @@ pyNMS uses Netmiko to send Jinja2 script to any device that supports SSH. Variab
 
 NAPALM is an automation framework that provides a set of functions to interact with different network device Operating Systems using a unified API. NAPALM can be used from within pyNMS to retrieve information about a device, and change the configuration.
 
-A demonstration of how to use NAPALM from pyNMS is available here:
-https://www.youtube.com/watch?v=c7ZG7IElgkw
-
-![NAPALM and Jinja2 scripting](https://github.com/mintoo/networks/raw/master/Readme/animations/napalm_jinja2.gif)
+[![Configuration automation with NAPALM and Jinja2 scripting](https://github.com/mintoo/networks/raw/master/Readme/animations/napalm_jinja2.gif)](https://www.youtube.com/watch?v=_kkW3jSQpzc)
 
 ## Network algorithmic visualization
 
