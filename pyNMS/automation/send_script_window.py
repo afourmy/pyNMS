@@ -54,24 +54,23 @@ class SendScriptWindow(QWidget):
             # log in to the device
             credentials = self.network.get_credentials(node)
             connection_parameters = {
-                'device_type': node.operating_system,
+                'device_type': node.netmiko_operating_system,
                 'ip': node.ip_address,
                 # credentials to log in to the device
                 'username': credentials['username'], 
                 'password': credentials['password'], 
                 'secret': credentials['enable_password']
             }
-            net_connect = ConnectHandler(**connection_parameters)
+            
+            netmiko_connection = ConnectHandler(**connection_parameters)
             
             # turn the script into a Jinja2 template
             j2_config = Template(config).render(**node.__dict__)
             
             # send the script line per line
             for line in j2_config.splitlines():
-                print(line)
-                net_connect.send_command(line)
+                netmiko_connection.send_command(line)
                 
-            # log out
-            net_connect.disconnect()
+            netmiko_connection.disconnect()
             
                                             

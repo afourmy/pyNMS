@@ -176,6 +176,7 @@ class OperatingSystem(ListProperty):
     
     name = 'operating_system'
     pretty_name = 'Operating System'
+    
     values = [
               'IOS', 
               'IOSXR', 
@@ -193,6 +194,66 @@ class OperatingSystem(ListProperty):
     choose_one_value = True
     
     def __new__(cls, value='IOS'):
+        return value
+        
+class NetmikoOperatingSystem(ListProperty):
+    
+    name = 'netmiko_operating_system'
+    pretty_name = 'Netmiko Operating System'
+    choose_one_value = True
+    
+    # from the netmiko module
+    values = [
+            'a10',
+            'accedian',
+            'alcatel_aos',
+            'alcatel_sros',
+            'arista_eos',
+            'aruba_os',
+            'avaya_ers',
+            'avaya_vsp',
+            'brocade_fastiron',
+            'brocade_netiron',
+            'brocade_nos',
+            'brocade_vdx',
+            'brocade_vyos',
+            'checkpoint_gaia',
+            'ciena_saos',
+            'cisco_asa',
+            'cisco_ios',
+            'cisco_nxos',
+            'cisco_s300',
+            'cisco_tp',
+            'cisco_wlc',
+            'cisco_xe',
+            'cisco_xr',
+            'dell_force10',
+            'dell_powerconnect',
+            'eltex',
+            'enterasys',
+            'extreme',
+            'extreme_wing',
+            'f5_ltm',
+            'fortinet',
+            'generic_termserver',
+            'hp_comware',
+            'hp_procurve',
+            'huawei',
+            'juniper',
+            'juniper_junos',
+            'linux',
+            'mellanox_ssh',
+            'mrv_optiswitch',
+            'ovs_linux',
+            'paloalto_panos',
+            'pluribus',
+            'quanta_mesh',
+            'ubiquiti_edge',
+            'vyatta_vyos',
+            'vyos',
+            ]
+    
+    def __new__(cls, value='linux'):
         return value
         
 class IP_Address(TextProperty):
@@ -553,6 +614,7 @@ property_classes = {
                     'capacitySD': CapacitySD,
                     'capacityDS': CapacityDS,
                     'operating_system': OperatingSystem,
+                    'netmiko_operating_system': NetmikoOperatingSystem,
                     'password': Password,
                     'trafficSD': TrafficSD,
                     'trafficDS': TrafficDS,

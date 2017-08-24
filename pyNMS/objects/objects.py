@@ -128,6 +128,7 @@ node_common_properties = obj_common_properties + (
 Name, 
 Vendor,
 OperatingSystem,
+NetmikoOperatingSystem,
 Username,
 Password,
 EnablePassword,
