@@ -84,7 +84,7 @@ class SearchWindow(QWidget):
         for obj in self.network.ftr(type, subtype):
             value = getattr(obj, property.name)
             if not self.checkbox_regex.isChecked():
-                converted_input = self.project.objectizer(property.name, input)
+                converted_input = self.network.objectizer(property.name, input)
                 if value == converted_input:
                     obj.gobject[self.view].setSelected(True)
             else:
