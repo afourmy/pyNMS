@@ -79,7 +79,7 @@ class NetworkView(BaseView):
             # remove it from all sites it belongs to
             for site in set(obj.sites):
                 site.view.remove_from_site(obj)
-            # remove it from the scene and the network model
+            # if it is a node, remove all links attached to the node
             if self.is_node(item):
                 for link in self.network.remove_node(obj):
                     self.remove_objects(link.glink[self])

@@ -15,7 +15,7 @@
 from graphical_objects.graphical_network_node import GraphicalNetworkNode
 from graphical_objects.graphical_link import GraphicalLink
 from .network_view import NetworkView
-from miscellaneous.decorators import update_paths
+from miscellaneous.decorators import update_paths, overrider
 from networks.base_network import BaseNetwork
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -26,7 +26,8 @@ class InternalSiteView(NetworkView):
     subtype = 'internal'
 
     def __init__(self, gsite, controller):
-        self.network = controller.current_project.network_view.network
+        self.network_view = controller.current_project.network_view
+        self.network = self.network_view.network
         self.gsite = gsite
         self.site = self.gsite.node
         self.site.view = self
@@ -65,6 +66,12 @@ class InternalSiteView(NetworkView):
             if self.is_node(item):
                 for glink in self.attached_glinks(item):
                     self.remove_from_site(glink.link)
+                 
+    overrider(NetworkView)
+    def remove_objects(self, *items):
+        for item in items:
+            main_item = item.object.gobject[self.network_view]
+            self.network_view.remove_objects(main_item)
         
     @update_paths
     def dropEvent(self, event):

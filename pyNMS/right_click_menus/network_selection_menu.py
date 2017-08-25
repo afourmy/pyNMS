@@ -176,6 +176,7 @@ class NetworkSelectionMenu(SelectionMenu):
                 # if there is at least one AS with area among all common AS
                 # of the current selection, display the area management menu
                 if self.common_AS_with_area:
+                    
                     add_to_area = QAction('Add to area', self)        
                     add_to_area.triggered.connect(lambda: self.change_area('add'))
                     self.addAction(add_to_area)
@@ -185,7 +186,6 @@ class NetworkSelectionMenu(SelectionMenu):
                     self.addAction(remove_from_area)
 
         if self.no_link and self.no_shape:
-            
             self.addAction(self.align_action)
             
         self.addAction(self.drawing_action)
