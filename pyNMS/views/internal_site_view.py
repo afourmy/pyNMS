@@ -14,12 +14,13 @@
 
 from graphical_objects.graphical_network_node import GraphicalNetworkNode
 from graphical_objects.graphical_link import GraphicalLink
-from .network_view import NetworkView
 from miscellaneous.decorators import update_paths, overrider
+from .network_view import NetworkView
 from networks.base_network import BaseNetwork
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+from right_click_menus.network_general_menu import NetworkGeneralMenu
 
 class InternalSiteView(NetworkView):
     
@@ -37,6 +38,14 @@ class InternalSiteView(NetworkView):
         
         # dictionnary that associates an object to its in-site graphical self
         self.gobj = {}
+        
+    overrider(NetworkView)
+    def all_gnodes(self):
+        return self.get_items(self.site.ps['node'])
+        
+    overrider(NetworkView)
+    def all_glinks(self):
+        return self.get_items(self.site.ps['link'])
         
     # given a graphical node, retrieves all attached graphical links   
     # providing that they belong to the site 

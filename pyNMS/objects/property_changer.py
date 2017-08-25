@@ -51,7 +51,7 @@ class PropertyChanger(QWidget):
     def confirm(self, objects):
         selected_property = pretty_name_to_class[self.property_list.currentText()]
         str_value = self.value_edit.text()
-        value = self.network.prop_to_type[selected_property.name](str_value)
+        value = self.network.objectizer(selected_property.name, str_value)
         for object in objects:
             setattr(object, selected_property.name, value)
         self.close()
