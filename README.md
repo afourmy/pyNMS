@@ -63,6 +63,20 @@ NAPALM is an automation framework that provides a set of functions to interact w
 
 [![Configuration automation with NAPALM and Jinja2 scripting](https://github.com/mintoo/networks/raw/master/Readme/animations/napalm_jinja2.gif)](https://www.youtube.com/watch?v=_kkW3jSQpzc)
 
+## Searching objects
+
+Using the search function, the user can select a type of object and search a value for any property: all matching objects will be highlighted.
+Regular expressions allows for specific search like an IP subnet.
+
+![Searching objects](https://github.com/mintoo/networks/raw/master/Readme/animations/search.gif)
+
+## Site system
+
+When network devices are located in the same building (e.g datacenters), they have the same GPS coordinates.
+A site displays an internal view of the building, that contains all colocated devices.
+
+![Site view](https://github.com/mintoo/networks/raw/master/Readme/animations/site_view.gif)
+
 ## AS Management
 
 Autonomous systems can be created to keep track of which device runs which protocol (OSPF, IS-IS, BGP, etc).
