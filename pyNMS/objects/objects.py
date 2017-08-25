@@ -39,13 +39,14 @@ def initializer(init):
                                         box_properties,
                                         ):
                     property_manager[self.__class__.subtype] += (property,)
+                setattr(self, property_name, value)
             else:
                 property = property_classes[property_name]
                 # if it is a property with multiple values, and the value is not 
                 # in the predefined available values, we add it
                 if property.multiple_values and value not in property.values:
                     property.values.append(value)
-            setattr(self, property_name, property(value))
+                setattr(self, property_name, property(value))
                 
         for property in object_properties[self.__class__.subtype]:
             if not hasattr(self, property.name):

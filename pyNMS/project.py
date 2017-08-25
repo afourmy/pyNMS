@@ -168,7 +168,7 @@ class Project(QWidget):
             project_objects = {
             subtype: {
                       str(obj.name):  {
-                                       property.name: str(getattr(obj, property.name))
+                                       property.name: getattr(obj, property.name)
                                        for property in properties
                                        }
                       for obj in self.network_view.network.ftr(

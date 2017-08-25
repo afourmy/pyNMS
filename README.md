@@ -9,10 +9,10 @@ pyNMS is a network visualization, inventory and automation software.
 The following modules are used in pyNMS:
 ```
 pyQT (mandatory: GUI framework)
-shapely, shapefile, pyproj (mandatory: used for shapefile import)
-xlrd, xlwt, yaml (desirable: used for saving projects)
+netmiko, jinja2, NAPALM (optional: used for network automation)
 numpy, cvxopt (optional: used for linear programming)
-jinja2, netmiko, NAPALM (optional: used for network automation)
+pyshp, shapely, pyproj (mandatory: used for map drawing)
+xlrd, xlwt, yaml (desirable: used for saving projects)
 ```
 
 In order to use pyNMS, you need to run **main.py**.
@@ -29,6 +29,20 @@ devices at their exact location (longitude and latitude),
 using the mercator or azimuthal orthographic projections.
 
 ![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/animations/gis_visualization.gif)
+
+## Network algorithmic visualization
+
+GIS visualization this can only be done if we have all GPS coordinates: it is not always the case.
+Another way to visualize a network is use graph drawing algorithms to display the network.
+The network converges within a few milliseconds to a visually pleasing shape.
+
+![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/animations/graph_drawing.gif)
+
+## Saving and import/export
+
+Projects can be imported from / exported to an Excel or a YAML file. Any property can be imported, even if it does not natively exist in pyNMS: new properties are automatically created upon importing the project.
+
+![Import and export a project (Excel / YAML)](https://github.com/mintoo/networks/raw/master/Readme/images/import_export.png)
 
 ## Embedded SSH client
 
@@ -48,24 +62,6 @@ Variables can be imported in a YAML file, and a script can be sent graphically t
 NAPALM is an automation framework that provides a set of functions to interact with different network device Operating Systems using a unified API. NAPALM can be used from within pyNMS to retrieve information about a device, and change the configuration.
 
 [![Configuration automation with NAPALM and Jinja2 scripting](https://github.com/mintoo/networks/raw/master/Readme/animations/napalm_jinja2.gif)](https://www.youtube.com/watch?v=_kkW3jSQpzc)
-
-## Network algorithmic visualization
-
-GIS visualization this can only be done if we have all GPS coordinates: it is not always the case.
-Another way to visualize a network is use graph drawing algorithms to display the network.
-Two spring-layout algorithms are implemented: 
-- Eades algorithm
-- Fructherman-Reingold algorithm
-
-On a four-dimensional hypercube, the algorithm converges within a few milliseconds to a visually pleasing shape.
-
-![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/animations/graph_drawing.gif)
-
-## Saving and import/export
-
-Projects can be imported from / exported to an Excel or a YAML file. This allows to import an existing network into pyNMS.
-
-![Excel project](https://github.com/mintoo/networks/raw/master/Readme/images/xls_import.PNG)
 
 ## AS Management
 
@@ -165,10 +161,22 @@ or on the [Network to Code slack](http://networktocode.herokuapp.com "Network to
 
 # Credits
 
-[Netmiko](https://github.com/ktbyers/netmiko "Netmiko")
+[Netmiko](https://github.com/ktbyers/netmiko "Netmiko"): A multi-vendor library to simplify Paramiko SSH connections to network devices.
 
-[Jinja2](https://github.com/pallets/jinja "Jinja2")
+[Jinja2](https://github.com/pallets/jinja "Jinja2"): A modern and designer-friendly templating language for Python.
 
-[NAPALM](https://github.com/napalm-automation/napalm "NAPALM")
+[NAPALM](https://github.com/napalm-automation/napalm "NAPALM"): A library that implements a set of functions to interact with different network device Operating Systems using a unified API.
+
+[CVXOPT](https://github.com/cvxopt/cvxopt): A library for convex optimization.
+
+[pyshp](https://github.com/GeospatialPython/pyshp): A library to read and write ESRI Shapefiles.
+
+[shapely](https://github.com/Toblerity/Shapely): A library for the manipulation and analysis of geometric objects in the Cartesian plane.
+
+[pyproj](https://github.com/jswhit/pyproj): Python interface to PROJ4 library for cartographic transformations
+
+
+
+
 
 

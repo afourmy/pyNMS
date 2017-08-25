@@ -53,14 +53,14 @@ class IntProperty(int, Property):
     subtype = 'int'
     
     def __new__(cls, value):
-        return int.__new__(cls, int(value))
+        return value
         
 class FloatProperty(float, Property):
     
     subtype = 'float'
     
     def __new__(cls, value):
-        return float.__new__(cls, float(value))
+        return value
         
 class ListProperty(list, Property):
     
@@ -312,7 +312,7 @@ class X(FloatProperty):
     pretty_name = 'X coordinate'
     
     def __new__(cls, value=0.):
-        return super().__new__(cls, value)
+        return value
         
 class Y(FloatProperty):
     
@@ -320,7 +320,7 @@ class Y(FloatProperty):
     pretty_name = 'Y coordinate'
     
     def __new__(cls, value=0.):
-        return super().__new__(cls, value)
+        return value
         
 class Longitude(FloatProperty):
     
@@ -328,7 +328,7 @@ class Longitude(FloatProperty):
     pretty_name = 'Longitude'
     
     def __new__(cls, value=0.):
-        return super().__new__(cls, value)
+        return value
         
 class Latitude(FloatProperty):
     
@@ -336,7 +336,7 @@ class Latitude(FloatProperty):
     pretty_name = 'Latitude'
     
     def __new__(cls, value=0.):
-        return super().__new__(cls, value)
+        return value
         
 class LogicalX(FloatProperty):
     
@@ -344,7 +344,7 @@ class LogicalX(FloatProperty):
     pretty_name = 'Logical X coordinate'
     
     def __new__(cls, value=0.):
-        return super().__new__(cls, value)
+        return value
         
 class LogicalY(FloatProperty):
     
@@ -352,7 +352,7 @@ class LogicalY(FloatProperty):
     pretty_name = 'Logical Y coordinate'
     
     def __new__(cls, value=0.):
-        return super().__new__(cls, value)
+        return value
         
 class Sites(SetProperty):
     
