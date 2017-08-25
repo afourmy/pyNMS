@@ -82,7 +82,7 @@ A site displays an internal view of the building, that contains all colocated de
 Autonomous systems can be created to keep track of which device runs which protocol (OSPF, IS-IS, BGP, etc).
 Autonomous systems can be divided into multiple areas.
 
-![AS Management](https://github.com/mintoo/networks/raw/master/Readme/images/AS_management.png)
+![AS Management](https://github.com/mintoo/networks/raw/master/Readme/animations/as_management.gif)
 
 ## Automatic device configuration
 
