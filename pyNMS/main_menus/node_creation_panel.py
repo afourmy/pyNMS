@@ -2,7 +2,7 @@ from collections import defaultdict, OrderedDict
 from miscellaneous.decorators import update_paths
 from objects.objects import *
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import Qt, QSize, QPoint
 from PyQt5.QtGui import (
                          QColor, 
                          QDrag, 
@@ -74,21 +74,18 @@ class NodeCreationPanel(QGroupBox):
                 self.project.show_network_view()
         
         pixmap = QPixmap(child.pixmap().scaled(
-                                 QSize(50, 50), 
-                                 Qt.KeepAspectRatio,
-                                 Qt.SmoothTransformation
-                                 ))
-        item_data = QtCore.QByteArray()
-        data_stream = QtCore.QDataStream(item_data, QtCore.QIODevice.WriteOnly)
-        data_stream << pixmap << QtCore.QPoint(event.pos() - child.pos())
+                                            QSize(50, 50), 
+                                            Qt.KeepAspectRatio,
+                                            Qt.SmoothTransformation
+                                            ))
 
         mime_data = QtCore.QMimeData()
-        mime_data.setData('application/x-dnditemdata', item_data)
+        mime_data.setData('application/x-dnditemdata', QtCore.QByteArray())
 
         drag = QtGui.QDrag(self)
         drag.setMimeData(mime_data)
         drag.setPixmap(pixmap)
-        drag.setHotSpot(event.pos() - child.pos())
+        drag.setHotSpot(event.pos() - child.pos() + QPoint(-3, -10))
 
         if drag.exec_(Qt.CopyAction | Qt.MoveAction, Qt.CopyAction) == Qt.MoveAction:
             child.close()

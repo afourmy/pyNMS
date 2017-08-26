@@ -53,14 +53,14 @@ class IntProperty(int, Property):
     subtype = 'int'
     
     def __new__(cls, value):
-        return value
+        return int(value)
         
 class FloatProperty(float, Property):
     
     subtype = 'float'
     
     def __new__(cls, value):
-        return value
+        return float(value)
         
 class ListProperty(list, Property):
     
