@@ -2,7 +2,7 @@ from collections import defaultdict, OrderedDict
 from miscellaneous.decorators import update_paths
 from objects.objects import *
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import (
                          QColor, 
                          QDrag, 
@@ -31,15 +31,12 @@ class NodeCreationPanel(QGroupBox):
         # exit connection lost because of the following lines
         layout = QtWidgets.QGridLayout(self)
         for index, item in enumerate(controller.pixmaps['default'].items()):
-            subtype, image = item
+            subtype, pixmap = item
             label = QLabel(self)
+            label.setMaximumSize(50, 50)
             label.subtype = subtype
-            pixmap = image.scaled(
-                                 label.size(), 
-                                 Qt.KeepAspectRatio,
-                                 Qt.SmoothTransformation
-                                 )
             label.setPixmap(pixmap)
+            label.setScaledContents(True)
             label.show()
             label.setAttribute(Qt.WA_DeleteOnClose)
             layout.addWidget(label, index // 4, index % 4, 1, 1)
@@ -76,7 +73,11 @@ class NodeCreationPanel(QGroupBox):
             if self.project.view_type == 'site':
                 self.project.show_network_view()
         
-        pixmap = QPixmap(child.pixmap())
+        pixmap = QPixmap(child.pixmap().scaled(
+                                 QSize(50, 50), 
+                                 Qt.KeepAspectRatio,
+                                 Qt.SmoothTransformation
+                                 ))
         item_data = QtCore.QByteArray()
         data_stream = QtCore.QDataStream(item_data, QtCore.QIODevice.WriteOnly)
         data_stream << pixmap << QtCore.QPoint(event.pos() - child.pos())

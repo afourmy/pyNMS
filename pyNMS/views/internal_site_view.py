@@ -86,13 +86,9 @@ class InternalSiteView(NetworkView):
     def dropEvent(self, event):
         pos = self.mapToScene(event.pos())
         if event.mimeData().hasFormat('application/x-dnditemdata'):
-            item_data = event.mimeData().data('application/x-dnditemdata')
-            dataStream = QDataStream(item_data, QIODevice.ReadOnly)
-            pixmap, offset = QPixmap(), QPoint()
-            dataStream >> pixmap >> offset
             network_gnode = GraphicalNetworkNode(self.network_view)
             new_node = GraphicalNetworkNode(self, network_gnode.node)
-            new_node.setPos(pos - offset)
+            new_node.setPos(pos)
             
     def mouseReleaseEvent(self, event):
         item = self.itemAt(event.pos())

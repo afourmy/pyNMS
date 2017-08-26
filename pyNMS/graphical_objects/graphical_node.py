@@ -21,18 +21,8 @@ class GraphicalNode(QGraphicsPixmapItem):
             self.node = node
         self.object = self.node
         # we retrieve the pixmap based on the subtype to initialize a QGPI
-        pixmap = view.controller.pixmaps['default'][self.node.subtype]
-        selection_pixmap = self.controller.pixmaps['red'][self.node.subtype]
-        self.pixmap = pixmap.scaled(
-                                    QSize(100, 100), 
-                                    Qt.KeepAspectRatio,
-                                    Qt.SmoothTransformation
-                                    )
-        self.selection_pixmap = selection_pixmap.scaled(
-                                                        QSize(100, 100), 
-                                                        Qt.KeepAspectRatio,
-                                                        Qt.SmoothTransformation
-                                                        )
+        self.pixmap = self.controller.gpixmaps['default'][self.node.subtype]
+        self.selection_pixmap = self.controller.gpixmaps['red'][self.node.subtype]
         super().__init__(self.pixmap)
         self.node.gnode[view] = self.node.gobject[view] = self
         self.setFlag(QGraphicsItem.ItemSendsScenePositionChanges, True)

@@ -36,11 +36,7 @@ class SiteView(GeographicalView):
         pos = self.mapToScene(event.pos())
         geo_pos = self.world_map.to_geographical_coordinates(pos.x(), pos.y())
         if event.mimeData().hasFormat('application/x-dnditemdata'):
-            item_data = event.mimeData().data('application/x-dnditemdata')
-            dataStream = QDataStream(item_data, QIODevice.ReadOnly)
-            pixmap, offset = QPixmap(), QPoint()
-            dataStream >> pixmap >> offset
             new_gnode = GraphicalSite(self)
-            new_gnode.setPos(pos - offset)
+            new_gnode.setPos(pos)
             # update the site coordinates at creation
             new_gnode.node.longitude, new_gnode.node.latitude = geo_pos

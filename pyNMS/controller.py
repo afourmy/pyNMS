@@ -313,15 +313,17 @@ class Controller(QMainWindow):
         
         # create all pixmap images for node subtypes
         self.pixmaps = defaultdict(OrderedDict)
+        # rescaled pixmap used on the canvas to display graphical objects
+        self.gpixmaps = defaultdict(OrderedDict)
         for color in ('default', 'red', 'purple'):
             for subtype in node_subtype:
-                path = join(self.path_icon, ''.join((
-                                                    color, 
-                                                    '_', 
-                                                    subtype, 
-                                                    '.gif'
-                                                    )))
+                path = join(self.path_icon, ''.join((color, '_', subtype, '.gif')))
                 self.pixmaps[color][subtype] = QPixmap(path)
+                self.gpixmaps[color][subtype] = QPixmap(path).scaled(
+                                                        QSize(100, 100), 
+                                                        Qt.KeepAspectRatio,
+                                                        Qt.SmoothTransformation
+                                                        )
                 
         # associate a project name to a Project object
         self.dict_project = {}
