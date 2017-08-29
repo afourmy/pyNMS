@@ -33,7 +33,7 @@ class GraphicalLink(QGraphicsLineItem):
         
     def mousePressEvent(self, event):
         selection_allowed = self.controller.mode == 'selection'
-        link_selection_allowed = self.view.selection['links']
+        link_selection_allowed = self.view.selection['link']
         can_be_selected = selection_allowed and link_selection_allowed
         self.setFlag(QGraphicsItem.ItemIsSelectable, can_be_selected)
         # ideally, the menu should be triggered from the mouseReleaseEvent

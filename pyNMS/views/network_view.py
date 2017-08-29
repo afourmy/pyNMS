@@ -48,6 +48,8 @@ class NetworkView(BaseView):
         super(NetworkView, self).mousePressEvent(event)
         
     def mouseReleaseEvent(self, event):
+        if hasattr(self, 'shape') and self.shape:
+            self.shape = None
         item = self.itemAt(event.pos())
         if hasattr(self, 'temp_line') and self.temp_line:
             if self.is_node(item):

@@ -105,13 +105,13 @@ class Controller(QMainWindow):
         ## Menu bar
         menu_bar = self.menuBar()
         
-        new_project = QAction('Add project', self)
-        new_project.setStatusTip('Create a new project')
-        new_project.triggered.connect(self.close)
+        add_project = QAction('Add project', self)
+        add_project.setStatusTip('Create a new project')
+        add_project.triggered.connect(self.add_project)
         
         delete_project = QAction('Delete project', self)
         delete_project.setStatusTip('Delete the current project')
-        delete_project.triggered.connect(self.close)
+        delete_project.triggered.connect(self.delete_project)
         
         excel_import = QAction('Excel import', self)
         excel_import.setStatusTip('Import a project (Excel format)')
@@ -140,7 +140,7 @@ class Controller(QMainWindow):
         quit_pynms.triggered.connect(self.close)
 
         main_menu = menu_bar.addMenu('File')
-        main_menu.addAction(new_project)
+        main_menu.addAction(add_project)
         main_menu.addAction(delete_project)
         main_menu.addSeparator()
         main_menu.addAction(excel_import)
@@ -398,6 +398,9 @@ class Controller(QMainWindow):
         self.dict_project[name] = new_project
         return new_project
         
+    def delete_project(self):
+        pass
+        
     def excel_import(self):
         self.current_project.excel_import()
         
@@ -415,6 +418,7 @@ class Controller(QMainWindow):
         
     def switch_to_selection_mode(self):
         self.mode = 'selection'
+        self.creation_mode = None
         
     def show_network_view(self):
         self.current_project.show_network_view()
@@ -427,9 +431,6 @@ class Controller(QMainWindow):
         
     def debug(self):
         self.debug_window.show()
-
-    def close(self):
-        pass
         
     def show_hide_map(self):
         self.current_project.current_view.world_map.show_hide_map()
@@ -449,7 +450,8 @@ class Controller(QMainWindow):
         self.creation_mode = 'rectangle'
         
     def ellipse(self):
-        pass
+        self.mode = 'creation'
+        self.creation_mode = 'ellipse'
         
     def zoom_in(self):
         self.current_project.current_view.zoom_in()

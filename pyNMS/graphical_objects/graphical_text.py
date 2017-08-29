@@ -4,6 +4,9 @@ from PyQt5.QtWidgets import *
 
 class GraphicalText(QGraphicsTextItem):
     
+    class_type = 'shape'
+    subtype = 'text'
+    
     default_font = QFont()
     default_font.setFamily('Courier New')
     default_font.setPointSize(24)

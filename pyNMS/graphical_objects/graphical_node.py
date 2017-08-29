@@ -26,8 +26,8 @@ class GraphicalNode(QGraphicsPixmapItem):
         super().__init__(self.pixmap)
         self.node.gnode[view] = self.node.gobject[view] = self
         self.setFlag(QGraphicsItem.ItemSendsScenePositionChanges, True)
-        self.setFlag(QGraphicsItem.ItemIsSelectable, view.selection['nodes'])
-        self.setFlag(QGraphicsItem.ItemIsMovable, view.selection['nodes'])
+        self.setFlag(QGraphicsItem.ItemIsSelectable, view.selection['node'])
+        self.setFlag(QGraphicsItem.ItemIsMovable, view.selection['node'])
         self.setOffset(
                        QPointF(
                                -self.boundingRect().width()/2, 
@@ -66,7 +66,7 @@ class GraphicalNode(QGraphicsPixmapItem):
         
     def mousePressEvent(self, event):
         selection_allowed = self.controller.mode == 'selection'
-        node_selection_allowed = self.view.selection['nodes']
+        node_selection_allowed = self.view.selection['node']
         can_be_selected = selection_allowed and node_selection_allowed
         self.setFlag(QGraphicsItem.ItemIsSelectable, can_be_selected)
         self.setFlag(QGraphicsItem.ItemIsMovable, can_be_selected)

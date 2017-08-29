@@ -3,6 +3,7 @@ from graphical_objects.graphical_node import GraphicalNode
 from graphical_objects.graphical_link import GraphicalLink
 from graphical_objects.graphical_text import GraphicalText
 from graphical_objects.graphical_rectangle import GraphicalRectangle
+from graphical_objects.graphical_ellipse import GraphicalEllipse
 from miscellaneous.decorators import *
 from objects.objects import *
 from os.path import join
@@ -38,6 +39,8 @@ class BaseView(QGraphicsView):
         self.display = dict.fromkeys(all_subtypes, True)
         # per-mode selection (nodes, links, shapes)
         self.selection = dict.fromkeys(self.controller.selection_panel.modes, True)
+        # set of shapes
+        self.shapes = set()
         
     ## Useful functions
     
@@ -55,6 +58,9 @@ class BaseView(QGraphicsView):
         
     def all_glinks(self):
         return self.get_items(self.network.all_links())
+        
+    def all_shapes(self):
+        return self.shapes
         
     def get_obj(self, graphical_objects):
         return map(lambda gobject: gobject.object, graphical_objects)
@@ -105,17 +111,24 @@ class BaseView(QGraphicsView):
             else:
                 self.setDragMode(QGraphicsView.NoDrag)
                 if self.controller.creation_mode == 'text':
-                    text_item = GraphicalText(self)
-                    text_item.setTextInteractionFlags(Qt.TextEditorInteraction)
-                    text_item.setZValue(11)
-                    self.scene.addItem(text_item)
-                    text_item.setPos(self.mapToScene(event.pos()))
+                    self.shape = GraphicalText(self)
+                    self.shape.setTextInteractionFlags(Qt.TextEditorInteraction)
+                    self.shape.setZValue(11)
+                    self.shape.setPos(self.mapToScene(event.pos()))
                 elif self.controller.creation_mode == 'rectangle':
-                    self.rectangle_item = GraphicalRectangle(self)
-                    self.scene.addItem(self.rectangle_item)
-                    self.rectangle_item.setZValue(11)
+                    self.shape = GraphicalRectangle(self)
+                    self.shape.setZValue(11)
                     self.position = self.mapToScene(event.pos())
-                    self.rectangle_item.setRect(self.position.x(), self.position.y(), 0, 0)
+                    self.shape.setRect(self.position.x(), self.position.y(), 0, 0)
+                    
+                elif self.controller.creation_mode == 'ellipse':
+                    self.shape = GraphicalEllipse(self)
+                    
+                    self.position = self.mapToScene(event.pos())
+                    self.shape.setRect(self.position.x(), self.position.y(), 0, 0)
+                self.shape.setZValue(11)
+                self.scene.addItem(self.shape)
+                self.shapes.add(self.shape)
         if event.button() == Qt.RightButton:
             # when the right-click button is pressed, we don't know yet whether
             # the user wants to access the general right-click menu or move
@@ -131,9 +144,9 @@ class BaseView(QGraphicsView):
         if event.buttons() == Qt.LeftButton:
             if hasattr(self, 'temp_line') and self.temp_line:  
                 self.temp_line.setLine(QLineF(self.start_position, position))
-            if hasattr(self, 'rectangle_item'):
+            if hasattr(self, 'shape') and self.shape:
                 width, height = position.x() - self.position.x(), position.y() - self.position.y()
-                self.rectangle_item.setRect(self.position.x(), self.position.y(), width, height)
+                self.shape.setRect(self.position.x(), self.position.y(), width, height)
         # sliding the scrollbar with the right-click button
         if event.buttons() == Qt.RightButton:
             self.trigger_menu = False

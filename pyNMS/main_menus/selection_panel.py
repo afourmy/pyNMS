@@ -22,7 +22,7 @@ class SelectionPanel(QGroupBox):
         super().__init__(controller)
         self.controller = controller
         self.setTitle('Selection')        
-        self.modes = ('nodes', 'links', 'shapes')
+        self.modes = ('node', 'link', 'shape')
                         
         layout = QGridLayout(self)
         self.checkboxes = []
@@ -38,10 +38,12 @@ class SelectionPanel(QGroupBox):
     def change_selection(self, mode):
         can_be_selected = not self.view.selection[mode]
         for item in {
-                    'nodes': self.view.all_gnodes,
-                    'links': self.view.all_glinks,
-                    'shapes': lambda _: _
+                    'node': self.view.all_gnodes,
+                    'link': self.view.all_glinks,
+                    'shape': self.view.all_shapes
                     }[mode]():
+            print(can_be_selected)
+            item.setFlag(QGraphicsItem.ItemIsMovable, can_be_selected)
             item.setFlag(QGraphicsItem.ItemIsSelectable, can_be_selected)
         self.view.selection[mode] = can_be_selected
 
