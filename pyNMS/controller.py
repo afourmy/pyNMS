@@ -445,7 +445,8 @@ class Controller(QMainWindow):
         self.creation_mode = 'text'
         
     def rectangle(self):
-        pass
+        self.mode = 'creation'
+        self.creation_mode = 'rectangle'
         
     def ellipse(self):
         pass

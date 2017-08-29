@@ -59,7 +59,7 @@ class SendScriptWindow(QWidget):
                 # credentials to log in to the device
                 'username': credentials['username'], 
                 'password': credentials['password'], 
-                'secret': credentials['enable_password']
+                'enable_password': credentials['enable_password']
             }
             
             netmiko_connection = ConnectHandler(**connection_parameters)

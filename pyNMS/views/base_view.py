@@ -2,6 +2,7 @@ from collections import defaultdict
 from graphical_objects.graphical_node import GraphicalNode
 from graphical_objects.graphical_link import GraphicalLink
 from graphical_objects.graphical_text import GraphicalText
+from graphical_objects.graphical_rectangle import GraphicalRectangle
 from miscellaneous.decorators import *
 from objects.objects import *
 from os.path import join
@@ -95,11 +96,10 @@ class BaseView(QGraphicsView):
     ## Mouse bindings
 
     def mousePressEvent(self, event):
-        item = self.itemAt(event.pos())
-        # activate rubberband for selection
-        # by default, the rubberband is active for both clicks, we have to
-        # deactivate it explicitly for the right-click
         if event.buttons() == Qt.LeftButton:
+            # activate rubberband for selection
+            # by default, the rubberband is active for both clicks, we have to
+            # deactivate it explicitly for the right-click
             if self.controller.mode == 'selection':
                 self.setDragMode(QGraphicsView.RubberBandDrag)
             else:
@@ -110,6 +110,12 @@ class BaseView(QGraphicsView):
                     text_item.setZValue(11)
                     self.scene.addItem(text_item)
                     text_item.setPos(self.mapToScene(event.pos()))
+                elif self.controller.creation_mode == 'rectangle':
+                    self.rectangle_item = GraphicalRectangle(self)
+                    self.scene.addItem(self.rectangle_item)
+                    self.rectangle_item.setZValue(11)
+                    self.position = self.mapToScene(event.pos())
+                    self.rectangle_item.setRect(self.position.x(), self.position.y(), 0, 0)
         if event.button() == Qt.RightButton:
             # when the right-click button is pressed, we don't know yet whether
             # the user wants to access the general right-click menu or move
@@ -125,6 +131,9 @@ class BaseView(QGraphicsView):
         if event.buttons() == Qt.LeftButton:
             if hasattr(self, 'temp_line') and self.temp_line:  
                 self.temp_line.setLine(QLineF(self.start_position, position))
+            if hasattr(self, 'rectangle_item'):
+                width, height = position.x() - self.position.x(), position.y() - self.position.y()
+                self.rectangle_item.setRect(self.position.x(), self.position.y(), width, height)
         # sliding the scrollbar with the right-click button
         if event.buttons() == Qt.RightButton:
             self.trigger_menu = False
@@ -173,7 +182,7 @@ class BaseView(QGraphicsView):
         pass
 
    ##       for point in (start, end):
-    #         text = self.scene.addSimpleText(
-    #             '(%d, %d)' % (point.x(), point.y()))
-    #         text.setBrush(Qt.red)
-    #         text.setPos(point)
+            # text = self.scene.addSimpleText(
+            #     '(%d, %d)' % (point.x(), point.y()))
+            # text.setBrush(Qt.red)
+            # text.setPos(point)
