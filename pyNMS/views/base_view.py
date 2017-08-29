@@ -113,22 +113,19 @@ class BaseView(QGraphicsView):
                 if self.controller.creation_mode == 'text':
                     self.shape = GraphicalText(self)
                     self.shape.setTextInteractionFlags(Qt.TextEditorInteraction)
-                    self.shape.setZValue(11)
                     self.shape.setPos(self.mapToScene(event.pos()))
                 elif self.controller.creation_mode == 'rectangle':
                     self.shape = GraphicalRectangle(self)
-                    self.shape.setZValue(11)
                     self.position = self.mapToScene(event.pos())
                     self.shape.setRect(self.position.x(), self.position.y(), 0, 0)
-                    
                 elif self.controller.creation_mode == 'ellipse':
                     self.shape = GraphicalEllipse(self)
-                    
                     self.position = self.mapToScene(event.pos())
                     self.shape.setRect(self.position.x(), self.position.y(), 0, 0)
-                self.shape.setZValue(11)
-                self.scene.addItem(self.shape)
-                self.shapes.add(self.shape)
+                if hasattr(self, 'shape'):
+                    self.shape.setZValue(11)
+                    self.scene.addItem(self.shape)
+                    self.shapes.add(self.shape)
         if event.button() == Qt.RightButton:
             # when the right-click button is pressed, we don't know yet whether
             # the user wants to access the general right-click menu or move
