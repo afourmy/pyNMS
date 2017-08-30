@@ -73,7 +73,6 @@ class NetworkView(BaseView):
     def remove_objects(self, *items):
         for item in items:
             obj = item.object
-            self.scene.removeItem(item)
             # remove it from all AS it belongs to
             if hasattr(obj, 'AS'):
                 for AS in list(obj.AS):
@@ -83,9 +82,11 @@ class NetworkView(BaseView):
                 site.view.remove_from_site(obj)
             # if it is a node, remove all links attached to the node
             if self.is_node(item):
+                item.self_destruction()
                 for link in self.network.remove_node(obj):
                     self.remove_objects(link.glink[self])
             else:
+                self.scene.removeItem(item)
                 self.network.remove_link(obj)
         
     ## Force-directed layout algorithms

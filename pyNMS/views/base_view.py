@@ -37,6 +37,8 @@ class BaseView(QGraphicsView):
         self.setRenderHint(QPainter.Antialiasing)
         # per-subtype display (True -> display, False -> don't display)
         self.display = dict.fromkeys(all_subtypes, True)
+        # per-subtype label property
+        self.subtypes = dict.fromkeys(all_subtypes, None)
         # per-mode selection (nodes, links, shapes)
         self.selection = dict.fromkeys(self.controller.selection_panel.modes, True)
         # set of shapes
@@ -110,11 +112,11 @@ class BaseView(QGraphicsView):
                 self.setDragMode(QGraphicsView.RubberBandDrag)
             else:
                 self.setDragMode(QGraphicsView.NoDrag)
-                if self.controller.creation_mode == 'text':
-                    self.shape = GraphicalText(self)
-                    self.shape.setTextInteractionFlags(Qt.TextEditorInteraction)
-                    self.shape.setPos(self.mapToScene(event.pos()))
-                elif self.controller.creation_mode == 'rectangle':
+                # if self.controller.creation_mode == 'text':
+                #     self.shape = GraphicalText(self)
+                #     self.shape.setTextInteractionFlags(Qt.TextEditorInteraction)
+                #     self.shape.setPos(self.mapToScene(event.pos()))
+                if self.controller.creation_mode == 'rectangle':
                     self.shape = GraphicalRectangle(self)
                     self.position = self.mapToScene(event.pos())
                     self.shape.setRect(self.position.x(), self.position.y(), 0, 0)
@@ -123,7 +125,7 @@ class BaseView(QGraphicsView):
                     self.position = self.mapToScene(event.pos())
                     self.shape.setRect(self.position.x(), self.position.y(), 0, 0)
                 if hasattr(self, 'shape'):
-                    self.shape.setZValue(11)
+                    self.shape.setZValue(8)
                     self.scene.addItem(self.shape)
                     self.shapes.add(self.shape)
         if event.button() == Qt.RightButton:
@@ -135,6 +137,16 @@ class BaseView(QGraphicsView):
             self.trigger_menu = True
             self.cursor_pos = event.pos()
         super(BaseView, self).mousePressEvent(event)
+        
+    def mouseDoubleClickEvent(self, event):
+        if event.buttons() == Qt.LeftButton and self.controller.creation_mode == 'text':
+            shape = GraphicalText(self)
+            shape.setTextInteractionFlags(Qt.TextEditorInteraction)
+            shape.setPos(self.mapToScene(event.pos()))
+            shape.setZValue(8)
+            self.scene.addItem(shape)
+            self.shapes.add(shape)
+        super().mouseDoubleClickEvent(event)
         
     def mouseMoveEvent(self, event):
         position = self.mapToScene(event.pos())
@@ -187,6 +199,12 @@ class BaseView(QGraphicsView):
         type = subtype_to_type[subtype]
         for item in self.filter(type, subtype):
             item.show() if self.display[subtype] else item.hide()
+            
+    def refresh_label(self, subtype, property):
+        type = subtype_to_type[subtype]
+        for item in self.filter(type, subtype):
+            item.label.setText(getattr(item.object, property.name))
+        self.subtypes[subtype] = property
     
     def refresh_display(self):
         pass

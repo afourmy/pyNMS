@@ -62,6 +62,13 @@ class GraphicalNode(QGraphicsPixmapItem):
                 self.setPixmap(self.selection_pixmap)
             else:
                 self.setPixmap(self.pixmap)
+        if change == self.ItemPositionHasChanged:
+            # when the node is created, the ItemPositionHasChanged is triggered:
+            # we create the label
+            if not hasattr(self, 'label'):
+                self.label = self.view.scene.addSimpleText('test')
+                self.label.setZValue(15)
+            self.label.setPos(self.pos() + QPoint(-20, 40))
         return QGraphicsPixmapItem.itemChange(self, change, value)
         
     def mousePressEvent(self, event):
@@ -89,3 +96,7 @@ class GraphicalNode(QGraphicsPixmapItem):
             menu.exec_(QCursor.pos())
             self.setFlag(QGraphicsItem.ItemIsSelectable, can_be_selected)
         super(GraphicalNode, self).mousePressEvent(event)
+        
+    def self_destruction(self):
+        self.view.scene.removeItem(self.label)
+        self.view.scene.removeItem(self)

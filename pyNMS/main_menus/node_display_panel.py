@@ -4,21 +4,46 @@ from os.path import join
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import (
-                         QColor, 
+                         QColor,
+                         QCursor, 
                          QDrag,
                          QIcon, 
                          QPainter, 
                          QPixmap
                          )
 from PyQt5.QtWidgets import (
+                             QAction,
                              QFrame,
                              QPushButton, 
                              QWidget, 
                              QApplication, 
                              QLabel, 
+                             QMenu,
                              QGraphicsPixmapItem,
                              QGroupBox,
                              )
+                             
+class MenuPushButton(QPushButton):
+    
+    def __init__(self, controller, subtype):
+        super().__init__()
+        self.controller = controller
+        self.subtype = subtype
+    
+    def mousePressEvent(self, event):
+        if event.buttons() == Qt.RightButton:
+            menu = QMenu(self)
+            for property in subtype_labels[self.subtype]:
+                action = QAction(str(property), self)
+                action.triggered.connect(lambda _, p=property: self.change_label(p))
+                menu.addAction(action)
+            menu.exec_(QCursor.pos())
+        super().mousePressEvent(event)
+        
+    @update_paths
+    def change_label(self, property):
+        print(property)
+        self.view.refresh_label(self.subtype, property)
 
 class NodeDisplayPanel(QGroupBox):
     
@@ -32,7 +57,7 @@ class NodeDisplayPanel(QGroupBox):
         layout = QtWidgets.QGridLayout(self)
         self.buttons = {}
         for index, subtype in enumerate(node_subtype):
-            button = QPushButton(self)
+            button = MenuPushButton(controller, subtype)
             button.clicked.connect(lambda _, s=subtype: self.change_display(s))
             image_path = join(controller.path_icon, 'default_{}.gif'.format(subtype))
             button.setIcon(QIcon(image_path))
