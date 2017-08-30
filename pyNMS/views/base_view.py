@@ -52,6 +52,9 @@ class BaseView(QGraphicsView):
     def is_link(self, item):
         return isinstance(item, GraphicalLink)
         
+    def get_obj(self, graphical_objects):
+        return map(lambda gobject: gobject.object, graphical_objects)
+        
     def get_items(self, objects):
         return map(lambda o: o.gobject[self], objects)
         
@@ -64,8 +67,8 @@ class BaseView(QGraphicsView):
     def all_shapes(self):
         return self.shapes
         
-    def get_obj(self, graphical_objects):
-        return map(lambda gobject: gobject.object, graphical_objects)
+    def attached_glinks(self, gnode):
+        return self.get_items(self.network.attached_links(gnode.node))
         
     def selected_gnodes(self):
         return filter(self.is_node, self.scene.selectedItems())
@@ -124,7 +127,7 @@ class BaseView(QGraphicsView):
                     self.shape = GraphicalEllipse(self)
                     self.position = self.mapToScene(event.pos())
                     self.shape.setRect(self.position.x(), self.position.y(), 0, 0)
-                if hasattr(self, 'shape'):
+                if hasattr(self, 'shape') and self.shape:
                     self.shape.setZValue(8)
                     self.scene.addItem(self.shape)
                     self.shapes.add(self.shape)
@@ -199,6 +202,9 @@ class BaseView(QGraphicsView):
         type = subtype_to_type[subtype]
         for item in self.filter(type, subtype):
             item.show() if self.display[subtype] else item.hide()
+            if subtype in node_subtype:
+                for glink in self.attached_glinks(item):
+                    glink.show() if self.display[subtype] else glink.hide()
             
     def refresh_label(self, subtype, property):
         type = subtype_to_type[subtype]
