@@ -65,10 +65,16 @@ NAPALM is an automation framework that provides a set of functions to interact w
 
 ## Searching objects
 
-Using the search function, the user can select a type of object and search a value for any property: all matching objects will be highlighted.
+With the search function, the user can select a type of object and search a value for any property: all matching objects will be highlighted.
 Regular expressions allows for specific search like an IP subnet.
 
 ![Searching objects](https://github.com/mintoo/networks/raw/master/Readme/animations/search.gif)
+
+## Display control
+
+The user can select which type of device is displayed, use labels to display any property, and create graphical items like rectangles, ellipses or texts.
+
+![Display](https://github.com/mintoo/networks/raw/master/Readme/animations/display.gif)
 
 ## Site system
 
@@ -77,44 +83,18 @@ A site displays an internal view of the building, that contains all colocated de
 
 ![Site view](https://github.com/mintoo/networks/raw/master/Readme/animations/site_view.gif)
 
-## AS Management
+## Autonomous Systems
 
 Autonomous systems can be created to keep track of which device runs which protocol (OSPF, IS-IS, BGP, etc).
 Autonomous systems can be divided into multiple areas.
 
 ![AS Management](https://github.com/mintoo/networks/raw/master/Readme/animations/as_management.gif)
 
-## Automatic device configuration
+## Routing simulation
 
-pyNMS shows all Cisco commands required to properly configure a protocol on the device. 
+Once an autonomous system has been created, pyNMS can automatically allocate IP and MAC addresses to all interfaces, and generate the configuration (Cisco) of the device, as well as the ARP and routing tables.
 
-![Automatic configuration](https://github.com/mintoo/networks/raw/master/Readme/images/config.PNG)
-
-## Routing algorithms
-
-Four algorithms have been implemented to find the shortest path between two devices:
-- Dijkstra and A* algorithm
-- Bellman-Ford algorithm
-- Floyd-Warshall algorithm
-- Shortest path with linear programming (GLPK)
-
-However, a shortest path algorithm is not enough to find the path of a traffic flow inside a network, because:
-- a router is capable of load-balancing the traffic among several equal (OSPF) or unequal (IS-IS, EIGRP) cost paths.
-- multi-area topologies can lead to suboptimal routing:
-  * In IS-IS, an L1 router sends all traffic to the closest L1/L2 router, even though there could be a shorter path (in terms of metric) if there are multiple L1/L2 routers in the starting area.
-  * In OSPF, intra-area routes are always favored over inter-area routes, even when inter-area routes happen to be the shortest. An ABR can advertize the wrong cost to other routers, which results in "area hijacking".
-
-The only way to properly route flows in a network is to bring the model as close to real-life routing as possible: 
-  1. First, pyNMS automatically assigns IP addresses and interfaces to all routers.
-  2. For each device, a switching / routing table is created to associate a destination address to an exit interface.
-
-![Routing table](https://github.com/mintoo/networks/raw/master/Readme/images/routing_table.png)
-
-## Troubleshooting commands
-
-pyNMS also provides an help with troubleshooting, by listing the most useful commands depending on the protocol used in the simulation.
-
-![Troubleshooting](https://github.com/mintoo/networks/raw/master/Readme/images/troubleshooting.png)
+![Display](https://github.com/mintoo/networks/raw/master/Readme/animations/routing_simulation.gif)
 
 ## Capacity planning 
 
@@ -129,6 +109,12 @@ It is possible to simulate the failure of one or several devices and see how it 
 ![Failure simulation](https://github.com/mintoo/networks/raw/master/Readme/images/failure_simulation.PNG)
 
 ## Advanced algorithms
+
+Four algorithms have been implemented to find the shortest path between two devices:
+- Dijkstra and A* algorithm
+- Bellman-Ford algorithm
+- Floyd-Warshall algorithm
+- Shortest path with linear programming (GLPK)
 
 The transportation problem consists in finding the best way to carry traffic flows through the network.
 It has a number of variations (maximum flow, minimum-cost flow, traffic-demand constrained flow, etc).
