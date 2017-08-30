@@ -203,7 +203,8 @@ class BaseView(QGraphicsView):
     def refresh_label(self, subtype, property):
         type = subtype_to_type[subtype]
         for item in self.filter(type, subtype):
-            item.label.setText(getattr(item.object, property.name))
+            value = getattr(item.object, property.name) if property else ''
+            item.label.setText(value)
         self.subtypes[subtype] = property
     
     def refresh_display(self):

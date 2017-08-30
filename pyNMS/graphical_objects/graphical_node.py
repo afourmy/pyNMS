@@ -39,6 +39,9 @@ class GraphicalNode(QGraphicsPixmapItem):
         self.setCursor(QCursor(Qt.PointingHandCursor))
         # node speed for graph drawing algorithms
         self.vx = self.vy = 0
+        # initialize the label
+        self.label = self.view.scene.addSimpleText('')
+        self.label.setZValue(15)
         
     @property
     def x(self):
@@ -66,7 +69,7 @@ class GraphicalNode(QGraphicsPixmapItem):
             # when the node is created, the ItemPositionHasChanged is triggered:
             # we create the label
             if not hasattr(self, 'label'):
-                self.label = self.view.scene.addSimpleText('test')
+                self.label = self.view.scene.addSimpleText('')
                 self.label.setZValue(15)
             self.label.setPos(self.pos() + QPoint(-20, 40))
         return QGraphicsPixmapItem.itemChange(self, change, value)

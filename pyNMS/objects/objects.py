@@ -354,8 +354,8 @@ Priority
 common_perAS_properties = ()
 
 perAS_properties = OrderedDict([
-('router', ('router_id', 'LB_paths')),
-('switch', ('priority',)),
+('router', (RouterID, LB_Paths)),
+('switch', (Priority,)),
 ])
 
 ## Label properties

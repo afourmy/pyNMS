@@ -33,6 +33,11 @@ class MenuPushButton(QPushButton):
     def mousePressEvent(self, event):
         if event.buttons() == Qt.RightButton:
             menu = QMenu(self)
+            
+            no_label = QAction('No label', self)
+            no_label.triggered.connect(lambda _: self.change_label(None))
+            menu.addAction(no_label)
+            
             for property in subtype_labels[self.subtype]:
                 action = QAction(str(property), self)
                 action.triggered.connect(lambda _, p=property: self.change_label(p))
@@ -42,7 +47,6 @@ class MenuPushButton(QPushButton):
         
     @update_paths
     def change_label(self, property):
-        print(property)
         self.view.refresh_label(self.subtype, property)
 
 class NodeDisplayPanel(QGroupBox):

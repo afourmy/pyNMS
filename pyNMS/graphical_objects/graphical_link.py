@@ -66,3 +66,6 @@ class GraphicalLink(QGraphicsLineItem):
         start_position = self.source.pos()
         end_position = self.destination.pos()
         self.setLine(QLineF(start_position, end_position))
+        
+    def self_destruction(self):
+        self.view.scene.removeItem(self)
