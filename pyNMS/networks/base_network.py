@@ -213,7 +213,10 @@ class BaseNetwork(object):
     # given a node, retrieves all attached links    
     def attached_links(self, node):
         for type in link_type:
-            for _, link in self.graph[node.id][type]:
+            # we make it a set as this function is used, among other things,
+            # for the deletion of links and a set cannot change size during
+            # iteration
+            for _, link in set(self.graph[node.id][type]):
                 yield link
         
     def number_of_links_between(self, nodeA, nodeB):

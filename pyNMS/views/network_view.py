@@ -55,13 +55,13 @@ class NetworkView(BaseView):
             if self.is_node(item):
                 self.end_node = item
                 GraphicalLink(self)
-                # we made the start node unselectable and unmovable to enable
-                # the creation of links, in the press binding of GraphicalNode: 
-                # we revert this change at link creation
-                self.start_node.setFlag(QGraphicsItem.ItemIsSelectable, True)
-                self.start_node.setFlag(QGraphicsItem.ItemIsMovable, True)
             self.scene.removeItem(self.temp_line)
             self.temp_line = None
+            # we made the start node unselectable and unmovable to enable
+            # the creation of links, in the press binding of GraphicalNode: 
+            # we revert this change at link creation
+            self.start_node.setFlag(QGraphicsItem.ItemIsSelectable, self.selection['node'])
+            self.start_node.setFlag(QGraphicsItem.ItemIsMovable, self.selection['node'])
         if event.button() == Qt.RightButton and self.trigger_menu:
             if not self.is_node(item) and not self.is_link(item): 
                 menu = NetworkGeneralMenu(event, self.controller)

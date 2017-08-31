@@ -176,7 +176,7 @@ class MainNetwork(BaseNetwork):
     def remove_from_site(self, site, *objects):
         for obj in objects:
             site.ps[obj.class_type].remove(obj)
-            s        
+  
     def update_AS_topology(self):
         for AS in self.ASftr('subtype', 'ISIS', 'OSPF', 'BGP'):
             # for all OSPF, IS-IS and BGP AS, fill the ABR/L1L2/nodes/links 

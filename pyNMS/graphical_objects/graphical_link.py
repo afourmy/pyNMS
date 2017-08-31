@@ -10,7 +10,7 @@ class GraphicalLink(QGraphicsLineItem):
         super().__init__()
         self.view = view
         self.controller = view.controller
-        self.setFlag(QGraphicsItem.ItemIsSelectable, view.selection['link'])
+        self.setFlag(QGraphicsItem.ItemIsSelectable, self.view.selection['link'])
         if link:
             self.link = link
             # source and destination graphic nodes
@@ -31,11 +31,15 @@ class GraphicalLink(QGraphicsLineItem):
         view.scene.addItem(self)
         self.link.glink[view] = self.link.gobject[view] = self
         
-    def mousePressEvent(self, event):
+    @property
+    def is_selectable(self):
+        # for a link to be selectable, the selection mode must be one, and the
+        # link selection must be activated (display menu)
         selection_allowed = self.controller.mode == 'selection'
         link_selection_allowed = self.view.selection['link']
-        can_be_selected = selection_allowed and link_selection_allowed
-        self.setFlag(QGraphicsItem.ItemIsSelectable, can_be_selected)
+        return selection_allowed and link_selection_allowed
+        
+    def mousePressEvent(self, event):
         # ideally, the menu should be triggered from the mouseReleaseEvent
         # binding, but for QT-related issues, the right-click filter does not
         # work in mouseReleaseEvent
@@ -52,7 +56,7 @@ class GraphicalLink(QGraphicsLineItem):
                     'internal': InternalSiteSelectionMenu,
                     }[self.view.subtype](self.controller)
             menu.exec_(QCursor.pos())
-            self.setFlag(QGraphicsItem.ItemIsSelectable, can_be_selected)
+            self.setFlag(QGraphicsItem.ItemIsSelectable, self.is_selectable)
             
     def itemChange(self, change, value):
         if change == self.ItemSelectedHasChanged:
