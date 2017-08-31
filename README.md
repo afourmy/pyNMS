@@ -8,7 +8,7 @@ pyNMS is a network visualization, inventory and automation software.
 
 The following modules are used in pyNMS:
 ```
-pyQT (mandatory: GUI framework)
+pyQt5 (mandatory: GUI framework)
 netmiko, jinja2, NAPALM (optional: used for network automation)
 numpy, cvxopt (optional: used for linear programming)
 pyshp, shapely, pyproj (mandatory: used for map drawing)
@@ -34,7 +34,7 @@ using the mercator or azimuthal orthographic projections.
 
 GIS visualization this can only be done if we have all GPS coordinates: it is not always the case.
 Another way to visualize a network is use graph drawing algorithms to display the network.
-The network converges within a few milliseconds to a visually pleasing shape.
+The video below shows that the network converges within a few milliseconds to a visually pleasing shape (ring, tree, hypercube). 
 
 ![Network force-based visualization](https://github.com/mintoo/networks/raw/master/Readme/animations/graph_drawing.gif)
 
@@ -53,13 +53,14 @@ pyNMS uses PuTTY to automatically establish an SSH connection to any SSH-enabled
 ## Send Jinja2 scripts to any SSH-enabled device
 
 pyNMS uses Netmiko to send Jinja2 scripts to any device that supports SSH. 
-Variables can be imported in a YAML file, and a script can be sent graphically to multiple devices at once.
+Variables can be imported in a YAML file, and a script can be sent graphically to multiple devices at once with multithreading.
 
 ![Send jinja2 script via SSH with netmiko](https://github.com/mintoo/networks/raw/master/Readme/animations/send_script.gif)
 
 ## Interface to NAPALM
 
 NAPALM is an automation framework that provides a set of functions to interact with different network device Operating Systems using a unified API. NAPALM can be used from within pyNMS to retrieve information about a device, and change the configuration.
+You can click on the video for a step-by-step explanation of how it works.
 
 [![Configuration automation with NAPALM and Jinja2 scripting](https://github.com/mintoo/networks/raw/master/Readme/animations/napalm_jinja2.gif)](https://www.youtube.com/watch?v=_kkW3jSQpzc)
 
