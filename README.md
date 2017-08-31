@@ -110,14 +110,20 @@ It is possible to simulate the failure of one or several devices and see how it 
 
 ## Advanced algorithms
 
+### Shortest path algorithms
+
 Four algorithms have been implemented to find the shortest path between two devices:
 - Dijkstra and A* algorithm
 - Bellman-Ford algorithm
 - Floyd-Warshall algorithm
 - Shortest path with linear programming (GLPK)
 
+### Transportation problem
+
 The transportation problem consists in finding the best way to carry traffic flows through the network.
 It has a number of variations (maximum flow, minimum-cost flow, traffic-demand constrained flow, etc).
+
+#### Maximum-flow algorithms
 
 Four methods were implemented to solve the maximum flow problem:
 
@@ -126,10 +132,14 @@ Four methods were implemented to solve the maximum flow problem:
 - Dinic algorithm
 - Linear programming with GLPK
 
+#### Minimum-cost flow algorithms
+
 Two methods to solve the minimum-cost flow problem:
 
 - Linear programming with GLPK
 - Cycle-canceling algorithm (~ Klein algorithm)
+
+### Shortest link-disjoint paths algorithms
 
 Another recurrent problem in networking is to find the shortest link-disjoint paths. 
 Four methods were implemented to find the K link-disjoint shortest paths:
@@ -139,7 +149,7 @@ Four methods were implemented to find the K link-disjoint shortest paths:
 - Suurbale algorithm
 - Linear programming with GLPK
 
-Wavelength allocation problem
+### Wavelength allocation problem
 
 In an optical-bypass enabled network, a wavelength can cross an optical switch without Optical-Electrical-Optical (OEO) conversion. While this is a step forward towards cheaper and "greener" networks, a trade-off is that there has to be an end-to-end "wavelength continuity": a wavelength stays the same from the source edge to the destination edge, and it cannot be used by different lightpaths on the same optical fiber.
 
