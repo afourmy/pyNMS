@@ -105,7 +105,7 @@ class Map():
         self.view = view
         self.proj = 'Spherical'
         self.ratio, self.offset = 1/1000, (0, 0)
-        self.shapefile = join(self.view.controller.path_shapefiles, 'World countries.shp')
+        self.shapefile = join(self.view.controller.path_shapefiles, 'World countries (low resolution).shp')
         self.display = True
         
         # brush for water and lands

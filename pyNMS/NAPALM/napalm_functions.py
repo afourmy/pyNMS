@@ -38,10 +38,10 @@ napalm_actions = OrderedDict([
 ('NTP statistics', 'get_ntp_stats'),
 ('Transceivers', 'get_optics'),
 ('SNMP', 'get_snmp_information'),
-# ('Users', 'get_users'), # not implemented
-# ('Network instances (VRF)', 'get_network_instances'), # not implemented
-# ('NTP peers', 'get_ntp_peers'), # not implemented
-# ('BGP configuration', 'get_bgp_config'), # not implemented
+('Users', 'get_users'), # not implemented
+('Network instances (VRF)', 'get_network_instances'), # not implemented
+('NTP peers', 'get_ntp_peers'), # not implemented
+('BGP configuration', 'get_bgp_config'), # not implemented
 # ('Traceroute', 'traceroute'), # need argument
 # ('BGP neighbors', 'get_bgp_neighbors'), # bug when no neighbors
 # ('Routing table', 'get_route_to') # need argument
@@ -61,7 +61,10 @@ def open_device(credentials, node):
 def napalm_update(device, node, update_allowed):
     for action, function in napalm_actions.items():
         if action in update_allowed:
-            node.napalm_data[action] = getattr(device, function)()
+            try:
+                node.napalm_data[action] = getattr(device, function)()
+            except NotImplementedError:
+                node.napalm_data[action] = {}
     if 'Configuration' in update_allowed:
         node.napalm_data['Configuration']['compare'] = device.compare_config()
     if 'Logging' in update_allowed:
