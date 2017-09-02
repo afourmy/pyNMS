@@ -20,10 +20,12 @@ from os.path import abspath, dirname, pardir, join
 # prevent python from writing *.pyc files / __pycache__ folders
 sys.dont_write_bytecode = True
 
-path_app = dirname(abspath(stack()[0][1]))
+path_tests = dirname(abspath(stack()[0][1]))
+path_pynms = abspath(join(path_tests, pardir))
+path_app = join(path_pynms, 'pyNMS')
 
 if path_app not in sys.path:
-    sys.path.append(path_app)
+    sys.path += [path_tests, path_app]
     
 path_parent = abspath(join(path_app, pardir))
     
@@ -55,7 +57,7 @@ def start_pyNMS_and_import_project(filename):
     def inner_decorator(function):
         @start_pyNMS
         def wrapper(self):
-            filepath = join(self.ct.path_test, filename)
+            filepath = join(path_tests, filename)
             self.pj.excel_import(filepath=filepath)
             function(self)
         return wrapper
