@@ -15,14 +15,17 @@
 from collections import OrderedDict
 from os.path import join
 from .base_view import BaseView
-from math import *
+from math import asin, cos, sin, sqrt
 try:
     import shapefile
     import shapely.geometry
     from pyproj import Proj
-except ImportError:
+    import ooooo
+except ImportError as e:
     import warnings
-    warnings.warn('SHP librairies missing')
+    warnings.warn(str(e))
+    warnings.warn('SHP librairies missing: pyNMS will not start')
+    warnings.warn('please install "pyshp", "shapely", and "pyproj" with pip')
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import (

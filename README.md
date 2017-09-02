@@ -32,7 +32,7 @@ using the mercator or azimuthal orthographic projections.
 
 ## Network algorithmic visualization
 
-GIS visualization this can only be done if we have all GPS coordinates: it is not always the case.
+GIS visualization can only be done if we have all GPS coordinates: it is not always the case.
 Another way to visualize a network is use graph drawing algorithms to display the network.
 The video below shows that the network converges within a few milliseconds to a visually pleasing shape (ring, tree, hypercube). 
 
@@ -168,7 +168,7 @@ You can contact me at my personal email address:
 117, 114, 109, 121, 64, 103, 109, 97, 105, 108, 46, 99, 111, 109)))
 ```
 
-or on the [Network to Code slack](http://networktocode.herokuapp.com "Network to Code slack"). (@minto)
+or on the [Network to Code slack](http://networktocode.herokuapp.com "Network to Code slack"). (@minto, channel #pynms)
 
 # Credits
 
