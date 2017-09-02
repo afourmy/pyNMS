@@ -20,7 +20,6 @@ try:
     import shapefile
     import shapely.geometry
     from pyproj import Proj
-    import ooooo
 except ImportError as e:
     import warnings
     warnings.warn(str(e))
