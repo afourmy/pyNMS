@@ -12,10 +12,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .base_network import BaseNetwork
+from .graph import Graph
 from objects.objects import *
 
-class SiteNetwork(BaseNetwork):
+class Sites(Graph):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

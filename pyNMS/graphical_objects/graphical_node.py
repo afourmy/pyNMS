@@ -7,7 +7,7 @@ from right_click_menus.site_selection_menu import SiteSelectionMenu
 
 class GraphicalNode(QGraphicsPixmapItem):
     
-    def __init__(self, view, node):
+    def __init__(self, view, node=None):
         self.view = view
         self.controller = view.controller
         # if node is not defined, it means the node is created with the 
@@ -93,7 +93,7 @@ class GraphicalNode(QGraphicsPixmapItem):
             self.setSelected(True)
             menu = {
                     'main': MainNetworkSelectionMenu,
-                    'internal': InternalSiteSelectionMenu,
+                    'insite': InternalSiteSelectionMenu,
                     'site': SiteSelectionMenu
                     }[self.view.subtype](self.controller)
             menu.exec_(QCursor.pos())

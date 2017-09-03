@@ -16,24 +16,14 @@ from objects.objects import *
 from collections import defaultdict
 from math import sqrt
 
-class BaseNetwork(object):
+class Graph(object):
     
     def __init__(self, view):
         self.nodes = {}
-        self.plinks = {}
-        self.l2links = {}
-        self.l3links = {}
-        self.traffics = {}
-        self.interfaces = set()
+        self.links = {}
         
         # pn for 'pool network'
-        self.pn = {
-                   'node': self.nodes, 
-                   'plink': self.plinks, 
-                   'l2link': self.l2links, 
-                   'l3link': self.l3links,
-                   'traffic': self.traffics, 
-                   }
+        self.pn = {'node': self.nodes, 'link': self.links}
                    
         self.view = view
         self.graph = defaultdict(lambda: defaultdict(set))

@@ -12,7 +12,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .base_network import BaseNetwork
+from .graph import Graph
 from autonomous_system.AS import AS_class
 from objects import objects
 import random
@@ -34,7 +34,7 @@ try:
 except ImportError:
     warnings.warn('Package missing: linear programming functions will fail')
 
-class MainNetwork(BaseNetwork):
+class Network(Graph):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

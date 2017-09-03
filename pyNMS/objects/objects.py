@@ -288,6 +288,9 @@ object_properties = OrderedDict([
 ('firewall', node_common_properties),
 ('load_balancer', node_common_properties),
 ('server', node_common_properties),
+('shelf', obj_common_properties),
+('card', obj_common_properties),
+('port', obj_common_properties),
 ('ethernet link', plink_common_properties),
 ('optical link', plink_common_properties),
 ('l2vc', vc_common_properties),
@@ -472,6 +475,9 @@ obj_to_name = {
 'firewall': 'Firewall',
 'load_balancer': 'Load Balancer',
 'server': 'Server',
+'shelf': 'Shelf',
+'card': 'Card',
+'port': 'Port',
 'ethernet link': 'Ethernet link',
 'optical link': 'Optical link',
 'l2vc': 'Layer-2 flow',
@@ -732,6 +738,33 @@ class Server(Node):
     subtype = 'server'
     layer = 3
     imagex, imagey = 26, 26
+    
+    @initializer
+    def __init__(self, **kwargs):
+        super().__init__()
+        
+class Shelf(Node):
+
+    color = 'black'
+    subtype = 'shelf'
+    
+    @initializer
+    def __init__(self, **kwargs):
+        super().__init__()
+        
+class Card(Node):
+
+    color = 'black'
+    subtype = 'card'
+    
+    @initializer
+    def __init__(self, **kwargs):
+        super().__init__()
+        
+class Port(Node):
+
+    color = 'black'
+    subtype = 'port'
     
     @initializer
     def __init__(self, **kwargs):
@@ -1061,7 +1094,7 @@ class StaticTraffic(Traffic):
 ## NetDim classes
 
 # ordered to keep the order when using the keys 
-node_class = OrderedDict([
+network_node_class = OrderedDict([
 ('router', Router),
 ('oxc', OXC),
 ('host', Host),
@@ -1072,9 +1105,22 @@ node_class = OrderedDict([
 ('cloud', Cloud),
 ('firewall', Firewall),
 ('load_balancer', LoadBalancer),
-('server', Server),
-('site', Site),
+('server', Server)
 ])
+
+site_class = OrderedDict([
+('site', Site)
+])
+
+internal_node_class = OrderedDict([
+('shelf', Shelf),
+('card', Card),
+('port', Port)
+])
+
+node_class = OrderedDict()
+for dclass in (network_node_class, site_class, internal_node_class):
+    node_class.update(dclass)
 
 # layer 1 (physical links)
 plink_class = OrderedDict([
@@ -1116,6 +1162,8 @@ link_class_with_vc.update(vc_class)
 link_class_with_vc.update(link_class)
 
 link_type = ('plink', 'l2link', 'l3link', 'traffic')
+network_node_subtype = tuple(network_node_class.keys())
+internal_node_subtype = tuple(internal_node_class.keys())
 node_subtype = tuple(node_class.keys())
 link_subtype = tuple(link_class.keys())
 all_subtypes = node_subtype + link_subtype

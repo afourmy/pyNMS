@@ -29,6 +29,7 @@ from miscellaneous.style_window import StyleWindow
 from miscellaneous.debug import DebugWindow
 from main_menus import (
                         node_creation_panel,
+                        internal_node_creation_panel,
                         link_creation_panel,
                         node_display_panel,
                         link_display_panel,
@@ -317,7 +318,10 @@ class Controller(QMainWindow):
         self.gpixmaps = defaultdict(OrderedDict)
         for color in ('default', 'red', 'purple'):
             for subtype in node_subtype:
-                path = join(self.path_icon, ''.join((color, '_', subtype, '.gif')))
+                if subtype in ('shelf', 'port', 'card'):
+                    path = join(self.path_icon, ''.join((color, '_', subtype, '.png')))
+                else:
+                    path = join(self.path_icon, ''.join((color, '_', subtype, '.gif')))
                 self.pixmaps[color][subtype] = QPixmap(path)
                 self.gpixmaps[color][subtype] = QPixmap(path).scaled(
                                                         QSize(100, 100), 
@@ -339,13 +343,17 @@ class Controller(QMainWindow):
         notebook_menu.addTab(creation_menu, 'Creation')
         
         # creation menus
-        self.node_creation_menu = node_creation_panel.NodeCreationPanel(self)
-        self.link_creation_menu = link_creation_panel.LinkCreationPanel(self)
+        node_creation_menu = node_creation_panel.NodeCreationPanel(self)
+        link_creation_menu = link_creation_panel.LinkCreationPanel(self)
+        
+        # creation panel for the internal node view
+        internal_node_creation_menu = internal_node_creation_panel.InternalNodeCreationPanel(self)
         
         # layout of the creation menu
-        creation_menu_layout = QVBoxLayout(creation_menu)
-        creation_menu_layout.addWidget(self.node_creation_menu)
-        creation_menu_layout.addWidget(self.link_creation_menu)
+        self.creation_menu_layout = QGridLayout(creation_menu)
+        self.creation_menu_layout.addWidget(node_creation_menu, 0, 0)
+        self.creation_menu_layout.addWidget(link_creation_menu, 1, 0)
+        self.creation_menu_layout.addWidget(internal_node_creation_menu, 0, 0)
         
         # second tab: the display menu
         display_menu = QWidget(notebook_menu)
@@ -370,6 +378,9 @@ class Controller(QMainWindow):
         options_menu_layout = QGridLayout(options_menu)
         options_menu_layout.addWidget(self.selection_panel, 0, 0, 1, 2)
         options_menu_layout.addWidget(self.routing_panel, 2, 0, 3, 1)
+        
+        # display the menu for the network mode
+        self.change_menu('network')
         
         ## notebook containing all projects
         self.notebook_project = QTabWidget(self)
@@ -397,6 +408,12 @@ class Controller(QMainWindow):
         self.notebook_project.addTab(new_project, name)
         self.dict_project[name] = new_project
         return new_project
+        
+    ## function to change the menu depending on the current mode
+    def change_menu(self, mode):
+        for index in range(self.creation_menu_layout.count()):
+            widget = self.creation_menu_layout.itemAt(index).widget()
+            widget.setHidden(widget.mode != mode)
         
     def delete_project(self):
         pass

@@ -90,6 +90,7 @@ class Project(QWidget):
         self.network_view.show()
         self.current_view = self.network_view
         self.view_type = 'network'
+        self.controller.change_menu('network')
         
     def show_site_view(self):
         self.current_view.hide()
@@ -102,6 +103,13 @@ class Project(QWidget):
         site.site_view.show()
         self.current_view = site.site_view
         self.view_type = 'insite'
+        
+    def show_internal_node_view(self, gnode):
+        self.current_view.hide()
+        gnode.internal_view.show()
+        self.current_view = gnode.internal_view
+        self.view_type = 'innode'
+        self.controller.change_menu('innode')
         
     def refresh(self):
         

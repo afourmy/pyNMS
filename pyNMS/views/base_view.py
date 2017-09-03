@@ -197,22 +197,6 @@ class BaseView(QGraphicsView):
         
     ## Change display
     
-    def per_subtype_display(self, subtype):
-        self.display[subtype] = not self.display[subtype]
-        type = subtype_to_type[subtype]
-        for item in self.filter(type, subtype):
-            item.show() if self.display[subtype] else item.hide()
-            if subtype in node_subtype:
-                for glink in self.attached_glinks(item):
-                    glink.show() if self.display[subtype] else glink.hide()
-            
-    def refresh_label(self, subtype, property):
-        type = subtype_to_type[subtype]
-        for item in self.filter(type, subtype):
-            value = getattr(item.object, property.name) if property else ''
-            item.label.setText(value)
-        self.subtypes[subtype] = property
-    
     def refresh_display(self):
         pass
 

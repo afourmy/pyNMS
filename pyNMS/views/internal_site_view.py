@@ -16,7 +16,6 @@ from graphical_objects.graphical_network_node import GraphicalNetworkNode
 from graphical_objects.graphical_link import GraphicalLink
 from miscellaneous.decorators import update_paths, overrider
 from .network_view import NetworkView
-from networks.base_network import BaseNetwork
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -24,7 +23,7 @@ from right_click_menus.network_general_menu import NetworkGeneralMenu
 
 class InternalSiteView(NetworkView):
     
-    subtype = 'internal'
+    subtype = 'insite'
 
     def __init__(self, gsite, controller):
         self.network_view = controller.current_project.network_view

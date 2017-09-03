@@ -21,6 +21,8 @@ from PyQt5.QtWidgets import (
 
 class LinkCreationPanel(QGroupBox):
     
+    mode = 'network'
+    
     def __init__(self, controller):
         super().__init__(controller)
         self.controller = controller

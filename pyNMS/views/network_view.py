@@ -17,7 +17,7 @@ from graphical_objects.graphical_link import GraphicalLink
 from right_click_menus.network_general_menu import NetworkGeneralMenu
 from math import sqrt
 from miscellaneous.decorators import overrider
-from networks import main_network
+from objects.objects import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -87,6 +87,24 @@ class NetworkView(BaseView):
                     self.remove_objects(link.glink[self])
             else:
                 self.network.remove_link(obj)
+                
+    ## Change display
+    
+    def per_subtype_display(self, subtype):
+        self.display[subtype] = not self.display[subtype]
+        type = subtype_to_type[subtype]
+        for item in self.filter(type, subtype):
+            item.show() if self.display[subtype] else item.hide()
+            if subtype in node_subtype:
+                for glink in self.attached_glinks(item):
+                    glink.show() if self.display[subtype] else glink.hide()
+            
+    def refresh_label(self, subtype, property):
+        type = subtype_to_type[subtype]
+        for item in self.filter(type, subtype):
+            value = getattr(item.object, property.name) if property else ''
+            item.label.setText(value)
+        self.subtypes[subtype] = property
         
     ## Force-directed layout algorithms
     

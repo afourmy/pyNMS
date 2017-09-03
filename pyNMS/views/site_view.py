@@ -14,7 +14,7 @@
 
 from graphical_objects.graphical_site import GraphicalSite
 from .geographical_view import GeographicalView
-from networks.site_network import SiteNetwork
+from networks.sites import Sites
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -24,7 +24,7 @@ class SiteView(GeographicalView):
     subtype = 'site'
 
     def __init__(self, *args, **kwargs):
-        self.network = SiteNetwork(self)
+        self.network = Sites(self)
         super().__init__(*args, **kwargs)
         
     def draw_objects(self, sites):

@@ -3,7 +3,7 @@ from .network_view import NetworkView
 from graphical_objects.graphical_network_node import GraphicalNetworkNode
 from graphical_objects.graphical_link import GraphicalLink
 from math import sqrt
-from networks import main_network
+from networks.network import Network
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -14,7 +14,7 @@ class MainNetworkView(GeographicalView, NetworkView):
     subtype = 'main'
 
     def __init__(self, controller):
-        self.network = main_network.MainNetwork(self)
+        self.network = Network(self)
         super().__init__(controller)
         
     # given a graphical node, retrieves all attached graphical links    

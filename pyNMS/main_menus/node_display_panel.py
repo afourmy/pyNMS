@@ -60,7 +60,7 @@ class NodeDisplayPanel(QGroupBox):
         # exit connection lost because of the following lines
         layout = QtWidgets.QGridLayout(self)
         self.buttons = {}
-        for index, subtype in enumerate(node_subtype):
+        for index, subtype in enumerate(network_node_subtype + ('site',)):
             button = MenuPushButton(controller, subtype)
             button.clicked.connect(lambda _, s=subtype: self.change_display(s))
             image_path = join(controller.path_icon, 'default_{}.gif'.format(subtype))
