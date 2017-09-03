@@ -19,6 +19,7 @@ from automation.send_script_window import SendScriptWindow
 from autonomous_system import AS
 from autonomous_system import AS_operations
 from autonomous_system import area_operations
+from graph_generation.multiple_links import MultipleLinks
 from objects.objects import *
 import ip_networks.configuration as conf
 import ip_networks.troubleshooting as ip_ts
@@ -290,6 +291,6 @@ class NetworkSelectionMenu(SelectionMenu):
     ## Multiple links
     
     def multiple_links(self):
-        self.multiple_links = MultipleLinks(self.selected_nodes, self.controller)
+        self.multiple_links = MultipleLinks(self.nodes, self.controller)
         self.multiple_links.show()
             

@@ -27,8 +27,6 @@ path_app = join(path_pynms, 'pyNMS')
 if path_app not in sys.path:
     sys.path += [path_tests, path_app]
     
-path_parent = abspath(join(path_app, pardir))
-    
 import controller
 from PyQt5.QtWidgets import QApplication
 from autonomous_system.AS_operations import ASCreation
@@ -58,10 +56,26 @@ def start_pyNMS_and_import_project(filename):
         @start_pyNMS
         def wrapper(self):
             filepath = join(path_tests, filename)
-            self.pj.excel_import(filepath=filepath)
+            if filename.endswith('xls'):
+                self.pj.excel_import(filepath=filepath)
+            else:
+                self.pj.yaml_import(filepath=filepath)
             function(self)
         return wrapper
     return inner_decorator
+    
+class TestObjectCreation(unittest.TestCase):
+ 
+    @start_pyNMS_and_import_project('test_object_creation.xls')
+    def setUp(self):
+        pass
+ 
+    def tearDown(self):
+        self.app.quit()
+ 
+    def test_object_creation(self):
+        self.assertEqual(len(self.nk.nodes), 11)
+        self.assertEqual(len(list(self.nk.all_links())), 17)  
 
 # class TestExportImport(unittest.TestCase):
 #     

@@ -75,7 +75,7 @@ class Controller(QMainWindow):
         self.path_apps = join(path_parent, 'Apps')
         self.path_icon = join(path_parent, 'Icons')
         self.path_shapefiles = join(path_parent, 'Shapefiles')
-        # self.path_test = join(path_parent, 'Tests')
+        self.path_test = join(path_parent, 'Tests')
         self.path_workspace = join(path_parent, 'Workspace')
         
         # set the icon

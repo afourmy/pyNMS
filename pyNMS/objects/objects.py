@@ -325,8 +325,8 @@ object_ie = OrderedDict([
 ('BGP peering', route_common_ie_properties),
 ('routed traffic', traffic_common_ie_properties),
 ('static traffic', traffic_common_ie_properties),
-('ethernet interface', ethernet_interface_properties),
-('optical interface', interface_common_properties)
+# ('ethernet interface', ethernet_interface_properties),
+# ('optical interface', interface_common_properties)
 ])
 
 ## Interface basic and per-AS public properties

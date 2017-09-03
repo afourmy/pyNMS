@@ -168,7 +168,7 @@ class Project(QWidget):
             project_objects = {
             subtype: {
                       str(obj.name):  {
-                                       property.name: getattr(obj, property.name)
+                                       property.name: str(getattr(obj, property.name))
                                        for property in properties
                                        }
                       for obj in self.network_view.network.ftr(
@@ -178,6 +178,7 @@ class Project(QWidget):
                       }
             for subtype, properties in object_ie.items()
             }
+
             dump(project_objects, file, default_flow_style=False)
     
     def excel_import(self, filepath=None):
