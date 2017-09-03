@@ -27,6 +27,7 @@ from miscellaneous.credentials_window import CredentialsWindow
 from miscellaneous.search_window import SearchWindow
 from miscellaneous.style_window import StyleWindow
 from miscellaneous.debug import DebugWindow
+from miscellaneous.decorators import update_paths
 from main_menus import (
                         node_creation_panel,
                         internal_node_creation_panel,
@@ -37,6 +38,7 @@ from main_menus import (
                         selection_panel
                         )
 from project import Project
+from subprocess import Popen
 from views import base_view
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
@@ -65,7 +67,9 @@ from PyQt5.QtWidgets import (
 
 class Controller(QMainWindow):
     def __init__(self, path_app):
-        super(Controller, self).__init__()
+        super().__init__()
+        # for the update_paths decorator to work
+        self.controller = self
         palette = self.palette()
         palette.setColor(self.backgroundRole(), QColor(212, 212, 212))
         self.setPalette(palette)
@@ -289,6 +293,12 @@ class Controller(QMainWindow):
         zoom_out.setStatusTip('Zoom out')
         zoom_out.triggered.connect(self.zoom_out)
         
+        search_icon = QIcon(join(self.path_icon, 'connection.png'))
+        search = QAction(search_icon, 'SSH connection', self)
+        search.setShortcut('Tab')
+        search.setStatusTip('Start an SSH connection to the selected device')
+        search.triggered.connect(self.ssh_connection)
+        
         toolbar = self.addToolBar('')
         toolbar.resize(1500, 1500)
         toolbar.setIconSize(QtCore.QSize(70, 70))
@@ -475,3 +485,12 @@ class Controller(QMainWindow):
         
     def zoom_out(self):
         self.current_project.current_view.zoom_out()
+        
+    @update_paths
+    def ssh_connection(self, _):
+        selection = list(self.view.scene.selectedItems())
+        if len(selection) == 1 and self.view.is_node(selection[0]):
+            gnode ,= selection
+            credentials = self.network.get_credentials(gnode.node)
+            command = '{path} -ssh {username}@{ip_address} -pw {password}'
+            connect = Popen(command.format(**credentials).split())
