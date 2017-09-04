@@ -21,6 +21,7 @@ from autonomous_system import AS_operations
 from autonomous_system import area_operations
 from graph_generation.multiple_links import MultipleLinks
 from objects.objects import *
+from internal_structure.internal_structure import InternalStructure
 import ip_networks.configuration as conf
 import ip_networks.troubleshooting as ip_ts
 import ip_networks.switching_table as switching_table
@@ -44,6 +45,11 @@ class NetworkSelectionMenu(SelectionMenu):
             
             # we retrieve the node
             self.node ,= self.nodes
+            
+            # internal structure
+            internal_structure = QAction('Internal structure', self)        
+            internal_structure.triggered.connect(self.internal_structure)
+            self.addAction(internal_structure)
             
             # configuration + troubleshooting windows
             configuration = QAction('Configuration', self)        
@@ -199,6 +205,10 @@ class NetworkSelectionMenu(SelectionMenu):
         
         self.remove_from_site_action = QAction('Remove from site', self)        
         self.remove_from_site_action.triggered.connect(self.remove_from_site)
+        
+    def internal_structure(self):
+        self.structure_window = InternalStructure(self.node, self.controller)
+        self.structure_window.show()
             
     def configure(self):
         if self.node.subtype == 'router':
