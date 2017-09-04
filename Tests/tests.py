@@ -42,7 +42,7 @@ from ip_networks.switching_table import SwitchingTable
 def start_pyNMS(function):
     def wrapper(self):
         self.app = QApplication(sys.argv)
-        self.ct = controller.Controller(path_app)
+        self.ct = controller.Controller(path_app, test=True)
         self.pj = self.ct.current_project
         self.vw = self.pj.current_view
         self.nk = self.vw.network

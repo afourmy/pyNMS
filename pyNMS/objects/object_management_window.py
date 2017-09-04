@@ -16,11 +16,13 @@ import re
 from objects.objects import *
 from miscellaneous.decorators import update_paths
 from pyQT_widgets.Q_object_combo_box import QObjectComboBox
+from PyQt5.QtGui import QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import (
                              QGridLayout,
                              QGroupBox,
                              QLabel, 
                              QLineEdit,
+                             QTreeView,
                              QWidget
                              )
 
@@ -79,6 +81,8 @@ class ObjectManagementWindow(QWidget):
             if property.multiple_values and property.choose_one_value:
                 pvalue = QObjectComboBox()
                 pvalue.addItems(property.values)
+            elif property.subtype == 'dict':
+                pvalue = QTreeView()                
             else:
                 # s = 'readonly' if property in self.read_only else 'normal'
                 pvalue = QLineEdit()
@@ -120,6 +124,14 @@ class ObjectManagementWindow(QWidget):
         if obj.subtype in self.perAS_properties:
             layout.addWidget(perAS_properties, 1, 0)
         self.setLayout(layout)
+        
+    def populate_tree(self, children, parent):
+        for child in sorted(children):
+            child_item = QStandardItem(child)
+            parent.appendRow(child_item)
+            print(bool(list(children)))
+            if isinstance(children, dict) and bool(list(children)):
+                self.populate_tree(children[child], child_item)
         
     def update_AS_properties(self, _):
         AS = self.AS_combobox.text
@@ -201,6 +213,10 @@ class ObjectManagementWindow(QWidget):
                 property_widget.setText(','.join(map(str, obj_prop.keys())))
             elif type(obj_prop) in (list, set):
                 property_widget.setText(','.join(map(str, obj_prop)))
+            elif property.subtype == 'dict':
+                root_model = QStandardItemModel()
+                property_widget.setModel(root_model)
+                self.populate_tree(obj_prop, root_model.invisibleRootItem())
             else:
                 property_widget.setText(str(obj_prop))
                 

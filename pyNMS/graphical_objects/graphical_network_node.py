@@ -6,7 +6,9 @@ class GraphicalNetworkNode(GraphicalNode):
     
     def __init__(self, view, node=None):
         super().__init__(view, node)
-        self.internal_view = InternalNodeView(self, view.controller)
+        print(self.node.subtype)
+        if self.node.subtype != 'port':
+            self.internal_view = InternalNodeView(self, view.controller)
         
     # itemChange is overriden for a Graphical Network Node, because a site 
     # has no attached link. It does not need to trigger the update position

@@ -67,8 +67,9 @@ from PyQt5.QtWidgets import (
                              )
 
 class Controller(QMainWindow):
-    def __init__(self, path_app):
+    def __init__(self, path_app, test=False):
         super().__init__()
+        self.test = test
         # for the update_paths decorator to work
         self.controller = self
         palette = self.palette()
@@ -262,6 +263,11 @@ class Controller(QMainWindow):
         site_view.setStatusTip('Switch to site view')
         site_view.triggered.connect(self.show_site_view)
         
+        parent_view_icon = QIcon(join(self.path_icon, 'parent_view.png'))
+        parent_view = QAction(parent_view_icon, 'Parent view', self)
+        parent_view.setStatusTip('Go back to the parent view')
+        parent_view.triggered.connect(self.show_parent_view)
+        
         graph_generation_icon = QIcon(join(self.path_icon, 'ring.png'))
         graph_generation = QAction(graph_generation_icon, 'Graph generation', self)
         graph_generation.setShortcut('Ctrl+G')
@@ -312,6 +318,7 @@ class Controller(QMainWindow):
         toolbar.addSeparator()
         toolbar.addAction(network_view)
         toolbar.addAction(site_view)
+        toolbar.addAction(parent_view)
         toolbar.addSeparator()
         toolbar.addAction(graph_generation)
         toolbar.addAction(stop_drawing)
@@ -329,7 +336,9 @@ class Controller(QMainWindow):
         self.gpixmaps = defaultdict(OrderedDict)
         for color in ('default', 'red', 'purple'):
             for subtype in node_subtype:
-                if subtype in ('shelf', 'port', 'card'):
+                if test:
+                    path = ''
+                elif subtype in ('shelf', 'port', 'card'):
                     path = join(self.path_icon, ''.join((color, '_', subtype, '.png')))
                 else:
                     path = join(self.path_icon, ''.join((color, '_', subtype, '.gif')))
@@ -444,8 +453,9 @@ class Controller(QMainWindow):
     def yaml_export(self):
         self.current_project.yaml_export()
         
+    @update_paths
     def stop_drawing(self):
-        self.current_project.current_view.stop_timer()
+        self.view.stop_timer()
         
     def switch_to_selection_mode(self):
         self.mode = 'selection'
@@ -457,17 +467,23 @@ class Controller(QMainWindow):
     def show_site_view(self):
         self.current_project.show_site_view()
         
+    @update_paths
+    def show_parent_view(self, _):
+        self.current_project.show_parent_view()
+        
     def generate_graph(self):
         self.current_project.generate_graph()
         
     def debug(self):
         self.debug_window.show()
         
+    @update_paths
     def show_hide_map(self):
-        self.current_project.current_view.world_map.show_hide_map()
+        self.view.world_map.show_hide_map()
         
+    @update_paths
     def delete_map(self):
-        self.current_project.current_view.world_map.delete_map()
+        self.view.world_map.delete_map()
         
     def refresh(self):
         self.current_project.refresh()
@@ -484,11 +500,13 @@ class Controller(QMainWindow):
         self.mode = 'creation'
         self.creation_mode = 'ellipse'
         
+    @update_paths
     def zoom_in(self):
-        self.current_project.current_view.zoom_in()
+        self.view.zoom_in()
         
+    @update_paths
     def zoom_out(self):
-        self.current_project.current_view.zoom_out()
+        self.view.zoom_out()
         
     @update_paths
     def ssh_connection(self, _):

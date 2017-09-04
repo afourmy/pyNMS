@@ -52,7 +52,7 @@ class GraphicalLink(QGraphicsLineItem):
             self.setFlag(QGraphicsItem.ItemIsSelectable, True)
             self.setSelected(True)
             menu = {
-                    'main': MainNetworkSelectionMenu,
+                    'network': MainNetworkSelectionMenu,
                     'internal': InternalSiteSelectionMenu,
                     }[self.view.subtype](self.controller)
             menu.exec_(QCursor.pos())

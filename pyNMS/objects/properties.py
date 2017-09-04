@@ -361,7 +361,9 @@ class Structure(DictProperty):
     
     # structure is a dictionnary that describes the internal structure
     # of a node: shelves, cards, ports
-    def __new__(cls, value={}):
+    def __new__(cls, value=None):
+        if not value:
+            value = {}
         return value
         
 class Sites(SetProperty):

@@ -9,6 +9,7 @@ class InternalNodeView(BaseView):
     def __init__(self, gnode, controller):
         self.gnode = gnode
         self.node = gnode.node
+        self.parent_view = gnode.view
         self.network = Graph(self)
         super().__init__(controller)
         controller.current_project.hlayout.addWidget(self)
@@ -19,5 +20,8 @@ class InternalNodeView(BaseView):
         if event.mimeData().hasFormat('application/x-dnditemdata'):
             from graphical_objects.graphical_network_node import GraphicalNetworkNode
             new_gnode = GraphicalNetworkNode(self)
-            self.node.structure[new_gnode.node.name] = new_gnode.node.structure 
+            if new_gnode.node.subtype != 'port':
+                self.node.structure[new_gnode.node.name] = new_gnode.node.structure
+            else:
+                self.node.structure[new_gnode.node.name] = []
             new_gnode.setPos(pos)

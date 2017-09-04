@@ -113,6 +113,16 @@ class Project(QWidget):
         self.view_type = 'innode'
         self.controller.change_menu('innode')
         
+    def show_parent_view(self):
+        if self.current_view.subtype == 'insite':
+            self.show_site_view()
+        elif self.current_view.subtype == 'innode':
+            self.current_view.hide()
+            self.current_view = self.current_view.parent_view
+            self.current_view.show()
+            self.view_type = self.current_view.subtype
+            self.controller.change_menu(self.view_type)
+        
     def refresh(self):
         
         commands = (

@@ -92,7 +92,7 @@ class GraphicalNode(QGraphicsPixmapItem):
             self.setFlag(QGraphicsItem.ItemIsSelectable, True)
             self.setSelected(True)
             menu = {
-                    'main': MainNetworkSelectionMenu,
+                    'network': MainNetworkSelectionMenu,
                     'insite': InternalSiteSelectionMenu,
                     'site': SiteSelectionMenu
                     }[self.view.subtype](self.controller)
