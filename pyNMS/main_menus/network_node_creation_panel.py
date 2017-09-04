@@ -19,29 +19,29 @@ from PyQt5.QtWidgets import (
                              QGroupBox,
                              )
 
-class InternalNodeCreationPanel(QGroupBox):
+class NetworkNodeCreationPanel(QGroupBox):
     
-    mode = 'innode'
+    mode = 'network'
     
     def __init__(self, controller):
         super().__init__(controller)
         self.controller = controller
-        self.setTitle('Object creation')
+        self.setTitle('Node creation')
         self.setMinimumSize(300, 300)
         self.setAcceptDrops(True)
                 
         # exit connection lost because of the following lines
         layout = QtWidgets.QGridLayout(self)
-        for index, subtype in enumerate(internal_node_subtype):
+        for index, subtype in enumerate(network_node_subtype):
             pixmap = controller.pixmaps['default'][subtype]
             label = QLabel(self)
-            label.setMaximumSize(100, 100)
+            label.setMaximumSize(50, 50)
             label.subtype = subtype
             label.setPixmap(pixmap)
             label.setScaledContents(True)
             label.show()
             label.setAttribute(Qt.WA_DeleteOnClose)
-            layout.addWidget(label, index // 2, index % 2)
+            layout.addWidget(label, index // 4, index % 4)
             
     def dragMoveEvent(self, event):
         if event.mimeData().hasFormat('application/x-dnditemdata'):
@@ -59,13 +59,21 @@ class InternalNodeCreationPanel(QGroupBox):
     def mousePressEvent(self, event):
         # retrieve the label 
         child = self.childAt(event.pos())
-        
         if not child:
             return
         
         self.controller.mode = 'selection'
         # update the creation mode to the appropriate subtype
         self.controller.creation_mode = child.subtype
+        # we change the view if necessary:
+        # if it is a site, we switch the site view
+        # if it is anything else and we are in the site view, we switch 
+        # to the network view
+        if child.subtype == 'site':
+            self.project.show_site_view()
+        else:
+            if self.project.view_type == 'site':
+                self.project.show_network_view()
         
         pixmap = QPixmap(child.pixmap().scaled(
                                             QSize(50, 50), 

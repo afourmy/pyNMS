@@ -86,7 +86,7 @@ class SetProperty(set, Property):
         cls.values = values
         return values
         
-class DictProperty(set, Property):
+class DictProperty(dict, Property):
     
     subtype = 'dict'
     # a dictionnary is a complex structure (it can contain other dict):
@@ -352,6 +352,16 @@ class LogicalY(FloatProperty):
     pretty_name = 'Logical Y coordinate'
     
     def __new__(cls, value=0.):
+        return value
+        
+class Structure(DictProperty):
+    
+    name ='structure'
+    pretty_name = 'Internal structure'
+    
+    # structure is a dictionnary that describes the internal structure
+    # of a node: shelves, cards, ports
+    def __new__(cls, value={}):
         return value
         
 class Sites(SetProperty):
@@ -629,6 +639,7 @@ property_classes = {
                     'node': Node,
                     'role': Role,
                     'router_id': RouterID,
+                    'structure': Structure,
                     'LB_paths': LB_Paths,
                     'cost': Cost,
                     'priority': Priority,

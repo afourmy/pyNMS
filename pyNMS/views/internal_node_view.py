@@ -19,4 +19,5 @@ class InternalNodeView(BaseView):
         if event.mimeData().hasFormat('application/x-dnditemdata'):
             from graphical_objects.graphical_network_node import GraphicalNetworkNode
             new_gnode = GraphicalNetworkNode(self)
+            self.node.structure[new_gnode.node.name] = new_gnode.node.structure 
             new_gnode.setPos(pos)

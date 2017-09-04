@@ -68,7 +68,7 @@ def initializer(init):
 nd_obj = {
 'site': 'node',
 'router': 'node',
-'oxc': 'node',
+'optical switch': 'node',
 'host': 'node',
 'antenna': 'node',
 'regenerator': 'node',
@@ -87,7 +87,7 @@ nd_obj = {
 subtype_to_type = {
 'site': 'node',
 'router': 'node',
-'oxc': 'node',
+'optical switch': 'node',
 'host': 'node',
 'antenna': 'node',
 'regenerator': 'node',
@@ -141,6 +141,7 @@ LogicalX,
 LogicalY,
 IP_Address, 
 SubnetMask, 
+Structure,
 Sites,
 AS,
 )
@@ -279,7 +280,7 @@ object_properties = OrderedDict([
 ('site', node_common_properties),
 ('router', node_common_properties),
 ('switch', node_common_properties),
-('oxc', node_common_properties),
+('optical switch', node_common_properties),
 ('host', node_common_properties),
 ('antenna', node_common_properties),
 ('regenerator', node_common_properties),
@@ -288,9 +289,9 @@ object_properties = OrderedDict([
 ('firewall', node_common_properties),
 ('load_balancer', node_common_properties),
 ('server', node_common_properties),
-('shelf', obj_common_properties),
-('card', obj_common_properties),
-('port', obj_common_properties),
+('shelf', node_common_properties),
+('card', node_common_properties),
+('port', node_common_properties),
 ('ethernet link', plink_common_properties),
 ('optical link', plink_common_properties),
 ('l2vc', vc_common_properties),
@@ -311,7 +312,7 @@ object_ie = OrderedDict([
 ('site', node_common_ie_properties),
 ('router', node_common_ie_properties),
 ('switch', node_common_ie_properties),
-('oxc', node_common_ie_properties),
+('optical switch', node_common_ie_properties),
 ('host', node_common_ie_properties),
 ('antenna', node_common_ie_properties),
 ('regenerator', node_common_ie_properties),
@@ -379,7 +380,7 @@ subtype_labels = OrderedDict([
 ('site', node_common_ie_properties),
 ('router', node_common_ie_properties),
 ('switch', node_common_ie_properties),
-('oxc', node_common_ie_properties),
+('optical switch', node_common_ie_properties),
 ('host', node_common_ie_properties),
 ('antenna', node_common_ie_properties),
 ('regenerator', node_common_ie_properties),
@@ -439,7 +440,7 @@ box_properties = OrderedDict([
 ('site', node_box_properties),
 ('router', node_box_properties),
 ('switch', node_box_properties),
-('oxc', node_box_properties),
+('optical switch', node_box_properties),
 ('host', node_box_properties),
 ('antenna', node_box_properties),
 ('regenerator', node_box_properties),
@@ -465,7 +466,7 @@ box_properties = OrderedDict([
 obj_to_name = {
 'site': 'Site',
 'router': 'Router',
-'oxc': 'Optical switch',
+'optical switch': 'Optical switch',
 'host': 'Host',
 'antenna': 'Antenna',
 'regenerator': 'Regenerator',
@@ -554,6 +555,7 @@ class Node(NDobject):
         
         # NAPALM data
         self.napalm_data = {}
+        
         super().__init__()
         
     def __repr__(self):
@@ -638,10 +640,10 @@ class Switch(Node):
         self.st = {}
         super().__init__()
         
-class OXC(Node):
+class OpticalSwitch(Node):
 
     color = 'pink'
-    subtype = 'oxc'
+    subtype = 'optical switch'
     layer = 2
     imagex, imagey = 35, 32
     
@@ -659,22 +661,6 @@ class Host(Node):
     @initializer
     def __init__(self, **kwargs):
         self.rt = {}
-        self.default_route = None
-        self.mininet_name = None
-        super().__init__()
-        
-    def mininet_conf(self):
-        return '{n} = net.addHost(\'{n}\')\n'.format(n=self.mininet_name)
-        
-class Regenerator(Node):
-
-    color = 'black'
-    subtype = 'regenerator'
-    layer = 1
-    imagex, imagey = 64, 48
-    
-    @initializer
-    def __init__(self, **kwargs):
         super().__init__()
         
 class Splitter(Node):
@@ -743,6 +729,8 @@ class Server(Node):
     def __init__(self, **kwargs):
         super().__init__()
         
+## Internal node
+        
 class Shelf(Node):
 
     color = 'black'
@@ -765,6 +753,16 @@ class Port(Node):
 
     color = 'black'
     subtype = 'port'
+    
+    @initializer
+    def __init__(self, **kwargs):
+        super().__init__()
+        
+class Regenerator(Node):
+
+    color = 'black'
+    subtype = 'regenerator'
+    layer = 1
     
     @initializer
     def __init__(self, **kwargs):
@@ -1096,10 +1094,9 @@ class StaticTraffic(Traffic):
 # ordered to keep the order when using the keys 
 network_node_class = OrderedDict([
 ('router', Router),
-('oxc', OXC),
+('optical switch', OpticalSwitch),
 ('host', Host),
 ('antenna', Antenna),
-('regenerator', Regenerator),
 ('splitter', Splitter),
 ('switch', Switch),
 ('cloud', Cloud),
@@ -1115,7 +1112,8 @@ site_class = OrderedDict([
 internal_node_class = OrderedDict([
 ('shelf', Shelf),
 ('card', Card),
-('port', Port)
+('port', Port),
+('regenerator', Regenerator),
 ])
 
 node_class = OrderedDict()

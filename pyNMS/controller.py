@@ -29,13 +29,14 @@ from miscellaneous.style_window import StyleWindow
 from miscellaneous.debug import DebugWindow
 from miscellaneous.decorators import update_paths
 from main_menus import (
-                        node_creation_panel,
+                        network_node_creation_panel,
                         internal_node_creation_panel,
                         link_creation_panel,
                         node_display_panel,
                         link_display_panel,
                         routing_panel,
-                        selection_panel
+                        selection_panel,
+                        site_panel
                         )
 from project import Project
 from subprocess import Popen
@@ -353,17 +354,20 @@ class Controller(QMainWindow):
         notebook_menu.addTab(creation_menu, 'Creation')
         
         # creation menus
-        node_creation_menu = node_creation_panel.NodeCreationPanel(self)
+        network_node_creation_menu = network_node_creation_panel.NetworkNodeCreationPanel(self)
         link_creation_menu = link_creation_panel.LinkCreationPanel(self)
         
-        # creation panel for the internal node view
+        # panel for the internal node view
         internal_node_creation_menu = internal_node_creation_panel.InternalNodeCreationPanel(self)
+        # panel for the site view
+        site_menu = site_panel.SitePanel(self)
         
         # layout of the creation menu
         self.creation_menu_layout = QGridLayout(creation_menu)
-        self.creation_menu_layout.addWidget(node_creation_menu, 0, 0)
+        self.creation_menu_layout.addWidget(network_node_creation_menu, 0, 0)
         self.creation_menu_layout.addWidget(link_creation_menu, 1, 0)
         self.creation_menu_layout.addWidget(internal_node_creation_menu, 0, 0)
+        self.creation_menu_layout.addWidget(site_menu, 0, 0)
         
         # second tab: the display menu
         display_menu = QWidget(notebook_menu)

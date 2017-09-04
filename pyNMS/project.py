@@ -97,12 +97,14 @@ class Project(QWidget):
         self.site_view.show()
         self.current_view = self.site_view
         self.view_type = 'site'
+        self.controller.change_menu('site')
         
     def show_internal_site_view(self, site):
         self.current_view.hide()
         site.site_view.show()
         self.current_view = site.site_view
         self.view_type = 'insite'
+        self.controller.change_menu('network')
         
     def show_internal_node_view(self, gnode):
         self.current_view.hide()
