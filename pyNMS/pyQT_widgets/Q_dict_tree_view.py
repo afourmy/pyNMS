@@ -19,4 +19,3 @@ class QDictTreeView(QTreeView):
             parent.appendRow(child_item)
             if isinstance(children, dict) and bool(list(children)):
                 self.populate_tree(children[child], child_item)
-                

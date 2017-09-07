@@ -5,9 +5,9 @@ class GraphicalSite(GraphicalNode):
     
     def __init__(self, view, node=None):
         super().__init__(view, node)
-        self.site_view = InternalSiteView(self, self.controller)
+        self.internal_view = InternalSiteView(self, self.controller)
         
     def mouseDoubleClickEvent(self, event):
-        self.controller.current_project.show_internal_site_view(self)
+        self.controller.current_project.show_internal_view(self)
         super(GraphicalSite, self).mouseDoubleClickEvent(event)
         

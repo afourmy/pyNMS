@@ -72,6 +72,9 @@ class GraphicalNode(QGraphicsPixmapItem):
                 self.label = self.view.scene.addSimpleText('')
                 self.label.setZValue(15)
             self.label.setPos(self.pos() + QPoint(-20, 40))
+        if change == self.ItemScenePositionHasChanged:
+            for glink in self.view.attached_glinks(self):
+                glink.update_position()
         return QGraphicsPixmapItem.itemChange(self, change, value)
         
     def mousePressEvent(self, event):

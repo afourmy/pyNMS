@@ -90,29 +90,23 @@ class Project(QWidget):
         self.network_view.show()
         self.current_view = self.network_view
         self.view_type = 'network'
-        self.controller.change_menu('network')
+        self.controller.change_menu(self.current_view.menu_type)
         
     def show_site_view(self):
         self.current_view.hide()
         self.site_view.show()
         self.current_view = self.site_view
         self.view_type = 'site'
-        self.controller.change_menu('site')
-        
-    def show_internal_site_view(self, site):
+        self.controller.change_menu(self.site_view.menu_type)
+                
+    # the graphical object could be a site or a container object
+    def show_internal_view(self, gobj):
         self.current_view.hide()
-        site.site_view.show()
-        self.current_view = site.site_view
-        self.view_type = 'insite'
-        self.controller.change_menu('network')
-        
-    def show_internal_node_view(self, gnode):
-        self.current_view.hide()
-        gnode.internal_view.show()
-        self.current_view = gnode.internal_view
-        self.view_type = 'innode'
-        self.controller.change_menu('innode')
-        
+        gobj.internal_view.show()
+        self.current_view = gobj.internal_view
+        self.view_type = self.current_view.subtype
+        self.controller.change_menu(self.current_view.menu_type)
+                
     def show_parent_view(self):
         if self.current_view.subtype == 'insite':
             self.show_site_view()
@@ -121,7 +115,7 @@ class Project(QWidget):
             self.current_view = self.current_view.parent_view
             self.current_view.show()
             self.view_type = self.current_view.subtype
-            self.controller.change_menu(self.view_type)
+            self.controller.change_menu(self.current_view.menu_type)
         
     def refresh(self):
         

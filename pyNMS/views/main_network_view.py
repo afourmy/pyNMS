@@ -12,6 +12,7 @@ from random import randint
 class MainNetworkView(GeographicalView, NetworkView):
     
     subtype = 'network'
+    menu_type = 'network'
 
     def __init__(self, controller):
         self.network = Network(self)

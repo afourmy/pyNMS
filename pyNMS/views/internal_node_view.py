@@ -5,6 +5,7 @@ from networks.graph import Graph
 class InternalNodeView(BaseView):
     
     subtype = 'innode'
+    menu_type = 'innode'
 
     def __init__(self, gnode, controller):
         self.gnode = gnode

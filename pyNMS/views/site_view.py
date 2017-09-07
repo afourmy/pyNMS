@@ -22,6 +22,7 @@ from PyQt5.QtWidgets import *
 class SiteView(GeographicalView):
     
     subtype = 'site'
+    menu_type = 'site'
 
     def __init__(self, *args, **kwargs):
         self.network = Sites(self)

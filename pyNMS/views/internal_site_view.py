@@ -24,6 +24,7 @@ from right_click_menus.network_general_menu import NetworkGeneralMenu
 class InternalSiteView(NetworkView):
     
     subtype = 'insite'
+    menu_type = 'network'
 
     def __init__(self, gsite, controller):
         self.network_view = controller.current_project.network_view
@@ -55,6 +56,7 @@ class InternalSiteView(NetworkView):
                 
     def add_to_site(self, *objects):
         for obj in objects:
+            print(obj)
             if obj not in self.site.ps[obj.class_type]:
                 self.site.add_to_site(obj)
                 if obj.class_type == 'node':
@@ -86,6 +88,8 @@ class InternalSiteView(NetworkView):
         pos = self.mapToScene(event.pos())
         if event.mimeData().hasFormat('application/x-dnditemdata'):
             network_gnode = GraphicalNetworkNode(self.network_view)
+            # add the node to the logical site
+            self.site.ps['node'].add(network_gnode.node)
             new_node = GraphicalNetworkNode(self, network_gnode.node)
             new_node.setPos(pos)
             
@@ -94,8 +98,9 @@ class InternalSiteView(NetworkView):
         if hasattr(self, 'temp_line') and self.temp_line:
             if self.is_node(item):
                 self.end_node =  item                
-                new_link = GraphicalLink(self)
-                network_glink = GraphicalLink(self.network_view, new_link.link)
+                new_glink = GraphicalLink(self)
+                self.site.ps['link'].add(new_glink.link)
+                network_glink = GraphicalLink(self.network_view, new_glink.link)
                 # we made the start node unselectable and unmovable to enable
                 # the creation of links, in the press binding of GraphicalNode: 
                 # we revert this change at link creation
