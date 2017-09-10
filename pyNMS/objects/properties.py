@@ -141,6 +141,14 @@ class Name(TextProperty):
     def __new__(cls, value=''):
         return value
         
+class Description(TextProperty):
+    
+    name = 'description'
+    pretty_name = 'Description'
+    
+    def __new__(cls, value=''):
+        return value
+        
 class Subtype(TextProperty):
     
     name = 'subtype'
@@ -620,6 +628,7 @@ property_classes = {
                     'interface': Interface,
                     'interfaceS': InterfaceS,
                     'interfaceD': InterfaceD,
+                    'description': Description,
                     'distance': Distance,
                     'costSD': CostSD,
                     'costDS': CostDS,

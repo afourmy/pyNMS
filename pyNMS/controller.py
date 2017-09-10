@@ -22,6 +22,7 @@ from graph_algorithms.minimum_cost_flow_window import MCFlowWindow
 from graph_algorithms.rwa_window import RWAWindow
 from graph_generation.graph_generation_window import GraphGenerationWindow
 from gis.gis_parameter_window import GISParameterWindow
+from gis.export_to_google_earth_window import GoogleEarthExportWindow
 from miscellaneous.graph_drawing import *
 from miscellaneous.credentials_window import CredentialsWindow
 from miscellaneous.search_window import SearchWindow
@@ -97,6 +98,7 @@ class Controller(QMainWindow):
         self.graph_generation_window = GraphGenerationWindow(self)
         self.spring_layout_parameters_window = SpringLayoutParametersWindow(self)
         self.gis_parameter_window = GISParameterWindow(self)
+        self.google_earth_export_window = GoogleEarthExportWindow(self)
         self.search_window = SearchWindow(self)
         self.style_window = StyleWindow()
         self.debug_window = DebugWindow(self)
@@ -233,6 +235,11 @@ class Controller(QMainWindow):
         new_project.setStatusTip('Create a new project')
         new_project.triggered.connect(self.add_project)
         
+        kml_export_icon = QIcon(join(self.path_icon, 'globe.png'))
+        kml_export = QAction(kml_export_icon, 'Export to Google Earth', self)
+        kml_export.setStatusTip('Export project to Google Earth (.kml)')
+        kml_export.triggered.connect(self.kml_export)
+        
         selection_icon = QIcon(join(self.path_icon, 'selection.png'))
         selection_mode = QAction(selection_icon, 'Selection mode', self)
         selection_mode.setStatusTip('Switch to selection mode')
@@ -310,6 +317,7 @@ class Controller(QMainWindow):
         toolbar.resize(1500, 1500)
         toolbar.setIconSize(QtCore.QSize(70, 70))
         toolbar.addAction(new_project)
+        toolbar.addAction(kml_export)
         toolbar.addSeparator()
         toolbar.addAction(selection_mode)
         toolbar.addAction(rectangle)
@@ -431,6 +439,9 @@ class Controller(QMainWindow):
         self.notebook_project.addTab(new_project, name)
         self.dict_project[name] = new_project
         return new_project
+        
+    def kml_export(self):
+        self.google_earth_export_window.show()
         
     ## function to change the menu depending on the current mode
     def change_menu(self, mode):

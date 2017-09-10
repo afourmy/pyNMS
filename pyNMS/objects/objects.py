@@ -120,13 +120,12 @@ subtype_to_type = {
 
 # 0) properties common to all objects
 
-obj_common_properties = ()
+obj_common_properties = (Name, Description,)
 
 # 1) properties common to all nodes
 
 # ordered dicts are needed to have the same menu order 
 node_common_properties = obj_common_properties + (
-Name, 
 Vendor,
 OperatingSystem,
 NetmikoOperatingSystem,
@@ -149,7 +148,6 @@ AS,
 # 2) properties common to all physical links
 
 plink_common_properties = obj_common_properties + (
-Name, 
 Source, 
 Destination, 
 Interface,
@@ -184,7 +182,6 @@ AS,
 # 3) properties common to all interfaces
 
 interface_common_properties = obj_common_properties + (
-Name,
 Link,
 Node
 )
@@ -200,7 +197,6 @@ MAC_Address
 # 5) properties common to all routes
 
 route_common_properties = obj_common_properties + (
-Name,
 Subtype,
 Source, 
 Destination,
@@ -210,7 +206,6 @@ Sites
 # 6) properties common to all VC
 
 vc_common_properties = (
-Name,
 Source, 
 Destination,
 LinkS,
@@ -221,7 +216,6 @@ Sites
 # 7) properties common to all traffic links
 
 traffic_common_properties = obj_common_properties + (
-Name,
 Subtype,
 Source, 
 Destination,
@@ -243,7 +237,6 @@ node_common_ie_properties = node_common_properties[:-2]
 # 2) import / export properties for physical links
 
 plink_common_ie_properties = obj_common_properties + (
-Name, 
 Source, 
 Destination, 
 Interface,
@@ -257,7 +250,6 @@ CapacityDS
 # 3) import / export properties for routes
         
 route_common_ie_properties = obj_common_properties + (
-Name, 
 Source, 
 Destination
 )
@@ -265,7 +257,6 @@ Destination
 # 4) import / export properties for traffic links
 
 traffic_common_ie_properties = obj_common_properties + (
-Name, 
 Source, 
 Destination, 
 Throughput,
