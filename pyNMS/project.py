@@ -309,9 +309,6 @@ class Project(QWidget):
                                                    ".xls"
                                                    )
             selected_file = ''.join(filepath)
-        print(selected_file)
-        # else:
-        #     selected_file = open(filepath, 'w')
         
         excel_workbook = xlwt.Workbook()
         for obj_subtype, properties in object_ie.items():
