@@ -133,12 +133,14 @@ class ObjectManagementWindow(QWidget):
         
     def closeEvent(self, _):
         for property, property_widget in self.dict_global_properties.items():
+            if property.name == 'structure':
+                continue   
             try:
                 value = property_widget.text()
             except (AttributeError, TypeError):
                 value = property_widget.text
             # convert 'None' to None if necessary
-            value = None if value == 'None' else value              
+            value = None if value == 'None' else value           
             if property.name == 'sites':
                 value = filter(None, set(re.sub(r'\s+', '', value).split(',')))
                 value = set(map(self.site_network.convert_node, value))
