@@ -1600,7 +1600,7 @@ class Network(Graph):
                                                     ),
                                 destination = graph_project.network.nf(
                                                     name = nB,
-                                                    node_type = 'optical switch'
+                                                    subtype = 'optical switch'
                                                     ),
                                 name = name
                                 )
@@ -1736,13 +1736,13 @@ class Network(Graph):
     def tree(self, n, subtype):
         for i in range(2**n-1):
             n1, n2, n3 = str(i), str(2*i+1), str(2*i+2)
-            source = self.nf(name = n1, node_type = subtype)
-            destination = self.nf(name = n2, node_type = subtype)
+            source = self.nf(name = n1, subtype = subtype)
+            destination = self.nf(name = n2, subtype = subtype)
             yield source
             yield destination
             yield self.lf(source=source, destination=destination)
-            source = self.nf(name = n1, node_type = subtype)
-            destination = self.nf(name = n3, node_type = subtype)
+            source = self.nf(name = n1, subtype = subtype)
+            destination = self.nf(name = n3, subtype = subtype)
             yield source
             yield destination
             yield self.lf(source=source, destination=destination)
@@ -1753,8 +1753,8 @@ class Network(Graph):
         nb_node = self.cpt_node + 1
         for i in range(n):
             n1, n2 = str(nb_node), str(nb_node+1+i)
-            source = self.nf(name = n1, node_type = subtype)
-            destination = self.nf(name = n2, node_type = subtype)
+            source = self.nf(name = n1, subtype = subtype)
+            destination = self.nf(name = n2, subtype = subtype)
             yield source
             yield destination
             yield self.lf(source=source, destination=destination)
@@ -1766,8 +1766,8 @@ class Network(Graph):
         for i in range(n):
             for j in range(i):
                 n1, n2 = str(nb_node+j), str(nb_node+i)
-                source = self.nf(name = n1, node_type = subtype)
-                destination = self.nf(name = n2, node_type = subtype)
+                source = self.nf(name = n1, subtype = subtype)
+                destination = self.nf(name = n2, subtype = subtype)
                 yield source
                 yield destination
                 yield self.lf(source=source, destination=destination)
@@ -1778,8 +1778,8 @@ class Network(Graph):
         nb_node = self.cpt_node + 1
         for i in range(n):
             n1, n2 = str(nb_node+i), str(nb_node+(1+i)%n)
-            source = self.nf(name = n1, node_type = subtype)
-            destination = self.nf(name = n2, node_type = subtype)
+            source = self.nf(name = n1, subtype = subtype)
+            destination = self.nf(name = n2, subtype = subtype)
             yield source
             yield destination
             yield self.lf(source=source, destination=destination)
@@ -1790,14 +1790,14 @@ class Network(Graph):
         for i in range(n**2):
             n1, n2, n3 = str(i), str(i-1), str(i+n)
             if i-1 > -1 and i%n:
-                source = self.nf(name = n1, node_type = subtype)
-                destination = self.nf(name = n2, node_type = subtype)
+                source = self.nf(name = n1, subtype = subtype)
+                destination = self.nf(name = n2, subtype = subtype)
                 yield source
                 yield destination
                 yield self.lf(source=source, destination=destination)
             if i+n < n**2:
-                source = self.nf(name = n1, node_type = subtype)
-                destination = self.nf(name = n3, node_type = subtype)
+                source = self.nf(name = n1, subtype = subtype)
+                destination = self.nf(name = n3, subtype = subtype)
                 yield source
                 yield destination
                 yield self.lf(source=source, destination=destination)
@@ -1807,7 +1807,7 @@ class Network(Graph):
     def hypercube(self, n, subtype):
         # we create a n-dim hypercube by connecting two (n-1)-dim hypercubes
         i = 0
-        graph_nodes = [self.nf(name=str(0), node_type=subtype)]
+        graph_nodes = [self.nf(name=str(0), subtype=subtype)]
         graph_plinks = []
         while i < n+1:
             for k in range(len(graph_nodes)):
@@ -1815,7 +1815,7 @@ class Network(Graph):
                 graph_nodes.append(
                                    self.nf(
                                            name = str(k+2**i), 
-                                           node_type = subtype
+                                           subtype = subtype
                                            )
                                    )
             for plink in graph_plinks[:]:
@@ -1851,8 +1851,8 @@ class Network(Graph):
             already_done.add(frozenset(setA))
             for setB in map(set, combinations(range(1, n), k)):
                 if setB not in already_done and not setA & setB:
-                    source = self.nf(name = str(setA), node_type = subtype)
-                    destination = self.nf(name = str(setB), node_type = subtype)
+                    source = self.nf(name = str(setA), subtype = subtype)
+                    destination = self.nf(name = str(setB), subtype = subtype)
                     yield source
                     yield destination
                     yield self.lf(source=source, destination=destination)
@@ -1865,20 +1865,20 @@ class Network(Graph):
         # to build it, we consider that v_i = u_(i+n).
         for i in range(n):
             # (u_i, u_i+1) edges
-            source = self.nf(name = str(i), node_type = subtype)
-            destination = self.nf(name = str((i + 1)%n), node_type = subtype)
+            source = self.nf(name = str(i), subtype = subtype)
+            destination = self.nf(name = str((i + 1)%n), subtype = subtype)
             yield source
             yield destination
             yield self.lf(source=source, destination=destination)
             # (u_i, v_i) edges
-            source = self.nf(name = str(i), node_type = subtype)
-            destination = self.nf(name = str(i+n), node_type = subtype)
+            source = self.nf(name = str(i), subtype = subtype)
+            destination = self.nf(name = str(i+n), subtype = subtype)
             yield source
             yield destination
             yield self.lf(source=source, destination=destination)
             # (v_i, v_i+k) edges
-            source = self.nf(name = str(i+n), node_type = subtype)
-            destination = self.nf(name = str((i+n+k)%n + n), node_type = subtype)
+            source = self.nf(name = str(i+n), subtype = subtype)
+            destination = self.nf(name = str((i+n+k)%n + n), subtype = subtype)
             yield source
             yield destination
             yield self.lf(source=source, destination=destination)
@@ -1888,7 +1888,7 @@ class Network(Graph):
     def multiple_nodes(self, n, subtype):
         nb_nodes = self.cpt_node + 1
         for k in range(n):
-            yield self.nf(name = str(k + nb_nodes), node_type = subtype)
+            yield self.nf(name = str(k + nb_nodes), subtype = subtype)
             
     def multiple_links(self, source_nodes, destination_nodes):
         # create a link between the destination node and all source nodes
