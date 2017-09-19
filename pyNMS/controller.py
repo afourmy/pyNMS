@@ -235,7 +235,12 @@ class Controller(QMainWindow):
         new_project.setStatusTip('Create a new project')
         new_project.triggered.connect(self.add_project)
         
-        kml_export_icon = QIcon(join(self.path_icon, 'globe.png'))
+        shapefile_import_icon = QIcon(join(self.path_icon, 'shapefile_import.png'))
+        shapefile_import = QAction(shapefile_import_icon, 'Shapefile import', self)
+        shapefile_import.setStatusTip('Import a shapefile (.shp)')
+        shapefile_import.triggered.connect(self.shapefile_import)
+        
+        kml_export_icon = QIcon(join(self.path_icon, 'kml_export.png'))
         kml_export = QAction(kml_export_icon, 'Export to Google Earth', self)
         kml_export.setStatusTip('Export project to Google Earth (.kml)')
         kml_export.triggered.connect(self.kml_export)
@@ -317,6 +322,8 @@ class Controller(QMainWindow):
         toolbar.resize(1500, 1500)
         toolbar.setIconSize(QtCore.QSize(70, 70))
         toolbar.addAction(new_project)
+        toolbar.addSeparator()
+        toolbar.addAction(shapefile_import)
         toolbar.addAction(kml_export)
         toolbar.addSeparator()
         toolbar.addAction(selection_mode)
@@ -440,6 +447,17 @@ class Controller(QMainWindow):
         self.dict_project[name] = new_project
         return new_project
         
+    @update_paths
+    def shapefile_import(self, _):
+        filepath = QFileDialog.getOpenFileName(
+                                                self, 
+                                                'Import shapefile', 
+                                                'Choose a shapefile to import'
+                                                )[0]
+        if filepath:
+            self.view.world_map.shapefile = filepath
+            self.view.world_map.redraw_map()
+        
     def kml_export(self):
         self.google_earth_export_window.show()
         
@@ -489,11 +507,11 @@ class Controller(QMainWindow):
         self.debug_window.show()
         
     @update_paths
-    def show_hide_map(self):
+    def show_hide_map(self, _):
         self.view.world_map.show_hide_map()
         
     @update_paths
-    def delete_map(self):
+    def delete_map(self, _):
         self.view.world_map.delete_map()
         
     def refresh(self):

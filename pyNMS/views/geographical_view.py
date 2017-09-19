@@ -107,18 +107,14 @@ class Map():
         self.view = view
         self.proj = 'Spherical'
         self.ratio, self.offset = 1/1000, (0, 0)
-        self.shapefile = join(self.view.controller.path_shapefiles, 'World countries (low resolution).shp')
         self.display = True
+        self.polygons = self.view.scene.createItemGroup([])
         
         # brush for water and lands
         self.water_brush = QBrush(QColor(64, 164, 223))
         self.land_brush = QBrush(QColor(52, 165, 111))
         self.land_pen = QPen(QColor(52, 165, 111))
-        
-        # draw the map 
-        self.polygons = self.view.scene.createItemGroup(self.draw_polygons())
-        self.draw_water()
-        
+
     def to_geographical_coordinates(self, x, y):
         px, py = (x - self.offset[0])/self.ratio, (self.offset[1] - y)/self.ratio
         return self.projections[self.proj](px, py, inverse=True)
