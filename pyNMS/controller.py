@@ -530,11 +530,11 @@ class Controller(QMainWindow):
         self.creation_mode = 'ellipse'
         
     @update_paths
-    def zoom_in(self):
+    def zoom_in(self, _):
         self.view.zoom_in()
         
     @update_paths
-    def zoom_out(self):
+    def zoom_out(self, _):
         self.view.zoom_out()
         
     @update_paths
