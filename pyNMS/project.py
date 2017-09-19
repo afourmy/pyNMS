@@ -312,6 +312,7 @@ class Project(QWidget):
         
         excel_workbook = xlwt.Workbook()
         for obj_subtype, properties in object_ie.items():
+            print(obj_subtype, properties)
             # we have one excel sheet per subtype of object.
             # we filter the network pool based on the subtype to 
             # retrieve only the object of the corresponding subtype

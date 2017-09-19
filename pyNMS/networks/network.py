@@ -70,7 +70,7 @@ class Network(Graph):
         # osi layer to devices
         self.osi_layers = {
         3: ('router', 'host', 'cloud'),
-        2: ('switch', 'oxc'),
+        2: ('switch', 'optical switch'),
         1: ('regenerator', 'splitter', 'antenna')
         }
         
@@ -1582,7 +1582,7 @@ class Network(Graph):
         # we compute the path of all traffic physical links
         self.path_finder()
         graph_project = self.view.controller.add_project(name)
-        
+
         # in the new graph, each node corresponds to a traffic path
         # we create one node per traffic physical link in the new view            
         visited = set()
@@ -1594,16 +1594,16 @@ class Network(Graph):
                         nA, nB = tlA.name, tlB.name
                         name = '{} - {}'.format(nA, nB)
                         graph_project.network.lf(
-                                    source = graph_project.network.nf(
-                                                        name = nA,
-                                                        node_type = 'oxc'
-                                                        ),
-                                    destination = graph_project.network.nf(
-                                                        name = nB,
-                                                        node_type = 'oxc'
-                                                        ),
-                                    name = name
-                                    )
+                                source = graph_project.network.nf(
+                                                    name = nA,
+                                                    subtype = 'optical switch'
+                                                    ),
+                                destination = graph_project.network.nf(
+                                                    name = nB,
+                                                    node_type = 'optical switch'
+                                                    ),
+                                name = name
+                                )
             visited.add(tlA)
                             
         graph_project.current_view.refresh_display()
@@ -1612,15 +1612,15 @@ class Network(Graph):
     def largest_degree_first(self):
         # we color the transformed graph by allocating colors to largest
         # degree nodes:
-        # 1) we select the largest degree uncolored oxc
+        # 1) we select the largest degree uncolored optical switch
         # 2) we look at the adjacent vertices and select the minimum indexed
         # color not yet used by adjacent vertices
         # 3) when everything is colored, we stop
         
-        # we will use a dictionary that binds oxc to the color it uses.
-        oxc_color = dict.fromkeys(self.ftr('node', 'oxc'), None)
+        # we will use a dictionary that binds optical switch to the color it uses.
+        optical_switch_color = dict.fromkeys(self.ftr('node', 'optical switch'), None)
         # and a list that contains all vertices that we have yet to color
-        uncolored_nodes = list(oxc_color)
+        uncolored_nodes = list(optical_switch_color)
         # we will use a function that returns the degree of a node to sort
         # the list in ascending order
         uncolored_nodes.sort(key = lambda node: len(self.graph[node.id]['plink']))
@@ -1628,14 +1628,14 @@ class Network(Graph):
         while uncolored_nodes:
             largest_degree = uncolored_nodes.pop()
             # we compute the set of colors used by adjacent vertices
-            colors = set(oxc_color[neighbor] for neighbor, _ in
+            colors = set(optical_switch_color[neighbor] for neighbor, _ in
                                     self.graph[largest_degree.id]['plink'])
             # we find the minimum indexed color which is available
             min_index = [i in colors for i in range(len(colors) + 1)].index(0)
-            # and assign it to the current oxc
-            oxc_color[largest_degree] = min_index
+            # and assign it to the current optical switch
+            optical_switch_color[largest_degree] = min_index
             
-        number_lambda = max(oxc_color.values()) + 1
+        number_lambda = max(optical_switch_color.values()) + 1
         return number_lambda
         
     def LP_RWA_formulation(self, K=10):
