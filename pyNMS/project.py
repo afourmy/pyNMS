@@ -43,7 +43,7 @@ class Project(QWidget):
     import_order = (
                     'router',
                     'switch',
-                    'oxc', 
+                    'optical switch', 
                     'host',
                     'antenna',
                     'regenerator',
