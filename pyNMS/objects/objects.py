@@ -851,7 +851,7 @@ class PhysicalLink(Link):
 
 class EthernetLink(PhysicalLink):
     
-    color = 'blue'
+    color = (0, 0, 255)
     subtype = 'ethernet link'
     
     @initializer
@@ -862,7 +862,7 @@ class EthernetLink(PhysicalLink):
         
 class OpticalLink(PhysicalLink):
     
-    color = 'violet red'
+    color = (212, 34, 42)
     subtype = 'optical link'
     
     @initializer
@@ -955,6 +955,7 @@ class L2VC(VirtualConnection):
     
     type = 'l2link'
     subtype = 'l2vc'
+    color = (100, 100, 100)
     layer = 2
 
     @initializer
@@ -965,6 +966,7 @@ class L3VC(VirtualConnection):
     
     type = 'l3link'
     subtype = 'l3vc'
+    color = (200, 200, 200)
     layer = 3
     
     @initializer
@@ -995,7 +997,7 @@ class OpticalChannel(Route):
 
     type = 'l2link'
     subtype = 'optical channel'
-    color = 'sienna1'
+    color = (255, 130, 71)
     layer = 2
     
     @initializer
@@ -1010,7 +1012,7 @@ class EtherChannel(Route):
 
     type = 'l2link'
     subtype = 'etherchannel'
-    color = 'firebrick3'
+    color = (207, 34, 138)
     layer = 2
     
     @initializer
@@ -1025,7 +1027,7 @@ class PseudoWire(Route):
 
     type = 'l3link'
     subtype = 'pseudowire'
-    color = 'purple2'
+    color = (144, 43, 236)
     layer = 3
     
     @initializer
@@ -1040,7 +1042,7 @@ class BGPPeering(Route):
 
     type = 'l3link'
     subtype = 'BGP peering'
-    color = 'aquamarine2'
+    color = (119, 235, 202)
     layer = 3
     
     @initializer
@@ -1064,7 +1066,7 @@ class Traffic(Link):
         
 class RoutedTraffic(Traffic):
         
-    color = 'cyan4'
+    color = (3, 139, 132)
     subtype = 'routed traffic'
     
     @initializer
@@ -1073,7 +1075,7 @@ class RoutedTraffic(Traffic):
         
 class StaticTraffic(Traffic):
     
-    color = 'green3'
+    color = (0, 210, 0)
     subtype = 'static traffic'
     
     @initializer
@@ -1165,6 +1167,10 @@ type_to_subtype = {
 'traffic': tuple(traffic_class.keys()),
 'interface': ('ethernet interface', 'optical interface')
 }
+
+# class to subtype assocation
+node_class_to_subtype = {v: k for k, v in node_class.items()}
+link_class_to_subtype = {v: k for k, v in link_class.items()}
 
 # per-type name to object association
 node_name_to_obj = OrderedDict((obj_to_name[node], node) for node in node_subtype)
