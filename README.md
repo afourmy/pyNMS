@@ -9,10 +9,11 @@ pyNMS is a network visualization, inventory and automation software.
 The following modules are used in pyNMS:
 ```
 pyQt5 (mandatory: GUI framework)
+pyproj (mandatory: used for the geographical system)
+xlrd, xlwt, yaml (desirable: used for saving projects)
 netmiko, jinja2, NAPALM (optional: used for network automation)
 numpy, cvxopt (optional: used for linear programming)
-pyshp, shapely, pyproj (mandatory: used for map drawing)
-xlrd, xlwt, yaml (desirable: used for saving projects)
+pyshp, shapely (optional: used for drawing map by importing shapefiles)
 ```
 
 In order to use pyNMS, you need to run **main.py**.
