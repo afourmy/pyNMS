@@ -78,7 +78,7 @@ class GoogleEarthExportWindow(QWidget):
             point = kml.newpoint(name=node.name, description=node.description)
             point.coords = [(node.longitude, node.latitude)]
             point.style = self.styles[node.subtype]
-            point.style.labelstyle.scale = 0#float(self.node_size.text())
+            point.style.labelstyle.scale = float(self.node_size.text())
             
         for link in self.network.all_links():
             line = kml.newlinestring(name=link.name, description=link.description) 
