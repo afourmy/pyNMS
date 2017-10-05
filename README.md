@@ -31,6 +31,12 @@ using the mercator or azimuthal orthographic projections.
 
 ![Network GIS visualization](https://github.com/mintoo/networks/raw/master/Readme/animations/gis_visualization.gif)
 
+## Export to Google Earth
+
+Networks can be exported as a .KML file to be displayed on Google Earth, with the same icons and link colors as in pyNMS.
+
+![Google Earth](https://github.com/mintoo/networks/raw/master/Readme/images/google_earth_export.png)
+
 ## Network algorithmic visualization
 
 GIS visualization can only be done if we have all GPS coordinates: it is not always the case.

@@ -59,7 +59,6 @@ class GoogleEarthExportWindow(QWidget):
             # we convert the RGB color to a KML color, 
             # i.e #RRGGBB to #AABBGGRR
             kml_color = "#ff{0:02x}{1:02x}{2:02x}".format(*cls.color[::-1])
-            print(kml_color)
             line_style.linestyle.color = kml_color
             self.styles[subtype] = line_style
             
@@ -79,7 +78,7 @@ class GoogleEarthExportWindow(QWidget):
             point = kml.newpoint(name=node.name, description=node.description)
             point.coords = [(node.longitude, node.latitude)]
             point.style = self.styles[node.subtype]
-            point.style.labelstyle.scale = float(self.node_size.text())
+            point.style.labelstyle.scale = 0#float(self.node_size.text())
             
         for link in self.network.all_links():
             line = kml.newlinestring(name=link.name, description=link.description) 

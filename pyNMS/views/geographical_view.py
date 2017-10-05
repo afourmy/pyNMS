@@ -15,7 +15,7 @@
 from collections import OrderedDict
 from os.path import join
 from .base_view import BaseView
-from math import asin, cos, sin, sqrt
+from math import asin, cos, radians, sin, sqrt
 try:
     import shapefile
     import shapely.geometry
