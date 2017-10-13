@@ -14,6 +14,7 @@ xlrd, xlwt, yaml (desirable: used for saving projects)
 netmiko, jinja2, NAPALM (optional: used for network automation)
 numpy, cvxopt (optional: used for linear programming)
 pyshp, shapely (optional: used for drawing map by importing shapefiles)
+simplekml (optional: used for exporting project to Google Earth)
 ```
 
 In order to use pyNMS, you need to run **main.py**.
@@ -193,8 +194,4 @@ or on the [Network to Code slack](http://networktocode.herokuapp.com "Network to
 
 [pyproj](https://github.com/jswhit/pyproj): Python interface to PROJ4 library for cartographic transformations
 
-
-
-
-
-
+[simplekml](http://simplekml.readthedocs.io/en/latest/): Library to generate KML files (Google Earth)
