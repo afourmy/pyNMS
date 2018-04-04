@@ -1,26 +1,9 @@
 # Introduction
 
-pyNMS is a network visualization, inventory and automation software.
+pyNMS is a network visualization, simulation and automation software.
+**Check out [eNMS](https://github.com/afourmy/eNMS), the new version of pyNMS designed for graphical network automation**
 
 ![pyNMS](https://github.com/mintoo/networks/raw/master/Readme/images/pynms.png)
-
-# Getting started
-
-The following modules are used in pyNMS:
-```
-pyQt5 (mandatory: GUI framework)
-pyproj (mandatory: used for the geographical system)
-xlrd, xlwt, yaml (desirable: used for saving projects)
-netmiko, jinja2, NAPALM (optional: used for network automation)
-numpy, cvxopt (optional: used for linear programming)
-pyshp, shapely (optional: used for drawing map by importing shapefiles)
-simplekml (optional: used for exporting project to Google Earth)
-```
-
-In order to use pyNMS, you need to run **main.py**.
-```
-python main.py
-```
 
 # Features
 
@@ -158,7 +141,7 @@ Four methods were implemented to find the K link-disjoint shortest paths:
 - Suurbale algorithm
 - Linear programming with GLPK
 
-### Wavelength allocation problem
+### Wavelength Assignment Problem
 
 In an optical-bypass enabled network, a wavelength can cross an optical switch without Optical-Electrical-Optical (OEO) conversion. While this is a step forward towards cheaper and "greener" networks, a trade-off is that there has to be an end-to-end "wavelength continuity": a wavelength stays the same from the source edge to the destination edge, and it cannot be used by different lightpaths on the same optical fiber.
 
@@ -168,9 +151,26 @@ Two methods were implemented to solve the wavelength assignment problem:
 - Linear programming with GLPK
 - "Largest degree first" heuristic
 
-# Contact
+See [SWAP](https://github.com/afourmy/SWAP) if you're interested in a graphical solution to the Wavelength Assignment Problem.
 
-You can contact me on the [Network to Code slack](http://networktocode.herokuapp.com "Network to Code slack"). (channel #enms, @minto)
+# Getting started
+
+The following modules are used in pyNMS:
+```
+pyQt5 (mandatory: GUI framework)
+pyproj (mandatory: used for the geographical system)
+xlrd, xlwt, yaml (desirable: used for saving projects)
+netmiko, jinja2, NAPALM (optional: used for network automation)
+numpy, cvxopt (optional: used for linear programming)
+pyshp, shapely (optional: used for drawing map by importing shapefiles)
+simplekml (optional: used for exporting project to Google Earth)
+```
+
+In order to use pyNMS, you need to run **main.py**.
+```
+python main.py
+```
+
 
 # Credits
 

@@ -1188,7 +1188,7 @@ class Network(Graph):
             src, dest = plink.source, plink.destination
             plink.flowSD = new_graph[src][dest]
             plink.flowDS = new_graph[dest][src]
-            
+
         # traceback the shortest path with the flow
         curr_node, path_plink = s, []
         while curr_node != t:
